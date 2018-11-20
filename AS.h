@@ -1,10 +1,10 @@
+#ifndef AS_H
+#define AS_H
+
 #include "Announcement.h"
 #include <string>
 #include <vector>
 #include <iostream>
-
-#ifndef AS_H
-#define AS_H
 
 struct AS {
     uint32_t asn;
@@ -14,6 +14,7 @@ struct AS {
     std::vector<uint32_t> customers; 
 
     AS();
+    AS(uint32_t myasn);
     void setASN(uint32_t myasn);
     void printDebug();
 

@@ -2,6 +2,10 @@
 
 AS::AS() {}
 
+AS::AS(uint32_t myasn) {
+    asn = myasn;
+}
+
 void AS::setASN(uint32_t myasn) {
     asn = myasn;
 }
