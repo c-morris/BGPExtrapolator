@@ -9,13 +9,24 @@ int main(int argc, char *argv[]) {
     using namespace std;
     AS *testas = new AS;
     testas->asn = 42;
-    testas->printDebug();
-    ASGraph *testgraph = new ASGraph;
-    testgraph->ases->insert(std::pair<uint32_t, AS*>(testas->asn, testas));
-    testgraph->ases->insert(std::pair<uint32_t, AS*>(2, testas));
-    testgraph->printDebug();
     cout << "testas" << endl;
-    cout << *testgraph->ases->find(2)->second << endl;
+    cout << *testas;
+    ASGraph *testgraph = new ASGraph;
+    //testgraph->ases->insert(std::pair<uint32_t, AS*>(testas->asn, testas));
+    //testgraph->ases->insert(std::pair<uint32_t, AS*>(2, testas));
+    testgraph->add_relationship(24, 42, AS_REL_PEER);
+    testgraph->add_relationship(24, 48, AS_REL_PROVIDER);
+    testgraph->add_relationship(24, 46, AS_REL_CUSTOMER);
+    // timing test - took 28 seconds on a 2.6GHz Xeon
+    //for (uint32_t i = 0; i < 8200; i++) {
+    //    for (uint32_t j = 0; j < 100; j++) {
+    //        testgraph->add_relationship(i, j, AS_REL_PEER);
+    //    }
+    //    if (i % 10000 == 0) { cerr << "*"; }
+    //}
+    cout << "testgraph" << endl;
+    cout << *testgraph << endl;
+    //cout << *testgraph->ases->find(2)->second << endl;
     delete testas;
     vector<Announcement*> *testanns = new vector<Announcement*>;
     testanns->push_back(new Announcement(13030, 0x01000000, 0xFF000000, 42));

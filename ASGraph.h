@@ -12,7 +12,10 @@ struct ASGraph {
 
     ASGraph();
     ~ASGraph();
+    void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
+    std::vector<std::vector<uint32_t>*>* decide_ranks();
     void printDebug();
+    friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
 };
 
 #endif
