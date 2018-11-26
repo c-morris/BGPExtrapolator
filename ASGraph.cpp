@@ -1,5 +1,7 @@
 #include <cstdint>
 #include <iostream>
+#include <set>
+#include <vector>
 #include "ASGraph.h"
 #include "AS.h"
 
@@ -39,32 +41,51 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
  * @return I'm pretty sure this list never gets used, so for now, NULL
  */
 std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
-    auto ases_by_rank = new std::vector<std::vector<uint32_t>*>;
-    auto customer_ases = new std::vector<uint32_t>;
+    auto ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
+    // initialize the sets
+    for (int i = 0; i < 255; i++) {
+        (*ases_by_rank)[i] = new std::set<uint32_t>();
+    }
+    // initial set of customer ASes at the bottom of the DAG
     for (auto &as : *ases) {
         if (as.second->customers->empty()) {
-            customer_ases->push_back(as.first);
+            // if AS is a leaf node
+            (*ases_by_rank)[0]->insert(as.first);
             as.second->rank = 0;
         }
     }
-    ases_by_rank->push_back(customer_ases);
     
-    for (int i = 0; i < 1000; i++) {
-        auto ases_at_rank_i_plus_one = new std::vector<uint32_t>;
-        // I don't understand why this part doesn't break the extrapolator, so
-        // I'm not translating it until Michael explains it to me. 
-        // if(i not in self.ases_by_rank):
-        //     return self.ases_by_rank
-
+    // this is decreased from 1000 to 254 because the TTL on an IPv4 packet
+    // is at most 255, so in theory this is a reasonable maximum for ASes too.
+    for (int i = 0; i < 254; i++) {
+        if ((*ases_by_rank)[i]->empty()) {
+            // if we are above the top of the DAG, stop
+            return NULL;
+        }
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
                 auto prov_AS = ases->find(provider_asn)->second;
-                //if (prov_AS->rank
+                if (prov_AS->rank == -1) {
+                    int skip_provider = 0;
+                    // TODO improve variable naming here
+                    for (auto prov_cust_asn : *prov_AS->customers) {
+                        auto *prov_cust_AS = ases->find(prov_cust_asn)->second;
+                        if (prov_cust_AS->rank == -1 ||
+                            // TODO also check SCC stuff
+                            prov_cust_AS->rank > i) {
+                            skip_provider = 1;
+                            break;
+                        }
+                        if (skip_provider) { continue; }
+                        ases->find(provider_asn)->second->rank = i + 1;
+                        (*ases_by_rank)[i+1]->insert(provider_asn);
+                    }
+                }
             }
         }
     }
 
-    // should be less than 1000 iterations
+    // should be less than 255 iterations
     for (size_t i = 0; i < ases_by_rank->size(); i++) {
         delete (*ases_by_rank)[i];
     }

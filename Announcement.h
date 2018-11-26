@@ -19,6 +19,11 @@ struct Announcement {
         received_from_asn = from_asn;
         priority = 0.0;
     }
+    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
+        double pr, uint32_t from_asn) 
+        : Announcement(aorigin, aprefix, anetmask, from_asn) { 
+        priority = pr; 
+    }
     // comparison operators for maps
     // comparing first on prefix ensures the most specific announcement gets
     // priority. The origin is not used in comparison. 

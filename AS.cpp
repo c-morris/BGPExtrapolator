@@ -3,7 +3,7 @@
 AS::AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     std::set<uint32_t> *cust) {
     asn = myasn;
-    rank = 0;
+    rank = -1; // initialize to invalid rank
     if (prov == NULL) {
         providers = new std::set<uint32_t>;
     } else {
