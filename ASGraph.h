@@ -9,7 +9,8 @@
 struct ASGraph {
     std::map<uint32_t, AS*> *ases; // map of ASN to AS object 
     std::vector<uint32_t> *ases_with_anns;
-    std::vector<uint32_t> *ases_by_rank;
+    std::vector<std::set<uint32_t>*> *ases_by_rank;
+
 
     ASGraph();
     ~ASGraph();

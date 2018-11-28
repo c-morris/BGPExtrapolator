@@ -7,6 +7,7 @@
 
 ASGraph::ASGraph() {
     ases = new std::map<uint32_t, AS*>;    
+    ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
 }
 
 ASGraph::~ASGraph() {
@@ -34,14 +35,8 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
 }
 
 /** Decide and assign ranks to all the AS's in the graph. 
- *
- * Not sure why the list is returned since in the Python code it doesn't get
- * used, but since it's returned there I'll put it as the return type. 
- * 
- * @return I'm pretty sure this list never gets used, so for now, NULL
  */
 std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
-    auto ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
     // initialize the sets
     for (int i = 0; i < 255; i++) {
         (*ases_by_rank)[i] = new std::set<uint32_t>();
@@ -73,10 +68,8 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
                         if (prov_cust_AS->rank == -1 ||
                             // TODO also check SCC stuff
                             prov_cust_AS->rank > i) {
-                            skip_provider = 1;
-                            break;
+                            continue;
                         }
-                        if (skip_provider) { continue; }
                         ases->find(provider_asn)->second->rank = i + 1;
                         (*ases_by_rank)[i+1]->insert(provider_asn);
                     }
@@ -85,13 +78,11 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
         }
     }
 
-    // should be less than 255 iterations
-    for (size_t i = 0; i < ases_by_rank->size(); i++) {
-        delete (*ases_by_rank)[i];
-    }
-    delete ases_by_rank;
-
-    return NULL;
+    // do not free this memory, not done with it yet
+    //// should be less than 255 iterations
+    //for (size_t i = 0; i < ases_by_rank->size(); i++) {
+    //    delete (*ases_by_rank)[i];
+    //}
 }
 
 // print all as's

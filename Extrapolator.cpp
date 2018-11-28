@@ -10,7 +10,7 @@ Extrapolator::Extrapolator() {
 void Extrapolator::propagate_up() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = 0; level < levels; level++) {
-        for (uint32_t asn : graph->ases_by_rank[level]) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
             // if (graph.ases[asn].all_anns):
             //     self.send_all_announcements(asn, to_peers_providers = True,
@@ -24,7 +24,7 @@ void Extrapolator::propagate_up() {
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level >= 0; level--) {
-        for (uint32_t asn : graph->ases_by_rank[level]) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
             // if (graph.ases[asn].all_anns):
             //     self.send_all_announcements(asn, to_peers_providers = True,
