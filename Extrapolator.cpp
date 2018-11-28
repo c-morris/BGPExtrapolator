@@ -12,9 +12,9 @@ void Extrapolator::propagate_up() {
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
-            // if (graph.ases[asn].all_anns):
-            //     self.send_all_announcements(asn, to_peers_providers = True,
-            //     to_customers = False)
+            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+                send_all_announcements(asn, true, false);
+            }
         }
     }
 }
@@ -26,9 +26,9 @@ void Extrapolator::propagate_down() {
     for (size_t level = levels-1; level >= 0; level--) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
-            // if (graph.ases[asn].all_anns):
-            //     self.send_all_announcements(asn, to_peers_providers = True,
-            //     to_customers = False)
+            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+                send_all_announcements(asn, false, true);
+            }
         }
     }
 }
