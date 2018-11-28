@@ -29,6 +29,11 @@ struct AS {
     std::set<uint32_t> *peers; 
     std::set<uint32_t> *customers; 
 
+    // these are assigned and used in Tarjan's algorithm
+    int index;
+    int lowlink;
+    bool onStack;
+
     AS() : AS(0, NULL, NULL, NULL) {}
     AS(uint32_t myasn) : AS(myasn, NULL, NULL, NULL) {}
     AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,

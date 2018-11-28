@@ -3,10 +3,13 @@
 #include "ASGraph.h"
 #include "Announcement.h"
 #include "Extrapolator.h"
+#include "Tests.h"
 
 int main(int argc, char *argv[]) {
     // test code
     using namespace std;
+
+    
     AS *testas = new AS;
     testas->asn = 42;
     cout << "testas" << endl;
@@ -55,7 +58,11 @@ int main(int argc, char *argv[]) {
         delete testanns->at(i);
     }
     delete testanns;
-    delete testgraph;
+    delete testgraph;    
+   
+    //Start calling Test functions here 
+    as_relationship_test();
 
+    cout << "All tests run successfully." << endl;
     return 0;
 }

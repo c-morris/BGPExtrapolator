@@ -22,6 +22,8 @@ AS::AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     anns_sent_to_peers_providers = new std::vector<Announcement>;
     incoming_announcements = new std::vector<Announcement>;
     all_anns = new std::map<Prefix, Announcement>;
+    index = -1;
+    onStack = false;
 }
 
 /** Add neighbor AS to the appropriate set based on the relationship.

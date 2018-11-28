@@ -2,6 +2,8 @@
 #include <iostream>
 #include <set>
 #include <vector>
+#include <stack>
+#include <algorithm>
 #include "ASGraph.h"
 #include "AS.h"
 
@@ -92,6 +94,52 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
     delete ases_by_rank;
 
     return NULL;
+}
+
+
+//https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+std::vector<std::vector<uint32_t>*>* ASGraph::tarjan() {
+    int index = 0;
+    std::stack<AS> s;
+    std::vector<std::vector<uint32_t>*>* components;
+    for (auto &as : *ases) {
+        if (as.second->index == -1){
+            tarjan_helper(*(as.second), index, s, components);
+        }
+    }
+    return components;
+}
+
+//TODO replace 4 long args with a struct
+void ASGraph::tarjan_helper(AS &as, int &index, std::stack<AS> &s, 
+                            std::vector<std::vector<uint32_t>*>* components) {
+    as.index = index;
+    as.lowlink = index;
+    index++;
+    s.push(as);
+    as.onStack = true;
+
+    for (auto &neighbor : *(as.providers)){
+        AS *n = ases->find(neighbor)->second;
+        if (n->index == -1){
+            tarjan_helper(*n, index, s,components);
+            as.lowlink = std::min(as.lowlink,n->lowlink);
+        }
+        else if (n->onStack){
+            as.lowlink = std::min(as.lowlink, n->index);
+        }
+    }
+    if (as.lowlink == as.index){
+        std::vector<uint32_t> component;
+        AS as_from_stack;
+        do{
+            as_from_stack = s.top();
+            s.pop();
+            as_from_stack.onStack = false;
+            component.push_back(as_from_stack.asn);
+        } while (&as_from_stack != &as);
+        components->push_back(&component);
+    }
 }
 
 // print all as's
