@@ -33,6 +33,41 @@ void Extrapolator::propagate_down() {
     }
 }
 
+/** Record announcement on all ASes on as_path. 
+ *
+ * @param as_path List of ASes for this announcement.
+ * @param prefix The prefix this announcement is for.
+ * @param hop The first ASN on the as_path.
+ */
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+    Prefix prefix,
+    uint32_t hop) {
+    // handle empty as_path
+    if (as_path->empty()) 
+        return;
+    Announcement ann_to_check_for(as_path->at(as_path->size()-1),
+                                  prefix.addr,
+                                  prefix.netmask,
+                                  0); // invalid from_asn?
+    // i is used to traverse as_path
+    uint32_t i = 0; 
+    // iterate backwards through path
+    for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
+        i++;
+        // if asn not in graph, continue
+        if (graph->ases->find(*it) == graph->ases->end()) 
+            continue;
+        // TODO some SCC stuff here
+        // comp_id = self.graph.ases[asn].SCC_id
+        uint32_t comp_id = *it;
+        // if (comp_id in self.ases_with_anns):
+            if (graph->ases->find(comp_id)->second->already_received(
+                ann_to_check_for)) 
+                continue;
+        // line 332
+    }
+}
+
 /** Send all announcements kept by an AS to its neighbors. 
  *
  * This approximates the Adj-RIBs-out. 
