@@ -21,6 +21,9 @@ class Extrapolator {
     void prop_anns_sent_to_peers_providers();
     void propagate_up();
     void propagate_down();
+    void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+        Prefix prefix,
+        uint32_t hop);
 };
 
 #endif
