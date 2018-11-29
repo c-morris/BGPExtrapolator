@@ -42,17 +42,44 @@ void as_relationship_test(){
 }
 
 //TODO finish this test
-void tarjan_test(){
+void tarjan_accuracy_test(){
+    std::cout << "Tarjan's Algorithm Accuracy Test..." << std::endl;
+    ASGraph *testgraph = new ASGraph;
+
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(2,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,4,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(4,3,AS_REL_CUSTOMER);
+    testgraph->add_relationship(4,5,AS_REL_PROVIDER);
+    testgraph->add_relationship(5,4,AS_REL_CUSTOMER);
+
+    std::vector<std::vector<uint32_t>*>* components = testgraph->tarjan();
+    
+    std::cout << "Strongly Connected Components:" << std::endl;
+    for (int i = 0; i < components->size(); i++){
+        for (const auto j: *components[0][i])
+            std::cout << j << ',';
+        std::cout << std::endl;
+    }
+   
+    return;
+}
+
+void tarjan_size_test(){
+    std::cout << "Tarjan's Algorithm Size Test..." << std::endl;
     std::default_random_engine generator;
-    std::uniform_int_distribution<uint32_t> distribution(0,80000);
+    std::uniform_int_distribution<uint32_t> distribution(0,50000);
 
     ASGraph *testgraph = new ASGraph;
-    for (uint32_t i = 0; i < 80000; i++) {
+    for (uint32_t i = 0; i < 50000; i++) {
         for (int j = 0; j < 100; j++){
             uint32_t neighbor = distribution(generator);
             testgraph->add_relationship(i,neighbor,AS_REL_PROVIDER);
+            testgraph->add_relationship(neighbor,i,AS_REL_CUSTOMER);
         }
     }
+    testgraph->tarjan();
     return;
 }
 
