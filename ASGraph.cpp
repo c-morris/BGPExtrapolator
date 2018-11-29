@@ -130,15 +130,15 @@ void ASGraph::tarjan_helper(AS &as, int &index, std::stack<AS> &s,
         }
     }
     if (as.lowlink == as.index){
-        std::vector<uint32_t> component;
+        std::vector<uint32_t> *component = new std::vector<uint32_t>;
         AS as_from_stack;
         do{
             as_from_stack = s.top();
             s.pop();
             as_from_stack.onStack = false;
-            component.push_back(as_from_stack.asn);
+            component->push_back(as_from_stack.asn);
         } while (&as_from_stack != &as);
-        components->push_back(&component);
+        components->push_back(component);
     }
 }
 

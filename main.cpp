@@ -62,7 +62,8 @@ int main(int argc, char *argv[]) {
    
     //Start calling Test functions here 
     as_relationship_test();
-
+    as_receive_test();
+    as_process_test();
     cout << "All tests run successfully." << endl;
     return 0;
 }
