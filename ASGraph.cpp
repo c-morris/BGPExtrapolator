@@ -17,6 +17,7 @@ ASGraph::~ASGraph() {
         delete as.second;
     }
     delete ases;
+    delete ases_by_rank;
 }
 
 /** Adds an AS relationship to the graph.
@@ -99,6 +100,11 @@ std::vector<std::vector<uint32_t>*>* ASGraph::tarjan() {
             tarjan_helper(as.second, index, s, components);
         }
     }
+    for (auto &component : *components){
+        delete component;
+    }
+    delete components;
+
     return components;
 }
 
