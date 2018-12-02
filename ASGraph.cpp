@@ -17,6 +17,10 @@ ASGraph::~ASGraph() {
         delete as.second;
     }
     delete ases;
+    for (auto const& as : *ases_by_rank) {
+        delete as;
+    }
+    delete ases_by_rank;
 }
 
 /** Adds an AS relationship to the graph.

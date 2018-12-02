@@ -57,29 +57,33 @@ void tarjan_accuracy_test(){
     std::vector<std::vector<uint32_t>*>* components = testgraph->tarjan();
     
     std::cout << "Strongly Connected Components:" << std::endl;
-    for (int i = 0; i < components->size(); i++){
+    for (size_t i = 0; i < components->size(); i++){
         for (const auto j: *components[0][i])
             std::cout << j << ',';
         std::cout << std::endl;
     }
-   
+    delete components;
+    delete testgraph; 
     return;
 }
 
 void tarjan_size_test(){
     std::cout << "Tarjan's Algorithm Size Test..." << std::endl;
     std::default_random_engine generator;
-    std::uniform_int_distribution<uint32_t> distribution(0,50000);
+    std::uniform_int_distribution<uint32_t> distribution(0,80000);
 
     ASGraph *testgraph = new ASGraph;
-    for (uint32_t i = 0; i < 50000; i++) {
+    for (uint32_t i = 0; i < 80000; i++) {
         for (int j = 0; j < 100; j++){
             uint32_t neighbor = distribution(generator);
             testgraph->add_relationship(i,neighbor,AS_REL_PROVIDER);
             testgraph->add_relationship(neighbor,i,AS_REL_CUSTOMER);
         }
     }
-    testgraph->tarjan();
+    std::cerr << "done adding relationships" << std::endl;
+    auto *components = testgraph->tarjan();
+    delete components;
+    delete testgraph;
     return;
 }
 
@@ -128,6 +132,8 @@ void as_process_test(){
         if(search==as.all_anns->end()){ assert(false); }
         assert(search->second == ann.second);
     }
+
+    delete best_announcements;
 }
 
 void set_comparison_test(){
