@@ -10,6 +10,7 @@
 ASGraph::ASGraph() {
     ases = new std::map<uint32_t, AS*>;    
     ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
+    components = new std::vector<std::vector<uint32_t>*>;
 }
 
 ASGraph::~ASGraph() {
@@ -17,6 +18,7 @@ ASGraph::~ASGraph() {
         delete as.second;
     }
     delete ases;
+    
     for (auto const& as : *ases_by_rank) {
         delete as;
     }
@@ -103,7 +105,12 @@ std::vector<std::vector<uint32_t>*>* ASGraph::tarjan() {
             tarjan_helper(as.second, index, s, components);
         }
     }
-    return components;
+    for (auto &component : *components){
+        delete component;
+    }
+    delete components;
+
+    return NULL;
 }
 
 //TODO replace 4 long args with a struct

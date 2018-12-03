@@ -80,9 +80,7 @@ void tarjan_size_test(){
             testgraph->add_relationship(neighbor,i,AS_REL_CUSTOMER);
         }
     }
-    std::cerr << "done adding relationships" << std::endl;
-    auto *components = testgraph->tarjan();
-    delete components;
+    testgraph->tarjan();
     delete testgraph;
     return;
 }
@@ -102,7 +100,7 @@ void as_receive_test(){
 }
 
 void as_process_test(){
-    AS as = AS(1);
+    AS *as = new AS(1);
     std::vector<Announcement> *announcements = new std::vector<Announcement>;
     std::map<Prefix, Announcement> *best_announcements = new std::map<Prefix, Announcement>;
     for(int i = 1; i < 4; i ++){
@@ -116,25 +114,56 @@ void as_process_test(){
             announcements->push_back(ann);
         }
     }
-    as.incoming_announcements = announcements;
-    as.process_announcements();
+    delete as->incoming_announcements;
+    as->incoming_announcements = announcements;
+    as->process_announcements();
 
     //For equivelency, check that as.all_anns is a subset of best_announcements
     //and best_announcements is a subset of as.all_anns.
-    for (auto &ann : *as.all_anns){
+    for (auto &ann : *as->all_anns){
         //assert entry with prefix is found and announcement is the same
         auto search = best_announcements->find(ann.second.prefix);
         if(search==best_announcements->end()){ assert(false); }
         assert(search->second == ann.second);
     }
     for (auto &ann : *best_announcements){
+        auto search = as->all_anns->find(ann.second.prefix);
+        if(search==as->all_anns->end()){ assert(false); }
+        assert(search->second == ann.second);
+    }
+//    delete announcements;
+    delete best_announcements;
+    delete as;
+}
+
+/*
+void send_all_test(){
+    ASGraph *testgraph = new ASGraph; 
+    testgraph->add_relationship(1,2,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(1,5,AS_REL_CUSTOMER);
+    
+    anns = new std::map<Prefix, Announcement>;
+    prefix = 
+    anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
+    
+    Extrapolator *extrap = new Extrapolator;
+    extrap->send_all_announcements(1,true);
+
+    for (auto &ann : *sent_anns){
+        auto search = best_announcements->find(ann.second.prefix);
+        if(search==best_announcements->end()){ assert(false); }
+        assert(search->second == ann.second);
+    }
+    for (auto &ann : *as.incoming_announcements){
         auto search = as.all_anns->find(ann.second.prefix);
         if(search==as.all_anns->end()){ assert(false); }
         assert(search->second == ann.second);
-    }
+    }   
 
-    delete best_announcements;
 }
+*/
 
 void set_comparison_test(){
     std::set<uint32_t> set_1;

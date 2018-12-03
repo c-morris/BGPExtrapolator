@@ -54,6 +54,12 @@ int main(int argc, char *argv[]) {
     cout << "testing if 0 is greater than 1" << endl;
     cout << (*(testanns->at(0)) > *(testanns->at(1))) << endl;
 
+    cerr << "size of AS: " << sizeof(AS) << endl;
+    cerr << "size of Prefix: " << sizeof(Prefix) << endl;
+    cerr << "size of map: " << sizeof(std::set<uint32_t>) << endl;
+    cerr << "size of vector: " << sizeof(std::vector<Announcement>) << endl;
+
+
     for (size_t i = 0; i < testanns->size(); i++) {
         delete testanns->at(i);
     }
@@ -65,7 +71,7 @@ int main(int argc, char *argv[]) {
     as_relationship_test();
     as_receive_test();
     as_process_test();
-    tarjan_accuracy_test();
+//    tarjan_accuracy_test();
     tarjan_size_test();
     cout << "All tests run successfully." << endl;
     return 0;
