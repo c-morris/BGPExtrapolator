@@ -57,24 +57,23 @@ void tarjan_accuracy_test(){
     std::vector<std::vector<uint32_t>*>* components = testgraph->tarjan();
     
     std::cout << "Strongly Connected Components:" << std::endl;
-    for (int i = 0; i < components->size(); i++){
+    for (size_t i = 0; i < components->size(); i++){
         for (const auto j: *components[0][i])
             std::cout << j << ',';
         std::cout << std::endl;
     }
-   
-    delete testgraph;
     delete components;
+    delete testgraph; 
     return;
 }
 
 void tarjan_size_test(){
     std::cout << "Tarjan's Algorithm Size Test..." << std::endl;
     std::default_random_engine generator;
-    std::uniform_int_distribution<uint32_t> distribution(0,80000);
+    std::uniform_int_distribution<uint32_t> distribution(0,50);
 
     ASGraph *testgraph = new ASGraph;
-    for (uint32_t i = 0; i < 80000; i++) {
+    for (uint32_t i = 0; i < 50; i++) {
         for (int j = 0; j < 100; j++){
             uint32_t neighbor = distribution(generator);
             testgraph->add_relationship(i,neighbor,AS_REL_PROVIDER);
@@ -101,7 +100,7 @@ void as_receive_test(){
 }
 
 void as_process_test(){
-    AS as = AS(1);
+    AS *as = new AS(1);
     std::vector<Announcement> *announcements = new std::vector<Announcement>;
     std::map<Prefix, Announcement> *best_announcements = new std::map<Prefix, Announcement>;
     for(int i = 1; i < 4; i ++){
@@ -115,33 +114,35 @@ void as_process_test(){
             announcements->push_back(ann);
         }
     }
-    as.incoming_announcements = announcements;
-    as.process_announcements();
+    delete as->incoming_announcements;
+    as->incoming_announcements = announcements;
+    as->process_announcements();
 
     //For equivelency, check that as.all_anns is a subset of best_announcements
     //and best_announcements is a subset of as.all_anns.
-    for (auto &ann : *as.all_anns){
+    for (auto &ann : *as->all_anns){
         //assert entry with prefix is found and announcement is the same
         auto search = best_announcements->find(ann.second.prefix);
         if(search==best_announcements->end()){ assert(false); }
         assert(search->second == ann.second);
     }
     for (auto &ann : *best_announcements){
-        auto search = as.all_anns->find(ann.second.prefix);
-        if(search==as.all_anns->end()){ assert(false); }
+        auto search = as->all_anns->find(ann.second.prefix);
+        if(search==as->all_anns->end()){ assert(false); }
         assert(search->second == ann.second);
     }
-    delete announcements;
+//    delete announcements;
     delete best_announcements;
+    delete as;
 }
 
-
+/*
 void send_all_test(){
     ASGraph *testgraph = new ASGraph; 
     testgraph->add_relationship(1,2,AS_REL_PROVIDER);
     testgraph->add_relationship(1,3,AS_REL_PROVIDER);
-    testgraph->ass_relationship(1,4,AS_REL_CUSTOMER);
-    testgraph->ass_relationship(1,5,AS_REL_CUSTOMER);
+    testgraph->add_relationship(1,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(1,5,AS_REL_CUSTOMER);
     
     anns = new std::map<Prefix, Announcement>;
     prefix = 
@@ -159,9 +160,10 @@ void send_all_test(){
         auto search = as.all_anns->find(ann.second.prefix);
         if(search==as.all_anns->end()){ assert(false); }
         assert(search->second == ann.second);
-    }
-    
+    }   
+
 }
+*/
 
 void set_comparison_test(){
     std::set<uint32_t> set_1;

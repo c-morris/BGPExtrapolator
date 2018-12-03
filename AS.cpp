@@ -26,6 +26,15 @@ AS::AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     onStack = false;
 }
 
+AS::~AS() {
+    delete incoming_announcements;
+    delete anns_sent_to_peers_providers;
+    delete all_anns;
+    delete peers;
+    delete providers;
+    delete customers;
+}
+
 /** Add neighbor AS to the appropriate set based on the relationship.
  *
  * @param asn ASN of neighbor.
@@ -134,11 +143,3 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
      return os;
 }
 
-AS::~AS() {
-    delete incoming_announcements;
-    delete anns_sent_to_peers_providers;
-    delete all_anns;
-    delete peers;
-    delete providers;
-    delete customers;
-}
