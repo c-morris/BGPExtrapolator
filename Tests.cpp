@@ -135,6 +135,34 @@ void as_process_test(){
     delete best_announcements;
 }
 
+
+void send_all_test(){
+    ASGraph *testgraph = new ASGraph; 
+    testgraph->add_relationship(1,2,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->ass_relationship(1,4,AS_REL_CUSTOMER);
+    testgraph->ass_relationship(1,5,AS_REL_CUSTOMER);
+    
+    anns = new std::map<Prefix, Announcement>;
+    prefix = 
+    anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
+    
+    Extrapolator *extrap = new Extrapolator;
+    extrap->send_all_announcements(1,true);
+
+    for (auto &ann : *sent_anns){
+        auto search = best_announcements->find(ann.second.prefix);
+        if(search==best_announcements->end()){ assert(false); }
+        assert(search->second == ann.second);
+    }
+    for (auto &ann : *as.incoming_announcements){
+        auto search = as.all_anns->find(ann.second.prefix);
+        if(search==as.all_anns->end()){ assert(false); }
+        assert(search->second == ann.second);
+    }
+    
+}
+
 void set_comparison_test(){
     std::set<uint32_t> set_1;
     std::set<uint32_t> set_2;

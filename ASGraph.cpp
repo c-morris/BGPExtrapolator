@@ -92,7 +92,7 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
 //https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 std::vector<std::vector<uint32_t>*>* ASGraph::tarjan() {
     int index = 0;
-    std::stack<AS*> s;
+    std::stack<AS*> *s;
     std::vector<std::vector<uint32_t>*>* components = new std::vector<std::vector<uint32_t>*>;
 
     for (auto &as : *ases) {
@@ -109,12 +109,12 @@ std::vector<std::vector<uint32_t>*>* ASGraph::tarjan() {
 }
 
 //TODO replace 4 long args with a struct
-void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s, 
+void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> *s, 
                             std::vector<std::vector<uint32_t>*>* components) {
     as->index = index;
     as->lowlink = index;
     index++;
-    s.push(as);
+    s->push(as);
     as->onStack = true;
 
     for (auto &neighbor : *(as->providers)){
@@ -131,8 +131,8 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s,
         std::vector<uint32_t> *component = new std::vector<uint32_t>;
         AS *as_from_stack;
         do{
-            as_from_stack = s.top();
-            s.pop();
+            as_from_stack = s->top();
+            s->pop();
             as_from_stack->onStack = false;
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
