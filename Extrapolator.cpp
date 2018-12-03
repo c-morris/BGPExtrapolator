@@ -60,11 +60,67 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // TODO some SCC stuff here
         // comp_id = self.graph.ases[asn].SCC_id
         uint32_t comp_id = *it;
-        // if (comp_id in self.ases_with_anns):
-            if (graph->ases->find(comp_id)->second->already_received(
-                ann_to_check_for)) 
+        AS *as_on_path = graph->ases->find(comp_id)->second;
+        // if (comp_id in self.ases_with_anns) 
+            if (as_on_path->already_received(ann_to_check_for)) 
                 continue;
-        // line 332
+        int sent_to = -1;
+        // "If not at the most recent AS (rightmost in reversed path),
+        // record the AS it is sent to next"
+        if (i < as_path->size() - 1) {
+            int sent_to = -1;
+            auto asn_sent_to = *(it + 1);
+            // This is refactored a little from the python code.
+            // There is still probably a nicer way to do this.
+            //if (asn_sent_to not in strongly connected components[comp_id]) { 
+                if (as_on_path->providers->find(asn_sent_to) !=
+                    as_on_path->providers->end()) {
+                    sent_to = 0;
+                } else if (as_on_path->peers->find(asn_sent_to) !=
+                    as_on_path->peers->end()) {
+                    sent_to = 1;
+                } else if (as_on_path->customers->find(asn_sent_to) != 
+                    as_on_path->customers->end()) {
+                    sent_to = 2;
+                }
+            //}
+            // if ASes in the path aren't neighbors (this happens sometimes)
+            bool broken_path = false;
+            // now check recv'd from
+            // TODO Do we need to prefer announces from customers here? because
+            // right now it looks like we prefer providers
+            int received_from = 3;
+            if (i > 1) {
+                if (as_on_path->providers->find(*(it - 1)) != 
+                    as_on_path->providers->end()) {
+                    received_from = 0;
+                } else if (as_on_path->peers->find(*(it - 1)) != 
+                    as_on_path->providers->end()) {
+                    received_from = 1;
+                } else if (as_on_path->customers->find(*(it - 1)) !=
+                    as_on_path->providers->end()) {
+                    received_from = 3;
+                } else {
+                    broken_path = true;
+                }
+            }
+            double path_len_weighted = 1 - (i - 1) / 100;
+            double priority = received_from + path_len_weighted;
+            if (!broken_path) {
+                Announcement ann = Announcement(
+                    *as_path->rbegin(),
+                    prefix.addr,
+                    prefix.netmask,
+                    priority,
+                    *(it - 1));
+                if (sent_to == 1 or sent_to == 0) {
+                    as_on_path->anns_sent_to_peers_providers->push_back(ann);
+                }
+                as_on_path->receive_announcement(ann);
+                // note this might need to be a set
+                ases_with_anns->push_back(comp_id);
+            }
+        }
     }
 }
 
@@ -89,6 +145,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // priority is reduced by 0.01 for path length
             // base priority is 2 for providers
             // base priority is 1 for peers
+            // Do not propagate any announcements from peers. Add check for
+            // this.  
             double priority = ann.second.priority;
                 priority = priority - floor(priority) - 0.01 + 2;
             anns_to_providers.push_back(

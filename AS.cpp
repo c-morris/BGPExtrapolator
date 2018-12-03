@@ -85,6 +85,10 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
     }
 }
 
+void AS::receive_announcement(Announcement &ann) {
+    incoming_announcements->push_back(ann);
+}
+
 /** Iterate through incoming_announcements and keep only the best. 
  * Meant to approximate BGP best path selection.
  */
