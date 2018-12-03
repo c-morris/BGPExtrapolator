@@ -91,8 +91,8 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
     //for (size_t i = 0; i < ases_by_rank->size(); i++) {
     //    delete (*ases_by_rank)[i];
     //}
+    return NULL;
 }
-
 
 //https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 std::vector<std::vector<uint32_t>*>* ASGraph::tarjan() {

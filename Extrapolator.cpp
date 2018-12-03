@@ -68,7 +68,6 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // "If not at the most recent AS (rightmost in reversed path),
         // record the AS it is sent to next"
         if (i < as_path->size() - 1) {
-            int sent_to = -1;
             auto asn_sent_to = *(it + 1);
             // This is refactored a little from the python code.
             // There is still probably a nicer way to do this.
@@ -124,6 +123,16 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     }
 }
 
+/** Query all announcements for a vector of prefixes from the database and
+ * insert them into the graph. 
+ *
+ * @param prefixes a vector of prefixes to query the db for
+ */
+void insert_announcements(std::vector<Prefix> *prefixes) {
+    // this is very db library dependent, so I'm leaving it for you, Michael
+    return;
+}
+
 /** Send all announcements kept by an AS to its neighbors. 
  *
  * This approximates the Adj-RIBs-out. 
@@ -140,15 +149,14 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         std::vector<Announcement> anns_to_providers;
         std::vector<Announcement> anns_to_peers;
         for (auto &ann : *source_as->all_anns) {
-            if (ann.second.priority < 2) 
+            if (ann.second.priority < 2)
                 continue;
             // priority is reduced by 0.01 for path length
             // base priority is 2 for providers
             // base priority is 1 for peers
-            // Do not propagate any announcements from peers. Add check for
-            // this.  
+            // do not propagate any announcements from peers
             double priority = ann.second.priority;
-                priority = priority - floor(priority) - 0.01 + 2;
+            priority = priority - floor(priority) - 0.01 + 2;
             anns_to_providers.push_back(
                 Announcement(
                     ann.second.origin,
@@ -181,8 +189,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_customers) {
         std::vector<Announcement> anns_to_customers;
         for (auto &ann : *source_as->all_anns) {
-            if (ann.second.priority < 2) 
-                continue;
             // priority is reduced by 0.01 for path length
             // base priority is 0 for customers
             double priority = ann.second.priority;
