@@ -77,8 +77,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
  * @param to_customers send to customers
  */
 void Extrapolator::send_all_announcements(uint32_t asn, 
-    bool to_peers_providers = false, 
-    bool to_customers = false) {
+    bool to_peers_providers, 
+    bool to_customers) {
     auto *source_as = graph->ases->find(asn)->second; 
     if (to_peers_providers) {
         std::vector<Announcement> anns_to_providers;

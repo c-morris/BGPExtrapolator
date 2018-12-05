@@ -10,13 +10,13 @@
 
 class Extrapolator {
     // database querier here?
-    ASGraph *graph;
+    public: ASGraph *graph;
     std::vector<uint32_t> *ases_with_anns;
 
-    Extrapolator();
+    public: Extrapolator();
     void send_all_announcements(uint32_t asn, 
-        bool to_peers_providers, 
-        bool to_customers);
+        bool to_peers_providers = false, 
+        bool to_customers = false);
     void insert_announcements(std::vector<Prefix> *prefixes);
     void prop_anns_sent_to_peers_providers();
     void propagate_up();

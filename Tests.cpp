@@ -2,7 +2,7 @@
 
 //Tests the functionality of ASGraph.add_relationship
 void as_relationship_test(){
-    using namespace std;
+using namespace std;
     
     ASGraph *testgraph = new ASGraph;
     //Create 1000 ASes and add 100 providers, peers, customers to all of them
@@ -128,38 +128,81 @@ void as_process_test(){
     delete as;
 }
 
-/*
 void send_all_test(){
-    ASGraph *testgraph = new ASGraph; 
+    ASGraph *testgraph = new ASGraph;
     testgraph->add_relationship(1,2,AS_REL_PROVIDER);
     testgraph->add_relationship(1,3,AS_REL_PROVIDER);
     testgraph->add_relationship(1,4,AS_REL_CUSTOMER);
     testgraph->add_relationship(1,5,AS_REL_CUSTOMER);
-    
-    anns = new std::map<Prefix, Announcement>;
-    prefix = 
+
+    std::map<Prefix, Announcement> *anns = new std::map<Prefix, Announcement>;
+    Announcement ann = Announcement(100, 0x00100000, 0xFF000000,1);
     anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
-    
+
+    testgraph->ases->find(1)->second->all_anns = anns;
+
     Extrapolator *extrap = new Extrapolator;
+    extrap->graph = testgraph;
     extrap->send_all_announcements(1,true);
 
-    for (auto &ann : *sent_anns){
-        auto search = best_announcements->find(ann.second.prefix);
-        if(search==best_announcements->end()){ assert(false); }
-        assert(search->second == ann.second);
+    AS *as_2 = testgraph->ases->find(2)->second;
+    for (auto const& ann : *(as_2->incoming_announcements)){
+        auto search = anns->find(ann.prefix);
+        if(search==anns->end()){ assert(false); }
+            assert(search->second == ann);
     }
-    for (auto &ann : *as.incoming_announcements){
-        auto search = as.all_anns->find(ann.second.prefix);
-        if(search==as.all_anns->end()){ assert(false); }
-        assert(search->second == ann.second);
-    }   
-
+    delete testgraph;
+    //TODO add counter to make sure no extra announcements were sent  
 }
-*/
+
+
 
 void test_db_connection(){
     SQLQuerier *querier = new SQLQuerier();
     querier->test_connection();
+}
+
+void tarjan_on_real_data(){
+ASGraph *testgraph = new ASGraph;
+
+    std::ifstream file;
+    file.open("../peers.csv");
+    if (file.is_open()){
+        std::string line;
+        while(getline(file, line)){
+            line.erase(remove(line.begin(),line.end(),' '),line.end());
+            if(line.empty() || line[0] == '#' || line[0] == '['){
+                continue;
+            }
+            auto delim_index = line.find(",");
+            std::string peer_as_1 = line.substr(0,delim_index);
+            std::string peer_as_2 = line.substr(delim_index+1);
+            testgraph->add_relationship(std::stoi(peer_as_1), std::stoi(peer_as_2),1);
+            testgraph->add_relationship(std::stoi(peer_as_2), std::stoi(peer_as_1),1);
+        }
+    }
+    file.close();
+    file.clear();
+
+    file.open("../customer_provider_pairs.csv");
+    if (file.is_open()){
+        string line;
+        while(getline(file, line)){
+            line.erase(remove(line.begin(),line.end(),' '),line.end());
+            if(line.empty() || line[0] == '#' || line[0] == '['){
+                continue;
+            }
+            auto delim_index = line.find(",");
+            std::string customer_as = line.substr(0,delim_index);
+            std::string provider_as = line.substr(delim_index+1);
+            testgraph->add_relationship(std::stoi(customer_as), std::stoi(provider_as),0);
+            testgraph->add_relationship(std::stoi(provider_as), std::stoi(customer_as),2);
+        }
+    }
+    file.close();
+    file.clear();
+
+    testgraph->tarjan();
 }
 
 void set_comparison_test(){

@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
     tarjan_accuracy_test();
     tarjan_size_test();
     test_db_connection();
+    tarjan_on_real_data();
     cout << "All tests run successfully." << endl;
     return 0;
 }

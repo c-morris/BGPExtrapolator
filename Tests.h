@@ -18,4 +18,5 @@ void as_receive_test();
 void as_process_test();
 void set_comparison_test();
 void test_db_connection();
+void tarjan_on_real_data();
 #endif
