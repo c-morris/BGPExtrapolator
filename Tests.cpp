@@ -54,15 +54,14 @@ void tarjan_accuracy_test(){
     testgraph->add_relationship(4,5,AS_REL_PROVIDER);
     testgraph->add_relationship(5,4,AS_REL_CUSTOMER);
 
-    std::vector<std::vector<uint32_t>*>* components = testgraph->tarjan();
+    testgraph->tarjan();
     
     std::cout << "Strongly Connected Components:" << std::endl;
-    for (size_t i = 0; i < components->size(); i++){
-        for (const auto j: *components[0][i])
+    for (size_t i = 0; i < testgraph->components->size(); i++){
+        for (const auto j: *testgraph->components[0][i])
             std::cout << j << ',';
         std::cout << std::endl;
     }
-    delete components;
     delete testgraph; 
     return;
 }

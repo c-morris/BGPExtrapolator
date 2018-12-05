@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     as_relationship_test();
     as_receive_test();
     as_process_test();
-//    tarjan_accuracy_test();
+    tarjan_accuracy_test();
     tarjan_size_test();
     cout << "All tests run successfully." << endl;
     return 0;
