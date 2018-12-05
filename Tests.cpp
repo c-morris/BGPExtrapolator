@@ -1,11 +1,4 @@
-#include <assert.h>
-#include <random>
-#include <map>
-#include "AS.h"
-#include "ASGraph.h"
-#include "Announcement.h"
-#include "Extrapolator.h"
-#include "Prefix.h"
+#include "Tests.h"
 
 //Tests the functionality of ASGraph.add_relationship
 void as_relationship_test(){
@@ -164,6 +157,11 @@ void send_all_test(){
 }
 */
 
+void test_db_connection(){
+    SQLQuerier *querier = new SQLQuerier();
+    querier->test_connection();
+}
+
 void set_comparison_test(){
     std::set<uint32_t> set_1;
     std::set<uint32_t> set_2;
@@ -176,5 +174,3 @@ void set_comparison_test(){
     assert(set_1==set_2);
     return;
 }
-
-
