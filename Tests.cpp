@@ -62,10 +62,10 @@ void tarjan_accuracy_test(){
 void tarjan_size_test(){
     std::cout << "Tarjan's Algorithm Size Test..." << std::endl;
     std::default_random_engine generator;
-    std::uniform_int_distribution<uint32_t> distribution(0,50);
+    std::uniform_int_distribution<uint32_t> distribution(0,50000);
 
     ASGraph *testgraph = new ASGraph;
-    for (uint32_t i = 0; i < 50; i++) {
+    for (uint32_t i = 0; i < 50000; i++) {
         for (int j = 0; j < 100; j++){
             uint32_t neighbor = distribution(generator);
             testgraph->add_relationship(i,neighbor,AS_REL_PROVIDER);

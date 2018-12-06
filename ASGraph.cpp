@@ -52,7 +52,7 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
     // initial set of customer ASes at the bottom of the DAG
     for (auto &as : *ases) {
         if (as.second->customers->empty()) {
-            // if AS is a leaf node
+            // if AS is a leaf node, or "stub" AS
             (*ases_by_rank)[0]->insert(as.first);
             as.second->rank = 0;
         }
@@ -91,8 +91,8 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
     //for (size_t i = 0; i < ases_by_rank->size(); i++) {
     //    delete (*ases_by_rank)[i];
     //}
+    return NULL;
 }
-
 
 //https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
 void ASGraph::tarjan() {

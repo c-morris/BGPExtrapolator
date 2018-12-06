@@ -41,6 +41,7 @@ struct AS {
     ~AS();
     void add_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);
+    void receive_announcement(Announcement &ann);
     void clear_announcements();
     bool update_rank(int newrank);
     bool already_received(Announcement &ann);

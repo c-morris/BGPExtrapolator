@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
     }
     delete testanns;
     delete testgraph;    
+    cout << "size of Annoucement: " << sizeof(Announcement) << endl;
    
     //Start calling Test functions here 
     as_relationship_test();
