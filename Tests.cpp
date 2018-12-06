@@ -131,9 +131,13 @@ void as_process_test(){
 void send_all_test(){
     ASGraph *testgraph = new ASGraph;
     testgraph->add_relationship(1,2,AS_REL_PROVIDER);
+    testgraph->add_relationship(2,1,AS_REL_CUSTOMER);
     testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,1,AS_REL_CUSTOMER);
     testgraph->add_relationship(1,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(4,1,AS_REL_PROVIDER);
     testgraph->add_relationship(1,5,AS_REL_CUSTOMER);
+    testgraph->add_relationship(5,1,AS_REL_PROVIDER);
 
     std::map<Prefix, Announcement> *anns = new std::map<Prefix, Announcement>;
     Announcement ann = Announcement(100, 0x00100000, 0xFF000000,1);
@@ -152,6 +156,7 @@ void send_all_test(){
             assert(search->second == ann);
     }
     delete testgraph;
+    delete extrap;
     //TODO add counter to make sure no extra announcements were sent  
 }
 
@@ -162,7 +167,7 @@ void test_db_connection(){
     querier->test_connection();
 }
 
-void tarjan_on_real_data(){
+void tarjan_on_real_data(bool save_large_component){
 ASGraph *testgraph = new ASGraph;
 
     std::ifstream file;
@@ -186,7 +191,7 @@ ASGraph *testgraph = new ASGraph;
 
     file.open("../customer_provider_pairs.csv");
     if (file.is_open()){
-        string line;
+        std::string line;
         while(getline(file, line)){
             line.erase(remove(line.begin(),line.end(),' '),line.end());
             if(line.empty() || line[0] == '#' || line[0] == '['){
@@ -203,6 +208,33 @@ ASGraph *testgraph = new ASGraph;
     file.clear();
 
     testgraph->tarjan();
+    
+
+    std::map<uint32_t,uint32_t> *component_size_frequencies = new std::map<uint32_t,uint32_t>;
+    for (auto const& component : *testgraph->components){
+        auto search = component_size_frequencies->find(component->size());
+        if (search == component_size_frequencies->end()){
+            component_size_frequencies->insert(std::pair<uint32_t,uint32_t>(component->size(),0));
+            search = component_size_frequencies->find(component->size());
+        }
+        //record members of largest component to file
+        if (component->size() > 1000 && save_large_component){
+            std::ofstream outfile;
+            outfile.open("components.txt");
+            outfile << "Component of size " << component->size() << ":\n";
+            for (int i = 0; i < component->size(); i++){
+                outfile << (component->at(i)) << "\n";
+            }
+        }
+        search->second++;
+    } 
+
+    std::cout << "Component sizes and number of occurances" << std::endl;
+    for (auto const& size : *component_size_frequencies){
+        std::cout << size.first << ": " << size.second << std::endl;
+    }
+    //TODO free component_size_frequencies
+    delete testgraph;
 }
 
 void set_comparison_test(){
