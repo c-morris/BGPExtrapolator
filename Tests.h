@@ -25,4 +25,8 @@ void set_comparison_test();
 void test_db_connection();
 void send_all_test();
 void tarjan_on_real_data(bool save_large_component = false);
+void combine_components_test();
+void decide_ranks_test();
+ASGraph* create_graph_from_files();
+void fully_create_graph_test();
 #endif

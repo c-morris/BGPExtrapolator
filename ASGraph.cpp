@@ -42,9 +42,16 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
+void ASGraph::process(){
+    tarjan();
+    combine_components();
+//    decide_ranks();
+    return;
+}
+
 /** Decide and assign ranks to all the AS's in the graph. 
  */
-std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
+void ASGraph::decide_ranks() {
     // initialize the sets
     for (int i = 0; i < 255; i++) {
         (*ases_by_rank)[i] = new std::set<uint32_t>();
@@ -63,7 +70,7 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
     for (int i = 0; i < 254; i++) {
         if ((*ases_by_rank)[i]->empty()) {
             // if we are above the top of the DAG, stop
-            return NULL;
+            return;
         }
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
@@ -76,10 +83,14 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
                         if (prov_cust_AS->rank == -1 ||
                             // TODO also check SCC stuff
                             prov_cust_AS->rank > i) {
-                            continue;
+                            skip_provider = 1;
+                            break;
                         }
-                        ases->find(provider_asn)->second->rank = i + 1;
-                        (*ases_by_rank)[i+1]->insert(provider_asn);
+                    if(skip_provider){
+                        continue;
+                    }
+                    ases->find(provider_asn)->second->rank = i + 1;
+                    (*ases_by_rank)[i+1]->insert(provider_asn);
                     }
                 }
             }
@@ -91,7 +102,7 @@ std::vector<std::vector<uint32_t>*>* ASGraph::decide_ranks() {
     //for (size_t i = 0; i < ases_by_rank->size(); i++) {
     //    delete (*ases_by_rank)[i];
     //}
-    return NULL;
+    return;
 }
 
 //https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
@@ -107,7 +118,6 @@ void ASGraph::tarjan() {
     return;
 }
 
-//TODO replace 4 long args with a struct
 void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     as->index = index;
     as->lowlink = index;
@@ -136,6 +146,65 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
         } while (as_from_stack != as);
         components->push_back(component);
     }
+}
+
+void ASGraph::combine_components(){
+    for (auto const& component : *components){
+        uint32_t combined_asn = component->at(0);
+        AS *combined_AS = new AS(combined_asn);
+
+        //For all members of component, gather neighbors
+        for (int i = 0; i < component->size(); i++){
+            uint32_t asn = component->at(i);
+            auto search = ases->find(asn);
+            AS *as = search->second;
+            //Get providers
+            for(uint32_t const provider_asn: *as->providers){
+                //make sure provider isn't in this component
+                if(std::find(component->begin(),component->end(), provider_asn)
+                        == component->end())
+                {
+                    combined_AS->providers->insert(provider_asn);
+                    //replace old customer of provider
+                    AS *provider_AS = ases->find(provider_asn)->second;
+                    provider_AS->customers->erase(asn);
+                    provider_AS->customers->insert(combined_asn);
+                }
+            }
+            //Get peers
+            for(uint32_t const peer_asn: *as->peers){
+                //make sure peer isn't in this component
+                if(std::find(component->begin(),component->end(), peer_asn)
+                        == component->end())
+                {
+                    combined_AS->peers->insert(peer_asn);
+                    //replace old customer of provider
+                    AS *peer_AS = ases->find(peer_asn)->second;
+                    peer_AS->peers->erase(asn);
+                    peer_AS->peers->insert(combined_asn);
+                }
+            }
+            //Get customers
+            for(uint32_t const customer_asn: *as->customers){
+                //check if customer isn't in this component
+                if(std::find(component->begin(),component->end(), customer_asn)
+                        == component->end())
+                {
+                    combined_AS->customers->insert(customer_asn);
+                    //replace old customer of provider
+                    AS *customer_AS = ases->find(customer_asn)->second;
+                    customer_AS->providers->erase(asn);
+                    customer_AS->providers->insert(combined_asn);
+                }
+            }
+            //discard member
+            delete as;
+            ases->erase(search);
+        }
+        //insert complete combined node to ases
+        ases->insert(std::pair<uint32_t,AS*>(combined_asn,combined_AS));
+    }
+    return;
 }
 
 // print all as's

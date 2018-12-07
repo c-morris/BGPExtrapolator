@@ -68,14 +68,17 @@ int main(int argc, char *argv[]) {
     cout << "size of Annoucement: " << sizeof(Announcement) << endl;
    
     //Start calling Test functions here 
-    as_relationship_test();
-    as_receive_test();
-    as_process_test();
-    tarjan_accuracy_test();
-    tarjan_size_test();
+//    as_relationship_test();
+//    as_receive_test();
+//    as_process_test();
+//    tarjan_accuracy_test();
+//    tarjan_size_test();
     test_db_connection();
-    send_all_test();
-    tarjan_on_real_data();
+//    send_all_test();
+//    tarjan_on_real_data();
+//    combine_components_test();
+    decide_ranks_test(); 
+//    fully_create_graph_test();
     cout << "All tests run successfully." << endl;
     return 0;
 }

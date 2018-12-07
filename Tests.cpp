@@ -34,7 +34,7 @@ using namespace std;
     return;
 }
 
-//TODO finish this test
+//Test accuracy of ASGraph.tarjan()
 void tarjan_accuracy_test(){
     std::cout << "Tarjan's Algorithm Accuracy Test..." << std::endl;
     ASGraph *testgraph = new ASGraph;
@@ -55,6 +55,7 @@ void tarjan_accuracy_test(){
             std::cout << j << ',';
         std::cout << std::endl;
     }
+    //TODO programatically check results
     delete testgraph; 
     return;
 }
@@ -66,7 +67,7 @@ void tarjan_size_test(){
 
     ASGraph *testgraph = new ASGraph;
     for (uint32_t i = 0; i < 50000; i++) {
-        for (int j = 0; j < 100; j++){
+        for (int j = 0; j < 10; j++){
             uint32_t neighbor = distribution(generator);
             testgraph->add_relationship(i,neighbor,AS_REL_PROVIDER);
             testgraph->add_relationship(neighbor,i,AS_REL_CUSTOMER);
@@ -91,10 +92,13 @@ void as_receive_test(){
     assert(*(as.incoming_announcements) == announcements);
 }
 
+//test AS.process_announcements()
 void as_process_test(){
     AS *as = new AS(1);
     std::vector<Announcement> *announcements = new std::vector<Announcement>;
     std::map<Prefix, Announcement> *best_announcements = new std::map<Prefix, Announcement>;
+
+    //Give AS 1 announcements for 4 prefixes each with 4 priorities (16 anns)
     for(int i = 1; i < 4; i ++){
         Announcement best_ann = Announcement(30*i,0x00100000*i,0xFF000000,i);
         best_ann.priority = 3.0;
@@ -106,7 +110,9 @@ void as_process_test(){
             announcements->push_back(ann);
         }
     }
+    //free incoming announcements pointer in object
     delete as->incoming_announcements;
+    //give premade announcements and call process_announcements()
     as->incoming_announcements = announcements;
     as->process_announcements();
 
@@ -123,11 +129,11 @@ void as_process_test(){
         if(search==as->all_anns->end()){ assert(false); }
         assert(search->second == ann.second);
     }
-//    delete announcements;
     delete best_announcements;
     delete as;
 }
 
+//Test Extrapolator.send_all_announcements()
 void send_all_test(){
     ASGraph *testgraph = new ASGraph;
     testgraph->add_relationship(1,2,AS_REL_PROVIDER);
@@ -139,6 +145,7 @@ void send_all_test(){
     testgraph->add_relationship(1,5,AS_REL_CUSTOMER);
     testgraph->add_relationship(5,1,AS_REL_PROVIDER);
 
+    //initialize the announcements held by AS 1
     std::map<Prefix, Announcement> *anns = new std::map<Prefix, Announcement>;
     Announcement ann = Announcement(100, 0x00100000, 0xFF000000,1);
     anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
@@ -147,28 +154,36 @@ void send_all_test(){
 
     Extrapolator *extrap = new Extrapolator;
     extrap->graph = testgraph;
+    //send announcements at AS 1 to it's providers
     extrap->send_all_announcements(1,true);
 
+    //Check that AS 2 got all of the announcements from AS 1
     AS *as_2 = testgraph->ases->find(2)->second;
     for (auto const& ann : *(as_2->incoming_announcements)){
         auto search = anns->find(ann.prefix);
         if(search==anns->end()){ assert(false); }
             assert(search->second == ann);
     }
+
+    //TODO check other ASes
+    //
     delete testgraph;
     delete extrap;
     //TODO add counter to make sure no extra announcements were sent  
 }
 
-
-
+//makes sure database is accessable 
 void test_db_connection(){
     SQLQuerier *querier = new SQLQuerier();
     querier->test_connection();
+    delete querier;
 }
 
-void tarjan_on_real_data(bool save_large_component){
-ASGraph *testgraph = new ASGraph;
+//Creates graph based on relationship data in files
+//Could be an argument but is currently hard coded
+//Used by some other tests for practical sizes/execution times 
+ASGraph* create_graph_from_files(){
+    ASGraph *testgraph = new ASGraph;
 
     std::ifstream file;
     file.open("../peers.csv");
@@ -206,10 +221,18 @@ ASGraph *testgraph = new ASGraph;
     }
     file.close();
     file.clear();
+    return testgraph;
+}
+
+//Test for completion, not for accuracy.
+//Prints component size summary to std out
+//Writes members of large component (>1000) nodes to file
+void tarjan_on_real_data(bool save_large_component){
+    ASGraph *testgraph = create_graph_from_files();
 
     testgraph->tarjan();
     
-
+    //assign integer to each component size to represent number of occurances
     std::map<uint32_t,uint32_t> *component_size_frequencies = new std::map<uint32_t,uint32_t>;
     for (auto const& component : *testgraph->components){
         auto search = component_size_frequencies->find(component->size());
@@ -217,6 +240,8 @@ ASGraph *testgraph = new ASGraph;
             component_size_frequencies->insert(std::pair<uint32_t,uint32_t>(component->size(),0));
             search = component_size_frequencies->find(component->size());
         }
+        search->second++;
+
         //record members of largest component to file
         if (component->size() > 1000 && save_large_component){
             std::ofstream outfile;
@@ -226,15 +251,77 @@ ASGraph *testgraph = new ASGraph;
                 outfile << (component->at(i)) << "\n";
             }
         }
-        search->second++;
     } 
-
+    
     std::cout << "Component sizes and number of occurances" << std::endl;
     for (auto const& size : *component_size_frequencies){
         std::cout << size.first << ": " << size.second << std::endl;
     }
-    //TODO free component_size_frequencies
+    delete component_size_frequencies;
     delete testgraph;
+}
+
+//combines 
+void combine_components_test(){
+    //TODO maybe remove dependency on tarjan()
+    ASGraph *testgraph = new ASGraph;
+
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(2,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,4,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(4,3,AS_REL_CUSTOMER);
+    testgraph->add_relationship(4,5,AS_REL_PROVIDER);
+    testgraph->add_relationship(5,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(6,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,6,AS_REL_CUSTOMER);
+
+    testgraph->tarjan();
+    testgraph->combine_components();
+    //TODO propgramatically confirm results
+    for (auto const& as : *testgraph->ases){
+        std::cout << *as.second << std::endl;
+    }
+    
+}
+
+//Decides node ranks with  test relationship data
+void decide_ranks_test(){
+    ASGraph *testgraph = new ASGraph;
+    
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(2,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,1,AS_REL_CUSTOMER);
+    testgraph->add_relationship(3,2,AS_REL_CUSTOMER);
+    testgraph->add_relationship(3,4,AS_REL_PROVIDER);
+    testgraph->add_relationship(4,3,AS_REL_CUSTOMER);
+    testgraph->add_relationship(4,5,AS_REL_PROVIDER);
+    testgraph->add_relationship(5,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(6,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,6,AS_REL_CUSTOMER);
+
+    testgraph->decide_ranks();
+ 
+    //TODO propgramatically confirm results
+    int i = 0;
+    while(!testgraph->ases_by_rank->at(i)->empty()){
+        std::cout << "Rank " << i << ": ";
+        for (const uint32_t asn : *(testgraph->ases_by_rank->at(i))){
+            std::cout << asn << ", ";
+        }
+        std::cout << std::endl;
+        i++;
+    }
+}
+
+//Calls all graph creation functions on external relationship data
+void fully_create_graph_test(){
+    ASGraph *testgraph = create_graph_from_files();
+    testgraph->tarjan();
+    testgraph->combine_components();
+    testgraph->decide_ranks();
+    delete testgraph;
+    return;
 }
 
 void set_comparison_test(){
