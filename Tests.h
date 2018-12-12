@@ -4,10 +4,14 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <string.h>
 #include <algorithm>
 #include <assert.h>
 #include <random>
 #include <map>
+#include <typeinfo>
+#include <cmath>
+#include <chrono>
 
 #include "SQLQuerier.h"
 #include "AS.h"
@@ -29,4 +33,10 @@ void combine_components_test();
 void decide_ranks_test();
 ASGraph* create_graph_from_files();
 void fully_create_graph_test();
+void give_ann_to_as_path_test();
+void propagate_up_test();
+void propagate_down_test();
+void select_all_test();
+void full_extrapolation_test();
+void query_array_test();
 #endif

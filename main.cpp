@@ -73,12 +73,19 @@ int main(int argc, char *argv[]) {
 //    as_process_test();
 //    tarjan_accuracy_test();
 //    tarjan_size_test();
-    test_db_connection();
 //    send_all_test();
 //    tarjan_on_real_data();
 //    combine_components_test();
-    decide_ranks_test(); 
+//    decide_ranks_test(); 
 //    fully_create_graph_test();
+//    give_ann_to_as_path_test();
+//    propagate_up_test();
+//    propagate_down_test();
+//    test_db_connection();
+//    select_all_test();
+//
+    full_extrapolation_test();
+//    query_array_test();
     cout << "All tests run successfully." << endl;
     return 0;
 }

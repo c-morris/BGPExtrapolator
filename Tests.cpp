@@ -133,49 +133,10 @@ void as_process_test(){
     delete as;
 }
 
-//Test Extrapolator.send_all_announcements()
-void send_all_test(){
-    ASGraph *testgraph = new ASGraph;
-    testgraph->add_relationship(1,2,AS_REL_PROVIDER);
-    testgraph->add_relationship(2,1,AS_REL_CUSTOMER);
-    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
-    testgraph->add_relationship(3,1,AS_REL_CUSTOMER);
-    testgraph->add_relationship(1,4,AS_REL_CUSTOMER);
-    testgraph->add_relationship(4,1,AS_REL_PROVIDER);
-    testgraph->add_relationship(1,5,AS_REL_CUSTOMER);
-    testgraph->add_relationship(5,1,AS_REL_PROVIDER);
-
-    //initialize the announcements held by AS 1
-    std::map<Prefix, Announcement> *anns = new std::map<Prefix, Announcement>;
-    Announcement ann = Announcement(100, 0x00100000, 0xFF000000,1);
-    anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
-
-    testgraph->ases->find(1)->second->all_anns = anns;
-
-    Extrapolator *extrap = new Extrapolator;
-    extrap->graph = testgraph;
-    //send announcements at AS 1 to it's providers
-    extrap->send_all_announcements(1,true);
-
-    //Check that AS 2 got all of the announcements from AS 1
-    AS *as_2 = testgraph->ases->find(2)->second;
-    for (auto const& ann : *(as_2->incoming_announcements)){
-        auto search = anns->find(ann.prefix);
-        if(search==anns->end()){ assert(false); }
-            assert(search->second == ann);
-    }
-
-    //TODO check other ASes
-    //
-    delete testgraph;
-    delete extrap;
-    //TODO add counter to make sure no extra announcements were sent  
-}
-
 //makes sure database is accessable 
 void test_db_connection(){
+    //connection is established on initialization
     SQLQuerier *querier = new SQLQuerier();
-    querier->test_connection();
     delete querier;
 }
 
@@ -335,4 +296,238 @@ void set_comparison_test(){
 
     assert(set_1==set_2);
     return;
+}
+
+//////////////////////////
+//  Extrapolator Tests  //
+//////////////////////////
+
+//Test Extrapolator.send_all_announcements()
+void send_all_test(){
+    ASGraph *testgraph = new ASGraph;
+    testgraph->add_relationship(1,2,AS_REL_PROVIDER);
+    testgraph->add_relationship(2,1,AS_REL_CUSTOMER);
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,1,AS_REL_CUSTOMER);
+    testgraph->add_relationship(1,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(4,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,5,AS_REL_CUSTOMER);
+    testgraph->add_relationship(5,1,AS_REL_PROVIDER);
+
+    //initialize the announcements held by AS 1
+    std::map<Prefix, Announcement> *anns = new std::map<Prefix, Announcement>;
+    Announcement ann = Announcement(100, 0x00100000, 0xFF000000,1);
+    anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
+
+    testgraph->ases->find(1)->second->all_anns = anns;
+
+    Extrapolator *extrap = new Extrapolator;
+    extrap->graph = testgraph;
+    //send announcements at AS 1 to it's providers
+    extrap->send_all_announcements(1,true);
+
+    //Check that AS 2 got all of the announcements from AS 1
+    AS *as_2 = testgraph->ases->find(2)->second;
+    for (auto const& ann : *(as_2->incoming_announcements)){
+        auto search = anns->find(ann.prefix);
+        if(search==anns->end()){ assert(false); }
+            assert(search->second == ann);
+    }
+
+    //TODO check other ASes
+    //
+    delete testgraph;
+    delete extrap;
+    //TODO add counter to make sure no extra announcements were sent  
+}
+
+void give_ann_to_as_path_test(){
+    ASGraph *testgraph = new ASGraph;
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(2,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,1,AS_REL_CUSTOMER);
+    testgraph->add_relationship(3,2,AS_REL_CUSTOMER);
+    testgraph->add_relationship(3,4,AS_REL_PROVIDER);
+    testgraph->add_relationship(4,3,AS_REL_CUSTOMER);
+    testgraph->add_relationship(4,5,AS_REL_PROVIDER);
+    testgraph->add_relationship(5,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(6,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,6,AS_REL_CUSTOMER);
+
+    testgraph->process();
+    Extrapolator *extrap = new Extrapolator;
+    extrap->graph = testgraph;
+    
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>{1,3,4,5};
+    Prefix p;
+    p.addr = 0x01000000;
+    p.netmask = 0xFF000000;
+    extrap->give_ann_to_as_path(as_path,p,999);
+    p.addr = 0x01040000;
+    p.netmask = 0xFFFF0000;
+    extrap->give_ann_to_as_path(as_path,p,888);
+
+    for (auto const& as : *testgraph->ases){
+        std::cout << "Anns at " << as.second->asn << ": " << std::endl;
+        for (auto &ann : *as.second->all_anns){
+            std::cout << "\t" << ann.second << std::endl;
+        }
+    }
+    delete extrap;
+}
+
+void propagate_up_test(){
+    ASGraph *testgraph = new ASGraph;
+    testgraph->add_relationship(1,2,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,3,AS_REL_PROVIDER);
+    testgraph->add_relationship(1,4,AS_REL_PROVIDER);
+    testgraph->add_relationship(4,1,AS_REL_CUSTOMER);
+    testgraph->add_relationship(3,1,AS_REL_CUSTOMER);
+    testgraph->add_relationship(2,1,AS_REL_CUSTOMER);
+    
+    testgraph->process();
+    Extrapolator *extrap = new Extrapolator;
+    extrap->graph = testgraph;
+    Announcement *testann = new Announcement(1,0x01000000, 0xFF000000, 3, 1);
+    testgraph->ases->find(1)->second->receive_announcement(*testann);
+    
+    extrap->propagate_up();
+
+    for (auto const& as : *testgraph->ases){
+        std::cout << "Anns at " << as.second->asn << ": " << std::endl;
+        for (auto &ann : *as.second->all_anns){
+            std::cout << "\t" << ann.second << std::endl;
+        }
+    }
+    delete extrap;
+}
+
+void propagate_down_test(){
+    ASGraph *testgraph = new ASGraph;
+    testgraph->add_relationship(1,2,AS_REL_CUSTOMER);
+    testgraph->add_relationship(1,3,AS_REL_CUSTOMER);
+    testgraph->add_relationship(1,4,AS_REL_CUSTOMER);
+    testgraph->add_relationship(4,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(3,1,AS_REL_PROVIDER);
+    testgraph->add_relationship(2,1,AS_REL_PROVIDER);
+    
+    testgraph->process();
+    Extrapolator *extrap = new Extrapolator;
+    extrap->graph = testgraph;
+    Announcement *testann = new Announcement(1,0x01000000, 0xFF000000, 3, 1);
+    testgraph->ases->find(1)->second->receive_announcement(*testann);
+    
+    extrap->propagate_down();
+
+    for (auto const& as : *testgraph->ases){
+        std::cout << "Anns at " << as.second->asn << ": " << std::endl;
+        for (auto &ann : *as.second->all_anns){
+            std::cout << "\t" << ann.second << std::endl;
+        }
+    }
+    delete extrap;
+   
+}
+
+void select_all_test(){
+    SQLQuerier *querier = new SQLQuerier();
+    pqxx::result R = querier->select_from_table("test_customer_providers");
+    std::cout <<"Rows in \"test_customer_providers\": "<< R.size() << std::endl;
+    delete querier;
+}
+
+void full_extrapolation_test(){ 
+    using namespace std::chrono;
+
+    Extrapolator *extrap = new Extrapolator;
+
+    //Maybe change this to use C++ ip struct instead of doing conversion here
+    //Getting records from db
+    pqxx::result R = extrap->querier->select_ann_records("simplified_elements", "",1000);
+    auto start = high_resolution_clock::now();
+    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
+        //the next approx 35 lines is to convert ip string from db to uint_32
+        std::string delimiter = ".";
+        size_t pos = 0;
+        std::string token;
+
+        //TODO combine the logic in while and for loop
+        ////rename variables
+        //IP to int
+        std::vector<uint32_t> ipv4_addr;
+        std::string s  = c[0].as<std::string>();
+        while ((pos = s.find(delimiter)) != std::string::npos) {
+            token = s.substr(0, pos);
+            ipv4_addr.push_back(std::stoi(token));
+            s.erase(0, pos + delimiter.length());
+        }
+        ipv4_addr.push_back(std::stoi(s));
+        
+        uint32_t ipv4_ip_int = 0;
+        int i = 0;
+        for (auto it = ipv4_addr.rbegin(); it != ipv4_addr.rend(); ++it){
+            ipv4_ip_int += *it * std::pow(256,i++);
+        }
+
+        //Mask to int
+        std::vector<uint32_t> ipv4_mask;
+        s = c[1].as<std::string>();
+        while ((pos = s.find(delimiter)) != std::string::npos) {
+            token = s.substr(0, pos);
+            ipv4_mask.push_back(std::stoi(token));
+            s.erase(0, pos + delimiter.length());
+        }
+        ipv4_mask.push_back(std::stoi(s));
+        
+        uint32_t ipv4_mask_int = 0;
+        i = 0;
+        for (auto it = ipv4_mask.rbegin(); it != ipv4_mask.rend(); ++it){
+            ipv4_mask_int += *it * std::pow(256,i++);
+        }
+
+        
+        Prefix p;
+        p.addr = ipv4_ip_int;
+        p.netmask = ipv4_mask_int;
+        std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
+        std::string path_as_string = c[2].as<std::string>();
+        //TODO add parsing function for paths
+        //libpq++ doesn't support arrays and are recommended to be parsed from strings
+        //this is written for 'simplified elements' table with paths of length 1
+        char brackets[] = "{}";
+        for (int i = 0; i < strlen(brackets); ++i)
+            path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(), brackets[i]), path_as_string.end());
+        as_path->push_back(std::stoi(path_as_string));
+//        uint32_t hop = c[3].as<std::uint32_t>();
+        //No hop in 'simplified_elements'
+        uint32_t hop = 0;
+
+        extrap->give_ann_to_as_path(as_path,p,hop);
+
+    }
+    auto give_ann_time = high_resolution_clock::now(); 
+    extrap->propagate_up();
+    auto propagate_up_time = high_resolution_clock::now(); 
+    extrap->propagate_down();
+    auto propagate_down_time = high_resolution_clock::now(); 
+
+    auto give_duration = duration_cast<seconds>(give_ann_time - start);
+    auto up_duration = duration_cast<seconds>(propagate_up_time - give_ann_time);
+    auto down_duration = duration_cast<seconds>(propagate_down_time - propagate_up_time);
+    
+    std::cout << "Give ann time: " << give_duration.count()<< std::endl;
+    std::cout << "Propagate up time: " << up_duration.count()<< std::endl;
+    std::cout << "Propagate down time: " << down_duration.count()<< std::endl;
+
+    delete extrap;
+}
+
+void query_array_test(){
+    SQLQuerier *querier = new SQLQuerier();
+    pqxx::result R = querier->select_ann_records("simplified_elements","",2);
+    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
+        std::cout << c[2].as<std::string>() << std::endl;
+    }
+
+    delete querier;
 }

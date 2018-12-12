@@ -2,8 +2,93 @@
 #include "Extrapolator.h"
 
 Extrapolator::Extrapolator() {
-    ases_with_anns = new std::vector<uint32_t>;
+    ases_with_anns = new std::set<uint32_t>;
+    graph = new ASGraph;
+    querier = new SQLQuerier;
+    graph->create_graph_from_db(querier);
 }
+
+Extrapolator::~Extrapolator(){
+    delete ases_with_anns;
+    delete graph;
+    delete querier;
+}
+
+void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
+    using namespace std;
+    //TODO use better folder naming convention
+    if(!test){
+        if(mkdir("test", 0777)==-1)
+            cerr << "Error: "<<  strerror(errno) <<endl;
+        else
+            cout << "Created \"test\" directory" <<endl;
+    }
+    pqxx::result prefixes = querier->select_distinct_prefixes_from_table("elements");
+   
+    int start_index = 0;
+    int index_in_iteration = 0;
+    for (pqxx::result::const_iterator c = prefixes.begin() + start_index;
+        c!=prefixes.end() || index_in_iteration!= iteration_size; ++c){
+    
+        //TODO put this record prep/parsing into separate function
+        //the next few blocks covert the ip strings from db to uint_32
+
+        std::string delimiter = ".";
+        size_t pos = 0;
+        std::string token;
+
+        uint32_t ipv4_host_int = 0;
+        std::string s = c[0].as<std::string>();
+        int exp = 0;
+        while((pos = s.find(delimiter)) != std::string::npos){
+            token = s.substr(0,pos);
+            s.erase(0,pos + delimiter.length());
+            ipv4_host_int += std::stoi(token) * std::pow(256, exp++);
+        }
+   
+        uint32_t ipv4_mask_int = 0;
+        s = c[1].as<std::string>();
+        exp = 0;
+        while((pos = s.find(delimiter)) != std::string::npos){
+            token = s.substr(0,pos);
+            s.erase(0,pos + delimiter.length());
+            ipv4_mask_int += std::stoi(token) * std::pow(256, exp++);
+        }
+         
+        Prefix p;
+        p.addr = ipv4_host_int;
+        p.netmask = ipv4_mask_int;
+
+        //This bit of code parses array-like strings from db to get AS_PATH.
+        //libpq++ doesn't currently support returning arrays.
+        std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
+        std::string path_as_string = c[2].as<std::string>();
+        //remove brackets from string
+        char brackets[] = "{}";
+        for (int i = 0; i < strlen(brackets); ++i){
+            path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(),
+                                 brackets[i]), path_as_string.end()); 
+        }
+        //fill as_path vector from parsing string
+        delimiter = ",";
+        pos = 0;
+        while((pos = path_as_string.find(delimiter)) != std::string::npos){
+            token = path_as_string.substr(0,pos);
+            as_path->push_back(std::stoi(token));
+            path_as_string.erase(0,pos + delimiter.length());
+        }
+        as_path->push_back(std::stoi(path_as_string));
+
+        index_in_iteration++;
+    }
+
+    pqxx::result R = querier->select_ann_records("simplified_elements");
+//    insert_announcements();
+    //propagate_to_peers_providers
+//    propagate_up();
+//    propagate_down();    
+}
+
 
 /** Propagate announcements from customers to peers and providers.
  */
@@ -23,7 +108,7 @@ void Extrapolator::propagate_up() {
  */
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
-    for (size_t level = levels-1; level >= 0; level--) {
+    for (size_t level = levels-1; level > 0; level--) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
@@ -59,9 +144,10 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             continue;
         // TODO some SCC stuff here
         // comp_id = self.graph.ases[asn].SCC_id
-        uint32_t comp_id = *it;
-        AS *as_on_path = graph->ases->find(comp_id)->second;
-        // if (comp_id in self.ases_with_anns) 
+//        uint32_t comp_id = *it;
+        uint32_t asn_on_path = graph->translate_asn(*it);
+        AS *as_on_path = graph->ases->find(asn_on_path)->second;
+        // if (comp_id in self.ases_with_anns)
             if (as_on_path->already_received(ann_to_check_for)) 
                 continue;
         int sent_to = -1;
@@ -82,43 +168,43 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                     as_on_path->customers->end()) {
                     sent_to = 2;
                 }
-            //}
-            // if ASes in the path aren't neighbors (this happens sometimes)
-            bool broken_path = false;
-            // now check recv'd from
-            // TODO Do we need to prefer announces from customers here? because
-            // right now it looks like we prefer providers
-            int received_from = 3;
-            if (i > 1) {
-                if (as_on_path->providers->find(*(it - 1)) != 
-                    as_on_path->providers->end()) {
-                    received_from = 0;
-                } else if (as_on_path->peers->find(*(it - 1)) != 
-                    as_on_path->providers->end()) {
-                    received_from = 1;
-                } else if (as_on_path->customers->find(*(it - 1)) !=
-                    as_on_path->providers->end()) {
-                    received_from = 3;
-                } else {
-                    broken_path = true;
-                }
+        }
+        //}
+        // if ASes in the path aren't neighbors (this happens sometimes)
+        bool broken_path = false;
+        // now check recv'd from
+        // TODO Do we need to prefer announces from customers here? because
+        // right now it looks like we prefer providers
+        int received_from = 3;
+        if (i > 1) {
+            if (as_on_path->providers->find(*(it - 1)) != 
+                as_on_path->providers->end()) {
+                received_from = 0;
+            } else if (as_on_path->peers->find(*(it - 1)) != 
+                as_on_path->providers->end()) {
+                received_from = 1;
+            } else if (as_on_path->customers->find(*(it - 1)) !=
+                as_on_path->providers->end()) {
+                received_from = 2;
+            } else {
+                broken_path = true;
             }
-            double path_len_weighted = 1 - (i - 1) / 100;
-            double priority = received_from + path_len_weighted;
-            if (!broken_path) {
-                Announcement ann = Announcement(
-                    *as_path->rbegin(),
-                    prefix.addr,
-                    prefix.netmask,
-                    priority,
-                    *(it - 1));
-                if (sent_to == 1 or sent_to == 0) {
-                    as_on_path->anns_sent_to_peers_providers->push_back(ann);
-                }
-                as_on_path->receive_announcement(ann);
-                // note this might need to be a set
-                ases_with_anns->push_back(comp_id);
+        }
+        double path_len_weighted = 1 - (i - 1) / 100;
+        double priority = received_from + path_len_weighted;
+        if (!broken_path) {
+            Announcement ann = Announcement(
+                *as_path->rbegin(),
+                prefix.addr,
+                prefix.netmask,
+                priority,
+                *(it - 1),
+                true);
+            if (sent_to == 1 or sent_to == 0) {
+                as_on_path->anns_sent_to_peers_providers->push_back(ann);
             }
+            as_on_path->receive_announcement(ann);
+            ases_with_anns->insert(asn_on_path);
         }
     }
 }
@@ -128,8 +214,10 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
  *
  * @param prefixes a vector of prefixes to query the db for
  */
-void insert_announcements(std::vector<Prefix> *prefixes) {
+void Extrapolator::insert_announcements(std::vector<Prefix> *prefixes) {
+    using namespace pqxx;
     // this is very db library dependent, so I'm leaving it for you, Michael
+  //  result R = querier->select_ann_records("simplified_elements"
     return;
 }
 
@@ -156,7 +244,10 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // base priority is 1 for peers
             // do not propagate any announcements from peers
             double priority = ann.second.priority;
-            priority = priority - floor(priority) - 0.01 + 2;
+            if(priority - floor(priority) == 0)
+                priority = 2.99;
+            else
+                priority = priority - floor(priority) - 0.01 + 2;
             anns_to_providers.push_back(
                 Announcement(
                     ann.second.origin,
@@ -192,6 +283,9 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // priority is reduced by 0.01 for path length
             // base priority is 0 for customers
             double priority = ann.second.priority;
+            if(priority - floor(priority) == 0)
+                priority = 0.99;
+            else
                 priority = priority - floor(priority) - 0.01;
             anns_to_customers.push_back(
                 Announcement(

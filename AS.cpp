@@ -85,8 +85,17 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
     }
 }
 
+//may need to put in incoming_annoncements for speed
+////called by ASGraph.give_ann_to_as_path()
 void AS::receive_announcement(Announcement &ann) {
-    incoming_announcements->push_back(ann);
+    //incoming_announcements->push_back(ann);
+    auto search = all_anns->find(ann.prefix);
+    if (search == all_anns->end()) {
+        all_anns->insert(std::pair<Prefix, Announcement>(
+            ann.prefix, ann));
+    } else if (ann.priority > search->second.priority) {
+        search->second = ann;
+    } 
 }
 
 /** Iterate through incoming_announcements and keep only the best. 
@@ -102,7 +111,9 @@ void AS::process_announcements() {
         if (search == all_anns->end()) {
             all_anns->insert(std::pair<Prefix, Announcement>(
                 ann.prefix, ann));
-        } else if (ann.priority > search->second.priority) {
+        //An announcement recorded by a monitor won't be replaced
+        } else if (!search->second.from_monitor && 
+                ann.priority > search->second.priority) {
             search->second = ann;
         }
     }

@@ -11,6 +11,7 @@ ASGraph::ASGraph() {
     ases = new std::map<uint32_t, AS*>;    
     ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
     components = new std::vector<std::vector<uint32_t>*>;
+    component_translation = new std::map<uint32_t, uint32_t>;
 }
 
 ASGraph::~ASGraph() {
@@ -23,6 +24,8 @@ ASGraph::~ASGraph() {
         delete as;
     }
     delete ases_by_rank;
+
+    delete component_translation;
 }
 
 /** Adds an AS relationship to the graph.
@@ -42,12 +45,88 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
+//translates asn to asn of component it belongs to in graph
+//returns 0 if asn isn't found
+uint32_t ASGraph::translate_asn(uint32_t asn){
+    auto search = component_translation->find(asn);
+    if(search == component_translation->end()){
+       return 0; 
+    }
+    return search->second;
+}
+
 void ASGraph::process(){
     tarjan();
     combine_components();
-//    decide_ranks();
+    decide_ranks();
     return;
 }
+
+void ASGraph::create_graph_from_files(){
+    std::ifstream file;
+    //TODO make file names part of config
+    file.open("../peers.csv");
+    if (file.is_open()){
+        std::string line;
+        while(getline(file, line)){
+            line.erase(remove(line.begin(),line.end(),' '),line.end());
+            if(line.empty() || line[0] == '#' || line[0] == '['){
+                continue;
+            }
+            auto delim_index = line.find(",");
+            std::string peer_as_1 = line.substr(0,delim_index);
+            std::string peer_as_2 = line.substr(delim_index+1);
+            add_relationship(std::stoi(peer_as_1), std::stoi(peer_as_2),1);
+            add_relationship(std::stoi(peer_as_2), std::stoi(peer_as_1),1);
+        }
+    }
+    file.close();
+    file.clear();
+
+    file.open("../customer_provider_pairs.csv");
+    if (file.is_open()){
+        std::string line;
+        while(getline(file, line)){
+            line.erase(remove(line.begin(),line.end(),' '),line.end());
+            if(line.empty() || line[0] == '#' || line[0] == '['){
+                continue;
+            }
+            auto delim_index = line.find(",");
+            std::string customer_as = line.substr(0,delim_index);
+            std::string provider_as = line.substr(delim_index+1);
+            add_relationship(std::stoi(customer_as), std::stoi(provider_as),0);
+            add_relationship(std::stoi(provider_as), std::stoi(customer_as),2);
+        }
+    }
+    file.close();
+    file.clear();
+
+    //process strongly connected components, decide ranks
+    process();
+
+    return;   
+}
+
+void ASGraph::create_graph_from_db(SQLQuerier *querier){
+    //TODO add table names to config
+    pqxx::result R = querier->select_from_table("peers");
+    //c[1] = peer_as_1, c[2] = peer_as_2
+    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
+        add_relationship(c[1].as<uint32_t>(),c[2].as<uint32_t>(),AS_REL_PEER);
+        add_relationship(c[2].as<uint32_t>(),c[1].as<uint32_t>(),AS_REL_PEER);
+    }
+    //c[1] = customer_as, c[2] = provider_as
+    R = querier->select_from_table("customer_provider_pairs");
+    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
+        add_relationship(c[1].as<uint32_t>(),c[2].as<uint32_t>(),AS_REL_PROVIDER);
+        add_relationship(c[2].as<uint32_t>(),c[1].as<uint32_t>(),AS_REL_CUSTOMER);
+    }
+
+    process();
+
+    return;
+}
+
 
 /** Decide and assign ranks to all the AS's in the graph. 
  */
@@ -81,7 +160,6 @@ void ASGraph::decide_ranks() {
                     for (auto prov_cust_asn : *prov_AS->customers) {
                         auto *prov_cust_AS = ases->find(prov_cust_asn)->second;
                         if (prov_cust_AS->rank == -1 ||
-                            // TODO also check SCC stuff
                             prov_cust_AS->rank > i) {
                             skip_provider = 1;
                             break;
@@ -96,12 +174,6 @@ void ASGraph::decide_ranks() {
             }
         }
     }
-
-    // do not free this memory, not done with it yet
-    //// should be less than 255 iterations
-    //for (size_t i = 0; i < ases_by_rank->size(); i++) {
-    //    delete (*ases_by_rank)[i];
-    //}
     return;
 }
 
@@ -148,13 +220,15 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     }
 }
 
+//Combine providers, peers, and customers of ASes in a strongly connected
+//component. Also append to component_translation for future reference.
 void ASGraph::combine_components(){
     for (auto const& component : *components){
         uint32_t combined_asn = component->at(0);
         AS *combined_AS = new AS(combined_asn);
 
         //For all members of component, gather neighbors
-        for (int i = 0; i < component->size(); i++){
+        for (unsigned int i = 0; i < component->size(); i++){
             uint32_t asn = component->at(i);
             auto search = ases->find(asn);
             AS *as = search->second;
@@ -197,7 +271,8 @@ void ASGraph::combine_components(){
                     customer_AS->providers->insert(combined_asn);
                 }
             }
-            //discard member
+            //append ASN translation and discard member
+            component_translation->insert(std::pair<uint32_t, uint32_t>(asn,combined_asn));
             delete as;
             ases->erase(search);
         }

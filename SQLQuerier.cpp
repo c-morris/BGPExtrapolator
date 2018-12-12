@@ -7,11 +7,15 @@ SQLQuerier::SQLQuerier(){
     port = "5432";
 
     read_config();
+    open_connection();
 }
 
-//Connects and disconnects from database
-void SQLQuerier::test_connection(){
+SQLQuerier::~SQLQuerier(){
+    C->disconnect();
+    delete C;
+}
 
+void SQLQuerier::open_connection(){
     std::ostringstream stream;
     stream << "dbname = " << db_name;
     stream << " user = " << user;
@@ -20,20 +24,63 @@ void SQLQuerier::test_connection(){
     stream << " port = " << port;
 
     try {
-        
-        pqxx::connection C(stream.str());
-        if (C.is_open()) {
-            std::cout << "Successfully made connection"<< std::endl;
-        } else {
-            std::cout << "Failed to open database" << std::endl;
+        pqxx::connection *conn = new pqxx::connection(stream.str());
+        if (conn->is_open()) {
+            std::cout << "Connected to database : " << db_name <<std::endl;
+            C = conn;
+        }
+        else{
+            std::cout << "Failed to connect to database : " << db_name <<std::endl;
             return;
         }
-    C.disconnect();
-    } catch (const std::exception &e) {
+    } catch (const std::exception &e){
         std::cerr << e.what() << std::endl;
-    } 
-
+    }
     return;
+}
+
+void SQLQuerier::close_connection(){
+    C->disconnect();
+}
+
+pqxx::result SQLQuerier::execute(std::string sql){
+    try{
+        pqxx::nontransaction N(*C);
+        pqxx::result R( N.exec(sql));
+
+        return R;
+
+    }
+    catch(const std::exception &e){
+        std::cerr << e.what() <<std::endl;
+    }
+}
+//TODO maybe rename/overload this for selection options
+pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
+    std::string sql = "SELECT * FROM " + table_name;
+
+    if(limit){
+        sql += " LIMIT " + std::to_string(limit);
+    }
+    return execute(sql);
+}
+
+pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
+    std::string sql = "select host(prefix), netmask(prefix), as_path, next_hop \
+            FROM " + table_name;
+    if(limit){
+        sql += " LIMIT " + std::to_string(limit);
+    }
+    if(!prefix.empty()){
+        sql += " WHERE prefix = " + prefix;
+    }
+
+    return execute(sql);
+}
+
+pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_name){
+    std::string sql = "SELECT DISTINCT prefix FROM " + table_name;
+    return execute(sql);
 }
 
 //Reads credentials/connection info from .conf file
@@ -80,3 +127,5 @@ void SQLQuerier::read_config(){
         std::cerr << "Error loading config file \"" << file_location << "\"" << std::endl;
     }
 }
+
+

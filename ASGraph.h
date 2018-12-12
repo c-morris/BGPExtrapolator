@@ -1,11 +1,15 @@
 #ifndef ASGRAPH_H
 #define ASGRAPH_H
 
+#define AS_REL_PROVIDER 0
+#define AS_REL_PEER 1
+#define AS_REL_CUSTOMER 2
+
 #include <map>
 #include <vector>
 #include <stack>
 #include "AS.h"
-
+#include "SQLQuerier.h"
 
 struct ASGraph {
     std::map<uint32_t, AS*> *ases; // map of ASN to AS object 
@@ -27,6 +31,9 @@ struct ASGraph {
     void tarjan_helper(AS *as, int &index, std::stack<AS*> &s);
     void printDebug();
     void combine_components();
+    void create_graph_from_files();
+    void create_graph_from_db(SQLQuerier *querier);
+    uint32_t translate_asn(uint32_t asn);
     friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
 };
 
