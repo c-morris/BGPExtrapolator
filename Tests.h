@@ -37,6 +37,8 @@ void give_ann_to_as_path_test();
 void propagate_up_test();
 void propagate_down_test();
 void select_all_test();
-void full_extrapolation_test();
+void full_propagation_test_a();
+void full_propagation_test_b();
 void query_array_test();
+void distinct_prefixes_test();
 #endif

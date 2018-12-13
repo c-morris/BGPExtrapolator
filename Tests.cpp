@@ -208,7 +208,7 @@ void tarjan_on_real_data(bool save_large_component){
             std::ofstream outfile;
             outfile.open("components.txt");
             outfile << "Component of size " << component->size() << ":\n";
-            for (int i = 0; i < component->size(); i++){
+            for (uint32_t i = 0; i < component->size(); i++){
                 outfile << (component->at(i)) << "\n";
             }
         }
@@ -436,7 +436,7 @@ void select_all_test(){
     delete querier;
 }
 
-void full_extrapolation_test(){ 
+void full_propagation_test_a(){ 
     using namespace std::chrono;
 
     Extrapolator *extrap = new Extrapolator;
@@ -495,7 +495,7 @@ void full_extrapolation_test(){
         //libpq++ doesn't support arrays and are recommended to be parsed from strings
         //this is written for 'simplified elements' table with paths of length 1
         char brackets[] = "{}";
-        for (int i = 0; i < strlen(brackets); ++i)
+        for (uint32_t i = 0; i < strlen(brackets); ++i)
             path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(), brackets[i]), path_as_string.end());
         as_path->push_back(std::stoi(path_as_string));
 //        uint32_t hop = c[3].as<std::uint32_t>();
@@ -522,11 +522,20 @@ void full_extrapolation_test(){
     delete extrap;
 }
 
-void query_array_test(){
-    SQLQuerier *querier = new SQLQuerier();
-    pqxx::result R = querier->select_ann_records("simplified_elements","",2);
-    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
-        std::cout << c[2].as<std::string>() << std::endl;
+void full_propagation_test_b(){
+    Extrapolator *extrap = new Extrapolator;
+    extrap->perform_propagation(true, 1000, 50);
+    return;
+}
+
+void distinct_prefixes_test(){
+    SQLQuerier *querier = new SQLQuerier;
+    pqxx::result R = querier->select_distinct_prefixes_from_table("elements");
+    int i = 0;
+    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c){
+        if(i > 10){break;}
+        std::cout << c[0].as<std::string>() <<std::endl;
+        i++;
     }
 
     delete querier;

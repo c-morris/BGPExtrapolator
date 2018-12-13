@@ -24,69 +24,83 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             cout << "Created \"test\" directory" <<endl;
     }
     pqxx::result prefixes = querier->select_distinct_prefixes_from_table("elements");
-   
+    
     int start_index = 0;
     int index_in_iteration = 0;
-    for (pqxx::result::const_iterator c = prefixes.begin() + start_index;
-        c!=prefixes.end() || index_in_iteration!= iteration_size; ++c){
-    
-        //TODO put this record prep/parsing into separate function
-        //the next few blocks covert the ip strings from db to uint_32
+    for (pqxx::result::const_iterator prefix = prefixes.begin() + start_index;
+        prefix!=prefixes.end() || start_index < max_total; ++prefix){
+        
+        std::string prefix_to_get = prefix[0].as<std::string>();
+        pqxx::result R = querier->select_ann_records("simplified_elements",prefix_to_get,1000);
 
-        std::string delimiter = ".";
-        size_t pos = 0;
-        std::string token;
+        for (pqxx::result::const_iterator c = R.begin();
+            c!=R.end() || index_in_iteration < iteration_size; ++c){
+        
+            //TODO put this record prep/parsing into separate function
+            //the next few blocks covert the ip strings from db to uint_32        
+    //        pqxx::result anns = querier->select_ann_records("elements",it[0].as<std::string>());
 
-        uint32_t ipv4_host_int = 0;
-        std::string s = c[0].as<std::string>();
-        int exp = 0;
-        while((pos = s.find(delimiter)) != std::string::npos){
-            token = s.substr(0,pos);
-            s.erase(0,pos + delimiter.length());
-            ipv4_host_int += std::stoi(token) * std::pow(256, exp++);
-        }
-   
-        uint32_t ipv4_mask_int = 0;
-        s = c[1].as<std::string>();
-        exp = 0;
-        while((pos = s.find(delimiter)) != std::string::npos){
-            token = s.substr(0,pos);
-            s.erase(0,pos + delimiter.length());
-            ipv4_mask_int += std::stoi(token) * std::pow(256, exp++);
-        }
-         
-        Prefix p;
-        p.addr = ipv4_host_int;
-        p.netmask = ipv4_mask_int;
+            std::string delimiter = ".";
+            size_t pos = 0;
+            std::string token;
 
-        //This bit of code parses array-like strings from db to get AS_PATH.
-        //libpq++ doesn't currently support returning arrays.
-        std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
-        std::string path_as_string = c[2].as<std::string>();
-        //remove brackets from string
-        char brackets[] = "{}";
-        for (int i = 0; i < strlen(brackets); ++i){
-            path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(),
-                                 brackets[i]), path_as_string.end()); 
-        }
-        //fill as_path vector from parsing string
-        delimiter = ",";
-        pos = 0;
-        while((pos = path_as_string.find(delimiter)) != std::string::npos){
-            token = path_as_string.substr(0,pos);
-            as_path->push_back(std::stoi(token));
-            path_as_string.erase(0,pos + delimiter.length());
-        }
-        as_path->push_back(std::stoi(path_as_string));
+            uint32_t ipv4_host_int = 0;
+            std::string s = c[0].as<std::string>();
+            int exp = 0;
+            while((pos = s.find(delimiter)) != std::string::npos){
+                token = s.substr(0,pos);
+                s.erase(0,pos + delimiter.length());
+                ipv4_host_int += std::stoi(token) * std::pow(256, exp++);
+            }
+       
+            uint32_t ipv4_mask_int = 0;
+            s = c[1].as<std::string>();
+            exp = 0;
+            while((pos = s.find(delimiter)) != std::string::npos){
+                token = s.substr(0,pos);
+                s.erase(0,pos + delimiter.length());
+                ipv4_mask_int += std::stoi(token) * std::pow(256, exp++);
+            }
+             
+            Prefix p;
+            p.addr = ipv4_host_int;
+            p.netmask = ipv4_mask_int;
 
-        index_in_iteration++;
+            //This bit of code parses array-like strings from db to get AS_PATH.
+            //libpq++ doesn't currently support returning arrays.
+            std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
+            std::string path_as_string = c[2].as<std::string>();
+            //remove brackets from string
+            char brackets[] = "{}";
+            for (int i = 0; i < strlen(brackets); ++i){
+                path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(),
+                                     brackets[i]), path_as_string.end()); 
+            }
+            //fill as_path vector from parsing string
+            delimiter = ",";
+            pos = 0;
+            while((pos = path_as_string.find(delimiter)) != std::string::npos){
+                token = path_as_string.substr(0,pos);
+                as_path->push_back(std::stoi(token));
+                path_as_string.erase(0,pos + delimiter.length());
+            }
+            as_path->push_back(std::stoi(path_as_string));
+        
+            //TODO use hop if available
+            uint32_t hop = 0;
+            give_ann_to_as_path(as_path,p,hop);
+     
+            index_in_iteration++;
+        }
+        start_index++;
     }
 
-    pqxx::result R = querier->select_ann_records("simplified_elements");
+    std::cout << index_in_iteration << std::endl;
+//    pqxx::result R = querier->select_ann_records("simplified_elements");
 //    insert_announcements();
-    //propagate_to_peers_providers
-//    propagate_up();
-//    propagate_down();    
+   // propagate_to_peers_providers
+    propagate_up();
+    propagate_down();    
 }
 
 
