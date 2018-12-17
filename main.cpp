@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     cout << (*(testanns->at(0)) > *(testanns->at(1))) << endl;
 
     cerr << "size of AS: " << sizeof(AS) << endl;
-    cerr << "size of Prefix: " << sizeof(Prefix) << endl;
+    cerr << "size of Prefix: " << sizeof(Prefix<>) << endl;
     cerr << "size of map: " << sizeof(std::set<uint32_t>) << endl;
     cerr << "size of vector: " << sizeof(std::vector<Announcement>) << endl;
 

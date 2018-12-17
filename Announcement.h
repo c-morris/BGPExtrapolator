@@ -6,7 +6,7 @@
 #include "Prefix.h"
 
 struct Announcement {
-    Prefix prefix; // encoded with subnet mask
+    Prefix<> prefix; // encoded with subnet mask
     uint32_t origin; // origin ASN
     double priority; 
     uint32_t received_from_asn;

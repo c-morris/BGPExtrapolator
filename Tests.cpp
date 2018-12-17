@@ -96,13 +96,13 @@ void as_receive_test(){
 void as_process_test(){
     AS *as = new AS(1);
     std::vector<Announcement> *announcements = new std::vector<Announcement>;
-    std::map<Prefix, Announcement> *best_announcements = new std::map<Prefix, Announcement>;
+    std::map<Prefix<>, Announcement> *best_announcements = new std::map<Prefix<>, Announcement>;
 
     //Give AS 1 announcements for 4 prefixes each with 4 priorities (16 anns)
     for(int i = 1; i < 4; i ++){
         Announcement best_ann = Announcement(30*i,0x00100000*i,0xFF000000,i);
         best_ann.priority = 3.0;
-        best_announcements->insert(std::pair<Prefix,Announcement>(
+        best_announcements->insert(std::pair<Prefix<>,Announcement>(
             best_ann.prefix,best_ann));
         for(double j = 0.0; j < 4; j++){
             Announcement ann = Announcement(30*i,0x00100000*i,0xFF000000,i);
@@ -315,9 +315,9 @@ void send_all_test(){
     testgraph->add_relationship(5,1,AS_REL_PROVIDER);
 
     //initialize the announcements held by AS 1
-    std::map<Prefix, Announcement> *anns = new std::map<Prefix, Announcement>;
+    std::map<Prefix<>, Announcement> *anns = new std::map<Prefix<>, Announcement>;
     Announcement ann = Announcement(100, 0x00100000, 0xFF000000,1);
-    anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
+    anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix,ann));
 
     testgraph->ases->find(1)->second->all_anns = anns;
 
@@ -359,7 +359,7 @@ void give_ann_to_as_path_test(){
     extrap->graph = testgraph;
     
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>{1,3,4,5};
-    Prefix p;
+    Prefix<> p;
     p.addr = 0x01000000;
     p.netmask = 0xFF000000;
     extrap->give_ann_to_as_path(as_path,p,999);
@@ -486,7 +486,7 @@ void full_propagation_test_a(){
         }
 
         
-        Prefix p;
+        Prefix<> p;
         p.addr = ipv4_ip_int;
         p.netmask = ipv4_mask_int;
         std::vector<uint32_t> *as_path = new std::vector<uint32_t>;

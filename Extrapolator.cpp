@@ -67,7 +67,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
                 ipv4_mask_int += std::stoi(token) * std::pow(256, exp++);
             }
              
-            Prefix p;
+            Prefix<> p;
             p.addr = ipv4_host_int;
             p.netmask = ipv4_mask_int;
 
@@ -144,7 +144,7 @@ void Extrapolator::propagate_down() {
  * @param hop The first ASN on the as_path.
  */
 void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
-    Prefix prefix,
+    Prefix<> prefix,
     uint32_t hop) {
     // handle empty as_path
     if (as_path->empty()) 
@@ -233,7 +233,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
  *
  * @param prefixes a vector of prefixes to query the db for
  */
-void Extrapolator::insert_announcements(std::vector<Prefix> *prefixes) {
+void Extrapolator::insert_announcements(std::vector<Prefix<>> *prefixes) {
     using namespace pqxx;
     // this is very db library dependent, so I'm leaving it for you, Michael
   //  result R = querier->select_ann_records("simplified_elements"

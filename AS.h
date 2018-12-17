@@ -21,7 +21,7 @@ struct AS {
     std::vector<Announcement> *anns_sent_to_peers_providers;
     std::vector<Announcement> *incoming_announcements;
     // this one stays as a map
-    std::map<Prefix, Announcement> *all_anns;
+    std::map<Prefix<>, Announcement> *all_anns;
     // these should not need to be ordered
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 

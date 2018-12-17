@@ -1,9 +1,11 @@
 #ifndef PREFIX_H
 #define PREFIX_H
 
+// use uint32_t for IPv4, unsigned __int128 for IPv6
+template <typename Integer = uint32_t>
 struct Prefix {
-    uint32_t addr;
-    uint32_t netmask;
+    Integer addr;
+    Integer netmask;
     // comparison operators for maps
     // comparing the addr first ensures the more specific address is greater
     bool operator<(const Prefix &b) const {
