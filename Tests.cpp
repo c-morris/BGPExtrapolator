@@ -446,49 +446,7 @@ void full_propagation_test_a(){
     pqxx::result R = extrap->querier->select_ann_records("simplified_elements", "",1000);
     auto start = high_resolution_clock::now();
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
-        //the next approx 35 lines is to convert ip string from db to uint_32
-        std::string delimiter = ".";
-        size_t pos = 0;
-        std::string token;
-
-        //TODO combine the logic in while and for loop
-        ////rename variables
-        //IP to int
-        std::vector<uint32_t> ipv4_addr;
-        std::string s  = c[0].as<std::string>();
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            ipv4_addr.push_back(std::stoi(token));
-            s.erase(0, pos + delimiter.length());
-        }
-        ipv4_addr.push_back(std::stoi(s));
-        
-        uint32_t ipv4_ip_int = 0;
-        int i = 0;
-        for (auto it = ipv4_addr.rbegin(); it != ipv4_addr.rend(); ++it){
-            ipv4_ip_int += *it * std::pow(256,i++);
-        }
-
-        //Mask to int
-        std::vector<uint32_t> ipv4_mask;
-        s = c[1].as<std::string>();
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            ipv4_mask.push_back(std::stoi(token));
-            s.erase(0, pos + delimiter.length());
-        }
-        ipv4_mask.push_back(std::stoi(s));
-        
-        uint32_t ipv4_mask_int = 0;
-        i = 0;
-        for (auto it = ipv4_mask.rbegin(); it != ipv4_mask.rend(); ++it){
-            ipv4_mask_int += *it * std::pow(256,i++);
-        }
-
-        
-        Prefix<> p;
-        p.addr = ipv4_ip_int;
-        p.netmask = ipv4_mask_int;
+        Prefix<> p(c[0].as<std::string>(), c[1].as<std::string>());
         std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
         std::string path_as_string = c[2].as<std::string>();
         //TODO add parsing function for paths
