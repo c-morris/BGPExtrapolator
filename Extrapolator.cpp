@@ -25,16 +25,21 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     }
     pqxx::result prefixes = querier->select_distinct_prefixes_from_table("elements");
     
-    int start_index = 0;
-    int index_in_iteration = 0;
-    for (pqxx::result::const_iterator prefix = prefixes.begin() + start_index;
-        prefix!=prefixes.end() || start_index < max_total; ++prefix){
-        
-        std::string prefix_to_get = prefix[0].as<std::string>();
-        pqxx::result R = querier->select_ann_records("simplified_elements",prefix_to_get,1000);
+    int row_to_start_it = 0;
+    int row_in_it = 0;
+    for (pqxx::result::size_type i = 0 + row_to_start_it;
+        i !=prefixes.size() && row_to_start_it + row_in_it < max_total; ++i){
+        //TODO add support for ipv6
+        int ip_family;
+        if(prefixes[i]["family"].to(ip_family) == 6)
+            continue;
 
-        for (pqxx::result::const_iterator c = R.begin();
-            c!=R.end() || index_in_iteration < iteration_size; ++c){
+        row_in_it = 0;    
+        std::string prefix_to_get = prefixes[i]["prefix"].c_str();
+        pqxx::result R = querier->select_ann_records("simplified_elements",prefix_to_get,1000);
+        for (pqxx::result::size_type j = 0;
+            i!=R.size() && row_in_it < iteration_size && 
+            row_to_start_it + row_in_it < max_total; ++j){
         
             //TODO put this record prep/parsing into separate function
             //the next few blocks covert the ip strings from db to uint_32        
@@ -45,7 +50,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             std::string token;
 
             uint32_t ipv4_host_int = 0;
-            std::string s = c[0].as<std::string>();
+            std::string s = R[j]["host"].c_str();
             int exp = 0;
             while((pos = s.find(delimiter)) != std::string::npos){
                 token = s.substr(0,pos);
@@ -54,7 +59,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             }
        
             uint32_t ipv4_mask_int = 0;
-            s = c[1].as<std::string>();
+            s = R[j]["netmask"].as<std::string>();
             exp = 0;
             while((pos = s.find(delimiter)) != std::string::npos){
                 token = s.substr(0,pos);
@@ -69,7 +74,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             //This bit of code parses array-like strings from db to get AS_PATH.
             //libpq++ doesn't currently support returning arrays.
             std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
-            std::string path_as_string = c[2].as<std::string>();
+            std::string path_as_string = R[j]["as_path"].c_str();
             //remove brackets from string
             char brackets[] = "{}";
             for (int i = 0; i < strlen(brackets); ++i){
@@ -86,16 +91,16 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             }
             as_path->push_back(std::stoi(path_as_string));
         
-            //TODO use hop if available
-            uint32_t hop = 0;
+            uint32_t hop;
+            R[j]["next_hop"].to(hop);
             give_ann_to_as_path(as_path,p,hop);
      
-            index_in_iteration++;
+            row_in_it++;
         }
-        start_index++;
+        row_to_start_it++;
     }
 
-    std::cout << index_in_iteration << std::endl;
+//    std::cout << index_in_iteration << std::endl;
 //    pqxx::result R = querier->select_ann_records("simplified_elements");
 //    insert_announcements();
    // propagate_to_peers_providers

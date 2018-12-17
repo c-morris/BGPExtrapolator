@@ -16,8 +16,6 @@
 struct AS {
     uint32_t asn;
     bool visited;
-    int scc_id; // is this used?
-    int graph_id; // is this used?
     int rank;
     // converted these from map<Prefix, Announcement> to vector<Announcement>
     std::vector<Announcement> *anns_sent_to_peers_providers;

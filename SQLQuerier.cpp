@@ -66,8 +66,8 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
 }
 
 pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
-    std::string sql = "select host(prefix), netmask(prefix), as_path, next_hop \
-            FROM " + table_name;
+    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, \
+                       next_hop FROM " + table_name;
     if(limit){
         sql += " LIMIT " + std::to_string(limit);
     }
@@ -79,14 +79,14 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string 
 }
 
 pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_name){
-    std::string sql = "SELECT DISTINCT prefix FROM " + table_name;
+    std::string sql = "SELECT DISTINCT prefix, family(prefix) FROM " + table_name;
     return execute(sql);
 }
 
 //Reads credentials/connection info from .conf file
 void SQLQuerier::read_config(){
     using namespace std;
-    string file_location = "/etc/bgp/bgp_2.conf";
+    string file_location = "/etc/bgp/bgp.conf";
     //Currently uses bgp_2 because pqxx doesn't like 'localhost'
     ifstream cFile(file_location);
     if (cFile.is_open()){
@@ -113,8 +113,12 @@ void SQLQuerier::read_config(){
                 pass = setting.second;
             else if(setting.first == "database") 
                 db_name = setting.second;
-            else if(setting.first == "host") 
-                host = setting.second;
+            else if(setting.first == "host"){
+                if(setting.second == "localhost")
+                    host = "127.0.0.1";
+                else
+                    host = setting.second;
+            }
             else if(setting.first == "port")
                 port = setting.second;
             else{

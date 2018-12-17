@@ -524,7 +524,7 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 1000, 50);
+    extrap->perform_propagation(true, 1000, 1000);
     return;
 }
 
@@ -532,11 +532,16 @@ void distinct_prefixes_test(){
     SQLQuerier *querier = new SQLQuerier;
     pqxx::result R = querier->select_distinct_prefixes_from_table("elements");
     int i = 0;
-    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c){
-        if(i > 10){break;}
-        std::cout << c[0].as<std::string>() <<std::endl;
-        i++;
+//    for (pqxx::result::size_type i = 0; i !=R.size();++i){
+    for (pqxx::result::size_type i = 0; i <10;++i){
+        std::cout << R[i]["prefix"].c_str() << std::endl;
     }
+
+//    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c){
+//        if(i > 10){break;}
+//        std::cout << c[0].as<std::string>() <<std::endl;
+//        i++;
+//    }
 
     delete querier;
 }

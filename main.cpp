@@ -83,9 +83,12 @@ int main(int argc, char *argv[]) {
 //    propagate_down_test();
 //    test_db_connection();
 //    select_all_test();
-//
-    full_extrapolation_test();
+//    test_db_connection();
+//    full_propagation_test_a();
+    full_propagation_test_b();
 //    query_array_test();
+//    distinct_prefixes_test();
+//    map_test();
     cout << "All tests run successfully." << endl;
     return 0;
 }
