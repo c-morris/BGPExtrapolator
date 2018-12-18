@@ -41,4 +41,5 @@ void full_propagation_test_a();
 void full_propagation_test_b();
 void query_array_test();
 void distinct_prefixes_test();
+void announcement_comparison_test();
 #endif

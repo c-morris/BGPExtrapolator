@@ -503,3 +503,20 @@ void distinct_prefixes_test(){
 
     delete querier;
 }
+
+void announcement_comparison_test() {
+    std::vector<Announcement*> *testanns = new std::vector<Announcement*>;
+    testanns->push_back(new Announcement(13030, 0x01000000, 0xFF000000, 42));
+    testanns->push_back(new Announcement(14040, 0x01040000, 0xFFFF0000, 42));
+    testanns->push_back(new Announcement(15050, 0x01050000, 0xFFFF0000, 42));
+    testanns->push_back(new Announcement(16060, 0x01060000, 0xFFFF0000, 42));
+    assert(*(testanns->at(0)) < *(testanns->at(1)));
+    assert(!(*(testanns->at(1)) < *(testanns->at(1))));
+    assert(*(testanns->at(1)) == *(testanns->at(1)));
+    assert(!(*(testanns->at(0)) == *(testanns->at(1))));
+    assert(!(*(testanns->at(0)) > *(testanns->at(1))));
+    for (size_t i = 0; i < testanns->size(); i++) {
+        delete testanns->at(i);
+    }
+    delete testanns;
+}
