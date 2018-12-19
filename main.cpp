@@ -27,8 +27,8 @@ int main(int argc, char *argv[]) {
 //    select_all_test();
 //    test_db_connection();
 //    full_propagation_test_a();
-    announcement_comparison_test();
-//    full_propagation_test_b();
+//    announcement_comparison_test();
+    full_propagation_test_b();
 //    query_array_test();
 //    distinct_prefixes_test();
 //    map_test();

@@ -362,10 +362,10 @@ void give_ann_to_as_path_test(){
     Prefix<> p;
     p.addr = 0x01000000;
     p.netmask = 0xFF000000;
-    extrap->give_ann_to_as_path(as_path,p,999);
+    extrap->give_ann_to_as_path(as_path,p,"hop");
     p.addr = 0x01040000;
     p.netmask = 0xFFFF0000;
-    extrap->give_ann_to_as_path(as_path,p,888);
+    extrap->give_ann_to_as_path(as_path,p,"hop");
 
     for (auto const& as : *testgraph->ases){
         std::cout << "Anns at " << as.second->asn << ": " << std::endl;
@@ -388,7 +388,7 @@ void propagate_up_test(){
     testgraph->process();
     Extrapolator *extrap = new Extrapolator;
     extrap->graph = testgraph;
-    Announcement *testann = new Announcement(1,0x01000000, 0xFF000000, 3, 1);
+    Announcement *testann = new Announcement(1,0x01000000, 0xFF000000, 3, 1, "hop");
     testgraph->ases->find(1)->second->receive_announcement(*testann);
     
     extrap->propagate_up();
@@ -414,7 +414,7 @@ void propagate_down_test(){
     testgraph->process();
     Extrapolator *extrap = new Extrapolator;
     extrap->graph = testgraph;
-    Announcement *testann = new Announcement(1,0x01000000, 0xFF000000, 3, 1);
+    Announcement *testann = new Announcement(1,0x01000000, 0xFF000000, 3, 1, "hop");
     testgraph->ases->find(1)->second->receive_announcement(*testann);
     
     extrap->propagate_down();
@@ -458,7 +458,7 @@ void full_propagation_test_a(){
         as_path->push_back(std::stoi(path_as_string));
 //        uint32_t hop = c[3].as<std::uint32_t>();
         //No hop in 'simplified_elements'
-        uint32_t hop = 0;
+        std::string hop = "hop";
 
         extrap->give_ann_to_as_path(as_path,p,hop);
 
@@ -482,14 +482,13 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 50, 1000);
+    extrap->perform_propagation(true, 1000, 2000);
     return;
 }
 
 void distinct_prefixes_test(){
     SQLQuerier *querier = new SQLQuerier;
     pqxx::result R = querier->select_distinct_prefixes_from_table("elements");
-    int i = 0;
 //    for (pqxx::result::size_type i = 0; i !=R.size();++i){
     for (pqxx::result::size_type i = 0; i <10;++i){
         std::cout << R[i]["prefix"].c_str() << std::endl;

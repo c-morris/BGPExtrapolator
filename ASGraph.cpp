@@ -282,6 +282,12 @@ void ASGraph::combine_components(){
     return;
 }
 
+void ASGraph::clear_announcements(){
+    for (auto const& as : *ases){
+        as.second->clear_announcements();
+    }
+}
+
 // print all as's
 void ASGraph::printDebug() {
     for (auto const& as : *ases) {
