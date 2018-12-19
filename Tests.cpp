@@ -96,13 +96,13 @@ void as_receive_test(){
 void as_process_test(){
     AS *as = new AS(1);
     std::vector<Announcement> *announcements = new std::vector<Announcement>;
-    std::map<Prefix, Announcement> *best_announcements = new std::map<Prefix, Announcement>;
+    std::map<Prefix<>, Announcement> *best_announcements = new std::map<Prefix<>, Announcement>;
 
     //Give AS 1 announcements for 4 prefixes each with 4 priorities (16 anns)
     for(int i = 1; i < 4; i ++){
         Announcement best_ann = Announcement(30*i,0x00100000*i,0xFF000000,i);
         best_ann.priority = 3.0;
-        best_announcements->insert(std::pair<Prefix,Announcement>(
+        best_announcements->insert(std::pair<Prefix<>,Announcement>(
             best_ann.prefix,best_ann));
         for(double j = 0.0; j < 4; j++){
             Announcement ann = Announcement(30*i,0x00100000*i,0xFF000000,i);
@@ -315,9 +315,9 @@ void send_all_test(){
     testgraph->add_relationship(5,1,AS_REL_PROVIDER);
 
     //initialize the announcements held by AS 1
-    std::map<Prefix, Announcement> *anns = new std::map<Prefix, Announcement>;
+    std::map<Prefix<>, Announcement> *anns = new std::map<Prefix<>, Announcement>;
     Announcement ann = Announcement(100, 0x00100000, 0xFF000000,1);
-    anns->insert(std::pair<Prefix, Announcement>(ann.prefix,ann));
+    anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix,ann));
 
     testgraph->ases->find(1)->second->all_anns = anns;
 
@@ -359,7 +359,7 @@ void give_ann_to_as_path_test(){
     extrap->graph = testgraph;
     
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>{1,3,4,5};
-    Prefix p;
+    Prefix<> p;
     p.addr = 0x01000000;
     p.netmask = 0xFF000000;
     extrap->give_ann_to_as_path(as_path,p,999);
@@ -446,49 +446,7 @@ void full_propagation_test_a(){
     pqxx::result R = extrap->querier->select_ann_records("simplified_elements", "",1000);
     auto start = high_resolution_clock::now();
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
-        //the next approx 35 lines is to convert ip string from db to uint_32
-        std::string delimiter = ".";
-        size_t pos = 0;
-        std::string token;
-
-        //TODO combine the logic in while and for loop
-        ////rename variables
-        //IP to int
-        std::vector<uint32_t> ipv4_addr;
-        std::string s  = c[0].as<std::string>();
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            ipv4_addr.push_back(std::stoi(token));
-            s.erase(0, pos + delimiter.length());
-        }
-        ipv4_addr.push_back(std::stoi(s));
-        
-        uint32_t ipv4_ip_int = 0;
-        int i = 0;
-        for (auto it = ipv4_addr.rbegin(); it != ipv4_addr.rend(); ++it){
-            ipv4_ip_int += *it * std::pow(256,i++);
-        }
-
-        //Mask to int
-        std::vector<uint32_t> ipv4_mask;
-        s = c[1].as<std::string>();
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            ipv4_mask.push_back(std::stoi(token));
-            s.erase(0, pos + delimiter.length());
-        }
-        ipv4_mask.push_back(std::stoi(s));
-        
-        uint32_t ipv4_mask_int = 0;
-        i = 0;
-        for (auto it = ipv4_mask.rbegin(); it != ipv4_mask.rend(); ++it){
-            ipv4_mask_int += *it * std::pow(256,i++);
-        }
-
-        
-        Prefix p;
-        p.addr = ipv4_ip_int;
-        p.netmask = ipv4_mask_int;
+        Prefix<> p(c[0].as<std::string>(), c[1].as<std::string>());
         std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
         std::string path_as_string = c[2].as<std::string>();
         //TODO add parsing function for paths
@@ -544,4 +502,21 @@ void distinct_prefixes_test(){
 //    }
 
     delete querier;
+}
+
+void announcement_comparison_test() {
+    std::vector<Announcement*> *testanns = new std::vector<Announcement*>;
+    testanns->push_back(new Announcement(13030, 0x01000000, 0xFF000000, 42));
+    testanns->push_back(new Announcement(14040, 0x01040000, 0xFFFF0000, 42));
+    testanns->push_back(new Announcement(15050, 0x01050000, 0xFFFF0000, 42));
+    testanns->push_back(new Announcement(16060, 0x01060000, 0xFFFF0000, 42));
+    assert(*(testanns->at(0)) < *(testanns->at(1)));
+    assert(!(*(testanns->at(1)) < *(testanns->at(1))));
+    assert(*(testanns->at(1)) == *(testanns->at(1)));
+    assert(!(*(testanns->at(0)) == *(testanns->at(1))));
+    assert(!(*(testanns->at(0)) > *(testanns->at(1))));
+    for (size_t i = 0; i < testanns->size(); i++) {
+        delete testanns->at(i);
+    }
+    delete testanns;
 }

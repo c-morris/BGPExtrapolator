@@ -21,7 +21,7 @@ AS::AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     }
     anns_sent_to_peers_providers = new std::vector<Announcement>;
     incoming_announcements = new std::vector<Announcement>;
-    all_anns = new std::map<Prefix, Announcement>;
+    all_anns = new std::map<Prefix<>, Announcement>;
     index = -1;
     onStack = false;
 }
@@ -91,7 +91,7 @@ void AS::receive_announcement(Announcement &ann) {
     //incoming_announcements->push_back(ann);
     auto search = all_anns->find(ann.prefix);
     if (search == all_anns->end()) {
-        all_anns->insert(std::pair<Prefix, Announcement>(
+        all_anns->insert(std::pair<Prefix<>, Announcement>(
             ann.prefix, ann));
     } else if (ann.priority > search->second.priority) {
         search->second = ann;
@@ -109,7 +109,7 @@ void AS::process_announcements() {
         // from https://en.cppreference.com/w/cpp/container/map/find
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end()) {
-            all_anns->insert(std::pair<Prefix, Announcement>(
+            all_anns->insert(std::pair<Prefix<>, Announcement>(
                 ann.prefix, ann));
         //An announcement recorded by a monitor won't be replaced
         } else if (!search->second.from_monitor && 

@@ -26,12 +26,12 @@ struct Extrapolator {
     void send_all_announcements(uint32_t asn, 
         bool to_peers_providers = false, 
         bool to_customers = false);
-    void insert_announcements(std::vector<Prefix> *prefixes);
+    void insert_announcements(std::vector<Prefix<>> *prefixes);
     void prop_anns_sent_to_peers_providers();
     void propagate_up();
     void propagate_down();
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
-        Prefix prefix,
+        Prefix<> prefix,
         uint32_t hop);
     void save_results(int iteration);
     };
