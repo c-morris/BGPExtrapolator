@@ -46,32 +46,11 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             //the next few blocks covert the ip strings from db to uint_32        
     //        pqxx::result anns = querier->select_ann_records("elements",it[0].as<std::string>());
 
-            std::string delimiter = ".";
-            size_t pos = 0;
-            std::string token;
 
-            uint32_t ipv4_host_int = 0;
             std::string s = R[j]["host"].c_str();
             std::cerr << s << std::endl;
-            int exp = 0;
-            while((pos = s.find(delimiter)) != std::string::npos){
-                token = s.substr(0,pos);
-                s.erase(0,pos + delimiter.length());
-                ipv4_host_int += std::stoi(token) * std::pow(256, exp++);
-            }
-       
-            uint32_t ipv4_mask_int = 0;
-            s = R[j]["netmask"].as<std::string>();
-            exp = 0;
-            while((pos = s.find(delimiter)) != std::string::npos){
-                token = s.substr(0,pos);
-                s.erase(0,pos + delimiter.length());
-                ipv4_mask_int += std::stoi(token) * std::pow(256, exp++);
-            }
-             
-            Prefix<> p;
-            p.addr = ipv4_host_int;
-            p.netmask = ipv4_mask_int;
+            
+            Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
 
             //This bit of code parses array-like strings from db to get AS_PATH.
             //libpq++ doesn't currently support returning arrays.
@@ -84,8 +63,9 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
                                      brackets[i]), path_as_string.end()); 
             }
             //fill as_path vector from parsing string
-            delimiter = ",";
-            pos = 0;
+            std::string delimiter = ",";
+            int pos = 0;
+            std::string token;
             while((pos = path_as_string.find(delimiter)) != std::string::npos){
                 token = path_as_string.substr(0,pos);
                 as_path->push_back(std::stoi(token));
