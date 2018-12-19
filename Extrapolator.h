@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <fstream>
 
 #include "AS.h"
 #include "ASGraph.h"
@@ -32,6 +33,7 @@ struct Extrapolator {
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
         Prefix prefix,
         uint32_t hop);
+    void save_results(int iteration);
     };
 
 #endif

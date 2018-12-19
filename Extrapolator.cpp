@@ -18,7 +18,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     using namespace std;
     //TODO use better folder naming convention
     if(!test){
-        if(mkdir("test", 0777)==-1)
+        if(mkdir("results", 0777)==-1)
             cerr << "Error: "<<  strerror(errno) <<endl;
         else
             cout << "Created \"test\" directory" <<endl;
@@ -36,9 +36,10 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 
         row_in_it = 0;    
         std::string prefix_to_get = prefixes[i]["prefix"].c_str();
+        //TODO check num of announcements for one prefix with real dataset
         pqxx::result R = querier->select_ann_records("simplified_elements",prefix_to_get,1000);
         for (pqxx::result::size_type j = 0;
-            i!=R.size() && row_in_it < iteration_size && 
+            j!=R.size() && row_in_it < iteration_size && 
             row_to_start_it + row_in_it < max_total; ++j){
         
             //TODO put this record prep/parsing into separate function
@@ -51,6 +52,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 
             uint32_t ipv4_host_int = 0;
             std::string s = R[j]["host"].c_str();
+            std::cerr << s << std::endl;
             int exp = 0;
             while((pos = s.find(delimiter)) != std::string::npos){
                 token = s.substr(0,pos);
@@ -99,13 +101,10 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         }
         row_to_start_it++;
     }
-
-//    std::cout << index_in_iteration << std::endl;
-//    pqxx::result R = querier->select_ann_records("simplified_elements");
-//    insert_announcements();
-   // propagate_to_peers_providers
     propagate_up();
-    propagate_down();    
+    propagate_down();
+    //TODO count iteration num
+    save_results(1);
 }
 
 
@@ -320,4 +319,15 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                 anns_to_customers);
         }
     }
+}
+
+void Extrapolator::save_results(int iteration){
+    std::ofstream outfile;
+    outfile.open("results/" + std::to_string(iteration) + ".csv");
+    //TODO accomodate for components
+    for (auto &as : *graph->ases){
+        (*as.second).stream_announcements(outfile);
+        outfile  << std::endl;
+    }
+    outfile.close();
 }

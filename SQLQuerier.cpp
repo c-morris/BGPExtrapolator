@@ -66,15 +66,14 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
 }
 
 pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
-    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, \
-                       next_hop FROM " + table_name;
+    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, next_hop FROM " + table_name;
+    if(!prefix.empty()){
+        sql += " WHERE prefix = "+ std::string("'") + prefix + std::string("'");
+    }
     if(limit){
         sql += " LIMIT " + std::to_string(limit);
     }
-    if(!prefix.empty()){
-        sql += " WHERE prefix = " + prefix;
-    }
-
+    std::cout << sql << std::endl;
     return execute(sql);
 }
 

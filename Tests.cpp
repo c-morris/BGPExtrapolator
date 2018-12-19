@@ -524,7 +524,7 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 1000, 1000);
+    extrap->perform_propagation(true, 50, 1000);
     return;
 }
 

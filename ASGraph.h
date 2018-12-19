@@ -34,6 +34,7 @@ struct ASGraph {
     void create_graph_from_files();
     void create_graph_from_db(SQLQuerier *querier);
     uint32_t translate_asn(uint32_t asn);
+
     friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
 };
 
