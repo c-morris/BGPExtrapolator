@@ -42,6 +42,29 @@ struct Prefix {
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
     }
+    // this is IPv4 only
+    std::string to_cidr() {
+        std::string cidr = "";
+        // I could write this as a loop but I think this is clearer
+        uint8_t quad = (addr & 0xFF000000) >> 24;
+        cidr.push_back(std::to_string(quad) + ".");
+        uint8_t quad = (addr & 0x00FF0000) >> 16;
+        cidr.push_back(std::to_string(quad) + ".");
+        uint8_t quad = (addr & 0x0000FF00) >> 8;
+        cidr.push_back(std::to_string(quad) + ".");
+        uint8_t quad = (addr & 0x000000FF) >> 0;
+        cidr.push_back(std::to_string(quad));
+        cidr.push_back("/");
+        // assume valid cidr netmask, e.g. no ones after the first zero
+        uint8_t sz = 0;
+        for (int i = 0; i < 32; i++) {
+            if (netmask & (1 << i)) {
+                sz++;
+            }
+        }
+        cidr.push_back(std::to_string(sz));
+        return cidr;
+    }
     // comparison operators for maps
     // comparing the addr first ensures the more specific address is greater
     bool operator<(const Prefix &b) const {
