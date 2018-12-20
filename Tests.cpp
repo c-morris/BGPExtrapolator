@@ -322,6 +322,7 @@ void send_all_test(){
     testgraph->ases->find(1)->second->all_anns = anns;
 
     Extrapolator *extrap = new Extrapolator;
+    delete extrap->graph;
     extrap->graph = testgraph;
     //send announcements at AS 1 to it's providers
     extrap->send_all_announcements(1,true);
@@ -336,7 +337,6 @@ void send_all_test(){
 
     //TODO check other ASes
     //
-    delete testgraph;
     delete extrap;
     //TODO add counter to make sure no extra announcements were sent  
 }
@@ -482,7 +482,7 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 1000, 2000);
+    extrap->perform_propagation(true, 100, 1000);
     return;
 }
 

@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -Wall -g -std=c++14
+CFLAGS= -Wall -g -std=c++14 -O3
 OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 all: $(OBJECTS)

@@ -48,6 +48,10 @@ struct Announcement {
     bool operator>(const Announcement &b) const {
         return !(*this < b || *this == b);
     }
+    
+    std::string to_sql(){
+        return prefix.to_cidr() + "," + origin + "," + priority + "," + received_from_asn;
+    }
 
     friend std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
         os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 

@@ -82,9 +82,41 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string 
     return execute(sql);
 }
 
+pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit){
+//    std::cerr << "Selecting announcement records..."<< std::endl;
+    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, next_hop FROM " + table_name;
+    sql += " WHERE prefix IN (";
+    int comma_limit = prefixes.size();
+    int i = 0;
+    for (const std::string prefix : prefixes){
+        i++;
+        sql+= "'" + prefix + "'";
+        if(i < comma_limit)
+            sql+= ",";
+    }
+    sql += ") AND element_type = 'A'";
+    
+    if(limit){
+        sql += " LIMIT " + std::to_string(limit);
+    }
+//    std::cerr << sql << std::endl;
+    return execute(sql);
+}
+
 pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_name){
     std::string sql = "SELECT DISTINCT prefix, family(prefix) FROM " + table_name;
     return execute(sql);
+}
+
+void insert_results(ASGraph* graph){
+    std::string sql = "INSERT INTO " + RESULTS_TABLE + " VALUES (DEFAULT,";
+    for( auto const &as : graph->ases){
+        std::string sql2 = sql + as.asn + ",";
+        for( auto const &ann : as->all_anns){
+            sql3 = sql2 + ann.to_sql();
+
+        }
+    }
 }
 
 //Reads credentials/connection info from .conf file

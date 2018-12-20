@@ -28,70 +28,71 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     int row_to_start_group = 0;
     int row_in_group = 0;
     int num_prefixes = prefixes.size();
-    while(row_to_start_group + 1 < max_total && row_to_start_group + 1 < num_prefixes){
+    int iteration_num = 1;
+    while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
+        std::cerr << "On iteration number " << std::to_string(iteration_num) <<std::endl;
         row_in_group = 0;
-        for (pqxx::result::size_type i = 1 + row_to_start_group;
-            i !=prefixes.size() && row_in_group < iteration_size &&
+        std::vector<std::string> prefixes_to_get;
+        for (pqxx::result::size_type i = 0 + row_to_start_group;
+            i !=prefixes.size() && i - row_to_start_group < iteration_size &&
             row_to_start_group < max_total; ++i){
             //TODO add support for ipv6
             int ip_family;
             prefixes[i]["family"].to(ip_family);
             if(ip_family == 6)
                 continue;
-
-            row_in_group = 0;    
-            std::string prefix_to_get = prefixes[i]["prefix"].as<std::string>();
-            //std::cerr << prefix_to_get << std::endl;
-            //TODO check num of announcements for one prefix with real dataset
-            pqxx::result R = querier->select_ann_records("simplified_elements",prefix_to_get);
-            for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
-
-                std::string s = R[j]["host"].c_str();
-                //std::cerr << s << std::endl;
-                
-                Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].as<std::string>()); 
-
-                //This bit of code parses array-like strings from db to get AS_PATH.
-                //libpq++ doesn't currently support returning arrays.
-                std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
-                //std::cerr << R[j]["as_path"].as<std::string>() << std::endl; 
-                std::string path_as_string(R[j]["as_path"].as<std::string>());
-                //remove brackets from string
-                char brackets[] = "{}";
-                for (int i = 0; i < strlen(brackets); ++i){
-                    path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(),
-                                         brackets[i]), path_as_string.end()); 
-                }
-                //fill as_path vector from parsing string
-                std::string delimiter = ",";
-                int pos = 0;
-                std::string token;
-                while((pos = path_as_string.find(delimiter)) != std::string::npos){
-                    token = path_as_string.substr(0,pos);
-                    as_path->push_back(std::stoi(token));
-                    path_as_string.erase(0,pos + delimiter.length());
-                }
-                as_path->push_back(std::stoi(path_as_string));
-            
-                std::string hop;
-           //     std::cerr << "AAAAAAAAAAAA"<<std::endl;
-                if(R[j]["next_hop"].is_null())
-                    hop = "hop";
-                else
-                    hop = R[j]["next_hop"].as<std::string>();
-             //   std::cerr << "AAAAAAAARGH"<<std::endl;
-                give_ann_to_as_path(as_path,p,hop);
-         
-            }
-            row_in_group++;
-            row_to_start_group++;
-            propagate_up();
-            propagate_down();
-            //TODO count iteration num
-            save_results(i);
-            graph->clear_announcements();
-            std::cerr << "On prefix number " << std::to_string(row_to_start_group) <<std::endl;
+             
+            prefixes_to_get.push_back(prefixes[i]["prefix"].as<std::string>());
         }
+        row_to_start_group = iteration_num * iteration_size;
+        //std::cerr << prefix_to_get << std::endl;
+        //TODO check num of announcements for one prefix with real dataset
+        pqxx::result R = querier->select_ann_records("simplified_elements",prefixes_to_get);
+        for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
+
+            std::string s = R[j]["host"].c_str();
+            //std::cerr << s << std::endl;
+            
+            Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
+
+            //This bit of code parses array-like strings from db to get AS_PATH.
+            //libpq++ doesn't currently support returning arrays.
+            std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
+            //std::cerr << R[j]["as_path"].as<std::string>() << std::endl; 
+            std::string path_as_string(R[j]["as_path"].as<std::string>());
+            //remove brackets from string
+            char brackets[] = "{}";
+            for (int i = 0; i < strlen(brackets); ++i){
+                path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(),
+                                     brackets[i]), path_as_string.end()); 
+            }
+            //fill as_path vector from parsing string
+            std::string delimiter = ",";
+            int pos = 0;
+            std::string token;
+            while((pos = path_as_string.find(delimiter)) != std::string::npos){
+                token = path_as_string.substr(0,pos);
+                as_path->push_back(std::stoi(token));
+                path_as_string.erase(0,pos + delimiter.length());
+            }
+            as_path->push_back(std::stoi(path_as_string));
+        
+            std::string hop;
+            if(R[j]["next_hop"].is_null()){
+                hop = "hop";
+            }
+            else{
+                hop = R[j]["next_hop"].as<std::string>();
+            }
+            give_ann_to_as_path(as_path,p,hop);
+     
+        }
+        propagate_up();
+        propagate_down();
+        save_results(iteration_num);
+        graph->clear_announcements();
+        row_in_group++;
+        iteration_num++;
     }
 }
 
@@ -103,6 +104,7 @@ void Extrapolator::propagate_up() {
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
+            auto test = graph->ases->find(asn)->second;
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, true, false);
             }
@@ -315,6 +317,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
 
 void Extrapolator::save_results(int iteration){
     std::ofstream outfile;
+    std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
     outfile.open("results/" + std::to_string(iteration) + ".csv");
     //TODO accomodate for components
     for (auto &as : *graph->ases){

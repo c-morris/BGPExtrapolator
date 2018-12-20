@@ -16,39 +16,31 @@ struct Prefix {
         size_t pos = 0;
         std::string token;
 
-        //TODO combine the logic in while and for loop
         ////rename variables
         //IP to int
-        std::vector<uint32_t> ipv4_addr;
+        uint32_t ipv4_ip_int = 0;
+        int i = 0;
         std::string &s = addr_str;
         while ((pos = s.find(delimiter)) != std::string::npos) {
             token = s.substr(0, pos);
-            ipv4_addr.push_back(std::stoi(token));
+            ipv4_ip_int += std::stoi(token) * std::pow(256,i++);
             s.erase(0, pos + delimiter.length());
         }
-        ipv4_addr.push_back(std::stoi(s));
-        
-        uint32_t ipv4_ip_int = 0;
-        int i = 0;
-        for (auto it = ipv4_addr.rbegin(); it != ipv4_addr.rend(); ++it){
-            ipv4_ip_int += *it * std::pow(256,i++);
-        }
+        ipv4_ip_int += std::stoi(token) * std::pow(256,i++);
 
         //Mask to int
-        std::vector<uint32_t> ipv4_mask;
+        uint32_t ipv4_mask_int = 0;
+        i = 0;
         s = mask_str;
         while ((pos = s.find(delimiter)) != std::string::npos) {
             token = s.substr(0, pos);
-            ipv4_mask.push_back(std::stoi(token));
+            ipv4_mask_int += std::stoi(token) * std::pow(256,i++);
             s.erase(0, pos + delimiter.length());
         }
-        ipv4_mask.push_back(std::stoi(s));
-        
-        uint32_t ipv4_mask_int = 0;
-        i = 0;
-        for (auto it = ipv4_mask.rbegin(); it != ipv4_mask.rend(); ++it){
-            ipv4_mask_int += *it * std::pow(256,i++);
-        }
+        ipv4_mask_int += std::stoi(token) * std::pow(256,i++);
+
+        addr = ipv4_ip_int;
+        netmask = ipv4_mask_int;
     }
     // comparison operators for maps
     // comparing the addr first ensures the more specific address is greater
