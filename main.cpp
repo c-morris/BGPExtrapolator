@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
     //query_array_test();
     //distinct_prefixes_test();
     //map_test();
+//    SQL_insertion_test();
     cout << "All tests run successfully." << endl;
     #endif
 

@@ -1,4 +1,7 @@
 #include <cmath>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <cstring>
 #include "Extrapolator.h"
 
 Extrapolator::Extrapolator() {
@@ -318,11 +321,35 @@ void Extrapolator::send_all_announcements(uint32_t asn,
 void Extrapolator::save_results(int iteration){
     std::ofstream outfile;
     std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
-    outfile.open("results/" + std::to_string(iteration) + ".csv");
+    //TODO replace table name with variable changed by make test
+//    querier->insert_results(graph,"extrapolation_results");
+    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
+    outfile.open(file_name);
     //TODO accomodate for components
+    std::cerr << file_name << std::endl;
     for (auto &as : *graph->ases){
         (*as.second).stream_announcements(outfile);
-        outfile  << std::endl;
+        //outfile  << std::endl;
     }
     outfile.close();
+    int psqlpipe[2];
+    pipe(psqlpipe);
+    pid_t psql_pid = fork();
+    if (psql_pid == 0) {
+        close(psqlpipe[1]);
+        dup2(psqlpipe[0], 0);
+        std::cerr << "Child" << std::endl;
+        execlp("psql", "psql", "bgp", NULL);
+        std::cerr << "Execlp did not work" << std::endl;
+    } else {
+        close(psqlpipe[0]);
+        std::cerr << "Parent" << std::endl;
+        std::string tmp = std::string("\\copy extrapolation_results(asn,prefix_origin,priority,received_from_asn) FROM '") + file_name + "' WITH csv;\n";
+        const char *psqlcmd  = tmp.c_str();
+        write(psqlpipe[1], psqlcmd, strlen(psqlcmd));
+        close(psqlpipe[1]);
+        waitpid(psql_pid, NULL, NULL);
+    }
+//    querier->copy_results_to_db(file_name);
+    std::remove(file_name.c_str());
 }

@@ -482,7 +482,7 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 10, 100);
+    extrap->perform_propagation(true, 100, 1000);
     return;
 }
 
@@ -493,14 +493,25 @@ void distinct_prefixes_test(){
     for (pqxx::result::size_type i = 0; i <10;++i){
         std::cout << R[i]["prefix"].c_str() << std::endl;
     }
+    delete querier;
+}
 
-//    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c){
-//        if(i > 10){break;}
-//        std::cout << c[0].as<std::string>() <<std::endl;
-//        i++;
-//    }
+void SQL_insertion_test(){
+    ASGraph *graph = new ASGraph;
+    SQLQuerier *querier = new SQLQuerier;
+    
+    graph->add_relationship(1,2,AS_REL_PROVIDER);
+    auto search = graph->ases->find(1);
+
+    Prefix<> p("192.168.0.1","256.256.256.128");
+    Announcement ann(13030, 0x01000000, 0xFF000000, 42);
+    search->second->all_anns->insert(std::pair<Prefix<>, Announcement>(p,ann));
+
+    querier->insert_results(graph, "test_extrapolation_results");
+     
 
     delete querier;
+    delete graph;
 }
 
 void announcement_comparison_test() {

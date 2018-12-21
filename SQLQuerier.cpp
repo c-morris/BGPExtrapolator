@@ -43,6 +43,7 @@ void SQLQuerier::close_connection(){
     C->disconnect();
 }
 
+
 pqxx::result SQLQuerier::execute(std::string sql, bool insert){
     if(insert){
         //TODO maybe make one work object once on construction
@@ -52,6 +53,7 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert){
             pqxx::work txn(*C);
             pqxx::result R = txn.exec(sql);
             txn.commit();
+            return R;
         }
         catch(const std::exception &e){
             std::cerr << e.what() <<std::endl;
@@ -123,15 +125,21 @@ pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_n
     return execute(sql);
 }
 
-void SQLQuerier::insert_results(ASGraph* graph){
-    std::string sql = "INSERT INTO " RESULTS_TABLE " VALUES (DEFAULT,";
+void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
+    std::string sql = "INSERT INTO " + results_table_name + " VALUES (DEFAULT,";
     for(auto const &as : *graph->ases){
         std::string sql2 = sql + std::to_string(as.second->asn) + ",";
         for(auto &ann : *as.second->all_anns){
-            std::string sql3 = sql2 + ann.second.to_sql();
+            std::string sql3 = sql2 + ann.second.to_sql() + ")";
             execute(sql3,true);
         }
     }
+}
+
+void SQLQuerier::copy_results_to_db(std::string file_name){
+    std::string sql = std::string("COPY extrapolation_results(asn, prefix_origin, priority, received_from_asn)") +
+                        "FROM '/dev/shm/bgp/" + file_name + "' WITH (FORMAT csv)";
+    execute(sql);
 }
 
 //Reads credentials/connection info from .conf file

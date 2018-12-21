@@ -50,9 +50,9 @@ struct Announcement {
     }
     
     std::string to_sql(){
-        return (prefix.to_cidr() + 
-                "," + std::to_string(origin) + 
-                "," + std::to_string(priority) + 
+        return ("'" + prefix.to_cidr() + 
+                "-" + std::to_string(origin) + "'" + 
+                "," + "'" + std::to_string(priority) + "'" + 
                 "," + std::to_string(received_from_asn));
     }
 
@@ -66,7 +66,7 @@ struct Announcement {
 
     std::ostream& to_csv(std::ostream &os){
         //TODO add prefix to_string that combines host and mask
-        os << std::hex << prefix.addr << "," << origin << "," << priority << 
+        os <<  "'" << prefix.to_cidr() << "-" << origin << "'" <<  "," << priority << 
             "," << received_from_asn << std::endl;
         return os;
     }

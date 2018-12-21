@@ -158,10 +158,17 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
      return os;
 }
 
-std::ostream& AS::stream_announcements(std::ostream &os){
+std::ostream& AS::pandas_stream_announcements(std::ostream &os){
     os << asn << "\n\n";
     os << "prefix,origin,priority,received_from_asn\n";
     for (auto &ann : *all_anns){
+        ann.second.to_csv(os);
+    }
+    return os;
+}
+std::ostream& AS::stream_announcements(std::ostream &os){
+    for (auto &ann : *all_anns){
+        os << asn << ",";
         ann.second.to_csv(os);
     }
     return os;

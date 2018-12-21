@@ -42,4 +42,5 @@ void full_propagation_test_b();
 void query_array_test();
 void distinct_prefixes_test();
 void announcement_comparison_test();
+void SQL_insertion_test();
 #endif

@@ -34,6 +34,8 @@ ASGraph::~ASGraph() {
  * @param neighbor_asn ASN of neighbor.
  * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
+//TODO probably make this do bi-directional assignment instead of calling this
+//twice for each pair
 void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn, 
     int relation) {
     auto search = ases->find(asn);

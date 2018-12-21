@@ -7,6 +7,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fstream>
+#include <stdio.h>
+#include <iostream>
 
 #include "AS.h"
 #include "ASGraph.h"
