@@ -5,10 +5,12 @@ OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 all: $(OBJECTS)
 	$(CC) $(CPPFLAGS) -O3 -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
 
-# recompile main.o to run tests
-test: $(OBJECTS)
-	$(CC) -c $(CPPFLAGS) -DRUN_TESTS=1 -o main.o main.cpp
+testing: $(OBJECTS) 
 	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
+
+test: CPPFLAGS+= -DRUN_TESTS=1
+
+test: testing
 
 %.o: %.cpp
 	$(CC) -c $(CPPFLAGS) $< -o $@
