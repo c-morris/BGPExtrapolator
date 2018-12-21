@@ -1,15 +1,17 @@
 CC=g++
-CFLAGS= -Wall -g -std=c++14
+CPPFLAGS= -Wall -g -std=c++14
 OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 all: $(OBJECTS)
-	$(CC) $(CFLAGS) -O3 -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
+	$(CC) $(CPPFLAGS) -O3 -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
 
+# recompile main.o to run tests
 test: $(OBJECTS)
-	$(CC) $(CFLAGS) -DRUN_TESTS -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
+	$(CC) -c $(CPPFLAGS) -DRUN_TESTS=1 -o main.o main.cpp
+	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
 
 %.o: %.cpp
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CPPFLAGS) $< -o $@
 
 .PHONY: clean
 clean:
