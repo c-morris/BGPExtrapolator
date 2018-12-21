@@ -43,16 +43,31 @@ void SQLQuerier::close_connection(){
     C->disconnect();
 }
 
-pqxx::result SQLQuerier::execute(std::string sql){
-    try{
-        pqxx::nontransaction N(*C);
-        pqxx::result R( N.exec(sql));
-
-        return R;
-
+pqxx::result SQLQuerier::execute(std::string sql, bool insert){
+    if(insert){
+        //TODO maybe make one work object once on construction
+        //work object may be same as nontransaction with more functionality
+        
+        try{
+            pqxx::work txn(*C);
+            pqxx::result R = txn.exec(sql);
+            txn.commit();
+        }
+        catch(const std::exception &e){
+            std::cerr << e.what() <<std::endl;
+        }
     }
-    catch(const std::exception &e){
-        std::cerr << e.what() <<std::endl;
+    else{
+        try{
+            pqxx::nontransaction N(*C);
+            pqxx::result R( N.exec(sql));
+
+            return R;
+
+        }
+        catch(const std::exception &e){
+            std::cerr << e.what() <<std::endl;
+        }
     }
 }
 //TODO maybe rename/overload this for selection options
@@ -108,13 +123,13 @@ pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_n
     return execute(sql);
 }
 
-void insert_results(ASGraph* graph){
-    std::string sql = "INSERT INTO " + RESULTS_TABLE + " VALUES (DEFAULT,";
-    for( auto const &as : graph->ases){
-        std::string sql2 = sql + as.asn + ",";
-        for( auto const &ann : as->all_anns){
-            sql3 = sql2 + ann.to_sql();
-
+void SQLQuerier::insert_results(ASGraph* graph){
+    std::string sql = "INSERT INTO " RESULTS_TABLE " VALUES (DEFAULT,";
+    for(auto const &as : *graph->ases){
+        std::string sql2 = sql + std::to_string(as.second->asn) + ",";
+        for(auto &ann : *as.second->all_anns){
+            std::string sql3 = sql2 + ann.second.to_sql();
+            execute(sql3,true);
         }
     }
 }
