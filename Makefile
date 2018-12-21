@@ -2,6 +2,9 @@ CC=g++
 CPPFLAGS= -Wall -g -std=c++14 -O3
 OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
+# compile with optimization if not running tests
+all: CPPFLAGS+= -O3
+
 all: $(OBJECTS)
 	$(CC) $(CPPFLAGS) -O3 -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
 
