@@ -5,11 +5,15 @@
 #define AS_REL_PEER 1
 #define AS_REL_CUSTOMER 2
 
+struct SQLQuerier;
+
 #include <map>
 #include <vector>
 #include <stack>
 #include "AS.h"
 #include "SQLQuerier.h"
+#include <pqxx/pqxx>
+
 
 struct ASGraph {
     std::map<uint32_t, AS*> *ases; // map of ASN to AS object 
