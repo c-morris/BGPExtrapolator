@@ -5,41 +5,50 @@
 #include "Extrapolator.h"
 
 Extrapolator::Extrapolator() {
-    ases_with_anns = new std::set<uint32_t>;
+    ases_with_anns = new std::set<uint32_t>; //currently unusued. Likely doesn't improve performance
     graph = new ASGraph;
     querier = new SQLQuerier;
     graph->create_graph_from_db(querier);
 }
 
 Extrapolator::~Extrapolator(){
-    delete ases_with_anns;
+    delete ases_with_anns;  
     delete graph;
     delete querier;
 }
 
 void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
     using namespace std;
-    //TODO use better folder naming convention
+    //code for making relative directory for results
+    /*
     if(!test){
         if(mkdir("results", 0777)==-1)
             cerr << "Error: "<<  strerror(errno) <<endl;
         else
             cout << "Created \"test\" directory" <<endl;
     }
+    */
+
     pqxx::result prefixes = querier->select_distinct_prefixes_from_table("simplified_elements");
     
     int row_to_start_group = 0;
     int row_in_group = 0;
     int num_prefixes = prefixes.size();
     int iteration_num = 1;
+
+    //Continue if not exeeding user defined or record max
     while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
         std::cerr << "On iteration number " << std::to_string(iteration_num) <<std::endl;
         row_in_group = 0;
         std::vector<std::string> prefixes_to_get;
+
+        //For prefixes in group such that user defined or record max isn't exceeded,
+        //and iteration size isn't exceeded. 
+        //  Add prefix to vector to use
         for (pqxx::result::size_type i = 0 + row_to_start_group;
             i !=prefixes.size() && i - row_to_start_group < iteration_size &&
             row_to_start_group < max_total; ++i){
-            //TODO add support for ipv6
+            //Skip ipv6, possible future support
             int ip_family;
             prefixes[i]["family"].to(ip_family);
             if(ip_family == 6)
@@ -48,20 +57,21 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             prefixes_to_get.push_back(prefixes[i]["prefix"].as<std::string>());
         }
         row_to_start_group = iteration_num * iteration_size;
-        //std::cerr << prefix_to_get << std::endl;
-        //TODO check num of announcements for one prefix with real dataset
+        
+
+        //Get all announcements (R) for prefixes in iteration (prefixes_to_get)
         pqxx::result R = querier->select_ann_records("simplified_elements",prefixes_to_get);
+
+        //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
 
             std::string s = R[j]["host"].c_str();
-            //std::cerr << s << std::endl;
             
             Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
 
             //This bit of code parses array-like strings from db to get AS_PATH.
             //libpq++ doesn't currently support returning arrays.
             std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
-            //std::cerr << R[j]["as_path"].as<std::string>() << std::endl; 
             std::string path_as_string(R[j]["as_path"].as<std::string>());
             //remove brackets from string
             char brackets[] = "{}";
@@ -79,7 +89,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
                 path_as_string.erase(0,pos + delimiter.length());
             }
             as_path->push_back(std::stoi(path_as_string));
-        
+       
+            //if no hop identify accordingly, otherwise use it
             std::string hop;
             if(R[j]["next_hop"].is_null()){
                 hop = "hop";

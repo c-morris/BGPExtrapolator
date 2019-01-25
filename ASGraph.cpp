@@ -154,21 +154,25 @@ void ASGraph::decide_ranks() {
             return;
         }
         for (uint32_t asn : *(*ases_by_rank)[i]) {
+            //For all providers of asn
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
                 auto prov_AS = ases->find(provider_asn)->second;
+                //If provider's rank is unassigned
                 if (prov_AS->rank == -1) {
                     int skip_provider = 0;
-                    // TODO improve variable naming here
-                    for (auto prov_cust_asn : *prov_AS->customers) {
-                        auto *prov_cust_AS = ases->find(prov_cust_asn)->second;
-                        if (prov_cust_AS->rank == -1 ||
-                            prov_cust_AS->rank > i) {
+                    //If any other customers of this provider are unassigned
+                    //  (higher rank than this AS), then skip this provider.
+                    for (auto sibling_asn : *prov_AS->customers) {
+                        auto *sibling_AS = ases->find(sibling_asn)->second;
+                        if (sibling_AS->rank == -1 ||
+                            sibling_AS->rank > i) {
                             skip_provider = 1;
                             break;
                         }
                     if(skip_provider){
                         continue;
                     }
+                    //If this is providers max height, add to next rank.
                     ases->find(provider_asn)->second->rank = i + 1;
                     (*ases_by_rank)[i+1]->insert(provider_asn);
                     }

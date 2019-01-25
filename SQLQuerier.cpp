@@ -146,7 +146,6 @@ void SQLQuerier::copy_results_to_db(std::string file_name){
 void SQLQuerier::read_config(){
     using namespace std;
     string file_location = "/etc/bgp/bgp.conf";
-    //Currently uses bgp_2 because pqxx doesn't like 'localhost'
     ifstream cFile(file_location);
     if (cFile.is_open()){
         //map config variables to settings in file
@@ -166,7 +165,7 @@ void SQLQuerier::read_config(){
 
         //Add additional config options to this
         for (auto const& setting : config){
-            if(setting.first == "username")
+            if(setting.first == "user")
                 user = setting.second;
             else if(setting.first == "password") 
                 pass = setting.second;
