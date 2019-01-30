@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
     //distinct_prefixes_test();
     //map_test();
 //    SQL_insertion_test();
+//    find_as_path();
     cout << "All tests run successfully." << endl;
     #endif
 

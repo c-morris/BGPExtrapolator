@@ -9,6 +9,7 @@
 #include <fstream>
 #include <stdio.h>
 #include <iostream>
+#include <thread>
 
 #include "AS.h"
 #include "ASGraph.h"
@@ -23,6 +24,7 @@ struct Extrapolator {
     Extrapolator();
     ~Extrapolator();
     std::set<uint32_t> *ases_with_anns;
+    std::vector<std::thread> *threads;
 
     void perform_propagation(bool test = false, int group_size = 1000, int max_total = 0);
     void send_all_announcements(uint32_t asn, 

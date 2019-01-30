@@ -111,11 +111,13 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::vector<
         if(i < comma_limit)
             sql+= ",";
     }
-    sql += ") AND element_type = 'A'";
-    
+    //add when using old data format
+//    sql += ") AND element_type = 'A'";
+    sql += ")"; 
     if(limit){
         sql += " LIMIT " + std::to_string(limit);
     }
+
 //    std::cerr << sql << std::endl;
     return execute(sql);
 }
@@ -138,7 +140,7 @@ void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
 
 void SQLQuerier::copy_results_to_db(std::string file_name){
     std::string sql = std::string("COPY extrapolation_results(asn, prefix_origin, priority, received_from_asn)") +
-                        "FROM '/dev/shm/bgp/" + file_name + "' WITH (FORMAT csv)";
+                        "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 

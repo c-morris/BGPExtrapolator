@@ -2,19 +2,23 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <cstring>
+#include <thread>
 #include "Extrapolator.h"
 
 Extrapolator::Extrapolator() {
     ases_with_anns = new std::set<uint32_t>; //currently unusued. Likely doesn't improve performance
     graph = new ASGraph;
     querier = new SQLQuerier;
-    graph->create_graph_from_db(querier);
+//    graph->create_graph_from_db(querier);
+    graph->create_graph_from_files();
+    threads = new std::vector<std::thread>;
 }
 
 Extrapolator::~Extrapolator(){
     delete ases_with_anns;  
     delete graph;
     delete querier;
+    delete threads;
 }
 
 void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
@@ -28,7 +32,6 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             cout << "Created \"test\" directory" <<endl;
     }
     */
-
     pqxx::result prefixes = querier->select_distinct_prefixes_from_table("simplified_elements");
     
     int row_to_start_group = 0;
@@ -40,6 +43,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
         std::cerr << "On iteration number " << std::to_string(iteration_num) <<std::endl;
         row_in_group = 0;
+
+        //NEW THREAD CAN START HERE
         std::vector<std::string> prefixes_to_get;
 
         //For prefixes in group such that user defined or record max isn't exceeded,
@@ -103,10 +108,14 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         }
         propagate_up();
         propagate_down();
-        save_results(iteration_num);
+        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
+        //save_results(iteration_num);
         graph->clear_announcements();
         row_in_group++;
         iteration_num++;
+    }
+    for (auto &t : *threads){
+        t.join();
     }
 }
 
@@ -343,6 +352,7 @@ void Extrapolator::save_results(int iteration){
         //outfile  << std::endl;
     }
     outfile.close();
+/*    
     int psqlpipe[2];
     pipe(psqlpipe);
     pid_t psql_pid = fork();
@@ -361,6 +371,7 @@ void Extrapolator::save_results(int iteration){
         close(psqlpipe[1]);
         waitpid(psql_pid, NULL, NULL);
     }
-//    querier->copy_results_to_db(file_name);
+  */  
+    querier->copy_results_to_db(file_name);
     std::remove(file_name.c_str());
 }

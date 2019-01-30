@@ -530,3 +530,26 @@ void announcement_comparison_test() {
     }
     delete testanns;
 }
+
+void find_as_path() {
+    int asn = 8371;
+    std::string prefix_origin = "\'248.248.0.1/26-23969\'";
+    
+    SQLQuerier *querier = new SQLQuerier;
+    std::string sql = "SELECT * FROM extrapolation_results WHERE asn = " + std::to_string(asn) + 
+    " AND prefix_origin = \'\'" + prefix_origin + "\'\' LIMIT 1";
+    pqxx::result R = querier->execute(sql);
+
+    std::string as_path = std::to_string(asn);
+//    while(!R[0]["received_from_asn"].is_null()){
+    while(R[0]["priority"].as<double>() != 4){
+        as_path +=  ", " + R[0]["received_from_asn"].as<std::string>();
+        asn = R[0]["received_from_asn"].as<int>();
+        sql = "SELECT * FROM extrapolation_results WHERE asn = " + std::to_string(asn) + 
+            " AND prefix_origin = \'\'" + prefix_origin + "\'\' LIMIT 1";
+        R = querier->execute(sql);
+    }
+    std::cout << as_path << std::endl;
+
+    delete querier;
+}

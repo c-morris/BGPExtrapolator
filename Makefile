@@ -6,7 +6,7 @@ OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 all: CPPFLAGS+= -O3
 
 all: $(OBJECTS)
-	$(CC) $(CPPFLAGS) -O3 -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
+	$(CC) $(CPPFLAGS) -O3 -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq -lpthread
 
 testing: $(OBJECTS) 
 	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
