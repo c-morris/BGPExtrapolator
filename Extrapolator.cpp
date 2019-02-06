@@ -35,9 +35,15 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     //code for making directory in temp space
     
     bool exists = false;
-    struct stat st;
-    if (!S_ISDIR(st.st_mode))
-        mkdir("/dev/shm/bgp", 0777);
+
+    DIR* dir = opendir("/dev/shm/bgp");
+    if(!dir){
+        mkdir("/dev/shm/bgp", 0777); 
+    }
+    else{
+        closedir(dir);
+    }
+
     pqxx::result prefixes = querier->select_roa_prefixes("roas", IPV4);
 
     int row_to_start_group = 0;

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <thread>
+#include <dirent.h>
 
 #include "AS.h"
 #include "ASGraph.h"
