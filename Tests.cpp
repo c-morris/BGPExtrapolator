@@ -482,7 +482,8 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 100, 1000);
+    extrap->perform_propagation(true, 100, 2000);
+    delete extrap;
     return;
 }
 
@@ -537,7 +538,7 @@ void find_as_path() {
     
     SQLQuerier *querier = new SQLQuerier;
     std::string sql = "SELECT * FROM extrapolation_results WHERE asn = " + std::to_string(asn) + 
-    " AND prefix_origin = \'\'" + prefix_origin + "\'\' LIMIT 1";
+    " AND prefix_origin = \'" + prefix_origin + "\' LIMIT 1";
     pqxx::result R = querier->execute(sql);
 
     std::string as_path = std::to_string(asn);
@@ -550,6 +551,14 @@ void find_as_path() {
         R = querier->execute(sql);
     }
     std::cout << as_path << std::endl;
+
+    delete querier;
+}
+
+void select_by_prefix_test(){
+    SQLQuerier *querier = new SQLQuerier;
+    
+    std::string sql = "SELECT * FROM mrt_announcements_permanent";
 
     delete querier;
 }

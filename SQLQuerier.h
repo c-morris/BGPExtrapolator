@@ -24,6 +24,7 @@ struct SQLQuerier {
     pqxx::result select_ann_records(std::string table_name, std::string prefix = "", int limit = 0);
     pqxx::result select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit = 0);
     pqxx::result select_distinct_prefixes_from_table(std::string table_name);
+    pqxx::result select_roa_prefixes(std::string table_name);
     void insert_results(ASGraph* graph, std::string results_table_name);
     void copy_results_to_db(std::string file_name);
     void read_config();

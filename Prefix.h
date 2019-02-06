@@ -19,25 +19,26 @@ struct Prefix {
         ////rename variables
         //IP to int
         uint32_t ipv4_ip_int = 0;
-        int i = 0;
+        //i is 4 for ipv4
+        int i = 3;
         std::string &s = addr_str;
         while ((pos = s.find(delimiter)) != std::string::npos) {
             token = s.substr(0, pos);
-            ipv4_ip_int += std::stoi(token) * std::pow(256,i++);
+            ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
             s.erase(0, pos + delimiter.length());
         }
-        ipv4_ip_int += std::stoi(token) * std::pow(256,i++);
+        ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
 
         //Mask to int
         uint32_t ipv4_mask_int = 0;
-        i = 0;
+        i = 3;
         s = mask_str;
         while ((pos = s.find(delimiter)) != std::string::npos) {
             token = s.substr(0, pos);
-            ipv4_mask_int += std::stoi(token) * std::pow(256,i++);
+            ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
             s.erase(0, pos + delimiter.length());
         }
-        ipv4_mask_int += std::stoi(token) * std::pow(256,i++);
+        ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
 
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;

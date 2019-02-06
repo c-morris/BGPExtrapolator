@@ -26,6 +26,8 @@ struct AS {
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 
     std::set<uint32_t> *customers; 
+    //If this AS represents multiple ASes, it's "members" are listed here
+    std::vector<uint32_t> *member_ases;
 
     // these are assigned and used in Tarjan's algorithm
     int index;

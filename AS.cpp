@@ -19,6 +19,7 @@ AS::AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     } else {
         customers = cust;
     }
+    member_ases = new std::vector<uint32_t>;
     anns_sent_to_peers_providers = new std::vector<Announcement>;
     incoming_announcements = new std::vector<Announcement>;
     all_anns = new std::map<Prefix<>, Announcement>;
@@ -33,6 +34,7 @@ AS::~AS() {
     delete peers;
     delete providers;
     delete customers;
+    delete member_ases;
 }
 
 /** Add neighbor AS to the appropriate set based on the relationship.
@@ -167,9 +169,11 @@ std::ostream& AS::pandas_stream_announcements(std::ostream &os){
     return os;
 }
 std::ostream& AS::stream_announcements(std::ostream &os){
-    for (auto &ann : *all_anns){
-        os << asn << ",";
-        ann.second.to_csv(os);
+    for (uint32_t &member_asn : *member_ases){
+        for (auto &ann : *all_anns){
+            os << member_asn << ",";
+            ann.second.to_csv(os);
+        }
     }
     return os;
 }

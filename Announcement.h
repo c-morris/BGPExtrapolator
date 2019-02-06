@@ -66,7 +66,7 @@ struct Announcement {
 
     std::ostream& to_csv(std::ostream &os){
         //TODO add prefix to_string that combines host and mask
-        os <<  "'" << prefix.to_cidr() << "-" << origin << "'" <<  "," << priority << 
+        os << prefix.to_cidr() << "-" << origin << "," << priority << 
             "," << received_from_asn << std::endl;
         return os;
     }

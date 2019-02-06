@@ -9,8 +9,8 @@ Extrapolator::Extrapolator() {
     ases_with_anns = new std::set<uint32_t>; //currently unusued. Likely doesn't improve performance
     graph = new ASGraph;
     querier = new SQLQuerier;
-//    graph->create_graph_from_db(querier);
-    graph->create_graph_from_files();
+    graph->create_graph_from_db(querier);
+//    graph->create_graph_from_files();
     threads = new std::vector<std::thread>;
 }
 
@@ -32,8 +32,15 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             cout << "Created \"test\" directory" <<endl;
     }
     */
-    pqxx::result prefixes = querier->select_distinct_prefixes_from_table("simplified_elements");
+    //code for making directory in temp space
     
+    bool exists = false;
+    struct stat st;
+    if (!S_ISDIR(st.st_mode))
+        mkdir("/dev/shm/bgp", 0777);
+    pqxx::result prefixes = querier->select_distinct_prefixes_from_table("test_elements");
+//    pqxx::result prefixes = querier->select_roa_prefixes("roas");
+
     int row_to_start_group = 0;
     int row_in_group = 0;
     int num_prefixes = prefixes.size();
@@ -65,7 +72,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         
 
         //Get all announcements (R) for prefixes in iteration (prefixes_to_get)
-        pqxx::result R = querier->select_ann_records("simplified_elements",prefixes_to_get);
+        pqxx::result R = querier->select_ann_records("test_elements",prefixes_to_get);
 
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
@@ -108,8 +115,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         }
         propagate_up();
         propagate_down();
-        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
-        //save_results(iteration_num);
+//        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
+        save_results(iteration_num);
         graph->clear_announcements();
         row_in_group++;
         iteration_num++;
@@ -223,13 +230,20 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
         double path_len_weighted = 1 - (i - 1) / 100;
         double priority = received_from + path_len_weighted;
+       
+        uint32_t received_from_asn = 0; 
+        if (it == as_path->rbegin()){
+            uint32_t received_from_asn = *it;
+        }
+        else
+            uint32_t received_from_asn = *(it-1);
         if (!broken_path) {
             Announcement ann = Announcement(
                 *as_path->rbegin(),
                 prefix.addr,
                 prefix.netmask,
                 priority,
-                *(it - 1),
+                received_from_asn,
                 hop,
                 true); //from_monitor
             if (sent_to == 1 or sent_to == 0) {
@@ -339,6 +353,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
 }
 
 void Extrapolator::save_results(int iteration){
+//    SQLQuerier *thread_querier = new SQLQuerier;
     std::ofstream outfile;
     std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
     //TODO replace table name with variable changed by make test
@@ -346,10 +361,10 @@ void Extrapolator::save_results(int iteration){
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
     //TODO accomodate for components
+    //DONE -- needs testing
     std::cerr << file_name << std::endl;
     for (auto &as : *graph->ases){
-        (*as.second).stream_announcements(outfile);
-        //outfile  << std::endl;
+        as.second->stream_announcements(outfile);
     }
     outfile.close();
 /*    
@@ -371,7 +386,9 @@ void Extrapolator::save_results(int iteration){
         close(psqlpipe[1]);
         waitpid(psql_pid, NULL, NULL);
     }
-  */  
+  */
+//    thread_querier->copy_results_to_db(file_name);
     querier->copy_results_to_db(file_name);
+//    delete thread_querier;
     std::remove(file_name.c_str());
 }
