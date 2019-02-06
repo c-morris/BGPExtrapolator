@@ -127,8 +127,12 @@ pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_n
     return execute(sql);
 }
 
-pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name){
+pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_family){
     std::string sql = "SELECT DISTINCT roa_prefix, family(roa_prefix) FROM " + table_name;
+    if(ip_family == IPV4)
+        sql += " WHERE family(roa_prefix) = 4";
+    else if(ip_family == IPV6)
+        sql += " WHERE family(roa_prefix) = 4";
     return execute(sql);
 }
 
@@ -144,7 +148,7 @@ void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
 }
 
 void SQLQuerier::copy_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY test_extrapolation_results(asn, prefix_origin, priority, received_from_asn)") +
+    std::string sql = std::string("COPY extrapolation_results(asn, prefix_origin, priority, received_from_asn)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }

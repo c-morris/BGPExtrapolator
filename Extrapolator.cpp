@@ -38,8 +38,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     struct stat st;
     if (!S_ISDIR(st.st_mode))
         mkdir("/dev/shm/bgp", 0777);
-    pqxx::result prefixes = querier->select_distinct_prefixes_from_table("test_elements");
-//    pqxx::result prefixes = querier->select_roa_prefixes("roas");
+    pqxx::result prefixes = querier->select_roa_prefixes("roas", IPV4);
 
     int row_to_start_group = 0;
     int row_in_group = 0;
@@ -66,13 +65,13 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             if(ip_family == 6)
                 continue;
              
-            prefixes_to_get.push_back(prefixes[i]["prefix"].as<std::string>());
+            prefixes_to_get.push_back(prefixes[i]["roa_prefix"].as<std::string>());
         }
         row_to_start_group = iteration_num * iteration_size;
         
 
         //Get all announcements (R) for prefixes in iteration (prefixes_to_get)
-        pqxx::result R = querier->select_ann_records("test_elements",prefixes_to_get);
+        pqxx::result R = querier->select_ann_records("mrt_announcements_permanent",prefixes_to_get);
 
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
@@ -367,28 +366,6 @@ void Extrapolator::save_results(int iteration){
         as.second->stream_announcements(outfile);
     }
     outfile.close();
-/*    
-    int psqlpipe[2];
-    pipe(psqlpipe);
-    pid_t psql_pid = fork();
-    if (psql_pid == 0) {
-        close(psqlpipe[1]);
-        dup2(psqlpipe[0], 0);
-        std::cerr << "Child" << std::endl;
-        execlp("psql", "psql", "bgp", NULL);
-        std::cerr << "Execlp did not work" << std::endl;
-    } else {
-        close(psqlpipe[0]);
-        std::cerr << "Parent" << std::endl;
-        std::string tmp = std::string("\\copy extrapolation_results(asn,prefix_origin,priority,received_from_asn) FROM '") + file_name + "' WITH csv;\n";
-        const char *psqlcmd  = tmp.c_str();
-        write(psqlpipe[1], psqlcmd, strlen(psqlcmd));
-        close(psqlpipe[1]);
-        waitpid(psql_pid, NULL, NULL);
-    }
-  */
-//    thread_querier->copy_results_to_db(file_name);
     querier->copy_results_to_db(file_name);
-//    delete thread_querier;
     std::remove(file_name.c_str());
 }
