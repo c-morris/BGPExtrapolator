@@ -86,8 +86,7 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string 
 //    std::cerr << "Selecting announcement records..."<< std::endl;
     std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, next_hop FROM " + table_name;
     if(!prefix.empty()){
-        sql += (" WHERE prefix = "+ std::string("'") + prefix + std::string("'") +
-                " AND element_type = 'A'");
+        sql += (" WHERE prefix = "+ std::string("'") + prefix + std::string("'"));
     }
     else{
         sql += " WHERE element_type = 'A'";

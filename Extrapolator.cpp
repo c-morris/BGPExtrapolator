@@ -77,7 +77,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         
 
         //Get all announcements (R) for prefixes in iteration (prefixes_to_get)
-        pqxx::result R = querier->select_ann_records("mrt_announcements_permanent",prefixes_to_get);
+        pqxx::result R = querier->select_ann_records("mrt_announcements_jan_29",prefixes_to_get);
 
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
@@ -102,10 +102,19 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             std::string token;
             while((pos = path_as_string.find(delimiter)) != std::string::npos){
                 token = path_as_string.substr(0,pos);
-                as_path->push_back(std::stoi(token));
+                try {
+                  as_path->push_back(std::stoul(token));
+                } catch(const std::out_of_range& e) {
+                  std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl; 
+                }
                 path_as_string.erase(0,pos + delimiter.length());
             }
-            as_path->push_back(std::stoi(path_as_string));
+            try {
+              as_path->push_back(std::stoul(path_as_string));
+            } catch(const std::out_of_range& e) {
+              std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl; 
+              std::cerr << "Path as string was: " << path_as_string << std::endl; 
+            }
        
             //if no hop identify accordingly, otherwise use it
             std::string hop;

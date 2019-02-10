@@ -78,8 +78,8 @@ void ASGraph::create_graph_from_files(){
             auto delim_index = line.find(",");
             std::string peer_as_1 = line.substr(0,delim_index);
             std::string peer_as_2 = line.substr(delim_index+1);
-            add_relationship(std::stoi(peer_as_1), std::stoi(peer_as_2),1);
-            add_relationship(std::stoi(peer_as_2), std::stoi(peer_as_1),1);
+            add_relationship(std::stoul(peer_as_1), std::stoul(peer_as_2),1);
+            add_relationship(std::stoul(peer_as_2), std::stoul(peer_as_1),1);
         }
     }
     file.close();
@@ -96,8 +96,8 @@ void ASGraph::create_graph_from_files(){
             auto delim_index = line.find(",");
             std::string customer_as = line.substr(0,delim_index);
             std::string provider_as = line.substr(delim_index+1);
-            add_relationship(std::stoi(customer_as), std::stoi(provider_as),0);
-            add_relationship(std::stoi(provider_as), std::stoi(customer_as),2);
+            add_relationship(std::stoul(customer_as), std::stoul(provider_as),0);
+            add_relationship(std::stoul(provider_as), std::stoul(customer_as),2);
         }
     }
     file.close();
@@ -111,14 +111,14 @@ void ASGraph::create_graph_from_files(){
 
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
     //TODO add table names to config
-    pqxx::result R = querier->select_from_table("peers");
+    pqxx::result R = querier->select_from_table("peers_jan_29");
     //c[1] = peer_as_1, c[2] = peer_as_2
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c[1].as<uint32_t>(),c[2].as<uint32_t>(),AS_REL_PEER);
         add_relationship(c[2].as<uint32_t>(),c[1].as<uint32_t>(),AS_REL_PEER);
     }
     //c[1] = customer_as, c[2] = provider_as
-    R = querier->select_from_table("customer_provider_pairs");
+    R = querier->select_from_table("customer_providers_jan_29");
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c[1].as<uint32_t>(),c[2].as<uint32_t>(),AS_REL_PROVIDER);
         add_relationship(c[2].as<uint32_t>(),c[1].as<uint32_t>(),AS_REL_CUSTOMER);

@@ -24,10 +24,18 @@ struct Prefix {
         std::string &s = addr_str;
         while ((pos = s.find(delimiter)) != std::string::npos) {
             token = s.substr(0, pos);
-            ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
-            s.erase(0, pos + delimiter.length());
+            try {
+              ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
+              s.erase(0, pos + delimiter.length());
+            } catch(const std::out_of_range& e) {
+              std::cerr << "Caught out of range error in Prefix constructor loop, token was: " << token << std::endl; 
+            }
         }
-        ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
+        try {
+          ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
+        } catch(const std::out_of_range& e) {
+          std::cerr << "Caught out of range error in Prefix constructor, token was: " << token << std::endl; 
+        }
 
         //Mask to int
         uint32_t ipv4_mask_int = 0;
@@ -35,11 +43,18 @@ struct Prefix {
         s = mask_str;
         while ((pos = s.find(delimiter)) != std::string::npos) {
             token = s.substr(0, pos);
-            ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
-            s.erase(0, pos + delimiter.length());
+            try {
+              ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
+              s.erase(0, pos + delimiter.length());
+            } catch(const std::out_of_range& e) {
+              std::cerr << "Caught out of range error in Prefix constructor mask loop, token was: " << token << std::endl; 
+            }
         }
-        ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
-
+        try {
+          ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
+        } catch(const std::out_of_range& e) {
+          std::cerr << "Caught out of range error in Prefix constructor mask, token was: " << token << std::endl; 
+        }
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
     }
