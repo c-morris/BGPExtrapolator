@@ -78,8 +78,8 @@ void ASGraph::create_graph_from_files(){
             auto delim_index = line.find(",");
             std::string peer_as_1 = line.substr(0,delim_index);
             std::string peer_as_2 = line.substr(delim_index+1);
-            add_relationship(std::stoi(peer_as_1), std::stoi(peer_as_2),1);
-            add_relationship(std::stoi(peer_as_2), std::stoi(peer_as_1),1);
+            add_relationship(std::stoul(peer_as_1), std::stoul(peer_as_2),1);
+            add_relationship(std::stoul(peer_as_2), std::stoul(peer_as_1),1);
         }
     }
     file.close();
@@ -96,8 +96,8 @@ void ASGraph::create_graph_from_files(){
             auto delim_index = line.find(",");
             std::string customer_as = line.substr(0,delim_index);
             std::string provider_as = line.substr(delim_index+1);
-            add_relationship(std::stoi(customer_as), std::stoi(provider_as),0);
-            add_relationship(std::stoi(provider_as), std::stoi(customer_as),2);
+            add_relationship(std::stoul(customer_as), std::stoul(provider_as),0);
+            add_relationship(std::stoul(provider_as), std::stoul(customer_as),2);
         }
     }
     file.close();
