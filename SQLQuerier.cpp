@@ -136,6 +136,22 @@ pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_fami
     return execute(sql);
 }
 
+//TODO add return type
+void SQLQuerier::check_for_relationship_changes(std::string peers_table_1,
+                                                std::string customer_provider_pairs_table_1,
+                                                std::string peers_table_2,
+                                                std::string customer_provider_paris_table_2){
+    
+# //   std::vector<std::vector<uint
+    
+    std::string sql = "SELECT * FROM " + peers_table_1;
+    //peers_1_result = execute(sql);
+
+    sql = "SELECT * FROM " + peers_table_2;
+    //peers_2_results = execute(sql);
+
+}
+
 void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
     std::string sql = "INSERT INTO " + results_table_name + " VALUES (DEFAULT,";
     for(auto const &as : *graph->ases){

@@ -109,13 +109,25 @@ void AS::process_announcements() {
     // Let me know and I'll fix it. 
     for (const auto &ann : *incoming_announcements) {
         // from https://en.cppreference.com/w/cpp/container/map/find
+        //TODO REMOVE DEBUGGING PRINTS
+        if(asn == 2635 && ann.prefix.addr == 737498112 && ann.prefix.netmask == 4294966272){
+            std::cerr << "Got the tracked ann" << std::endl;
+        }
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end()) {
+            //TODO REMOVE DEBUGGING PRINTS
+            if(asn == 2635 && ann.prefix.addr == 737498112 && ann.prefix.netmask == 4294966272){
+                std::cerr << "Inserting tracked ann as new" << std::endl;
+            }
             all_anns->insert(std::pair<Prefix<>, Announcement>(
                 ann.prefix, ann));
         //An announcement recorded by a monitor won't be replaced
         } else if (!search->second.from_monitor && 
                 ann.priority > search->second.priority) {
+                //TODO REMOVE DEBUGGING PRINTS
+                if(asn == 2635 && ann.prefix.addr == 737498112 && ann.prefix.netmask == 4294966272){
+                    std::cerr << "Replacing tracked ann with preferred" << std::endl;
+                }
             search->second = ann;
         }
     }
@@ -169,11 +181,18 @@ std::ostream& AS::pandas_stream_announcements(std::ostream &os){
     return os;
 }
 std::ostream& AS::stream_announcements(std::ostream &os){
-    for (uint32_t &member_asn : *member_ases){
+//TODO re-add this, it allows members of "super nodes" to get announce records
+//replaced for debugging
+/*    for (uint32_t &member_asn : *member_ases){
         for (auto &ann : *all_anns){
             os << member_asn << ",";
             ann.second.to_csv(os);
         }
+    }
+*/
+    for (auto &ann : *all_anns){
+        os << asn << ",";
+        ann.second.to_csv(os);
     }
     return os;
 }

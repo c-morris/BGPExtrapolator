@@ -62,6 +62,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         //For prefixes in group such that user defined or record max isn't exceeded,
         //and iteration size isn't exceeded. 
         //  Add prefix to vector to use
+        //TODO probably check if prefixes ever get reused in this loop
         for (pqxx::result::size_type i = 0 + row_to_start_group;
             i !=prefixes.size() && i - row_to_start_group < iteration_size &&
             row_to_start_group < max_total; ++i){
@@ -70,7 +71,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             prefixes[i]["family"].to(ip_family);
             if(ip_family == 6)
                 continue;
-             
+            
+            std::string prefix_to_get = prefixes[i]["roa_prefix"].as<std::string>(); 
             prefixes_to_get.push_back(prefixes[i]["roa_prefix"].as<std::string>());
         }
         row_to_start_group = iteration_num * iteration_size;
@@ -115,8 +117,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             else{
                 hop = R[j]["next_hop"].as<std::string>();
             }
+            //TODO make sure duplicates don't occur from this
             give_ann_to_as_path(as_path,p,hop);
-     
         }
         propagate_up();
         propagate_down();
@@ -139,7 +141,7 @@ void Extrapolator::propagate_up() {
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
-            auto test = graph->ases->find(asn)->second;
+           // auto test = graph->ases->find(asn)->second;
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, true, false);
             }

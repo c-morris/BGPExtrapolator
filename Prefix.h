@@ -6,8 +6,8 @@
 // use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
 struct Prefix {
-    Integer addr;
-    Integer netmask;
+    uint32_t addr;
+    uint32_t netmask;
     Prefix() {}
     Prefix(std::string addr_str, std::string mask_str) {
         // TODO IPv6 Address Parsing
@@ -27,7 +27,7 @@ struct Prefix {
             ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
             s.erase(0, pos + delimiter.length());
         }
-        ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
+        ipv4_ip_int += std::stoi(s) * std::pow(256,i--);
 
         //Mask to int
         uint32_t ipv4_mask_int = 0;
@@ -38,7 +38,7 @@ struct Prefix {
             ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
             s.erase(0, pos + delimiter.length());
         }
-        ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
+        ipv4_mask_int += std::stoi(s) * std::pow(256,i--);
 
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
@@ -69,13 +69,15 @@ struct Prefix {
     // comparison operators for maps
     // comparing the addr first ensures the more specific address is greater
     bool operator<(const Prefix &b) const {
-        if (addr < b.addr) {
-            return true;
-        } else if (netmask < b.netmask) {
-            return true;
-        } else {
-            return false;
-        }
+        uint64_t combined = 0;
+        combined |= addr;
+        combined = combined << 32;
+        combined |= netmask; 
+        uint64_t combined_b = 0;
+        combined_b |= b.addr;
+        combined_b = combined_b << 32;
+        combined_b |= b.netmask; 
+        return combined < combined_b;
     }
     bool operator==(const Prefix &b) const {
         return !(*this < b || b < *this);

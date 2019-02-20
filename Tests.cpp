@@ -33,7 +33,6 @@ using namespace std;
     delete testgraph;
     return;
 }
-
 //Test accuracy of ASGraph.tarjan()
 void tarjan_accuracy_test(){
     std::cout << "Tarjan's Algorithm Accuracy Test..." << std::endl;
@@ -130,6 +129,27 @@ void as_process_test(){
         assert(search->second == ann.second);
     }
     delete best_announcements;
+    delete as;
+}
+
+void as_process_test_2(){
+    AS *as = new AS(1);
+    std::vector<Announcement> anns;// = new std::vector<Announcement>;
+    Announcement ann_0 = Announcement(1,737498112,0xFFFFFF00,1);
+    ann_0.priority = 0.99;
+    Announcement ann_1 = Announcement(2,737498112,0xFFFFFF00,2);
+    ann_1.priority = 1.99;
+    Announcement ann_2 = Announcement(3,737498112,0xFFFFFF00,3);
+    ann_2.priority = 2.99;
+    
+    anns.push_back(ann_1);
+    anns.push_back(ann_2);
+    anns.push_back(ann_0);
+    
+    as->receive_announcements(anns);
+    as->process_announcements();
+    
+
     delete as;
 }
 
@@ -482,7 +502,7 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 100, 1000);
+    extrap->perform_propagation(true, 10, 100);
     delete extrap;
     return;
 }

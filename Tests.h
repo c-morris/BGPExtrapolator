@@ -25,6 +25,7 @@ void tarjan_accuracy_test();
 void tarjan_size_test();
 void as_receive_test();
 void as_process_test();
+void as_process_test_2();
 void set_comparison_test();
 void test_db_connection();
 void send_all_test();
