@@ -44,6 +44,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         closedir(dir);
     }
 
+    //Get ROAs from "roas" table (prefix - origin pairs)
     pqxx::result prefixes = querier->select_roa_prefixes("roas", IPV4);
 
     int row_to_start_group = 0;
@@ -52,11 +53,14 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     int iteration_num = 1;
 
     //Continue if not exeeding user defined or record max
+
     while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
+        
         std::cerr << "On iteration number " << std::to_string(iteration_num) <<std::endl;
         row_in_group = 0;
 
         //NEW THREAD CAN START HERE
+
         std::vector<std::string> prefixes_to_get;
 
         //For prefixes in group such that user defined or record max isn't exceeded,
@@ -71,8 +75,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             prefixes[i]["family"].to(ip_family);
             if(ip_family == 6)
                 continue;
-            
-            std::string prefix_to_get = prefixes[i]["roa_prefix"].as<std::string>(); 
+            //TODO remove redundent
+            //std::string prefix_to_get = prefixes[i]["roa_prefix"].as<std::string>(); 
             prefixes_to_get.push_back(prefixes[i]["roa_prefix"].as<std::string>());
         }
         row_to_start_group = iteration_num * iteration_size;
@@ -83,7 +87,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
-
+            //TODO check redundent
             std::string s = R[j]["host"].c_str();
             
             Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
@@ -126,7 +130,6 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             else{
                 hop = R[j]["next_hop"].as<std::string>();
             }
-            //TODO make sure duplicates don't occur from this
             give_ann_to_as_path(as_path,p,hop);
         }
         propagate_up();
@@ -137,9 +140,12 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         row_in_group++;
         iteration_num++;
     }
+    /*
     for (auto &t : *threads){
         t.join();
     }
+    */
+    //graph->save_stubs_to_db(querier);
 }
 
 
@@ -207,11 +213,13 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         int sent_to = -1;
         // "If not at the most recent AS (rightmost in reversed path),
         // record the AS it is sent to next"
+        //TODO maybe use iterator instead of i
         if (i < as_path->size() - 1) {
             auto asn_sent_to = *(it + 1);
             // This is refactored a little from the python code.
             // There is still probably a nicer way to do this.
             //if (asn_sent_to not in strongly connected components[comp_id]) { 
+            //TODO use macros instead of 0,1,2
                 if (as_on_path->providers->find(asn_sent_to) !=
                     as_on_path->providers->end()) {
                     sent_to = 0;
@@ -244,6 +252,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                 broken_path = true;
             }
         }
+        //This is how priority is calculated
         double path_len_weighted = 1 - (i - 1) / 100;
         double priority = received_from + path_len_weighted;
        
@@ -271,11 +280,14 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     }
 }
 
+
+//TODO remove this unused function
 /** Query all announcements for a vector of prefixes from the database and
  * insert them into the graph. 
  *
  * @param prefixes a vector of prefixes to query the db for
  */
+
 void Extrapolator::insert_announcements(std::vector<Prefix<>> *prefixes) {
     using namespace pqxx;
     // this is very db library dependent, so I'm leaving it for you, Michael

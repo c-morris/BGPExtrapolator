@@ -582,3 +582,13 @@ void select_by_prefix_test(){
 
     delete querier;
 }
+
+
+void stub_test(){
+    SQLQuerier *querier = new SQLQuerier;
+    ASGraph *graph = new ASGraph;
+    graph->create_graph_from_db(querier);
+
+    delete graph;
+    delete querier;
+}

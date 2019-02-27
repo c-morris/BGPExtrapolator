@@ -135,6 +135,8 @@ pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_fami
     return execute(sql);
 }
 
+
+
 //TODO add return type
 void SQLQuerier::check_for_relationship_changes(std::string peers_table_1,
                                                 std::string customer_provider_pairs_table_1,
@@ -151,6 +153,7 @@ void SQLQuerier::check_for_relationship_changes(std::string peers_table_1,
 
 }
 
+//NOT CURRENTLY USED
 void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
     std::string sql = "INSERT INTO " + results_table_name + " VALUES (DEFAULT,";
     for(auto const &as : *graph->ases){
@@ -160,6 +163,17 @@ void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
             execute(sql3,true);
         }
     }
+}
+
+void SQLQuerier::clear_stubs_from_db(){
+    std::string sql = "DELETE FROM stubs";
+    execute(sql);
+}
+
+void SQLQuerier::copy_stubs_to_db(std::string file_name){
+    std::string sql = "COPY stubs(stub_asn,parent_asn) FROM '" +
+                      file_name + "' WITH (FORMAT csv)";
+    execute(sql);
 }
 
 void SQLQuerier::copy_results_to_db(std::string file_name){

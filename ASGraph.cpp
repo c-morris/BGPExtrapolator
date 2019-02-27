@@ -12,6 +12,7 @@ ASGraph::ASGraph() {
     ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
     components = new std::vector<std::vector<uint32_t>*>;
     component_translation = new std::map<uint32_t, uint32_t>;
+    stubs_to_parents = new std::map<uint32_t, uint32_t>;
 }
 
 ASGraph::~ASGraph() {
@@ -57,7 +58,17 @@ uint32_t ASGraph::translate_asn(uint32_t asn){
     return search->second;
 }
 
+//process without removing stubs (doesn't need querier)
 void ASGraph::process(){
+    tarjan();
+    combine_components();
+    decide_ranks();
+    return;
+}
+
+//process with removing stubs (needs querier to save them)
+void ASGraph::process(SQLQuerier *querier){
+    remove_stubs(querier);
     tarjan();
     combine_components();
     decide_ranks();
@@ -104,31 +115,76 @@ void ASGraph::create_graph_from_files(){
     file.clear();
 
     //process strongly connected components, decide ranks
-    process();
+    //TODO need querier to give process for this function
+    //process();
 
     return;   
 }
 
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
     //TODO add table names to config
-    pqxx::result R = querier->select_from_table("peers_jan_29");
-    //c[1] = peer_as_1, c[2] = peer_as_2
+    pqxx::result R = querier->select_from_table("peers");
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
-        add_relationship(c[1].as<uint32_t>(),c[2].as<uint32_t>(),AS_REL_PEER);
-        add_relationship(c[2].as<uint32_t>(),c[1].as<uint32_t>(),AS_REL_PEER);
+        add_relationship(c["peer_as_1"].as<uint32_t>(),
+                        c["peer_as_2"].as<uint32_t>(),AS_REL_PEER);
+        add_relationship(c["peer_as_2"].as<uint32_t>(),
+                        c["peer_as_1"].as<uint32_t>(),AS_REL_PEER);
     }
-    //c[1] = customer_as, c[2] = provider_as
-    R = querier->select_from_table("customer_providers_jan_29");
+    R = querier->select_from_table("customer_providers");
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
-        add_relationship(c[1].as<uint32_t>(),c[2].as<uint32_t>(),AS_REL_PROVIDER);
-        add_relationship(c[2].as<uint32_t>(),c[1].as<uint32_t>(),AS_REL_CUSTOMER);
+        add_relationship(c["customer_as"].as<uint32_t>(),c["provider_as"].as<uint32_t>(),AS_REL_PROVIDER);
+        add_relationship(c["provider_as"].as<uint32_t>(),c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
     }
 
-    process();
+    process(querier);
 
     return;
 }
 
+void ASGraph::remove_stubs(SQLQuerier *querier){
+
+    for (auto &as : *ases){
+        if(as.second->providers->size()==1 && as.second->customers->size()==0){
+            //Will just be one provider
+            //remove stub as child of it's parent
+            for(uint32_t provider_asn : *as.second->providers){
+                AS* provider = ases->find(provider_asn)->second;
+                provider->customers->erase(as.first);
+                stubs_to_parents->insert(std::pair<uint32_t,uint32_t>(
+                            as.first,provider_asn));
+            }
+            for(uint32_t peer_asn : *as.second->peers){
+                AS * peer = ases->find(peer_asn)->second;
+                peer->peers->erase(as.first);
+            }
+            //Store stub and remove from graph
+            ases->erase(as.first);
+        }
+    }
+    querier->clear_stubs_from_db();
+    save_stubs_to_db(querier);
+}
+
+void ASGraph::save_stubs_to_db(SQLQuerier *querier){
+    DIR* dir = opendir("/dev/shm/bgp");
+    if(!dir){
+        mkdir("/dev/shm/bgp",0777);
+    }
+    else{
+        closedir(dir);
+    }
+
+    std::ofstream outfile;
+    std::cerr << "Saving Stubs..." << std::endl;
+    std::string file_name = "/dev/shm/bgp/stubs.csv";
+    outfile.open(file_name);
+    for (auto &stub : *stubs_to_parents){
+        outfile << stub.first << "," << stub.second << "\n";
+    }
+    outfile.close();
+    querier->copy_stubs_to_db(file_name);
+    std::remove(file_name.c_str());
+}
 
 /** Decide and assign ranks to all the AS's in the graph. 
  */

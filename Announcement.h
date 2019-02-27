@@ -30,9 +30,10 @@ struct Announcement {
         from_monitor = a_from_monitor;
         hop = ahop;
     }
-    // comparison operators for maps
+    // comparison operators
     // comparing first on prefix ensures the most specific announcement gets
     // priority. The origin is not used in comparison. 
+    //TODO check validity
     bool operator<(const Announcement &b) const {
         if (prefix < b.prefix) {
             return true;

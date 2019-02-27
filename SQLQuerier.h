@@ -34,6 +34,8 @@ struct SQLQuerier {
                                                 std::string customer_provider_paris_table_2);
     void insert_results(ASGraph* graph, std::string results_table_name);
     void copy_results_to_db(std::string file_name);
+    void clear_stubs_from_db();
+    void copy_stubs_to_db(std::string file_name);
     void read_config();
     
 

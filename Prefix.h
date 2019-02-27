@@ -6,8 +6,8 @@
 // use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
 struct Prefix {
-    uint32_t addr;
-    uint32_t netmask;
+    Integer addr;
+    Integer netmask;
     Prefix() {}
     Prefix(std::string addr_str, std::string mask_str) {
         // TODO IPv6 Address Parsing

@@ -45,4 +45,5 @@ void distinct_prefixes_test();
 void announcement_comparison_test();
 void SQL_insertion_test();
 void find_as_path();
+void stub_test();
 #endif
