@@ -17,7 +17,7 @@
 #include "Announcement.h"
 #include "Prefix.h"
 #include "SQLQuerier.h"
-
+#include "TableNames.h"
 
 struct Extrapolator {
     ASGraph *graph;

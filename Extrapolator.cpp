@@ -6,7 +6,6 @@
 #include "Extrapolator.h"
 
 Extrapolator::Extrapolator() {
-    ases_with_anns = new std::set<uint32_t>; //currently unusued. Likely doesn't improve performance
     graph = new ASGraph;
     querier = new SQLQuerier;
     graph->create_graph_from_db(querier);
@@ -15,7 +14,6 @@ Extrapolator::Extrapolator() {
 }
 
 Extrapolator::~Extrapolator(){
-    delete ases_with_anns;  
     delete graph;
     delete querier;
     delete threads;
@@ -45,7 +43,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     }
 
     //Get ROAs from "roas" table (prefix - origin pairs)
-    pqxx::result prefixes = querier->select_roa_prefixes("roas", IPV4);
+    pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
 
     int row_to_start_group = 0;
     int row_in_group = 0;
@@ -68,7 +66,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         //  Add prefix to vector to use
         //TODO probably check if prefixes ever get reused in this loop
         for (pqxx::result::size_type i = 0 + row_to_start_group;
-            i !=prefixes.size() && i - row_to_start_group < iteration_size &&
+            i !=prefixes.size() && i - row_to_start_group < (unsigned)iteration_size &&
             row_to_start_group < max_total; ++i){
             //Skip ipv6, possible future support
             int ip_family;
@@ -77,13 +75,13 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
                 continue;
             //TODO remove redundent
             //std::string prefix_to_get = prefixes[i]["roa_prefix"].as<std::string>(); 
-            prefixes_to_get.push_back(prefixes[i]["roa_prefix"].as<std::string>());
+            prefixes_to_get.push_back(prefixes[i]["prefix"].as<std::string>());
         }
         row_to_start_group = iteration_num * iteration_size;
         
 
         //Get all announcements (R) for prefixes in iteration (prefixes_to_get)
-        pqxx::result R = querier->select_ann_records("mrt_announcements_jan_29",prefixes_to_get);
+        pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE,prefixes_to_get);
 
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
@@ -98,7 +96,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             std::string path_as_string(R[j]["as_path"].as<std::string>());
             //remove brackets from string
             char brackets[] = "{}";
-            for (int i = 0; i < strlen(brackets); ++i){
+            for (uint32_t i = 0; i < strlen(brackets); ++i){
                 path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(),
                                      brackets[i]), path_as_string.end()); 
             }
@@ -132,6 +130,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             }
             give_ann_to_as_path(as_path,p,hop);
         }
+        //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
         propagate_up();
         propagate_down();
 //        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
@@ -202,12 +201,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // if asn not in graph, continue
         if (graph->ases->find(*it) == graph->ases->end()) 
             continue;
-        // TODO some SCC stuff here
-        // comp_id = self.graph.ases[asn].SCC_id
-//        uint32_t comp_id = *it;
         uint32_t asn_on_path = graph->translate_asn(*it);
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
-        // if (comp_id in self.ases_with_anns)
             if (as_on_path->already_received(ann_to_check_for)) 
                 continue;
         int sent_to = -1;
@@ -218,25 +213,22 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             auto asn_sent_to = *(it + 1);
             // This is refactored a little from the python code.
             // There is still probably a nicer way to do this.
-            //if (asn_sent_to not in strongly connected components[comp_id]) { 
-            //TODO use macros instead of 0,1,2
-                if (as_on_path->providers->find(asn_sent_to) !=
-                    as_on_path->providers->end()) {
-                    sent_to = 0;
-                } else if (as_on_path->peers->find(asn_sent_to) !=
-                    as_on_path->peers->end()) {
-                    sent_to = 1;
-                } else if (as_on_path->customers->find(asn_sent_to) != 
-                    as_on_path->customers->end()) {
-                    sent_to = 2;
-                }
+            //TODO use relationship macros instead of 0,1,2
+            if (as_on_path->providers->find(asn_sent_to) !=
+                as_on_path->providers->end()) {
+                sent_to = 0;
+            } else if (as_on_path->peers->find(asn_sent_to) !=
+                as_on_path->peers->end()) {
+                sent_to = 1;
+            } else if (as_on_path->customers->find(asn_sent_to) != 
+                as_on_path->customers->end()) {
+                sent_to = 2;
+            }
         }
-        //}
-        // if ASes in the path aren't neighbors (this happens sometimes)
+        // if ASes in the path aren't neighbors (If data is out of sync)
         bool broken_path = false;
         // now check recv'd from
-        // TODO Do we need to prefer announces from customers here? because
-        // right now it looks like we prefer providers
+        // It is 3 by default. It stays as 3 if it's the origin.
         int received_from = 3;
         if (i > 1) {
             if (as_on_path->providers->find(*(it - 1)) != 
@@ -256,7 +248,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         double path_len_weighted = 1 - (i - 1) / 100;
         double priority = received_from + path_len_weighted;
        
-        uint32_t received_from_asn = 0; 
+        uint32_t received_from_asn = 0;
+        //If this AS is the origin, it "received" the ann from itself
         if (it == as_path->rbegin()){
             uint32_t received_from_asn = *it;
         }
@@ -271,11 +264,12 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                 received_from_asn,
                 hop,
                 true); //from_monitor
+            //If announcement was sent to a peer or provider
+            //Append it to list of anns sent to peers and providers
             if (sent_to == 1 or sent_to == 0) {
                 as_on_path->anns_sent_to_peers_providers->push_back(ann);
             }
             as_on_path->receive_announcement(ann);
-            ases_with_anns->insert(asn_on_path);
         }
     }
 }

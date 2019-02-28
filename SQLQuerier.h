@@ -15,6 +15,7 @@ struct ASGraph;
 
 #include "ASGraph.h"
 #include "TableNames.h"
+#include "TableNames.h"
 
 struct SQLQuerier {
     SQLQuerier();

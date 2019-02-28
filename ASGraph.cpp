@@ -123,14 +123,14 @@ void ASGraph::create_graph_from_files(){
 
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
     //TODO add table names to config
-    pqxx::result R = querier->select_from_table("peers");
+    pqxx::result R = querier->select_from_table(PEERS_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c["peer_as_1"].as<uint32_t>(),
                         c["peer_as_2"].as<uint32_t>(),AS_REL_PEER);
         add_relationship(c["peer_as_2"].as<uint32_t>(),
                         c["peer_as_1"].as<uint32_t>(),AS_REL_PEER);
     }
-    R = querier->select_from_table("customer_providers");
+    R = querier->select_from_table(CUSTOMER_PROVIDER_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c["customer_as"].as<uint32_t>(),c["provider_as"].as<uint32_t>(),AS_REL_PROVIDER);
         add_relationship(c["provider_as"].as<uint32_t>(),c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);

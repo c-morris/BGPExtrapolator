@@ -12,10 +12,10 @@ struct SQLQuerier;
 #include <stack>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <pqxx/pqxx>
 #include "AS.h"
 #include "SQLQuerier.h"
-#include <pqxx/pqxx>
-
+#include "TableNames.h"
 
 struct ASGraph {
     std::map<uint32_t, AS*> *ases; // map of ASN to AS object 

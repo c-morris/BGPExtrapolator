@@ -45,13 +45,14 @@ void SQLQuerier::close_connection(){
 
 
 pqxx::result SQLQuerier::execute(std::string sql, bool insert){
+    pqxx::result R;
     if(insert){
         //TODO maybe make one work object once on construction
         //work object may be same as nontransaction with more functionality
         
         try{
             pqxx::work txn(*C);
-            pqxx::result R = txn.exec(sql);
+            R = txn.exec(sql);
             txn.commit();
             return R;
         }
@@ -71,6 +72,7 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert){
             std::cerr << e.what() <<std::endl;
         }
     }
+    return R;
 }
 //TODO maybe rename/overload this for selection options
 pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
@@ -127,11 +129,11 @@ pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_n
 }
 
 pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_family){
-    std::string sql = "SELECT DISTINCT roa_prefix, family(roa_prefix) FROM " + table_name;
+    std::string sql = "SELECT DISTINCT prefix, family(prefix) FROM " + table_name;
     if(ip_family == IPV4)
-        sql += " WHERE family(roa_prefix) = 4";
+        sql += " WHERE family(prefix) = 4";
     else if(ip_family == IPV6)
-        sql += " WHERE family(roa_prefix) = 4";
+        sql += " WHERE family(prefix) = 4";
     return execute(sql);
 }
 
@@ -171,13 +173,13 @@ void SQLQuerier::clear_stubs_from_db(){
 }
 
 void SQLQuerier::copy_stubs_to_db(std::string file_name){
-    std::string sql = "COPY stubs(stub_asn,parent_asn) FROM '" +
+    std::string sql = "COPY " STUBS_TABLE "(stub_asn,parent_asn) FROM '" +
                       file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
 void SQLQuerier::copy_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY extrapolation_results(asn, prefix_origin, priority, received_from_asn)") +
+    std::string sql = std::string("COPY " RESULTS_TABLE "(asn, prefix_origin, priority, received_from_asn)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }

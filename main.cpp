@@ -32,8 +32,8 @@ int main(int argc, char *argv[]) {
 //    test_db_connection();
     //full_propagation_test_a();
     //announcement_comparison_test();
-//    full_propagation_test_b();
-    stub_test();
+    full_propagation_test_b();
+//    stub_test();
     //query_array_test();
     //distinct_prefixes_test();
     //map_test();
