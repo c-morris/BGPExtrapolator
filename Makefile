@@ -1,12 +1,12 @@
 CC=g++
-CPPFLAGS= -Wall -g -std=c++14  -pthread
+CPPFLAGS= -Wall -g -std=c++14
 OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 # compile with optimization if not running tests
 all: CPPFLAGS+= -O3
 
 all: $(OBJECTS)
-	$(CC) $(CPPFLAGS) -O3 -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq -pthread
+	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq 
 
 testing: $(OBJECTS) 
 	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq

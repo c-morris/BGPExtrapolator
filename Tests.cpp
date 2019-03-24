@@ -502,7 +502,7 @@ void full_propagation_test_a(){
 
 void full_propagation_test_b(){
     Extrapolator *extrap = new Extrapolator;
-    extrap->perform_propagation(true, 100, 200);
+    extrap->perform_propagation(true, 100, 800000);
     delete extrap;
     return;
 }
