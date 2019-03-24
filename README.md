@@ -9,22 +9,24 @@ This program utilizes [AS](https://en.wikipedia.org/wiki/Autonomous_system_(Inte
 
 * g++ supporting at least c++14
 * [libpqxx](http://pqxx.org/development/libpqxx/) version 4.0
-
-## Building 
-
-If using the source files, start by running the included Makefile to compile the program. Currently, this is done by simply running `make test` while in the source file directory after calling desired test functions in main.cpp from Tests.h/Tests.cpp .
-
-This produces an executable `bgp-extrapolator` 
-
-## Usage
+* libboost  
 
 This program is designed and tested on a Linux distribution and does not officially support other environments. 
 
+## Building 
 
+To build from source, run `make` while in the source directory. This produces
+an executable `bgp-extrapolator`. 
 
-The program does not currently support flags and other args but will in the near future.
+To run tests, use `make test` instead. This builds an executable that runs
+tests only and does not perform a full extrapolation. 
 
-The SQLQuerier struct currently looks for a file "`bgp.conf`" in "`/etc/bgp/`" for credentials regarding the Postgres database. This is the same location and format expected by [lib_bgp_data](https://github.com/jfuruness/lib_bgp_data). It's expected in the following format:
+## Usage
+
+The Extrapolator looks for a file called "`bgp.conf`" in "`/etc/bgp/`" for
+credentials to access the Postgres database. This is the same location and 
+format expected by [lib_bgp_data](https://github.com/jfuruness/lib_bgp_data). 
+It's expected in the following format:
 
 ```
 [bgp]
@@ -37,10 +39,15 @@ port = 5432
 
 ```
 
+The Extrapolator runs under the assumption that the database is already
+populated with the necessary data on AS Relationships, RPKI ROAs, and BGP
+announcements to propagate. The easiest way to get all of that data in the
+databse in the correct format is to use jfuruness' [lib_bgp_data](https://github.com/jfuruness/lib_bgp_data). 
 
-
-
-
+When the database is set up and the config file is in place, you can run 
+```
+./bgp-extrapolator
+```
 
 
 ## Classes and Structs
