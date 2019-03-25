@@ -11,7 +11,9 @@ This program utilizes [AS](https://en.wikipedia.org/wiki/Autonomous_system_(Inte
 * [libpqxx](http://pqxx.org/development/libpqxx/) version 4.0
 * libboost  
 
-This program is designed and tested on a Linux distribution and does not officially support other environments. 
+There is a convenience script, apt-install-deps.sh, that will install these for
+you on a Debian/Ubuntu system. This program is designed and tested on a Linux 
+distribution and does not officially support other environments. 
 
 ## Building 
 
