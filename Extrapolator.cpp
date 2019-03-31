@@ -30,15 +30,13 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             cout << "Created \"test\" directory" <<endl;
     }
     */
-    //code for making directory in temp space
     
+    // make tmp directory if it does not exist
     bool exists = false;
-
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
         mkdir("/dev/shm/bgp", 0777); 
-    }
-    else{
+    } else {
         closedir(dir);
     }
 

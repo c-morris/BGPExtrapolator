@@ -52,7 +52,7 @@ struct Announcement {
     
     std::string to_sql(){
         return ("'" + prefix.to_cidr() + 
-                "-" + std::to_string(origin) + "'" + 
+                "," + std::to_string(origin) + "'" + 
                 "," + "'" + std::to_string(priority) + "'" + 
                 "," + std::to_string(received_from_asn));
     }
