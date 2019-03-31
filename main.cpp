@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     // put actual main code here
     Extrapolator *extrap = new Extrapolator;
     // TODO make 100 an option, make 800k something more reasonable
-    extrap->perform_propagation(true, 100, 800000);
+    extrap->perform_propagation(true, 100, 100);
     delete extrap;
 
     return 0;

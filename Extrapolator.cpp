@@ -40,6 +40,26 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         closedir(dir);
     }
 
+    // Drop the results table and create it again
+	std::string sql = "DROP TABLE ";
+    sql += RESULTS_TABLE;
+    sql += + " ;";
+    querier->execute(sql, false);
+    sql = "CREATE TABLE ";
+    sql += RESULTS_TABLE;
+    sql += " ( \
+		  ann_id serial PRIMARY KEY, \
+		  asn bigint, \
+		  prefix cidr, \
+		  origin bigint, \
+		  priority double precision, \
+		  received_from_asn bigint \
+	  );";
+    sql += "GRANT ALL ON TABLE ";
+    sql += RESULTS_TABLE;
+    sql += " TO bgp_user;";
+    querier->execute(sql, false);
+
     //Get ROAs from "roas" table (prefix - origin pairs)
     pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
 
@@ -137,9 +157,10 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         row_in_group++;
         iteration_num++;
     }
-    std::string sql = "CREATE INDEX IF NOT EXISTS ON ";
+    // create an index on the results
+    sql = "CREATE INDEX ON ";
     sql += RESULTS_TABLE;
-    sql += " USING GIST(prefix inet_ops, origin)";
+    sql += " USING GIST(prefix inet_ops, origin);";
     querier->execute(sql, false);
     /*
     for (auto &t : *threads){
