@@ -139,7 +139,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     }
     std::string sql = "CREATE INDEX IF NOT EXISTS ON ";
     sql += RESULTS_TABLE;
-    sql += " USING GIST(prefix inet_ops origin)";
+    sql += " USING GIST(prefix inet_ops, origin)";
     querier->execute(sql, false);
     /*
     for (auto &t : *threads){
