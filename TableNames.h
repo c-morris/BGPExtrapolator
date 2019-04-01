@@ -1,7 +1,7 @@
 #ifndef TABLENAMES_H
 #define TABLENAMES_H
 
-#define RESULTS_TABLE "extrapolation_results"
+#define RESULTS_TABLE "extrapolation_results2"
 #define PEERS_TABLE "peers"
 #define CUSTOMER_PROVIDER_TABLE "customer_providers"
 #define ROAS_TABLE "roas"
