@@ -30,25 +30,46 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             cout << "Created \"test\" directory" <<endl;
     }
     */
-    //code for making directory in temp space
     
+    // make tmp directory if it does not exist
     bool exists = false;
-
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
         mkdir("/dev/shm/bgp", 0777); 
-    }
-    else{
+    } else {
         closedir(dir);
     }
 
+    // Drop the results table and create it again
+	std::string sql = "DROP TABLE ";
+    sql += RESULTS_TABLE;
+    sql += + " ;";
+    std::cout << "Dropping results table" << std::endl;
+    querier->execute(sql, false);
+    sql = "CREATE TABLE ";
+    sql += RESULTS_TABLE;
+    sql += " ( \
+		  ann_id serial PRIMARY KEY, \
+		  asn bigint, \
+		  prefix cidr, \
+		  origin bigint, \
+		  priority double precision, \
+		  received_from_asn bigint \
+	  );";
+    sql += "GRANT ALL ON TABLE ";
+    sql += RESULTS_TABLE;
+    sql += " TO bgp_user;";
+    std::cout << "Creating results table" << std::endl;
+    querier->execute(sql, false);
+
     //Get ROAs from "roas" table (prefix - origin pairs)
+    std::cout << "Selecting prefixes with ROAs..." << std::endl;
     pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
 
     int row_to_start_group = 0;
     int row_in_group = 0;
     int num_prefixes = prefixes.size();
-    int iteration_num = 1;
+    int iteration_num = 0;
 
     //Continue if not exeeding user defined or record max
 
@@ -110,6 +131,9 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
                   as_path->push_back(std::stoul(token));
                 } catch(const std::out_of_range& e) {
                   std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl; 
+                } catch(const std::invalid_argument& e) {
+                  std::cerr << "Invalid argument filling path vect, token was:"
+                    << token << std::endl;
                 }
                 path_as_string.erase(0,pos + delimiter.length());
             }
@@ -118,6 +142,15 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             } catch(const std::out_of_range& e) {
               std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl; 
               std::cerr << "Path as string was: " << path_as_string << std::endl; 
+            } catch(const std::invalid_argument& e) {
+                  if (path_as_string.length() == 0) {
+                    std::cerr << "Ignoring announcement with empty as_path" <<
+                      std::endl;
+                  } else {
+                    std::cerr << "Invalid argument filling path vect (last), token was:"
+                      << token << std::endl;
+                    std::cerr << "Path as string was: " << path_as_string << std::endl;
+                  }
             }
        
             //if no hop identify accordingly, otherwise use it
@@ -139,6 +172,12 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         row_in_group++;
         iteration_num++;
     }
+    // create an index on the results
+    sql = "CREATE INDEX ON ";
+    sql += RESULTS_TABLE;
+    sql += " USING GIST(prefix inet_ops, origin);";
+    std::cout << "Generating index on results..." << std::endl;
+    querier->execute(sql, false);
     /*
     for (auto &t : *threads){
         t.join();
@@ -378,13 +417,10 @@ void Extrapolator::save_results(int iteration){
 //    SQLQuerier *thread_querier = new SQLQuerier;
     std::ofstream outfile;
     std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
-    //TODO replace table name with variable changed by make test
-//    querier->insert_results(graph,"extrapolation_results");
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
     //TODO accomodate for components
     //DONE -- needs testing
-    std::cerr << file_name << std::endl;
     for (auto &as : *graph->ases){
         as.second->stream_announcements(outfile);
     }
