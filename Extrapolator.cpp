@@ -8,6 +8,7 @@
 Extrapolator::Extrapolator() {
     graph = new ASGraph;
     querier = new SQLQuerier;
+
     graph->create_graph_from_db(querier);
 //    graph->create_graph_from_files();
     threads = new std::vector<std::thread>;
@@ -60,6 +61,14 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     sql += RESULTS_TABLE;
     sql += " TO bgp_user;";
     std::cout << "Creating results table" << std::endl;
+    querier->execute(sql, false);
+    sql = "CREATE TABLE IF NOT EXISTS ";
+    sql += STUBS_TABLE;
+    sql += " ( \
+		  stub_asn BIGSERIAL PRIMARY KEY, \
+		  parent_asn bigint \
+	  );";
+    std::cout << "Creating stubs table" << std::endl;
     querier->execute(sql, false);
 
     //Get ROAs from "roas" table (prefix - origin pairs)
@@ -206,8 +215,9 @@ void Extrapolator::propagate_up() {
  */
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
-    for (size_t level = levels-1; level > 0; level--) {
+    for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            //std::cout << "propagating down to " << asn << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, true);
