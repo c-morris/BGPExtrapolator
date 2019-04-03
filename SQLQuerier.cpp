@@ -179,7 +179,7 @@ void SQLQuerier::copy_stubs_to_db(std::string file_name){
 }
 
 void SQLQuerier::copy_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY " RESULTS_TABLE "(asn, prefix, origin, priority, received_from_asn)") +
+    std::string sql = std::string("COPY " RESULTS_TABLE "(asn, prefix, origin, received_from_asn)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }

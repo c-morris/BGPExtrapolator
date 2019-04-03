@@ -54,7 +54,6 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 		  asn bigint, \
 		  prefix cidr, \
 		  origin bigint, \
-		  priority double precision, \
 		  received_from_asn bigint \
 	  );";
     sql += "GRANT ALL ON TABLE ";
