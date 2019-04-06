@@ -178,7 +178,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         iteration_num++;
     }
     // create an index on the results
-    sql = "CREATE INDEX ON ";
+    sql = "CREATE INDEX CONCURRENTLY ON "; // postgres version must support this
     sql += RESULTS_TABLE;
     sql += " USING GIST(prefix inet_ops, origin);";
     std::cout << "Generating index on results..." << std::endl;
