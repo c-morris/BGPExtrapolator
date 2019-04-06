@@ -110,8 +110,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         
 
         //Get all announcements (R) for prefixes in iteration (prefixes_to_get)
-        pqxx::result R =
-          querier->select_ann_records(ANNOUNCEMENTS_TABLE, iteration_size, row_to_start_group);
+        pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE,prefixes_to_get);
 
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
@@ -163,9 +162,13 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             }
        
             //if no hop identify accordingly, otherwise use it
-            // this "hop" field is never used and should be removed
             std::string hop;
-            hop = "hop";
+            if(R[j]["next_hop"].is_null()){
+                hop = "hop";
+            }
+            else{
+                hop = R[j]["next_hop"].as<std::string>();
+            }
             give_ann_to_as_path(as_path,p,hop);
         }
         //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
