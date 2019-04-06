@@ -47,7 +47,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     sql += + " ;";
     std::cout << "Dropping results table" << std::endl;
     querier->execute(sql, false);
-    sql = "CREATE TABLE ";
+    sql = "CREATE UNLOGGED TABLE ";
     sql += RESULTS_TABLE;
     sql += " ( \
 		  ann_id serial PRIMARY KEY, \
