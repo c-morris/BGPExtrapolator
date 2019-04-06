@@ -67,6 +67,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 		  stub_asn BIGSERIAL PRIMARY KEY, \
 		  parent_asn bigint \
 	  );";
+      // this "hop" field is never used and should be removed
     std::cout << "Creating stubs table" << std::endl;
     querier->execute(sql, false);
 
@@ -162,13 +163,9 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             }
        
             //if no hop identify accordingly, otherwise use it
+            // this "hop" field is never used and should be removed
             std::string hop;
-            if(R[j]["next_hop"].is_null()){
-                hop = "hop";
-            }
-            else{
-                hop = R[j]["next_hop"].as<std::string>();
-            }
+            hop = "hop";
             give_ann_to_as_path(as_path,p,hop);
         }
         //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers

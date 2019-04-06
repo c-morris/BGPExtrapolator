@@ -86,7 +86,7 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
 
 pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
 //    std::cerr << "Selecting announcement records..."<< std::endl;
-    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, next_hop FROM " + table_name;
+    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path FROM " + table_name;
     if(!prefix.empty()){
         sql += (" WHERE prefix = "+ std::string("'") + prefix + std::string("'"));
     }
@@ -102,7 +102,7 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string 
 
 pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit){
 //    std::cerr << "Selecting announcement records..."<< std::endl;
-    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, next_hop FROM " + table_name;
+    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path FROM " + table_name;
     sql += " WHERE prefix IN (";
     int comma_limit = prefixes.size();
     int i = 0;
