@@ -4,6 +4,7 @@
 #include <vector>
 #include <stack>
 #include <algorithm>
+#include <limits.h>
 #include "ASGraph.h"
 #include "AS.h"
 
@@ -70,6 +71,7 @@ void ASGraph::process(){
 void ASGraph::process(SQLQuerier *querier){
     remove_stubs(querier);
     tarjan();
+    save_supernodes_to_db(querier);
     combine_components();
     decide_ranks();
     return;
@@ -185,6 +187,43 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
     querier->copy_stubs_to_db(file_name);
     std::remove(file_name.c_str());
 }
+
+/**
+ *  Generate a csv with all supernodes, then dump them to database 
+ */
+void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
+    DIR* dir = opendir("/dev/shm/bgp");
+    if(!dir) {
+        mkdir("/dev/shm/bgp",0777);
+    } else {
+        closedir(dir);
+    }
+
+    std::ofstream outfile;
+    std::cerr << "Saving Stubs..." << std::endl;
+    std::string file_name = "/dev/shm/bgp/stubs.csv";
+    outfile.open(file_name); 
+    
+    // components = new std::vector<std::vector<uint32_t>*>;
+    // iterate over each strongly connected component
+    for (auto &cur_node : *components) {
+        //= components.begin(); cur_node != components.end(); ++cur_node) {
+        // find the lowest asn in supernode
+        uint32_t low = UINT_MAX;
+        for (auto &cur_asn : *cur_node) {
+            if (cur_asn < low) 
+                low = cur_asn;
+        }
+        // assemble rows as pairs; asn in supernode, lowest asn in that supernode        
+        for (auto &cur_asn : *cur_node) {
+            outfile << cur_asn << "," << low << "\n";
+        }
+    }
+    outfile.close();
+    querier->copy_supernodes_to_db(file_name);
+    std::remove(file_name.c_str());
+}
+
 
 /** Decide and assign ranks to all the AS's in the graph. 
  */

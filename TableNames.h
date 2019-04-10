@@ -6,6 +6,7 @@
 #define CUSTOMER_PROVIDER_TABLE "customer_providers"
 #define ROAS_TABLE "roas"
 #define STUBS_TABLE "stubs"
+#define SUPERNODES_TABLE "supernodes"
 #define ANNOUNCEMENTS_TABLE "mrt_announcements"
 
 #endif
