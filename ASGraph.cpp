@@ -26,7 +26,12 @@ ASGraph::~ASGraph() {
     }
     delete ases_by_rank;
 
+    for (auto const& c : *components) {
+        delete c;
+    }
+    delete components;
     delete component_translation;
+    delete stubs_to_parents;
 }
 
 /** Adds an AS relationship to the graph.
@@ -142,23 +147,44 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
 }
 
 void ASGraph::remove_stubs(SQLQuerier *querier){
-
+    std::vector<AS*> to_remove;
     for (auto &as : *ases){
-        if(as.second->providers->size()==1 && as.second->customers->size()==0){
-            //Will just be one provider
-            //remove stub as child of it's parent
-            for(uint32_t provider_asn : *as.second->providers){
-                AS* provider = ases->find(provider_asn)->second;
-                provider->customers->erase(as.first);
-                stubs_to_parents->insert(std::pair<uint32_t,uint32_t>(
-                            as.first,provider_asn));
+        if(as.second->peers->size() == 0 &&
+           as.second->providers->size() == 1 && 
+           (as.second->customers->size() == 0)) {// || as.second->customers->size() == 1)) {
+            to_remove.push_back(as.second);    
+        }
+    }
+    for (auto *as : to_remove) {
+        //Will just be one provider
+        //remove stub as child of it's parent
+        for(uint32_t provider_asn : *as->providers){
+            auto iter = ases->find(provider_asn);
+            if (iter != ases->end()) {
+                AS* provider = iter->second;
+                provider->customers->erase(as->asn);
             }
-            for(uint32_t peer_asn : *as.second->peers){
-                AS * peer = ases->find(peer_asn)->second;
-                peer->peers->erase(as.first);
+            stubs_to_parents->insert(std::pair<uint32_t,uint32_t>(
+                        as->asn,provider_asn));
+        }
+        for(uint32_t peer_asn : *as->peers){
+            auto iter = ases->find(peer_asn);
+            if (iter != ases->end()) {
+                AS * peer = iter->second;
+                peer->peers->erase(as->asn);
             }
-            //Store stub and remove from graph
-            ases->erase(as.first);
+        }
+        for(uint32_t customer_asn : *as->customers){
+            auto iter = ases->find(customer_asn);
+            if (iter != ases->end()) {
+                AS * customer = iter->second;
+                customer->providers->erase(as->asn);
+            }
+        }
+        // remove from graph if it has not been already removed
+        auto iter = ases->find(as->asn);
+        if (iter != ases->end()) { 
+            ases->erase(as->asn);
         }
     }
     querier->clear_stubs_from_db();

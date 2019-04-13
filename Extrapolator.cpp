@@ -42,7 +42,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     }
 
     // Drop the results table and create it again
-	std::string sql = "DROP TABLE ";
+	std::string sql = "DROP TABLE IF EXISTS ";
     sql += RESULTS_TABLE;
     sql += + " ;";
     std::cout << "Dropping results table" << std::endl;
@@ -50,7 +50,6 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     sql = "CREATE UNLOGGED TABLE ";
     sql += RESULTS_TABLE;
     sql += " ( \
-		  ann_id serial PRIMARY KEY, \
 		  asn bigint, \
 		  prefix cidr, \
 		  origin bigint, \
@@ -108,11 +107,15 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             prefixes_to_get.push_back(prefixes[i]["prefix"].as<std::string>());
         }
         row_to_start_group = iteration_num * iteration_size;
+        std::cerr << "Generated Prefixes to Get" << std::endl;
         
 
+        std::cerr << "Selecting Announcements..." << std::endl;
         //Get all announcements (R) for prefixes in iteration (prefixes_to_get)
         pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE,prefixes_to_get);
+        std::cerr << "Done." << std::endl;
 
+        std::cerr << "Parsing path vectors..." << std::endl;
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
             //TODO check redundent
@@ -167,7 +170,10 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             std::string hop;
             hop = "hop";
             give_ann_to_as_path(as_path,p,hop);
+            delete as_path;
         }
+        std::cerr << "Done." << std::endl;
+        std::cerr << "Propagating..." << std::endl;
         //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
         propagate_up();
         propagate_down();
@@ -178,7 +184,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         iteration_num++;
     }
     // create an index on the results
-    sql = "CREATE INDEX CONCURRENTLY ON "; // postgres version must support this
+    sql = "CREATE INDEX ON "; // postgres version must support this
     sql += RESULTS_TABLE;
     sql += " USING GIST(prefix inet_ops, origin);";
     std::cout << "Generating index on results..." << std::endl;
