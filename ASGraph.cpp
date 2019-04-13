@@ -122,7 +122,6 @@ void ASGraph::create_graph_from_files(){
     //process strongly connected components, decide ranks
     //TODO need querier to give process for this function
     //process();
-
     return;   
 }
 
@@ -142,7 +141,6 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
     }
 
     process(querier);
-
     return;
 }
 
@@ -342,7 +340,7 @@ void ASGraph::combine_components(){
                         == component->end())
                 {
                     combined_AS->peers->insert(peer_asn);
-                    //replace old customer of provider
+                    //replace old peer
                     AS *peer_AS = ases->find(peer_asn)->second;
                     peer_AS->peers->erase(asn);
                     peer_AS->peers->insert(combined_asn);
