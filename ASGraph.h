@@ -23,6 +23,7 @@ struct ASGraph {
     std::vector<std::set<uint32_t>*> *ases_by_rank;
     std::vector<std::vector<uint32_t>*> *components;
     std::map<uint32_t, uint32_t> *stubs_to_parents;
+    std::vector<uint32_t> *non_stubs;
     //component_translation keeps key-value pairs for each ASN and the ASN
     //it became a part of due to strongly connected component combination.
     //This is used in Extrapolator.give_ann_to_as_path() where ASNs on an 
@@ -44,6 +45,7 @@ struct ASGraph {
     void create_graph_from_files();
     void create_graph_from_db(SQLQuerier *querier);
     void save_stubs_to_db(SQLQuerier *querier);
+    void save_non_stubs_to_db(SQLQuerier *querier);
     uint32_t translate_asn(uint32_t asn);
     void clear_announcements();
 

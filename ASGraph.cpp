@@ -13,6 +13,7 @@ ASGraph::ASGraph() {
     components = new std::vector<std::vector<uint32_t>*>;
     component_translation = new std::map<uint32_t, uint32_t>;
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
+    non_stubs = new std::vector<uint32_t>;
 }
 
 ASGraph::~ASGraph() {
@@ -32,6 +33,7 @@ ASGraph::~ASGraph() {
     delete components;
     delete component_translation;
     delete stubs_to_parents;
+    delete non_stubs;
 }
 
 /** Adds an AS relationship to the graph.
@@ -151,11 +153,12 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
            as.second->providers->size() == 1 && 
            (as.second->customers->size() == 0)) {// || as.second->customers->size() == 1)) {
             to_remove.push_back(as.second);    
+        } else {
+            non_stubs->push_back(as.first);
         }
     }
     for (auto *as : to_remove) {
-        //Will just be one provider
-        //remove stub as child of it's parent
+        // remove any edges to this stub from graph 
         for(uint32_t provider_asn : *as->providers){
             auto iter = ases->find(provider_asn);
             if (iter != ases->end()) {
@@ -187,6 +190,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     }
     querier->clear_stubs_from_db();
     save_stubs_to_db(querier);
+    save_non_stubs_to_db(querier);
 }
 
 void ASGraph::save_stubs_to_db(SQLQuerier *querier){
@@ -210,6 +214,26 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
     std::remove(file_name.c_str());
 }
 
+void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
+    DIR* dir = opendir("/dev/shm/bgp");
+    if(!dir){
+        mkdir("/dev/shm/bgp",0777);
+    }
+    else{
+        closedir(dir);
+    }
+
+    std::ofstream outfile;
+    std::cerr << "Saving Non-Stubs..." << std::endl;
+    std::string file_name = "/dev/shm/bgp/non-stubs.csv";
+    outfile.open(file_name);
+    for (auto non_stub : *non_stubs){
+        outfile << non_stub << "\n";
+    }
+    outfile.close();
+    querier->copy_non_stubs_to_db(file_name);
+    std::remove(file_name.c_str());
+}
 /** Decide and assign ranks to all the AS's in the graph. 
  */
 void ASGraph::decide_ranks() {

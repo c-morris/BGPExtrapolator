@@ -37,6 +37,7 @@ struct SQLQuerier {
     void copy_results_to_db(std::string file_name);
     void clear_stubs_from_db();
     void copy_stubs_to_db(std::string file_name);
+    void copy_non_stubs_to_db(std::string file_name);
     void read_config();
     
 

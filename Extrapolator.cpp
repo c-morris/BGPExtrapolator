@@ -70,6 +70,12 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     std::cout << "Creating stubs table" << std::endl;
     querier->execute(sql, false);
 
+    sql = "CREATE TABLE IF NOT EXISTS ";
+    sql += NON_STUBS_TABLE;
+    sql += " (non_stub_asn BIGSERIAL PRIMARY KEY);";
+    std::cout << "Creating non_stubs table" << std::endl;
+    querier->execute(sql, false);
+
     //Get ROAs from "roas" table (prefix - origin pairs)
     std::cout << "Selecting prefixes with ROAs..." << std::endl;
     pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
