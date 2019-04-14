@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         ("help", "produce help message")
         ("input-table", "name of the database table containing the route \
           announcements to use as input")
-        ("invert-results,i", "record ASNs which do *not* have a route to a \
+        ("invert-results,i", po::value<bool>()->default_value(true), "record ASNs which do *not* have a route to a \
           prefix-origin (smaller results size)")
         //("batch-size", po::value<int>(&batch_size)->default_value(100),
         // "number of prefixes to be used in one propagation cycle")
@@ -61,12 +61,8 @@ int main(int argc, char *argv[]) {
         cout << desc << endl;
         exit(0);
     }
-    if (vm.count("batch-size")){
-        cout << "Batch size was ste to "
-            << vm["batch-size"].as<int>() << "." << endl;
-    }
 
-    Extrapolator *extrap = new Extrapolator;
+    Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>());
     // TODO make 100 an option, make 800k something more reasonable
     extrap->perform_propagation(true, 100, 10000000);
     delete extrap;

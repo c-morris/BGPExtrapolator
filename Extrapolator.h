@@ -23,9 +23,11 @@ struct Extrapolator {
     ASGraph *graph;
     SQLQuerier *querier;
     Extrapolator();
+    Extrapolator(bool invert);
     ~Extrapolator();
     std::set<uint32_t> *ases_with_anns;
     std::vector<std::thread> *threads;
+    bool invert;
 
     void perform_propagation(bool test = false, int group_size = 1000, int max_total = 0);
     void send_all_announcements(uint32_t asn, 

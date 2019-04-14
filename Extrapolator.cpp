@@ -14,6 +14,10 @@ Extrapolator::Extrapolator() {
     threads = new std::vector<std::thread>;
 }
 
+Extrapolator::Extrapolator(bool invert_results) : Extrapolator() {
+    invert = invert_results;
+}
+
 Extrapolator::~Extrapolator(){
     delete graph;
     delete querier;
@@ -486,33 +490,28 @@ void Extrapolator::invert_results(void) {
 void Extrapolator::save_results(int iteration){
 //    SQLQuerier *thread_querier = new SQLQuerier;
     std::ofstream outfile;
-    std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
-    for (auto &as : *graph->ases){
-        as.second->stream_announcements(outfile);
-    }
-    outfile.close();
-    querier->copy_results_to_db(file_name);
-    std::remove(file_name.c_str());
 
-    // Inverse results
-    std::cerr << "Saving Inverse Results From Iteration: " << iteration << std::endl;
-    outfile.open(file_name);
-    for (auto po : *graph->inverse_results){
-        // write csv
-    //    asn bigint,
-	//	  prefix cidr, 
-	//	  origin bigint,
-        for (uint32_t asn : *po.second) {
-            outfile << asn << ","
-                    << po.first.first.to_cidr() << ","
-                    << po.first.second << std::endl;
+    if (invert) {
+        std::cerr << "Saving Inverse Results From Iteration: " << iteration << std::endl;
+        for (auto po : *graph->inverse_results){
+            for (uint32_t asn : *po.second) {
+                outfile << asn << ","
+                        << po.first.first.to_cidr() << ","
+                        << po.first.second << std::endl;
+            }
         }
+        outfile.close();
+        querier->copy_inverse_results_to_db(file_name);
+    } else {
+        std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
+        for (auto &as : *graph->ases){
+            as.second->stream_announcements(outfile);
+        }
+        outfile.close();
+        querier->copy_results_to_db(file_name);
+
     }
-    outfile.close();
-    querier->copy_inverse_results_to_db(file_name);
     std::remove(file_name.c_str());
-
-
 }
