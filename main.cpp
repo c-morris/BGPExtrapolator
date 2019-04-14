@@ -41,41 +41,34 @@ int main(int argc, char *argv[]) {
 //    find_as_path();
     cout << "All tests run successfully." << endl;
     #endif
-/*
     int batch_size;
-    try{
-        po::options_description desc("Allowed options");
-        desc.add_options()
-            ("help", "produce help message")
-            ("batch-size", po::value<int>(&batch_size)->default_value(100 ),
-             "number of prefixes to be used in one propagation cycle")
-        ;
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("help", "produce help message")
+        ("input-table", "name of the database table containing the route \
+          announcements to use as input")
+        ("invert-results,i", "record ASNs which do *not* have a route to a \
+          prefix-origin (smaller results size)")
+        //("batch-size", po::value<int>(&batch_size)->default_value(100),
+        // "number of prefixes to be used in one propagation cycle")
+    ;
 
-        po::variables_map vm;
-        po::store(po::parse_command_line(argc,argv, desc), vm);
-        po::notify(vm);
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc,argv, desc), vm);
+    po::notify(vm);
 
-        if (vm.count("help")){
-            cout << desc << endl;
-        }
-        if (vm.count("batch-size")){
-            cout << "Batch size was ste to "
-                << vm["batch-size"].as<int>() << "." << endl;
-        }
+    if (vm.count("help")){
+        cout << desc << endl;
+        exit(0);
     }
-    catch(exception& e){
-        cerr << "Error: " << e.what() << endl;
-        return 1;
+    if (vm.count("batch-size")){
+        cout << "Batch size was ste to "
+            << vm["batch-size"].as<int>() << "." << endl;
     }
-    catch(...){
-        cerr << "Unknown Exception!" << endl;
-        return 1;
-    }
-    */
-    // put actual main code here
+
     Extrapolator *extrap = new Extrapolator;
     // TODO make 100 an option, make 800k something more reasonable
-    extrap->perform_propagation(true, 1, 2);
+    extrap->perform_propagation(true, 100, 10000000);
     delete extrap;
 
     return 0;
