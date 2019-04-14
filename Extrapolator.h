@@ -39,6 +39,7 @@ struct Extrapolator {
         Prefix<> prefix,
         std::string hop);
     void save_results(int iteration);
+    void invert_results(void);
     };
 
 #endif

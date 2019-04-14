@@ -14,6 +14,7 @@ ASGraph::ASGraph() {
     component_translation = new std::map<uint32_t, uint32_t>;
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
     non_stubs = new std::vector<uint32_t>;
+    inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
 }
 
 ASGraph::~ASGraph() {
@@ -190,6 +191,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     }
     querier->clear_stubs_from_db();
     save_stubs_to_db(querier);
+    querier->clear_non_stubs_from_db();
     save_non_stubs_to_db(querier);
 }
 
@@ -400,7 +402,7 @@ void ASGraph::clear_announcements(){
     }
 }
 
-// print all as's
+// print all ASes
 void ASGraph::printDebug() {
     for (auto const& as : *ases) {
         std::cout << as.first << ':' << as.second->asn << std::endl;

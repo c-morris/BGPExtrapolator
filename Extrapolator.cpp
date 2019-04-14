@@ -41,6 +41,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         closedir(dir);
     }
 
+    // TODO move table creation out into some function
     // Drop the results table and create it again
 	std::string sql = "DROP TABLE IF EXISTS ";
     sql += RESULTS_TABLE;
@@ -54,12 +55,31 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 		  prefix cidr, \
 		  origin bigint, \
 		  received_from_asn bigint \
-	  );";
+	  ) TABLESPACE ram;";
     sql += "GRANT ALL ON TABLE ";
     sql += RESULTS_TABLE;
     sql += " TO bgp_user;";
     std::cout << "Creating results table" << std::endl;
     querier->execute(sql, false);
+    // Inverse results table
+    sql = "DROP TABLE IF EXISTS ";
+    sql += INVERSE_RESULTS_TABLE;
+    sql += + " ;";
+    std::cout << "Dropping inverse results table" << std::endl;
+    querier->execute(sql, false);
+    sql = "CREATE UNLOGGED TABLE ";
+    sql += INVERSE_RESULTS_TABLE;
+    sql += " ( \
+		  asn bigint, \
+		  prefix cidr, \
+		  origin bigint \
+	  ) TABLESPACE ram;";
+    sql += "GRANT ALL ON TABLE ";
+    sql += INVERSE_RESULTS_TABLE;
+    sql += " TO bgp_user;";
+    std::cout << "Creating inverse results table" << std::endl;
+    querier->execute(sql, false);
+
     sql = "CREATE TABLE IF NOT EXISTS ";
     sql += STUBS_TABLE;
     sql += " ( \
@@ -124,10 +144,21 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         std::cerr << "Parsing path vectors..." << std::endl;
         //For all returned announcements
         for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
-            //TODO check redundent
             std::string s = R[j]["host"].c_str();
             
             Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
+            uint32_t origin;
+            R[j]["origin"].to(origin);
+            auto po = std::pair<Prefix<>,uint32_t>(p,origin);
+            // add this prefix to the inverse results
+            if (graph->inverse_results->find(po) == graph->inverse_results->end()) {
+                graph->inverse_results->insert(std::pair<std::pair<Prefix<>,uint32_t>,std::set<uint32_t>*>(
+                    po, new std::set<uint32_t>()));
+                // put all non-stub ASNs in the set
+                for (uint32_t asn : *graph->non_stubs) {
+                    graph->inverse_results->find(po)->second->insert(asn);
+                }
+            }
 
             //This bit of code parses array-like strings from db to get AS_PATH.
             //libpq++ doesn't currently support returning arrays.
@@ -184,6 +215,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         propagate_up();
         propagate_down();
 //        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
+        invert_results();
         save_results(iteration_num);
         graph->clear_announcements();
         row_in_group++;
@@ -431,18 +463,56 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     }
 }
 
+/** Invert the extrapolation results for more compact storage. 
+ *
+ * Since a prefix is most often reachable from every AS in the internet, it
+ * makes sense to store only the instances where an AS cannot reach a
+ * particular prefix. In order to detect hijacks, we map distinct prefix-origin
+ * pairs to sets of Autonomous Systems that have not selected a route to them.
+ */
+void Extrapolator::invert_results(void) {
+    for (auto &as : *graph->ases) {
+        for (auto ann : *as.second->all_anns) {
+            // error checking?
+            auto set = graph->inverse_results->find(
+                std::pair<Prefix<>,uint32_t>(ann.second.prefix, ann.second.origin));
+            if (set != graph->inverse_results->end()) {
+                set->second->erase(as.second->asn);
+            }
+        }
+    }
+}
+
 void Extrapolator::save_results(int iteration){
 //    SQLQuerier *thread_querier = new SQLQuerier;
     std::ofstream outfile;
     std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
-    //TODO accomodate for components
-    //DONE -- needs testing
     for (auto &as : *graph->ases){
         as.second->stream_announcements(outfile);
     }
     outfile.close();
     querier->copy_results_to_db(file_name);
     std::remove(file_name.c_str());
+
+    // Inverse results
+    std::cerr << "Saving Inverse Results From Iteration: " << iteration << std::endl;
+    outfile.open(file_name);
+    for (auto po : *graph->inverse_results){
+        // write csv
+    //    asn bigint,
+	//	  prefix cidr, 
+	//	  origin bigint,
+        for (uint32_t asn : *po.second) {
+            outfile << asn << ","
+                    << po.first.first.to_cidr() << ","
+                    << po.first.second << std::endl;
+        }
+    }
+    outfile.close();
+    querier->copy_inverse_results_to_db(file_name);
+    std::remove(file_name.c_str());
+
+
 }
