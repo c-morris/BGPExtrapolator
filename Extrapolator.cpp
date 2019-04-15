@@ -35,7 +35,9 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 
     // Generate required tables
     querier->create_results_tbl();
+    querier->create_inverse_results_tbl();
     querier->create_stubs_tbl();
+    querier->create_non_stubs_tbl();
     querier->create_supernodes_tbl();
     
     // Generate the graph and populate the stubs & supernode tables

@@ -240,6 +240,15 @@ void SQLQuerier::create_stubs_tbl(){
 }
 
 /*
+ *  Instantiates a new, empty non_stubs table in the database, if it doesn't exist.
+ */
+void SQLQuerier::create_non_stubs_tbl(){
+    std::string sql = std::string("CREATE TABLE IF NOT EXISTS " NON_STUBS_TABLE " (non_stub_asn BIGSERIAL PRIMARY KEY);");
+    std::cout << "Creating non_stubs table..." << std::endl;
+    execute(sql, false);
+}
+
+/*
  *  Instantiates a new, empty results table in the database, dropping the old table.
  */
 void SQLQuerier::create_results_tbl(){
@@ -253,6 +262,20 @@ void SQLQuerier::create_results_tbl(){
     execute(sql, false);
 }
 
+/*
+ *  Instantiates a new, empty inverse results table in the database, dropping the old table.
+ */
+void SQLQuerier::create_inverse_results_tbl(){
+    // Drop the results table
+    std::string sql = std::string("DROP TABLE " INVERSE_RESULTS_TABLE " ;");
+    std::cout << "Dropping inverse results table..." << std::endl;
+    execute(sql, false);
+    // And create it again
+    sql = std::string("CREATE UNLOGGED TABLE " INVERSE_RESULTS_TABLE " (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, received_from_asn bigint) tablespace ram ; \
+    GRANT ALL ON TABLE " INVERSE_RESULTS_TABLE " TO bgp_user;");
+    std::cout << "Creating inverse results table..." << std::endl;
+    execute(sql, false);
+}
 void SQLQuerier::copy_inverse_results_to_db(std::string file_name){
     std::string sql = std::string("COPY " INVERSE_RESULTS_TABLE "(asn, prefix, origin)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
