@@ -8,9 +8,6 @@
 Extrapolator::Extrapolator() {
     graph = new ASGraph;
     querier = new SQLQuerier;
-
-    graph->create_graph_from_db(querier);
-//    graph->create_graph_from_files();
     threads = new std::vector<std::thread>;
 }
 
@@ -22,16 +19,7 @@ Extrapolator::~Extrapolator(){
 
 void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
     using namespace std;
-    //code for making relative directory for results
-    /*
-    if(!test){
-        if(mkdir("results", 0777)==-1)
-            cerr << "Error: "<<  strerror(errno) <<endl;
-        else
-            cout << "Created \"test\" directory" <<endl;
-    }
-    */
-    
+   
     // make tmp directory if it does not exist
     bool exists = false;
     DIR* dir = opendir("/dev/shm/bgp");
@@ -41,36 +29,14 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         closedir(dir);
     }
 
-    // Drop the results table and create it again
-	std::string sql = "DROP TABLE ";
-    sql += RESULTS_TABLE;
-    sql += + " ;";
-    std::cout << "Dropping results table" << std::endl;
-    querier->execute(sql, false);
-    sql = "CREATE UNLOGGED TABLE ";
-    sql += RESULTS_TABLE;
-    sql += " ( \
-		  ann_id serial PRIMARY KEY, \
-		  asn bigint, \
-		  prefix cidr, \
-		  origin bigint, \
-		  received_from_asn bigint \
-	  );";
-    sql += "GRANT ALL ON TABLE ";
-    sql += RESULTS_TABLE;
-    sql += " TO bgp_user;";
-    std::cout << "Creating results table" << std::endl;
-    querier->execute(sql, false);
-    sql = "CREATE TABLE IF NOT EXISTS ";
-    sql += STUBS_TABLE;
-    sql += " ( \
-		  stub_asn BIGSERIAL PRIMARY KEY, \
-		  parent_asn bigint \
-	  );";
-      // this "hop" field is never used and should be removed
-    std::cout << "Creating stubs table" << std::endl;
-    querier->execute(sql, false);
-
+    // Generate required tables
+    querier->create_results_tbl();
+    querier->create_stubs_tbl();
+    querier->create_supernodes_tbl();
+    
+    // Generate the graph and populate the stubs & supernode tables
+    graph->create_graph_from_db(querier);
+    
     //Get ROAs from "roas" table (prefix - origin pairs)
     std::cout << "Selecting prefixes with ROAs..." << std::endl;
     pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
@@ -81,7 +47,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     int iteration_num = 0;
 
     //Continue if not exeeding user defined or record max
-
+    std::cout << "Beginning propagation..." << std::endl;
     while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
         
         std::cerr << "On iteration number " << std::to_string(iteration_num) <<std::endl;
@@ -178,17 +144,13 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         iteration_num++;
     }
     // create an index on the results
-    sql = "CREATE INDEX CONCURRENTLY ON "; // postgres version must support this
-    sql += RESULTS_TABLE;
-    sql += " USING GIST(prefix inet_ops, origin);";
-    std::cout << "Generating index on results..." << std::endl;
-    querier->execute(sql, false);
+    querier->create_results_index();
+    
     /*
     for (auto &t : *threads){
         t.join();
     }
     */
-    //graph->save_stubs_to_db(querier);
 }
 
 

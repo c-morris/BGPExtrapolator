@@ -38,6 +38,10 @@ struct SQLQuerier {
     void clear_stubs_from_db();
     void copy_stubs_to_db(std::string file_name);
     void copy_supernodes_to_db(std::string file_name);
+    void create_supernodes_tbl();
+    void create_stubs_tbl();
+    void create_results_tbl();
+    void create_results_index();
     void read_config();
     
 

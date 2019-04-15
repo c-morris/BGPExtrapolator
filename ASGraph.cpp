@@ -71,8 +71,8 @@ void ASGraph::process(){
 void ASGraph::process(SQLQuerier *querier){
     remove_stubs(querier);
     tarjan();
-    save_supernodes_to_db(querier);
     combine_components();
+    save_supernodes_to_db(querier);
     decide_ranks();
     return;
 }
@@ -200,12 +200,12 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     }
 
     std::ofstream outfile;
-    std::cerr << "Saving Stubs..." << std::endl;
-    std::string file_name = "/dev/shm/bgp/stubs.csv";
+    std::cerr << "Saving Supernodes..." << std::endl;
+    std::string file_name = "/dev/shm/bgp/supernodes.csv";
     outfile.open(file_name); 
     
-    // components = new std::vector<std::vector<uint32_t>*>;
-    // iterate over each strongly connected component
+    // Object: components = new std::vector<std::vector<uint32_t>*>;
+    // Iterate over each strongly connected component
     for (auto &cur_node : *components) {
         //= components.begin(); cur_node != components.end(); ++cur_node) {
         // find the lowest asn in supernode
@@ -327,7 +327,11 @@ void ASGraph::combine_components(){
     for (auto const& component : *components){
         uint32_t combined_asn = component->at(0);
         AS *combined_AS = new AS(combined_asn);
-
+        //DEBUG
+        std::cerr << "Testing for components" << std::endl;
+        if (component->size()>1){
+            std::cerr << component->size() << std::endl;
+        }
         //For all members of component, gather neighbors
         for (unsigned int i = 0; i < component->size(); i++){
             uint32_t asn = component->at(i);
