@@ -35,13 +35,16 @@ struct SQLQuerier {
                                                 std::string customer_provider_paris_table_2);
     void insert_results(ASGraph* graph, std::string results_table_name);
     void copy_results_to_db(std::string file_name);
+    void copy_inverse_results_to_db(std::string file_name);
     void clear_stubs_from_db();
+    void clear_non_stubs_from_db();
     void copy_stubs_to_db(std::string file_name);
     void copy_supernodes_to_db(std::string file_name);
     void create_supernodes_tbl();
     void create_stubs_tbl();
     void create_results_tbl();
     void create_results_index();
+    void copy_non_stubs_to_db(std::string file_name);
     void read_config();
     
 

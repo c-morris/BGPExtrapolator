@@ -1,19 +1,18 @@
 CC=g++
 CPPFLAGS= -Wall -g -std=c++14
+LDFLAGS= -lpqxx -lpq -lboost_program_options
 OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 # compile with optimization if not running tests
 all: CPPFLAGS+= -O3
 
 all: $(OBJECTS)
-	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq 
-
-testing: $(OBJECTS) 
-	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) -lpqxx -lpq
+	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) $(LDFLAGS)
 
 test: CPPFLAGS+= -DRUN_TESTS=1
 
-test: testing
+test: $(OBJECTS) 
+	$(CC) $(CPPFLAGS) -o bgp-extrapolator $(OBJECTS) $(LDFLAGS)
 
 %.o: %.cpp
 	$(CC) -c $(CPPFLAGS) $< -o $@

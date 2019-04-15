@@ -60,7 +60,7 @@ struct Prefix {
         netmask = ipv4_mask_int;
     }
     // this is IPv4 only
-    std::string to_cidr() {
+    std::string to_cidr() const {
         std::string cidr = "";
         // I could write this as a loop but I think this is clearer
         uint8_t quad = (addr & 0xFF000000) >> 24;

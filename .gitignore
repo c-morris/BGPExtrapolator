@@ -6,6 +6,7 @@
 *.lo
 *.o
 *.obj
+bgp-extrapolator
 
 # Precompiled Headers
 *.gch
@@ -30,3 +31,7 @@
 *.exe
 *.out
 *.app
+
+# Swap Files
+*.swp
+*.swo

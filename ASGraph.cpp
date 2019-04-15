@@ -14,6 +14,8 @@ ASGraph::ASGraph() {
     components = new std::vector<std::vector<uint32_t>*>;
     component_translation = new std::map<uint32_t, uint32_t>;
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
+    non_stubs = new std::vector<uint32_t>;
+    inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
 }
 
 ASGraph::~ASGraph() {
@@ -27,7 +29,13 @@ ASGraph::~ASGraph() {
     }
     delete ases_by_rank;
 
+    for (auto const& c : *components) {
+        delete c;
+    }
+    delete components;
     delete component_translation;
+    delete stubs_to_parents;
+    delete non_stubs;
 }
 
 /** Adds an AS relationship to the graph.
@@ -119,7 +127,6 @@ void ASGraph::create_graph_from_files(){
     //process strongly connected components, decide ranks
     //TODO need querier to give process for this function
     //process();
-
     return;   
 }
 
@@ -139,32 +146,55 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
     }
 
     process(querier);
-
     return;
 }
 
 void ASGraph::remove_stubs(SQLQuerier *querier){
-
+    std::vector<AS*> to_remove;
     for (auto &as : *ases){
-        if(as.second->providers->size()==1 && as.second->customers->size()==0){
-            //Will just be one provider
-            //remove stub as child of it's parent
-            for(uint32_t provider_asn : *as.second->providers){
-                AS* provider = ases->find(provider_asn)->second;
-                provider->customers->erase(as.first);
-                stubs_to_parents->insert(std::pair<uint32_t,uint32_t>(
-                            as.first,provider_asn));
+        if(as.second->peers->size() == 0 &&
+           as.second->providers->size() == 1 && 
+           (as.second->customers->size() == 0)) {// || as.second->customers->size() == 1)) {
+            to_remove.push_back(as.second);    
+        } else {
+            non_stubs->push_back(as.first);
+        }
+    }
+    for (auto *as : to_remove) {
+        // remove any edges to this stub from graph 
+        for(uint32_t provider_asn : *as->providers){
+            auto iter = ases->find(provider_asn);
+            if (iter != ases->end()) {
+                AS* provider = iter->second;
+                provider->customers->erase(as->asn);
             }
-            for(uint32_t peer_asn : *as.second->peers){
-                AS * peer = ases->find(peer_asn)->second;
-                peer->peers->erase(as.first);
+            stubs_to_parents->insert(std::pair<uint32_t,uint32_t>(
+                        as->asn,provider_asn));
+        }
+        for(uint32_t peer_asn : *as->peers){
+            auto iter = ases->find(peer_asn);
+            if (iter != ases->end()) {
+                AS * peer = iter->second;
+                peer->peers->erase(as->asn);
             }
-            //Store stub and remove from graph
-            ases->erase(as.first);
+        }
+        for(uint32_t customer_asn : *as->customers){
+            auto iter = ases->find(customer_asn);
+            if (iter != ases->end()) {
+                AS * customer = iter->second;
+                customer->providers->erase(as->asn);
+            }
+        }
+        // remove from graph if it has not been already removed
+        auto iter = ases->find(as->asn);
+        if (iter != ases->end()) { 
+            ases->erase(as->asn);
         }
     }
     querier->clear_stubs_from_db();
     save_stubs_to_db(querier);
+    querier->clear_non_stubs_from_db();
+    save_non_stubs_to_db(querier);
 }
 
 void ASGraph::save_stubs_to_db(SQLQuerier *querier){
@@ -187,6 +217,7 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
     querier->copy_stubs_to_db(file_name);
     std::remove(file_name.c_str());
 }
+
 
 /**
  *  Generate a csv with all supernodes, then dump them to database 
@@ -224,6 +255,25 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
+
+void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
+    DIR* dir = opendir("/dev/shm/bgp");
+    if(!dir){
+        mkdir("/dev/shm/bgp",0777);
+    }
+    else{
+        closedir(dir);
+    }
+    std::cerr << "Saving Non-Stubs..." << std::endl;
+    std::string file_name = "/dev/shm/bgp/non-stubs.csv";
+    outfile.open(file_name);
+    for (auto non_stub : *non_stubs){
+        outfile << non_stub << "\n";
+    }
+    outfile.close();
+    querier->copy_non_stubs_to_db(file_name);
+    std::remove(file_name.c_str());
+}
 
 /** Decide and assign ranks to all the AS's in the graph. 
  */
@@ -359,7 +409,7 @@ void ASGraph::combine_components(){
                         == component->end())
                 {
                     combined_AS->peers->insert(peer_asn);
-                    //replace old customer of provider
+                    //replace old peer
                     AS *peer_AS = ases->find(peer_asn)->second;
                     peer_AS->peers->erase(asn);
                     peer_AS->peers->insert(combined_asn);
@@ -395,7 +445,7 @@ void ASGraph::clear_announcements(){
     }
 }
 
-// print all as's
+// print all ASes
 void ASGraph::printDebug() {
     for (auto const& as : *ases) {
         std::cout << as.first << ':' << as.second->asn << std::endl;
