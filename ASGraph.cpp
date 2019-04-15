@@ -264,6 +264,8 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
     else{
         closedir(dir);
     }
+
+    std::ofstream outfile;
     std::cerr << "Saving Non-Stubs..." << std::endl;
     std::string file_name = "/dev/shm/bgp/non-stubs.csv";
     outfile.open(file_name);
@@ -378,7 +380,7 @@ void ASGraph::combine_components(){
         uint32_t combined_asn = component->at(0);
         AS *combined_AS = new AS(combined_asn);
         //DEBUG
-        std::cerr << "Testing for components" << std::endl;
+        //std::cerr << "Testing for components" << std::endl;
         if (component->size()>1){
             std::cerr << component->size() << std::endl;
         }
