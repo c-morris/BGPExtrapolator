@@ -173,6 +173,19 @@ void SQLQuerier::clear_stubs_from_db(){
     execute(sql);
 }
 
+/*
+ *  Generate an index on the results table.
+ */
+void SQLQuerier::create_results_index() {
+    // postgres version must support this
+    std::string sql = std::string("CREATE INDEX ON " RESULTS_TABLE " USING GIST(prefix inet_ops, origin)");
+    std::cout << "Generating index on results..." << std::endl;
+    execute(sql, false);
+}
+
+/*
+ *  Takes a .csv filename and bulk copies all elements to the stubs table.
+ */
 void SQLQuerier::clear_non_stubs_from_db(){
     std::string sql = "DELETE FROM non_stubs";
     execute(sql);
@@ -184,16 +197,60 @@ void SQLQuerier::copy_stubs_to_db(std::string file_name){
     execute(sql);
 }
 
+/*
+ *  Takes a .csv filename and bulk copies all elements to the supernodes table.
+ */
+void SQLQuerier::copy_supernodes_to_db(std::string file_name){
+    std::string sql = "COPY " SUPERNODES_TABLE "(supernode_asn,supernode_lowest_asn) FROM '" +
+                      file_name + "' WITH (FORMAT csv)";
+    execute(sql);
+}
+
 void SQLQuerier::copy_non_stubs_to_db(std::string file_name){
     std::string sql = "COPY " NON_STUBS_TABLE "(non_stub_asn) FROM '" +
                       file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
+/*
+ *  Takes a .csv filename and bulk copies all elements to the results table.
+ */
 void SQLQuerier::copy_results_to_db(std::string file_name){
     std::string sql = std::string("COPY " RESULTS_TABLE "(asn, prefix, origin, received_from_asn)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
+}
+
+/*
+ *  Instantiates a new, empty supernodes table in the database, if it doesn't exist.
+ */
+void SQLQuerier::create_supernodes_tbl(){
+    std::string sql = std::string("CREATE TABLE IF NOT EXISTS " SUPERNODES_TABLE "(supernode_asn BIGSERIAL PRIMARY KEY, supernode_lowest_asn bigint)");
+    std::cout << "Creating supernodes table..." << std::endl;
+    execute(sql, false);
+}
+
+/*
+ *  Instantiates a new, empty stubs table in the database, if it doesn't exist.
+ */
+void SQLQuerier::create_stubs_tbl(){
+    std::string sql = std::string("CREATE TABLE IF NOT EXISTS " STUBS_TABLE " (stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint);");
+    std::cout << "Creating stubs table..." << std::endl;
+    execute(sql, false);
+}
+
+/*
+ *  Instantiates a new, empty results table in the database, dropping the old table.
+ */
+void SQLQuerier::create_results_tbl(){
+    // Drop the results table
+    std::string sql = std::string("DROP TABLE " RESULTS_TABLE " ;");
+    std::cout << "Dropping results table..." << std::endl;
+    execute(sql, false);
+    // And create it again
+    sql = std::string("CREATE UNLOGGED TABLE " RESULTS_TABLE " (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, received_from_asn bigint); GRANT ALL ON TABLE " RESULTS_TABLE " TO bgp_user;");
+    std::cout << "Creating results table..." << std::endl;
+    execute(sql, false);
 }
 
 void SQLQuerier::copy_inverse_results_to_db(std::string file_name){

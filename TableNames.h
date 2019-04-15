@@ -8,6 +8,7 @@
 #define ROAS_TABLE "roas"
 #define STUBS_TABLE "stubs"
 #define NON_STUBS_TABLE "non_stubs"
+#define SUPERNODES_TABLE "supernodes"
 #define ANNOUNCEMENTS_TABLE "mrt_announcements2"
 
 #endif

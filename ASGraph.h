@@ -45,7 +45,9 @@ struct ASGraph {
     void create_graph_from_files();
     void create_graph_from_db(SQLQuerier *querier);
     void save_stubs_to_db(SQLQuerier *querier);
+    void save_supernodes_to_db(SQLQuerier *querier);
     void save_non_stubs_to_db(SQLQuerier *querier);
+
     uint32_t translate_asn(uint32_t asn);
     void clear_announcements();
 
