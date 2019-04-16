@@ -41,7 +41,6 @@ int main(int argc, char *argv[]) {
 //    find_as_path();
     cout << "All tests run successfully." << endl;
     #endif
-    int batch_size;
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")

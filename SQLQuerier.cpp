@@ -84,6 +84,15 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
     return execute(sql);
 }
 
+pqxx::result SQLQuerier::select_ann_records(std::string table_name, int limit){
+    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM " + table_name;
+    if(limit){
+        sql += " LIMIT " + std::to_string(limit);
+    }
+    sql += ";";
+    return execute(sql);
+}
+
 pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
 //    std::cerr << "Selecting announcement records..."<< std::endl;
     std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM " + table_name;
