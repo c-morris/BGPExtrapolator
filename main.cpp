@@ -66,14 +66,14 @@ int main(int argc, char *argv[]) {
         cout << desc << endl;
         exit(0);
     }
-    if (vm.count("announcements-table"))
-      cout << vm["announcements-table"].as<string>();
-    cout << ANNOUNCEMENTS_TABLE;
 
     Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
-        vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE,
-        vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE,
-        vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE);
+        (vm.count("announcements-table") ?
+        vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
+        (vm.count("results-table") ? vm["results-table"].as<string>() :
+        RESULTS_TABLE),
+        (vm.count("inverse-results-table") ?
+        vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE));
     // TODO make 100 an option, make 800k something more reasonable
     extrap->perform_propagation(true, 100, 10000000);
     delete extrap;

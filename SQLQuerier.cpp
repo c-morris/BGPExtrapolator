@@ -182,7 +182,7 @@ void SQLQuerier::clear_stubs_from_db(){
  */
 void SQLQuerier::create_results_index() {
     // postgres version must support this
-    std::string sql = std::string("CREATE INDEX ON " RESULTS_TABLE " USING GIST(prefix inet_ops, origin)");
+    std::string sql = std::string("CREATE INDEX ON " + results_table + " USING GIST(prefix inet_ops, origin)");
     std::cout << "Generating index on results..." << std::endl;
     execute(sql, false);
 }
@@ -220,7 +220,7 @@ void SQLQuerier::copy_non_stubs_to_db(std::string file_name){
  *  Takes a .csv filename and bulk copies all elements to the results table.
  */
 void SQLQuerier::copy_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY " RESULTS_TABLE "(asn, prefix, origin, received_from_asn)") +
+    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
@@ -257,11 +257,13 @@ void SQLQuerier::create_non_stubs_tbl(){
  */
 void SQLQuerier::create_results_tbl(){
     // Drop the results table
-    std::string sql = std::string("DROP TABLE IF EXISTS " RESULTS_TABLE " ;");
+    std::string sql = std::string("DROP TABLE IF EXISTS " + results_table + " ;");
     std::cout << "Dropping results table..." << std::endl;
     execute(sql, false);
     // And create it again
-    sql = std::string("CREATE UNLOGGED TABLE " RESULTS_TABLE " (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, received_from_asn bigint); GRANT ALL ON TABLE " RESULTS_TABLE " TO bgp_user;");
+    sql = std::string("CREATE UNLOGGED TABLE " + results_table + " (ann_id serial PRIMARY KEY,\
+    asn bigint,prefix cidr, origin bigint, received_from_asn \
+    bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
     std::cout << "Creating results table..." << std::endl;
     execute(sql, false);
 }
@@ -271,17 +273,17 @@ void SQLQuerier::create_results_tbl(){
  */
 void SQLQuerier::create_inverse_results_tbl(){
     // Drop the results table
-    std::string sql = std::string("DROP TABLE IF EXISTS " INVERSE_RESULTS_TABLE " ;");
+    std::string sql = std::string("DROP TABLE IF EXISTS " + inverse_results_table + " ;");
     std::cout << "Dropping inverse results table..." << std::endl;
     execute(sql, false);
     // And create it again
-    sql = std::string("CREATE UNLOGGED TABLE " INVERSE_RESULTS_TABLE " (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, received_from_asn bigint) tablespace ram ; \
-    GRANT ALL ON TABLE " INVERSE_RESULTS_TABLE " TO bgp_user;");
+    sql = std::string("CREATE UNLOGGED TABLE " + inverse_results_table + " (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, received_from_asn bigint) tablespace ram ; \
+    GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;");
     std::cout << "Creating inverse results table..." << std::endl;
     execute(sql, false);
 }
 void SQLQuerier::copy_inverse_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY " INVERSE_RESULTS_TABLE "(asn, prefix, origin)") +
+    std::string sql = std::string("COPY " + inverse_results_table + "(asn, prefix, origin)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }

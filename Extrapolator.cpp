@@ -10,7 +10,7 @@ Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r,
     invert = invert_results;
     graph = new ASGraph;
     threads = new std::vector<std::thread>;
-    querier = new SQLQuerier();
+    querier = new SQLQuerier(a, r, i);
 }
 
 Extrapolator::~Extrapolator(){
