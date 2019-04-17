@@ -5,14 +5,12 @@
 #include <thread>
 #include "Extrapolator.h"
 
-Extrapolator::Extrapolator() {
-    graph = new ASGraph;
-    querier = new SQLQuerier;
-    threads = new std::vector<std::thread>;
-}
-
-Extrapolator::Extrapolator(bool invert_results) : Extrapolator() {
+Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r, 
+        std::string i) {
     invert = invert_results;
+    graph = new ASGraph;
+    threads = new std::vector<std::thread>;
+    querier = new SQLQuerier();
 }
 
 Extrapolator::~Extrapolator(){
@@ -33,8 +31,11 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     }
 
     // Generate required tables
-    querier->create_results_tbl();
-    querier->create_inverse_results_tbl();
+    if (invert) {
+        querier->create_inverse_results_tbl();
+    } else {
+        querier->create_results_tbl();
+    }
     querier->create_stubs_tbl();
     querier->create_non_stubs_tbl();
     querier->create_supernodes_tbl();
@@ -55,7 +56,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     std::cerr << "Selecting Announcements..." << std::endl;
     //Get all announcements (R) from the table 
     //pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE,prefixes_to_get);
-    pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE, 0);
+    pqxx::result R = querier->select_ann_records();
     std::cerr << "Done." << std::endl;
 
     std::cerr << "Parsing path vectors..." << std::endl;
@@ -82,14 +83,12 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
         std::string path_as_string(R[j]["as_path"].as<std::string>());
         //remove brackets from string
-        char brackets[] = "{}";
-        for (uint32_t i = 0; i < strlen(brackets); ++i){
-            path_as_string.erase(std::remove(path_as_string.begin(),path_as_string.end(),
-                                 brackets[i]), path_as_string.end()); 
-        }
+        path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '}'));
+        path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '{'));
+
         //fill as_path vector from parsing string
         std::string delimiter = ",";
-        unsigned int pos = 0;
+        std::string::size_type pos = 0;
         std::string token;
         while((pos = path_as_string.find(delimiter)) != std::string::npos){
             token = path_as_string.substr(0,pos);

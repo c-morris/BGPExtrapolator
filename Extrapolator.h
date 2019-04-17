@@ -22,8 +22,9 @@
 struct Extrapolator {
     ASGraph *graph;
     SQLQuerier *querier;
-    Extrapolator();
-    Extrapolator(bool invert);
+    Extrapolator(bool invert_results=true, std::string
+        a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE, std::string
+        i=INVERSE_RESULTS_TABLE);
     ~Extrapolator();
     std::set<uint32_t> *ases_with_anns;
     std::vector<std::thread> *threads;

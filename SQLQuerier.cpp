@@ -1,6 +1,9 @@
 #include "SQLQuerier.h"
 
-SQLQuerier::SQLQuerier(){
+SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i) {
+    announcements_table = a;
+    results_table = r;
+    inverse_results_table = i;
     //default host and port numbers
     //strings for connection arg
     host = "127.0.0.1";
@@ -84,28 +87,20 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
     return execute(sql);
 }
 
-pqxx::result SQLQuerier::select_ann_records(std::string table_name, int limit){
-    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM " + table_name;
-    if(limit){
+pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
+    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM ";
+    if (!table_name.empty()) {
+      sql += table_name;
+    } else {
+      sql += announcements_table;
+    }
+    if (!prefix.empty()){
+        sql += (" WHERE prefix = "+ std::string("'") + prefix + std::string("'"));
+    }
+    if (limit){
         sql += " LIMIT " + std::to_string(limit);
     }
     sql += ";";
-    return execute(sql);
-}
-
-pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
-//    std::cerr << "Selecting announcement records..."<< std::endl;
-    std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM " + table_name;
-    if(!prefix.empty()){
-        sql += (" WHERE prefix = "+ std::string("'") + prefix + std::string("'"));
-    }
-    else{
-        sql += " WHERE element_type = 'A'";
-    }
-    if(limit){
-        sql += " LIMIT " + std::to_string(limit);
-    }
-//    std::cerr << sql << std::endl;
     return execute(sql);
 }
 
@@ -262,7 +257,7 @@ void SQLQuerier::create_non_stubs_tbl(){
  */
 void SQLQuerier::create_results_tbl(){
     // Drop the results table
-    std::string sql = std::string("DROP TABLE " RESULTS_TABLE " ;");
+    std::string sql = std::string("DROP TABLE IF EXISTS " RESULTS_TABLE " ;");
     std::cout << "Dropping results table..." << std::endl;
     execute(sql, false);
     // And create it again
@@ -276,7 +271,7 @@ void SQLQuerier::create_results_tbl(){
  */
 void SQLQuerier::create_inverse_results_tbl(){
     // Drop the results table
-    std::string sql = std::string("DROP TABLE " INVERSE_RESULTS_TABLE " ;");
+    std::string sql = std::string("DROP TABLE IF EXISTS " INVERSE_RESULTS_TABLE " ;");
     std::cout << "Dropping inverse results table..." << std::endl;
     execute(sql, false);
     // And create it again
