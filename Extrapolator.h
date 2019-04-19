@@ -24,11 +24,12 @@ struct Extrapolator {
     SQLQuerier *querier;
     Extrapolator(bool invert_results=true, std::string
         a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE, std::string
-        i=INVERSE_RESULTS_TABLE);
+        i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
     ~Extrapolator();
     std::set<uint32_t> *ases_with_anns;
     std::vector<std::thread> *threads;
     bool invert;
+    bool ram_tablespace;
 
     void perform_propagation(bool test = false, int group_size = 1000, int max_total = 0);
     void send_all_announcements(uint32_t asn, 

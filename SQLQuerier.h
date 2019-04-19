@@ -18,10 +18,11 @@ struct ASGraph;
 
 struct SQLQuerier {
     SQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE,
-    std::string i=INVERSE_RESULTS_TABLE);
+    std::string i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
     ~SQLQuerier();
     void open_connection();
     void close_connection();
+    bool ram_tablespace;
     pqxx::result execute(std::string sql, bool insert = false);
     pqxx::result select_from_table(std::string table_name, int limit = 0);
     pqxx::result select_ann_records(std::string table_name = "", std::string prefix = "", int limit = 0);

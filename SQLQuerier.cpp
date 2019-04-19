@@ -1,6 +1,7 @@
 #include "SQLQuerier.h"
 
-SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i) {
+SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, bool ram) {
+    ram_tablespace = ram;
     announcements_table = a;
     results_table = r;
     inverse_results_table = i;
@@ -279,10 +280,10 @@ void SQLQuerier::create_inverse_results_tbl(){
     std::cout << "*Not* dropping inverse results table..." << std::endl;
     //execute(sql, false);
     // And create it again
-    sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + inverse_results_table + 
-    "(ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, \
-    received_from_asn bigint); \
-    GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;");
+    sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS ") + inverse_results_table + 
+    "(asn bigint,prefix cidr, origin bigint) ";
+    sql += (ram_tablespace ? "TABLESPACE ram;" : ";");
+    sql += "GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;";
     std::cout << "Creating inverse results table..." << std::endl;
     execute(sql, false);
 }

@@ -6,11 +6,12 @@
 #include "Extrapolator.h"
 
 Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r, 
-        std::string i) {
+        std::string i, bool ram) {
     invert = invert_results;
+    ram_tablespace = ram;
     graph = new ASGraph;
     threads = new std::vector<std::thread>;
-    querier = new SQLQuerier(a, r, i);
+    querier = new SQLQuerier(a, r, i, ram);
 }
 
 Extrapolator::~Extrapolator(){
