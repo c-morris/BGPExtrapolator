@@ -277,7 +277,9 @@ void SQLQuerier::create_inverse_results_tbl(){
     std::cout << "Dropping inverse results table..." << std::endl;
     execute(sql, false);
     // And create it again
-    sql = std::string("CREATE UNLOGGED TABLE " + inverse_results_table + " (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, received_from_asn bigint) tablespace ram ; \
+    sql = std::string("CREATE UNLOGGED TABLE " + inverse_results_table + "
+    (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, \
+    received_from_asn bigint); \
     GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;");
     std::cout << "Creating inverse results table..." << std::endl;
     execute(sql, false);
