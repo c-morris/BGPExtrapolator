@@ -44,8 +44,7 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("invert-results,i", po::value<bool>()->default_value(true), "record ASNs which do *not* have a route to a \
-          prefix-origin (smaller results size)")
+        ("invert-results,i", po::value<bool>()->default_value(true), "record ASNs which do *not* have a route to a prefix-origin (smaller results size)")
         ("announcements-table,a",
           po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
           "name of announcements table")
