@@ -273,11 +273,12 @@ void SQLQuerier::create_results_tbl(){
  */
 void SQLQuerier::create_inverse_results_tbl(){
     // Drop the results table
-    std::string sql = std::string("DROP TABLE IF EXISTS " + inverse_results_table + " ;");
-    std::cout << "Dropping inverse results table..." << std::endl;
+    //std::string sql = std::string("DROP TABLE IF EXISTS " + inverse_results_table + " ;");
+    //std::cout << "Dropping inverse results table..." << std::endl;
+    std::cout << "*Not* dropping inverse results table..." << std::endl;
     execute(sql, false);
     // And create it again
-    sql = std::string("CREATE UNLOGGED TABLE " + inverse_results_table + "
+    sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + inverse_results_table + "
     (ann_id serial PRIMARY KEY,asn bigint,prefix cidr, origin bigint, \
     received_from_asn bigint); \
     GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;");
