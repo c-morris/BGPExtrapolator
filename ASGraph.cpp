@@ -238,16 +238,17 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     // Object: components = new std::vector<std::vector<uint32_t>*>;
     // Iterate over each strongly connected component
     for (auto &cur_node : *components) {
-        //= components.begin(); cur_node != components.end(); ++cur_node) {
-        // find the lowest asn in supernode
-        uint32_t low = UINT_MAX;
-        for (auto &cur_asn : *cur_node) {
-            if (cur_asn < low) 
-                low = cur_asn;
-        }
-        // assemble rows as pairs; asn in supernode, lowest asn in that supernode        
-        for (auto &cur_asn : *cur_node) {
-            outfile << cur_asn << "," << low << "\n";
+        if (cur_node->size() > 2) {
+            // find the lowest asn in supernode
+            uint32_t low = UINT_MAX;
+            for (auto &cur_asn : *cur_node) {
+                if (cur_asn < low) 
+                    low = cur_asn;
+            }
+            // assemble rows as pairs; asn in supernode, lowest asn in that supernode
+            for (auto &cur_asn : *cur_node) {
+                outfile << cur_asn << "," << low << "\n";
+            }
         }
     }
     outfile.close();
