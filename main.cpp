@@ -1,3 +1,4 @@
+#ifndef RUN_TESTS
 #include <iostream>
 #include <boost/program_options.hpp>
 
@@ -85,3 +86,4 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+#endif // RUN_TESTS

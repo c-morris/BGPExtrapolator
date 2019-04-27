@@ -51,7 +51,7 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
     auto search = ases->find(asn);
     if (search == ases->end()) {
         // if AS not yet in graph, create it
-        ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn)));
+        ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
         search = ases->find(asn);
     }
     search->second->add_neighbor(neighbor_asn, relation);
@@ -379,7 +379,7 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
 void ASGraph::combine_components(){
     for (auto const& component : *components){
         uint32_t combined_asn = component->at(0);
-        AS *combined_AS = new AS(combined_asn);
+        AS *combined_AS = new AS(combined_asn, inverse_results);
         //DEBUG
         //std::cerr << "Testing for components" << std::endl;
         if (component->size()>1){
