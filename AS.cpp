@@ -109,10 +109,6 @@ void AS::process_announcements() {
     // Let me know and I'll fix it. 
     for (const auto &ann : *incoming_announcements) {
         // from https://en.cppreference.com/w/cpp/container/map/find
-        //TODO REMOVE DEBUGGING PRINTS
-        if(asn == 2635 && ann.prefix.addr == 737498112 && ann.prefix.netmask == 4294966272){
-            std::cerr << "Got the tracked ann" << std::endl;
-        }
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end()) {
             //TODO REMOVE DEBUGGING PRINTS
