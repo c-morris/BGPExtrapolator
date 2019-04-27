@@ -13,40 +13,6 @@ int main(int argc, char *argv[]) {
     using namespace std;   
     namespace po = boost::program_options;
 
-    #ifdef RUN_TESTS
-    // Graph Tests
-    //as_relationship_test();
-    //as_receive_test();
-    //tarjan_accuracy_test();
-    //tarjan_size_test();
-    //tarjan_on_real_data();
-    //combine_components_test();
-    //fully_create_graph_test();
-
-    // Propagation Tests
-    //as_process_test();
-    //as_process_test_2();
-    //send_all_test();
-    //give_ann_to_as_path_test();
-    //propagate_up_test();
-    //propagate_down_test();
-    //full_propagation_test_a();
-    //full_propagation_test_b();
-    //
-    // SQL Tests
-    //test_db_connection();
-    //announcement_comparison_test();
-    //SQL_insertion_test();
-    //
-    // Results Tests
-    //
-    //decide_ranks_test(); 
-    //select_all_test();
-    //stub_test();
-    //distinct_prefixes_test();
-    //find_as_path();
-    cout << "All tests run successfully." << endl;
-    #endif
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
