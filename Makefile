@@ -1,6 +1,6 @@
 CC=g++
 CPPFLAGS= -Wall -g -std=c++14
-LDFLAGS= -lpqxx -lpq -lboost_program_options
+LDFLAGS= -lpqxx -lpq -lboost_program_options -lboost_unit_test_framework
 OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 # compile with optimization if not running tests
