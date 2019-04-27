@@ -132,8 +132,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     propagate_up();
     propagate_down();
 //        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
-    if (invert)
-        invert_results();
+    //if (invert)
+        //invert_results();
     save_results(0);
     graph->clear_announcements();
 
@@ -382,6 +382,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
  * makes sense to store only the instances where an AS cannot reach a
  * particular prefix. In order to detect hijacks, we map distinct prefix-origin
  * pairs to sets of Autonomous Systems that have not selected a route to them.
+ *
+ * NO LONGER USED, inversion is now done during propagation
  */
 void Extrapolator::invert_results(void) {
     for (auto &as : *graph->ases) {

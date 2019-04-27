@@ -1,6 +1,8 @@
 #include "AS.h"
 
-AS::AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
+AS::AS(uint32_t myasn, 
+    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
+    std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     std::set<uint32_t> *cust) {
     asn = myasn;
     rank = -1; // initialize to invalid rank
@@ -19,6 +21,7 @@ AS::AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     } else {
         customers = cust;
     }
+    inverse_results = inv;
     member_ases = new std::vector<uint32_t>;
     anns_sent_to_peers_providers = new std::vector<Announcement>;
     incoming_announcements = new std::vector<Announcement>;
@@ -104,26 +107,22 @@ void AS::receive_announcement(Announcement &ann) {
  * Meant to approximate BGP best path selection.
  */
 void AS::process_announcements() {
-    // I skipped a few steps here that seemed unnecessary. 
-    // If it turns out that they are necessary, I'm sorry.
-    // Let me know and I'll fix it. 
     for (const auto &ann : *incoming_announcements) {
         // from https://en.cppreference.com/w/cpp/container/map/find
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end()) {
-            //TODO REMOVE DEBUGGING PRINTS
-            if(asn == 2635 && ann.prefix.addr == 737498112 && ann.prefix.netmask == 4294966272){
-                std::cerr << "Inserting tracked ann as new" << std::endl;
-            }
             all_anns->insert(std::pair<Prefix<>, Announcement>(
                 ann.prefix, ann));
+            if (inverse_results != NULL) {
+                auto set = inverse_results->find(
+                    std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+                if (set != inverse_results->end()) {
+                    set->second->erase(asn);
+                }
+            }
         //An announcement recorded by a monitor won't be replaced
         } else if (!search->second.from_monitor && 
                 ann.priority > search->second.priority) {
-                //TODO REMOVE DEBUGGING PRINTS
-                if(asn == 2635 && ann.prefix.addr == 737498112 && ann.prefix.netmask == 4294966272){
-                    std::cerr << "Replacing tracked ann with preferred" << std::endl;
-                }
             search->second = ann;
         }
     }

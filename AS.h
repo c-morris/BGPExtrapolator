@@ -26,6 +26,7 @@ struct AS {
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 
     std::set<uint32_t> *customers; 
+    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
     //If this AS represents multiple ASes, it's "members" are listed here
     std::vector<uint32_t> *member_ases;
 
@@ -34,10 +35,11 @@ struct AS {
     int lowlink;
     bool onStack;
 
-    AS() : AS(0, NULL, NULL, NULL) {}
-    AS(uint32_t myasn) : AS(myasn, NULL, NULL, NULL) {}
-    AS(uint32_t myasn, std::set<uint32_t> *prov, std::set<uint32_t> *peer,
-        std::set<uint32_t> *cust);
+    AS(uint32_t myasn=0, 
+        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
+        std::set<uint32_t> *prov=NULL, 
+        std::set<uint32_t> *peer=NULL,
+        std::set<uint32_t> *cust=NULL);
     ~AS();
     void add_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);
