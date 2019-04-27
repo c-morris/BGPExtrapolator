@@ -253,7 +253,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     }
     outfile.close();
     querier->copy_supernodes_to_db(file_name);
-    std::remove(file_name.c_str());
+    //std::remove(file_name.c_str());
 }
 
 

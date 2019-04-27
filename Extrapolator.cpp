@@ -119,11 +119,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
               }
         }
    
-        //if no hop identify accordingly, otherwise use it
-        // this "hop" field is never used and should be removed
-        std::string hop;
-        hop = "hop";
-        give_ann_to_as_path(as_path,p,hop);
+        give_ann_to_as_path(as_path,p);
         delete as_path;
     }
     std::cerr << "Done." << std::endl;
@@ -186,8 +182,7 @@ void Extrapolator::propagate_down() {
  * @param hop The first ASN on the as_path.
  */
 void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
-    Prefix<> prefix,
-    std::string hop) {
+    Prefix<> prefix) {
     // handle empty as_path
     if (as_path->empty()) 
         return;
@@ -264,7 +259,6 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                 prefix.netmask,
                 priority,
                 received_from_asn,
-                hop,
                 true); //from_monitor
             //If announcement was sent to a peer or provider
             //Append it to list of anns sent to peers and providers
@@ -324,8 +318,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                     ann.second.prefix.addr,
                     ann.second.prefix.netmask,
                     priority,
-                    asn,
-                    ann.second.hop));
+                    asn));
 
             priority--; // subtract 1 for peers
             anns_to_peers.push_back(
@@ -334,8 +327,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                     ann.second.prefix.addr,
                     ann.second.prefix.netmask,
                     priority,
-                    asn,
-                    ann.second.hop));
+                    asn));
         }
         // send announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -365,8 +357,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                     ann.second.prefix.addr,
                     ann.second.prefix.netmask,
                     priority,
-                    asn,
-                    ann.second.hop));
+                    asn));
         }
         // send announcements
         for (uint32_t customer_asn : *source_as->customers) {

@@ -40,8 +40,7 @@ struct Extrapolator {
     void propagate_up();
     void propagate_down();
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
-        Prefix<> prefix,
-        std::string hop);
+        Prefix<> prefix);
     void save_results(int iteration);
     void invert_results(void);
     };
