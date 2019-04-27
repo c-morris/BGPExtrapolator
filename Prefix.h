@@ -2,6 +2,8 @@
 #define PREFIX_H
 
 #include <cmath>
+#include <cstdint>
+#include <string>
 
 // use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
