@@ -1,3 +1,5 @@
+#include "AS.h"
+
 /** Unit tests for AS.h and AS.cpp
  */
 
@@ -7,6 +9,7 @@
  *
  * @return True if successful, otherwise false
  */
+
 bool test_add_neighbor(){
     return true;
 }
@@ -29,7 +32,7 @@ bool test_receive_announcement(){
     return true;
 }
 
-bool test_already_recieved(){
+bool test_already_received(){
     return true;
 }
 
