@@ -73,7 +73,7 @@ void AS::printDebug() {
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
-        // do not check for duplicates here-- hopefully this is fine
+        // do not check for duplicates here
         // push_back should make a copy of the announcement
         incoming_announcements->push_back(ann);
     }
