@@ -92,14 +92,6 @@ bool test_already_received(){
 }
 
 
-/** Test iteration through incoming_announcements and keeping only the best.
- *
- * @return true if successful.
- */
-bool test_process_announcements(){
-    return true;
-}
-
 
 /** Test clearing all announcements.
  *
@@ -117,5 +109,80 @@ bool test_clear_announcements(){
     if (as.all_anns->size() != 0) {
         return false;
     }
+    return true;
+}
+
+
+/** Test the following properties of the best path selection algorithm.
+ *
+ * 1. Customer route > peer route > provider route
+ * 2. Shortest path takes priority
+ * 3. Announcements from monitors are never overwritten
+ * 4. Announcements for local prefixes are never overwritten
+ *
+ * Items one, two, and three are all covered by the priority attribute working correctly. 
+ * Item three requires the from_monitor attribute to work. 
+ */
+bool test_process_announcements(){
+    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Prefix<> ann1_prefix = ann1.prefix;
+    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
+    Prefix<> ann2_prefix = ann2.prefix;
+    AS as = AS();
+    // build a vector of announcements
+    std::vector<Announcement> vect = std::vector<Announcement>();
+    ann1.priority = 1.0;
+    ann2.priority = 2.0;
+    ann2.from_monitor = true;
+    vect.push_back(ann1);
+    vect.push_back(ann2);
+
+    // does it work if all_anns is empty?
+    as.receive_announcements(vect);
+    as.process_announcements();
+    if (as.all_anns->find(ann1_prefix)->second.priority != 1.0) {
+        return false;
+    }
+    
+    // higher priority should overwrite lower priority
+    vect.clear();
+    ann1.priority = 2.9;
+    vect.push_back(ann1);
+    as.receive_announcements(vect);
+    as.process_announcements();
+    if (as.all_anns->find(ann1_prefix)->second.priority != 2.9) {
+        return false;
+    }
+    
+    // lower priority should not overwrite higher priority
+    vect.clear();
+    ann1.priority = 2.0;
+    vect.push_back(ann1);
+    as.receive_announcements(vect);
+    as.process_announcements();
+    if (as.all_anns->find(ann1_prefix)->second.priority != 2.9) {
+        return false;
+    }
+
+    // one more test just to be sure
+    vect.clear();
+    ann1.priority = 2.99;
+    vect.push_back(ann1);
+    as.receive_announcements(vect);
+    as.process_announcements();
+    if (as.all_anns->find(ann1_prefix)->second.priority != 2.99) {
+        return false;
+    }
+
+    // make sure ann2 doesn't get overwritten, ever, even with higher priority
+    vect.clear();
+    ann2.priority = 3.0;
+    vect.push_back(ann2);
+    as.receive_announcements(vect);
+    as.process_announcements();
+    if (as.all_anns->find(ann2_prefix)->second.priority != 2.0) {
+        return false;
+    }
+
     return true;
 }
