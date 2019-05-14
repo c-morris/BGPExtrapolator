@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <iostream>
 
 // use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
@@ -26,49 +27,103 @@ struct Prefix {
         // TODO IPv6 Address Parsing
         // IPv4 Address Parsing
         std::string delimiter = ".";
-        size_t pos = 0;
-        std::string token;
+        size_t pos = 0;                 // Position in string addr
+        std::string token;              // Buffer subseciton of addr
 
-        ////rename variables
         //IP to int
+        bool error_t = false;           // Error flag, drops malformed input
+        int counter = 0;                // Check for proper addr length
         uint32_t ipv4_ip_int = 0;
-        //i is 4 for ipv4
-        int i = 3;
-        std::string &s = addr_str;
+        
+        // Convert string address to an unsigned 32-bit int
+        std::string s = addr_str;
         while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            try {
-              ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
-              s.erase(0, pos + delimiter.length());
-            } catch(const std::out_of_range& e) {
-              std::cerr << "Caught out of range error in Prefix constructor loop, token was: " << token << std::endl; 
+            
+            // Catch long malformed input
+            if (counter > 3) {
+                error_t = true;
+                break;
             }
+
+            // Token is one 8-bit int
+            token = s.substr(0, pos);
+            uint32_t token_int = std::stoul(token);
+            
+            // Catch out of range ints, default to 255
+            if (token_int > 255) {
+                error_t = true;
+                break;
+            }
+            
+            // Add token and shift left 8 bits
+            ipv4_ip_int += std::stoul(token);
+            ipv4_ip_int = ipv4_ip_int << 8;
+            
+            // Trim token from addr
+            s.erase(0, pos + delimiter.length());
+            counter += 1;
         }
-        try {
-          ipv4_ip_int += std::stoi(s) * std::pow(256,i--);
-        } catch(const std::out_of_range& e) {
-          std::cerr << "Caught out of range error in Prefix constructor, token was: " << token << std::endl; 
+        
+        // Catch short malformed input
+        if (counter != 3) {
+            error_t = true;
+        }
+        
+        // Add last 8-bit token
+        uint32_t s_int = std::stoul(s);
+        if (error_t == true || s_int > 255) {
+            std::cerr << "Caught malformed IPv4 address: " << addr_str << std::endl;
+            ipv4_ip_int = 0;
+        } else {
+            ipv4_ip_int += s_int;
         }
 
-        //Mask to int
+        // Mask to int
+        error_t = false;            // Error flag, drops malformed input
+        counter = 0;                // Check for proper addr length
         uint32_t ipv4_mask_int = 0;
-        i = 3;
+        
         s = mask_str;
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            try {
-              ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
-              s.erase(0, pos + delimiter.length());
-            } catch(const std::out_of_range& e) {
-              std::cerr << "Caught out of range error in Prefix constructor mask loop, token was: " << token << std::endl; 
+        while ((pos = s.find(delimiter)) != std::string::npos) { 
+            // Catch long malformed input
+            if (counter > 3) {
+                error_t = true;
+                break;
             }
-        }
-        try {
-          ipv4_mask_int += std::stoi(s) * std::pow(256,i--);
-        } catch(const std::out_of_range& e) {
-          std::cerr << "Caught out of range error in Prefix constructor mask, token was: " << token << std::endl; 
-        }
 
+            // Token is one 8-bit int
+            token = s.substr(0, pos);
+            uint32_t token_int = std::stoul(token);
+            
+            // Catch out of range ints, default to 255
+            if (token_int > 255) {
+                error_t = true;
+                break;
+            }
+            
+            // Add token and shift left 8 bits
+            ipv4_mask_int += std::stoul(token);
+            ipv4_mask_int = ipv4_mask_int << 8;
+            
+            // Trim token from addr
+            s.erase(0, pos + delimiter.length());
+            counter += 1;
+        }
+        
+        // Catch short malformed input
+        if (counter != 3) {
+            error_t = true;
+        }
+        
+        // Add last 8-bit token
+        s_int = std::stoul(s);
+        if (error_t == true || s_int > 255) {
+            std::cerr << "Caught malformed IPv4 mask: " << mask_str << std::endl;
+            ipv4_mask_int = 0;
+        } else {
+            ipv4_mask_int += s_int;
+        }
+        
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
     }
