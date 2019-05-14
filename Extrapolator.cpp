@@ -5,7 +5,7 @@
 #include <thread>
 #include "Extrapolator.h"
 
-Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r, 
+Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r,
         std::string i, bool ram) {
     invert = invert_results;
     ram_tablespace = ram;
@@ -22,11 +22,11 @@ Extrapolator::~Extrapolator(){
 
 void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
     using namespace std;
-   
+
     // make tmp directory if it does not exist
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
-        mkdir("/dev/shm/bgp", 0777); 
+        mkdir("/dev/shm/bgp", 0777);
     } else {
         closedir(dir);
     }
@@ -40,10 +40,10 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     querier->create_stubs_tbl();
     querier->create_non_stubs_tbl();
     querier->create_supernodes_tbl();
-    
+
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
-    
+
     //Get ROAs from "roas" table (prefix - origin pairs)
     //std::cout << "Selecting prefixes with ROAs..." << std::endl;
     //pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
@@ -53,9 +53,9 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     //Continue if not exeeding user defined or record max
     std::cout << "Beginning propagation..." << std::endl;
     //while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
-    
+
     std::cerr << "Selecting Announcements..." << std::endl;
-    //Get all announcements (R) from the table 
+    //Get all announcements (R) from the table
     //pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE,prefixes_to_get);
     pqxx::result R = querier->select_ann_records();
     std::cerr << "Done." << std::endl;
@@ -64,8 +64,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     //For all returned announcements
     for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
         std::string s = R[j]["host"].c_str();
-        
-        Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
+
+        Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str());
         uint32_t origin;
         R[j]["origin"].to(origin);
         auto po = std::pair<Prefix<>,uint32_t>(p,origin);
@@ -96,7 +96,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
             try {
               as_path->push_back(std::stoul(token));
             } catch(const std::out_of_range& e) {
-              std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl; 
+              std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl;
             } catch(const std::invalid_argument& e) {
               std::cerr << "Invalid argument filling path vect, token was:"
                 << token << std::endl;
@@ -106,8 +106,8 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         try {
           as_path->push_back(std::stoul(path_as_string));
         } catch(const std::out_of_range& e) {
-          std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl; 
-          std::cerr << "Path as string was: " << path_as_string << std::endl; 
+          std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl;
+          std::cerr << "Path as string was: " << path_as_string << std::endl;
         } catch(const std::invalid_argument& e) {
               if (path_as_string.length() == 0) {
                 std::cerr << "Ignoring announcement with empty as_path" <<
@@ -118,7 +118,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
                 std::cerr << "Path as string was: " << path_as_string << std::endl;
               }
         }
-   
+
         give_ann_to_as_path(as_path,p);
         delete as_path;
     }
@@ -160,7 +160,7 @@ void Extrapolator::propagate_up() {
     }
 }
 
-/** Send "best" announces to customer ASes. 
+/** Send "best" announces to customer ASes.
  */
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
@@ -175,32 +175,32 @@ void Extrapolator::propagate_down() {
     }
 }
 
-/** Record announcement on all ASes on as_path. 
+/** Record announcement on all ASes on as_path.
  *
  * @param as_path List of ASes for this announcement.
  * @param prefix The prefix this announcement is for.
  * @param hop The first ASN on the as_path.
  */
-void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     Prefix<> prefix) {
     // handle empty as_path
-    if (as_path->empty()) 
+    if (as_path->empty())
         return;
     Announcement ann_to_check_for(as_path->at(as_path->size()-1),
                                   prefix.addr,
                                   prefix.netmask,
                                   0); // invalid from_asn?
     // i is used to traverse as_path
-    uint32_t i = 0; 
+    uint32_t i = 0;
     // iterate backwards through path
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
         i++;
         // if asn not in graph, continue
-        if (graph->ases->find(*it) == graph->ases->end()) 
+        if (graph->ases->find(*it) == graph->ases->end())
             continue;
         uint32_t asn_on_path = graph->translate_asn(*it);
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
-            if (as_on_path->already_received(ann_to_check_for)) 
+            if (as_on_path->already_received(ann_to_check_for))
                 continue;
         int sent_to = -1;
         // "If not at the most recent AS (rightmost in reversed path),
@@ -217,7 +217,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             } else if (as_on_path->peers->find(asn_sent_to) !=
                 as_on_path->peers->end()) {
                 sent_to = 1;
-            } else if (as_on_path->customers->find(asn_sent_to) != 
+            } else if (as_on_path->customers->find(asn_sent_to) !=
                 as_on_path->customers->end()) {
                 sent_to = 2;
             }
@@ -228,10 +228,10 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // It is 3 by default. It stays as 3 if it's the origin.
         int received_from = 3;
         if (i > 1) {
-            if (as_on_path->providers->find(*(it - 1)) != 
+            if (as_on_path->providers->find(*(it - 1)) !=
                 as_on_path->providers->end()) {
                 received_from = 0;
-            } else if (as_on_path->peers->find(*(it - 1)) != 
+            } else if (as_on_path->peers->find(*(it - 1)) !=
                 as_on_path->providers->end()) {
                 received_from = 1;
             } else if (as_on_path->customers->find(*(it - 1)) !=
@@ -244,7 +244,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         //This is how priority is calculated
         double path_len_weighted = 1 - (i - 1) / 100;
         double priority = received_from + path_len_weighted;
-       
+
         uint32_t received_from_asn = 0;
         //If this AS is the origin, it "received" the ann from itself
         if (it == as_path->rbegin()){
@@ -273,7 +273,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
 
 //TODO remove this unused function
 /** Query all announcements for a vector of prefixes from the database and
- * insert them into the graph. 
+ * insert them into the graph.
  *
  * @param prefixes a vector of prefixes to query the db for
  */
@@ -285,18 +285,18 @@ void Extrapolator::insert_announcements(std::vector<Prefix<>> *prefixes) {
     return;
 }
 
-/** Send all announcements kept by an AS to its neighbors. 
+/** Send all announcements kept by an AS to its neighbors.
  *
- * This approximates the Adj-RIBs-out. 
+ * This approximates the Adj-RIBs-out.
  *
  * @param asn AS that is sending out announces
  * @param to_peers_providers send to peers and providers
  * @param to_customers send to customers
  */
-void Extrapolator::send_all_announcements(uint32_t asn, 
-    bool to_peers_providers, 
+void Extrapolator::send_all_announcements(uint32_t asn,
+    bool to_peers_providers,
     bool to_customers) {
-    auto *source_as = graph->ases->find(asn)->second; 
+    auto *source_as = graph->ases->find(asn)->second;
     if (to_peers_providers) {
         std::vector<Announcement> anns_to_providers;
         std::vector<Announcement> anns_to_peers;
@@ -367,7 +367,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     }
 }
 
-/** Invert the extrapolation results for more compact storage. 
+/** Invert the extrapolation results for more compact storage.
  *
  * Since a prefix is most often reachable from every AS in the internet, it
  * makes sense to store only the instances where an AS cannot reach a
@@ -415,5 +415,5 @@ void Extrapolator::save_results(int iteration){
         querier->copy_results_to_db(file_name);
 
     }
-    std::remove(file_name.c_str());
+    // std::remove(file_name.c_str());
 }

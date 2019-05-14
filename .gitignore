@@ -35,3 +35,4 @@ bgp-extrapolator
 # Swap Files
 *.swp
 *.swo
+.Rproj.user

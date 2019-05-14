@@ -53,7 +53,7 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert){
     if(insert){
         //TODO maybe make one work object once on construction
         //work object may be same as nontransaction with more functionality
-        
+
         try{
             pqxx::work txn(*C);
             R = txn.exec(sql);
@@ -119,7 +119,7 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::vector<
     }
     //add when using old data format
 //    sql += ") AND element_type = 'A'";
-    sql += ")"; 
+    sql += ")";
     if(limit){
         sql += " LIMIT " + std::to_string(limit);
     }
@@ -149,9 +149,9 @@ void SQLQuerier::check_for_relationship_changes(std::string peers_table_1,
                                                 std::string customer_provider_pairs_table_1,
                                                 std::string peers_table_2,
                                                 std::string customer_provider_paris_table_2){
-    
+
 # //   std::vector<std::vector<uint
-    
+
     std::string sql = "SELECT * FROM " + peers_table_1;
     //peers_1_result = execute(sql);
 
@@ -280,7 +280,7 @@ void SQLQuerier::create_inverse_results_tbl(){
     std::cout << "*Not* dropping inverse results table..." << std::endl;
     //execute(sql, false);
     // And create it again
-    sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS ") + inverse_results_table + 
+    sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS ") + inverse_results_table +
     "(asn bigint,prefix cidr, origin bigint) ";
     sql += (ram_tablespace ? "TABLESPACE ram;" : ";");
     sql += "GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;";
@@ -296,7 +296,7 @@ void SQLQuerier::copy_inverse_results_to_db(std::string file_name){
 //Reads credentials/connection info from .conf file
 void SQLQuerier::read_config(){
     using namespace std;
-    string file_location = "/etc/bgp/bgp.conf";
+    string file_location = "./bgp.conf";
     ifstream cFile(file_location);
     if (cFile.is_open()){
         //map config variables to settings in file
@@ -318,9 +318,9 @@ void SQLQuerier::read_config(){
         for (auto const& setting : config){
             if(setting.first == "user")
                 user = setting.second;
-            else if(setting.first == "password") 
+            else if(setting.first == "password")
                 pass = setting.second;
-            else if(setting.first == "database") 
+            else if(setting.first == "database")
                 db_name = setting.second;
             else if(setting.first == "host"){
                 if(setting.second == "localhost")
@@ -331,14 +331,12 @@ void SQLQuerier::read_config(){
             else if(setting.first == "port")
                 port = setting.second;
             else{
-                std::cerr << "Setting \"" << 
+                std::cerr << "Setting \"" <<
                          setting.first << "\" undefined." << std::endl;
             }
-        }    
+        }
     }
     else{
         std::cerr << "Error loading config file \"" << file_location << "\"" << std::endl;
     }
 }
-
-

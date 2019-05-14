@@ -9,7 +9,7 @@
 #include "AS.h"
 
 ASGraph::ASGraph() {
-    ases = new std::map<uint32_t, AS*>;    
+    ases = new std::map<uint32_t, AS*>;
     ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
     components = new std::vector<std::vector<uint32_t>*>;
     component_translation = new std::map<uint32_t, uint32_t>;
@@ -23,7 +23,7 @@ ASGraph::~ASGraph() {
         delete as.second;
     }
     delete ases;
-    
+
     for (auto const& as : *ases_by_rank) {
         delete as;
     }
@@ -46,7 +46,7 @@ ASGraph::~ASGraph() {
  */
 //TODO probably make this do bi-directional assignment instead of calling this
 //twice for each pair
-void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn, 
+void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
     int relation) {
     auto search = ases->find(asn);
     if (search == ases->end()) {
@@ -62,7 +62,7 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
 uint32_t ASGraph::translate_asn(uint32_t asn){
     auto search = component_translation->find(asn);
     if(search == component_translation->end()){
-       return 0; 
+       return 0;
     }
     return search->second;
 }
@@ -127,7 +127,7 @@ void ASGraph::create_graph_from_files(){
     //process strongly connected components, decide ranks
     //TODO need querier to give process for this function
     //process();
-    return;   
+    return;
 }
 
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
@@ -153,15 +153,15 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     std::vector<AS*> to_remove;
     for (auto &as : *ases){
         if(as.second->peers->size() == 0 &&
-           as.second->providers->size() == 1 && 
+           as.second->providers->size() == 1 &&
            (as.second->customers->size() == 0)) {// || as.second->customers->size() == 1)) {
-            to_remove.push_back(as.second);    
+            to_remove.push_back(as.second);
         } else {
             non_stubs->push_back(as.first);
         }
     }
     for (auto *as : to_remove) {
-        // remove any edges to this stub from graph 
+        // remove any edges to this stub from graph
         for(uint32_t provider_asn : *as->providers){
             auto iter = ases->find(provider_asn);
             if (iter != ases->end()) {
@@ -187,7 +187,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
         }
         // remove from graph if it has not been already removed
         auto iter = ases->find(as->asn);
-        if (iter != ases->end()) { 
+        if (iter != ases->end()) {
             ases->erase(as->asn);
         }
     }
@@ -220,7 +220,7 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
 
 
 /**
- *  Generate a csv with all supernodes, then dump them to database 
+ *  Generate a csv with all supernodes, then dump them to database
  */
 void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
@@ -232,9 +232,9 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
 
     std::ofstream outfile;
     std::cerr << "Saving Supernodes..." << std::endl;
-    std::string file_name = "/dev/shm/bgp/supernodes.csv";
-    outfile.open(file_name); 
-    
+    std::string file_name = "supernodes.csv";
+    outfile.open("supernodes.csv");
+
     // Object: components = new std::vector<std::vector<uint32_t>*>;
     // Iterate over each strongly connected component
     for (auto &cur_node : *components) {
@@ -242,7 +242,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
             // find the lowest asn in supernode
             uint32_t low = UINT_MAX;
             for (auto &cur_asn : *cur_node) {
-                if (cur_asn < low) 
+                if (cur_asn < low)
                     low = cur_asn;
             }
             // assemble rows as pairs; asn in supernode, lowest asn in that supernode
@@ -278,7 +278,7 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
     std::remove(file_name.c_str());
 }
 
-/** Decide and assign ranks to all the AS's in the graph. 
+/** Decide and assign ranks to all the AS's in the graph.
  */
 void ASGraph::decide_ranks() {
     // initialize the sets
@@ -293,7 +293,7 @@ void ASGraph::decide_ranks() {
             as.second->rank = 0;
         }
     }
-    
+
     // this is decreased from 1000 to 254 because the TTL on an IPv4 packet
     // is at most 255, so in theory this is a reasonable maximum for ASes too.
     for (int i = 0; i < 254; i++) {
@@ -453,7 +453,7 @@ void ASGraph::printDebug() {
     for (auto const& as : *ases) {
         std::cout << as.first << ':' << as.second->asn << std::endl;
     }
-    return; 
+    return;
 }
 
 std::ostream& operator<<(std::ostream &os, const ASGraph& asg) {
@@ -463,5 +463,3 @@ std::ostream& operator<<(std::ostream &os, const ASGraph& asg) {
     }
     return os;
 }
-
-
