@@ -92,14 +92,6 @@ bool test_already_received(){
 }
 
 
-/** Test iteration through incoming_announcements and keeping only the best.
- *
- * @return true if successful.
- */
-bool test_process_announcements(){
-    return true;
-}
-
 
 /** Test clearing all announcements.
  *
