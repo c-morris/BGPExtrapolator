@@ -22,6 +22,9 @@ BOOST_AUTO_TEST_CASE( AS_clear_announcements ) {
 BOOST_AUTO_TEST_CASE( AS_process_announcements ) {
         BOOST_CHECK( test_process_announcements() );
 }
+BOOST_AUTO_TEST_CASE( ASGraph_add_relationship ) {
+        BOOST_CHECK( test_add_relationship() );
+}
 #endif // RUN_TESTS
 
 
