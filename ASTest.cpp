@@ -2,8 +2,18 @@
  */
 
 #include "AS.h"
+#include <iostream>
 
 bool test_add_neighbor(){
+    AS as = AS();
+    as.add_neighbor(1, AS_REL_PROVIDER);
+    as.add_neighbor(2, AS_REL_PEER);
+    as.add_neighbor(3, AS_REL_CUSTOMER);
+    if (as.providers->find(1) == as.providers->end() ||
+        as.peers->find(2) == as.peers->end() ||
+        as.customers->find(3) == as.customers->end()) {
+        return false;
+    }
     return true;
 }
 
