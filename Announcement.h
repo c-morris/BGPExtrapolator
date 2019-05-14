@@ -36,6 +36,7 @@ struct Announcement {
     /** Comparison operators
      *  
      *  Comparing first on prefix ensures the most specific announcement gets priority. The origin is not used in comparison.
+     *  Is this broken???
      *
      *  @ return true if operation holds, otherwise false
      */
