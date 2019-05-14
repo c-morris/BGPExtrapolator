@@ -29,7 +29,6 @@ bool test_prefix_eq_operator();
 
 // Prototypes for ASTest.cpp
 bool test_add_neighbor();
-bool test_update_rank();
 bool test_receive_announcement();
 bool test_already_received();
 bool test_clear_announcements();

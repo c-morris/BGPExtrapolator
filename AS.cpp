@@ -59,17 +59,6 @@ void AS::add_neighbor(uint32_t asn, int relationship) {
     }
 }
 
-/** Update rank of this AS only if newrank is greater than the current rank.
- *
- * @param newrank The height of the AS in the provider->customer DAG. Used for simple propagation up and down the graph. 
- * @return True if rank was changed, false otherwise. 
- */
-bool AS::update_rank(int newrank) {
-    int old = rank;
-    rank = std::max(rank, newrank);
-    return (old != rank) ? true : false;
-}
-
 // print asn only
 void AS::printDebug() {
     std::cout << asn << std::endl;

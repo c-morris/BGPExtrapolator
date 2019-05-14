@@ -7,9 +7,6 @@
 BOOST_AUTO_TEST_CASE( AS_add_neighbor ) {
         BOOST_CHECK( test_add_neighbor() );
 }
-BOOST_AUTO_TEST_CASE( AS_update_rank ) {
-        BOOST_CHECK( test_update_rank() );
-}
 BOOST_AUTO_TEST_CASE( AS_receive_announcement ) {
         BOOST_CHECK( test_receive_announcement() );
 }
