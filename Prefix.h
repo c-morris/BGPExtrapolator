@@ -31,99 +31,115 @@ struct Prefix {
         std::string token;              // Buffer subseciton of addr
 
         //IP to int
-        bool error_t = false;           // Error flag, drops malformed input
+        bool error_f = false;           // Error flag, drops malformed input
         int counter = 0;                // Check for proper addr length
         uint32_t ipv4_ip_int = 0;
         
         // Convert string address to an unsigned 32-bit int
         std::string s = addr_str;
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            
-            // Catch long malformed input
-            if (counter > 3) {
-                error_t = true;
-                break;
-            }
-
-            // Token is one 8-bit int
-            token = s.substr(0, pos);
-            uint32_t token_int = std::stoul(token);
-            
-            // Catch out of range ints, default to 255
-            if (token_int > 255) {
-                error_t = true;
-                break;
-            }
-            
-            // Add token and shift left 8 bits
-            ipv4_ip_int += std::stoul(token);
-            ipv4_ip_int = ipv4_ip_int << 8;
-            
-            // Trim token from addr
-            s.erase(0, pos + delimiter.length());
-            counter += 1;
-        }
-        
-        // Catch short malformed input
-        if (counter != 3) {
-            error_t = true;
-        }
-        
-        // Add last 8-bit token
-        uint32_t s_int = std::stoul(s);
-        if (error_t == true || s_int > 255) {
-            std::cerr << "Caught malformed IPv4 address: " << addr_str << std::endl;
-            ipv4_ip_int = 0;
+        if (s.empty()) {
+            error_f = true;
         } else {
-            ipv4_ip_int += s_int;
-        }
+            while ((pos = s.find(delimiter)) != std::string::npos) {
+                
+                // Catch long malformed input
+                if (counter > 3) {
+                    error_f = true;
+                    break;
+                }
 
-        // Mask to int
-        error_t = false;            // Error flag, drops malformed input
+                // Token is one 8-bit int
+                token = s.substr(0, pos);
+                // May need try-catch
+                uint32_t token_int = std::stoul(token);
+                
+                // Catch out of range ints, default to 255
+                if (token_int > 255) {
+                    error_f = true;
+                    break;
+                }
+                
+                // Add token and shift left 8 bits
+                ipv4_ip_int += std::stoul(token);
+                ipv4_ip_int = ipv4_ip_int << 8;
+                
+                // Trim token from addr
+                s.erase(0, pos + delimiter.length());
+                counter += 1;
+            }
+            
+            // Catch short malformed input
+            if (counter != 3) {
+                error_f = true;
+            }
+            
+            // Add last 8-bit token
+            // May need try-catch
+            uint32_t s_int = std::stoul(s);
+            if (s_int > 255) {
+                error_f = true;
+            } else {
+                ipv4_ip_int += s_int;
+            }
+        }
+        
+
+        // Convert Subnet Mask to int
         counter = 0;                // Check for proper addr length
         uint32_t ipv4_mask_int = 0;
         
         s = mask_str;
-        while ((pos = s.find(delimiter)) != std::string::npos) { 
-            // Catch long malformed input
-            if (counter > 3) {
-                error_t = true;
-                break;
-            }
-
-            // Token is one 8-bit int
-            token = s.substr(0, pos);
-            uint32_t token_int = std::stoul(token);
-            
-            // Catch out of range ints, default to 255
-            if (token_int > 255) {
-                error_t = true;
-                break;
-            }
-            
-            // Add token and shift left 8 bits
-            ipv4_mask_int += std::stoul(token);
-            ipv4_mask_int = ipv4_mask_int << 8;
-            
-            // Trim token from addr
-            s.erase(0, pos + delimiter.length());
-            counter += 1;
-        }
-        
-        // Catch short malformed input
-        if (counter != 3) {
-            error_t = true;
-        }
-        
-        // Add last 8-bit token
-        s_int = std::stoul(s);
-        if (error_t == true || s_int > 255) {
-            std::cerr << "Caught malformed IPv4 mask: " << mask_str << std::endl;
-            ipv4_mask_int = 0;
+        if (s.empty()) {
+            error_f = true;
         } else {
-            ipv4_mask_int += s_int;
+            while ((pos = s.find(delimiter)) != std::string::npos) { 
+                // Catch long malformed input
+                if (counter > 3) {
+                    error_f = true;
+                    break;
+                }
+
+                // Token is one 8-bit int
+                token = s.substr(0, pos);
+                uint32_t token_int = std::stoul(token);
+                
+                // Catch out of range ints, default to 255
+                if (token_int > 255) {
+                    error_f = true;
+                    break;
+                }
+                
+                // Add token and shift left 8 bits
+                ipv4_mask_int += std::stoul(token);
+                ipv4_mask_int = ipv4_mask_int << 8;
+                
+                // Trim token from addr
+                s.erase(0, pos + delimiter.length());
+                counter += 1;
+            }
+                
+            // Catch short malformed input
+            if (counter != 3) {
+                error_f = true;
+            }
+                
+            // Add last 8-bit token
+            uint32_t s_int = std::stoul(s);
+            if (s_int > 255) {
+                error_f = true;
+            } else {
+                ipv4_mask_int += s_int;
+            }
         }
         
+        // Default errors to 0.0.0.0/0
+        if (error_f == true) {
+            ipv4_ip_int = 0;
+            ipv4_mask_int = 0;
+            std::cerr << "Caught malformed IPv4 address: " << addr_str << std::endl;
+            std::cerr << "Or IPv4 mask: " << mask_str << std::endl;
+        }
+
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
     }
