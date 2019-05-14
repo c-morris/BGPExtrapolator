@@ -30,6 +30,7 @@ bool test_prefix_eq_operator();
 // Prototypes for ASTest.cpp
 bool test_add_neighbor();
 bool test_receive_announcement();
+bool test_receive_announcements();
 bool test_already_received();
 bool test_clear_announcements();
 bool test_process_announcements();

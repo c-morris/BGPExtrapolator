@@ -103,6 +103,9 @@ struct Prefix {
     bool operator>(const Prefix &b) const {
         return !(*this < b || *this == b);
     }
+    bool operator!=(const Prefix &b) const {
+        return !(*this == b);
+    }
 };
 
 #endif
