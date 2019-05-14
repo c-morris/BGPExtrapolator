@@ -20,10 +20,20 @@ Extrapolator::~Extrapolator(){
     delete threads;
 }
 
+
+/** Performs all tasks necessary to propagate a set of announcements given:
+ *      1) A populated mrt_announcements table
+ *      2) A populated customer_provider table
+ *      3) A populated peers table
+ *
+ * @param test
+ * @param iteration_size
+ * @param max_total
+ */
 void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
     using namespace std;
    
-    // make tmp directory if it does not exist
+    // Make tmp directory if it does not exist
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
         mkdir("/dev/shm/bgp", 0777); 
@@ -145,7 +155,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 }
 
 
-/** Propagate announcements from customers to peers and providers.
+/** Propagate announcements from customers to peers and providers ASes.
  */
 void Extrapolator::propagate_up() {
     size_t levels = graph->ases_by_rank->size();
@@ -160,7 +170,8 @@ void Extrapolator::propagate_up() {
     }
 }
 
-/** Send "best" announces to customer ASes. 
+
+/** Send "best" announces from providers to customer ASes. 
  */
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
@@ -174,6 +185,7 @@ void Extrapolator::propagate_down() {
         }
     }
 }
+
 
 /** Record announcement on all ASes on as_path. 
  *
@@ -271,20 +283,6 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
 }
 
 
-//TODO remove this unused function
-/** Query all announcements for a vector of prefixes from the database and
- * insert them into the graph. 
- *
- * @param prefixes a vector of prefixes to query the db for
- */
-
-void Extrapolator::insert_announcements(std::vector<Prefix<>> *prefixes) {
-    using namespace pqxx;
-    // this is very db library dependent, so I'm leaving it for you, Michael
-  //  result R = querier->select_ann_records("simplified_elements"
-    return;
-}
-
 /** Send all announcements kept by an AS to its neighbors. 
  *
  * This approximates the Adj-RIBs-out. 
@@ -367,6 +365,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     }
 }
 
+
+// TODO Remove unused function?
 /** Invert the extrapolation results for more compact storage. 
  *
  * Since a prefix is most often reachable from every AS in the internet, it
@@ -389,6 +389,11 @@ void Extrapolator::invert_results(void) {
     }
 }
 
+
+/** Save the results of a single iteration to a in-memory
+ *
+ * @param iteration The current iteration of the propagation
+ */
 void Extrapolator::save_results(int iteration){
 //    SQLQuerier *thread_querier = new SQLQuerier;
     std::ofstream outfile;

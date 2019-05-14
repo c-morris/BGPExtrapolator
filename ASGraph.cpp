@@ -38,6 +38,7 @@ ASGraph::~ASGraph() {
     delete non_stubs;
 }
 
+
 /** Adds an AS relationship to the graph.
  *
  * @param asn ASN of AS to add the relationship to
@@ -57,8 +58,11 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
-//translates asn to asn of component it belongs to in graph
-//returns 0 if asn isn't found
+
+/** Translates asn to asn of component it belongs to in graph.
+ *
+ * @return 0 if asn isn't found
+ */
 uint32_t ASGraph::translate_asn(uint32_t asn){
     auto search = component_translation->find(asn);
     if(search == component_translation->end()){
@@ -67,7 +71,9 @@ uint32_t ASGraph::translate_asn(uint32_t asn){
     return search->second;
 }
 
-//process without removing stubs (doesn't need querier)
+
+/** Process without removing stubs (doesn't need querier).
+ */
 void ASGraph::process(){
     tarjan();
     combine_components();
@@ -75,7 +81,9 @@ void ASGraph::process(){
     return;
 }
 
-//process with removing stubs (needs querier to save them)
+
+/** Process with removing stubs (needs querier to save them).
+ */
 void ASGraph::process(SQLQuerier *querier){
     remove_stubs(querier);
     tarjan();
@@ -85,6 +93,8 @@ void ASGraph::process(SQLQuerier *querier){
     return;
 }
 
+
+// TODO Remove unused function?
 void ASGraph::create_graph_from_files(){
     std::ifstream file;
     //TODO make file names part of config
@@ -130,6 +140,13 @@ void ASGraph::create_graph_from_files(){
     return;   
 }
 
+
+/** Generates an ASGraph from relationship data in an SQL database based upon:
+ *      1) A populated peers table
+ *      2) A populated customer_providers table
+ * 
+ * @param querier
+ */
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
     //TODO add table names to config
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
@@ -149,6 +166,11 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
     return;
 }
 
+
+/** Remove the stub ASes from the graph.
+ *
+ * @param querier
+ */
 void ASGraph::remove_stubs(SQLQuerier *querier){
     std::vector<AS*> to_remove;
     for (auto &as : *ases){
@@ -197,6 +219,11 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     save_non_stubs_to_db(querier);
 }
 
+
+/** Saves the stub ASes to be removed to a table on the database.
+ *
+ * @param querier
+ */
 void ASGraph::save_stubs_to_db(SQLQuerier *querier){
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
@@ -219,8 +246,9 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
 }
 
 
-/**
- *  Generate a csv with all supernodes, then dump them to database 
+/** Generate a csv with all supernodes, then dump them to database.
+ *
+ * @param querier
  */
 void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
@@ -256,7 +284,10 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     //std::remove(file_name.c_str());
 }
 
-
+/** Saves the non_stub ASes to a table on the database.
+ *
+ * @param querier
+ */
 void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
@@ -277,6 +308,7 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
     querier->copy_non_stubs_to_db(file_name);
     std::remove(file_name.c_str());
 }
+
 
 /** Decide and assign ranks to all the AS's in the graph. 
  */
@@ -331,7 +363,10 @@ void ASGraph::decide_ranks() {
     return;
 }
 
-//https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+/** Tarjan driver to detect strongly connected components in the ASGraph.
+ * 
+ * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+ */
 void ASGraph::tarjan() {
     int index = 0;
     std::stack<AS*> s;
@@ -344,6 +379,8 @@ void ASGraph::tarjan() {
     return;
 }
 
+/** Tarjan algorithm to detect strongly connected components in the ASGraph.
+ */
 void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     as->index = index;
     as->lowlink = index;
@@ -374,8 +411,10 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     }
 }
 
-//Combine providers, peers, and customers of ASes in a strongly connected
-//component. Also append to component_translation for future reference.
+
+/** Combine providers, peers, and customers of ASes in a strongly connected component.
+ *  Also append to component_translation for future reference.
+ */
 void ASGraph::combine_components(){
     for (auto const& component : *components){
         uint32_t combined_asn = component->at(0);
@@ -442,13 +481,18 @@ void ASGraph::combine_components(){
     return;
 }
 
+
+/** Clear all announcements in AS.
+ */
 void ASGraph::clear_announcements(){
     for (auto const& as : *ases){
         as.second->clear_announcements();
     }
 }
 
-// print all ASes
+
+/** Print all ASes for debug.
+ */
 void ASGraph::printDebug() {
     for (auto const& as : *ases) {
         std::cout << as.first << ':' << as.second->asn << std::endl;
@@ -456,6 +500,9 @@ void ASGraph::printDebug() {
     return; 
 }
 
+
+/** Operation for debug printing AS
+ */
 std::ostream& operator<<(std::ostream &os, const ASGraph& asg) {
     os << "AS's" << std::endl;
     for (auto const& as : *(asg.ases)) {
@@ -463,5 +510,3 @@ std::ostream& operator<<(std::ostream &os, const ASGraph& asg) {
     }
     return os;
 }
-
-

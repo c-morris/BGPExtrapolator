@@ -3,6 +3,8 @@
 
 
 /** Test the constructor for the Announcement struct
+ *
+ * @ return True for success
  */
 bool test_announcement(){
     return true;
@@ -10,13 +12,17 @@ bool test_announcement(){
 
 
 /** Tests the < operator for Announcements struct
- */
+ *
+ * @ return True for success
+ */ 
 bool test_ann_lt_operator(){
     return true;
 }
 
 
 /** Tests the > operator for Announcements struct
+ *
+ * @ return True for success 
  */
 bool test_ann_gt_operator(){
     return true;
@@ -58,5 +64,3 @@ bool test_ann_os_operator(){
 bool test_to_csv(){
     return true;
 }
-
-
