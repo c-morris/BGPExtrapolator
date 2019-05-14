@@ -1,10 +1,15 @@
-/** Unit tests for AS.h and AS.cpp
- */
-
+#include <iostream>
 #include "AS.h"
 #include "Announcement.h"
-#include <iostream>
 
+/** Unit tests for AS.cpp
+ */
+
+
+/** Test adding neighbor AS to the appropriate set based on the relationship.
+ *
+ * @return True if successful, otherwise false
+ */
 bool test_add_neighbor(){
     AS as = AS();
     as.add_neighbor(1, AS_REL_PROVIDER);
@@ -18,6 +23,11 @@ bool test_add_neighbor(){
     return true;
 }
 
+
+/** Test directly adding an announcement to the all_anns map.
+ *
+ * @return true if successful.
+ */
 bool test_receive_announcement(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     // this function should make a copy of the announcement
@@ -36,6 +46,11 @@ bool test_receive_announcement(){
     return false;
 }
 
+
+/** Test pushing the received announcement to the incoming_announcements vector. 
+ *
+ * @return true if successful.
+ */
 bool test_receive_announcements(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     std::vector<Announcement> vect = std::vector<Announcement>();
@@ -59,6 +74,11 @@ bool test_receive_announcements(){
     return true;
 }
 
+
+/** Test checking if announcement is already received by an AS
+ *
+ * @return true if successful.
+ */
 bool test_already_received(){
     Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
@@ -72,6 +92,19 @@ bool test_already_received(){
 }
 
 
+/** Test iteration through incoming_announcements and keeping only the best.
+ *
+ * @return true if successful.
+ */
+bool test_process_announcements(){
+    return true;
+}
+
+
+/** Test clearing all announcements.
+ *
+ * @return true if successful.
+ */
 bool test_clear_announcements(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     AS as = AS();

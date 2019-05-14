@@ -19,6 +19,9 @@ SQLQuerier::~SQLQuerier(){
     delete C;
 }
 
+
+/**
+ */
 void SQLQuerier::open_connection(){
     std::ostringstream stream;
     stream << "dbname = " << db_name;
@@ -48,6 +51,8 @@ void SQLQuerier::close_connection(){
 }
 
 
+/**
+ */
 pqxx::result SQLQuerier::execute(std::string sql, bool insert){
     pqxx::result R;
     if(insert){
@@ -63,14 +68,13 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert){
         catch(const std::exception &e){
             std::cerr << e.what() <<std::endl;
         }
-    }
-    else{
-        try{
+    } 
+    else {
+        try {
             pqxx::nontransaction N(*C);
             pqxx::result R( N.exec(sql));
 
             return R;
-
         }
         catch(const std::exception &e){
             std::cerr << e.what() <<std::endl;
@@ -78,6 +82,10 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert){
     }
     return R;
 }
+
+
+/**
+ */
 //TODO maybe rename/overload this for selection options
 pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
     std::string sql = "SELECT * FROM " + table_name;
@@ -88,6 +96,9 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
     return execute(sql);
 }
 
+
+/**
+ */
 pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
     std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM ";
     if (!table_name.empty()) {
@@ -105,6 +116,9 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string 
     return execute(sql);
 }
 
+
+/**
+ */
 pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit){
 //    std::cerr << "Selecting announcement records..."<< std::endl;
     std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM " + table_name;
@@ -128,11 +142,17 @@ pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::vector<
     return execute(sql);
 }
 
+
+/**
+ */
 pqxx::result SQLQuerier::select_distinct_prefixes_from_table(std::string table_name){
     std::string sql = "SELECT DISTINCT prefix, family(prefix) FROM " + table_name;
     return execute(sql);
 }
 
+
+/**
+ */
 pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_family){
     std::string sql = "SELECT DISTINCT prefix, family(prefix) FROM " + table_name;
     if(ip_family == IPV4)
@@ -141,7 +161,6 @@ pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_fami
         sql += " WHERE family(prefix) = 4";
     return execute(sql);
 }
-
 
 
 //TODO add return type
@@ -172,14 +191,15 @@ void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
     }
 }
 
-// this should use the STUBS_TABLE macro
+/** this should use the STUBS_TABLE macro
+ */
 void SQLQuerier::clear_stubs_from_db(){
     std::string sql = "DELETE FROM stubs";
     execute(sql);
 }
 
-/*
- *  Generate an index on the results table.
+
+/** Generate an index on the results table.
  */
 void SQLQuerier::create_results_index() {
     // postgres version must support this
@@ -188,8 +208,8 @@ void SQLQuerier::create_results_index() {
     execute(sql, false);
 }
 
-/*
- *  Takes a .csv filename and bulk copies all elements to the stubs table.
+
+/** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
 void SQLQuerier::clear_non_stubs_from_db(){
     std::string sql = "DELETE FROM non_stubs";
@@ -202,8 +222,8 @@ void SQLQuerier::copy_stubs_to_db(std::string file_name){
     execute(sql);
 }
 
-/*
- *  Takes a .csv filename and bulk copies all elements to the supernodes table.
+
+/** Takes a .csv filename and bulk copies all elements to the supernodes table.
  */
 void SQLQuerier::copy_supernodes_to_db(std::string file_name){
     std::string sql = "COPY " SUPERNODES_TABLE "(supernode_asn,supernode_lowest_asn) FROM '" +
@@ -217,8 +237,8 @@ void SQLQuerier::copy_non_stubs_to_db(std::string file_name){
     execute(sql);
 }
 
-/*
- *  Takes a .csv filename and bulk copies all elements to the results table.
+
+/** Takes a .csv filename and bulk copies all elements to the results table.
  */
 void SQLQuerier::copy_results_to_db(std::string file_name){
     std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn)") +
@@ -226,8 +246,8 @@ void SQLQuerier::copy_results_to_db(std::string file_name){
     execute(sql);
 }
 
-/*
- *  Instantiates a new, empty supernodes table in the database, if it doesn't exist.
+
+/**  Instantiates a new, empty supernodes table in the database, if it doesn't exist.
  */
 void SQLQuerier::create_supernodes_tbl(){
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " SUPERNODES_TABLE "(supernode_asn BIGSERIAL PRIMARY KEY, supernode_lowest_asn bigint)");
@@ -235,8 +255,8 @@ void SQLQuerier::create_supernodes_tbl(){
     execute(sql, false);
 }
 
-/*
- *  Instantiates a new, empty stubs table in the database, if it doesn't exist.
+
+/** Instantiates a new, empty stubs table in the database, if it doesn't exist.
  */
 void SQLQuerier::create_stubs_tbl(){
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " STUBS_TABLE " (stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint);");
@@ -244,8 +264,8 @@ void SQLQuerier::create_stubs_tbl(){
     execute(sql, false);
 }
 
-/*
- *  Instantiates a new, empty non_stubs table in the database, if it doesn't exist.
+
+/** Instantiates a new, empty non_stubs table in the database, if it doesn't exist.
  */
 void SQLQuerier::create_non_stubs_tbl(){
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " NON_STUBS_TABLE " (non_stub_asn BIGSERIAL PRIMARY KEY);");
@@ -253,8 +273,8 @@ void SQLQuerier::create_non_stubs_tbl(){
     execute(sql, false);
 }
 
-/*
- *  Instantiates a new, empty results table in the database, dropping the old table.
+
+/** Instantiates a new, empty results table in the database, dropping the old table.
  */
 void SQLQuerier::create_results_tbl(){
     // Drop the results table
@@ -269,8 +289,8 @@ void SQLQuerier::create_results_tbl(){
     execute(sql, false);
 }
 
-/*
- *  Instantiates a new, empty inverse results table in the database, dropping the old table.
+
+/** Instantiates a new, empty inverse results table in the database, dropping the old table.
  */
 void SQLQuerier::create_inverse_results_tbl(){
     // Drop the results table
@@ -287,13 +307,17 @@ void SQLQuerier::create_inverse_results_tbl(){
     std::cout << "Creating inverse results table..." << std::endl;
     execute(sql, false);
 }
+
+
 void SQLQuerier::copy_inverse_results_to_db(std::string file_name){
     std::string sql = std::string("COPY " + inverse_results_table + "(asn, prefix, origin)") +
                         "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
-//Reads credentials/connection info from .conf file
+
+/** Reads credentials/connection info from .conf file
+ */
 void SQLQuerier::read_config(){
     using namespace std;
     string file_location = "/etc/bgp/bgp.conf";
@@ -340,5 +364,3 @@ void SQLQuerier::read_config(){
         std::cerr << "Error loading config file \"" << file_location << "\"" << std::endl;
     }
 }
-
-

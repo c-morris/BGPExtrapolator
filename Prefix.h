@@ -10,7 +10,18 @@ template <typename Integer = uint32_t>
 struct Prefix {
     Integer addr;
     Integer netmask;
+    
+    /** Default constructor
+     */
     Prefix() {}
+    
+    /** Priority constructor
+     *
+     * NEEDS DESCRIPTION
+     *
+     * @param addr_str The IP address as a string.
+     * @param mask_str The subnet mask/length as a string.
+     */ 
     Prefix(std::string addr_str, std::string mask_str) {
         // TODO IPv6 Address Parsing
         // IPv4 Address Parsing
@@ -61,10 +72,15 @@ struct Prefix {
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
     }
-    // this is IPv4 only
+    
+    /** Converts this prefix into a cidr formatted string.
+     *
+     *  This is IPv4 only.
+     *
+     *  @return cidr A string in cidr format.
+     */
     std::string to_cidr() const {
         std::string cidr = "";
-        // I could write this as a loop but I think this is clearer
         uint8_t quad = (addr & 0xFF000000) >> 24;
         cidr.append(std::to_string(quad) + ".");
         quad = (addr & 0x00FF0000) >> 16;
@@ -74,7 +90,7 @@ struct Prefix {
         quad = (addr & 0x000000FF) >> 0;
         cidr.append(std::to_string(quad));
         cidr.push_back('/');
-        // assume valid cidr netmask, e.g. no ones after the first zero
+        // Assume valid cidr netmask, e.g. no ones after the first zero
         uint8_t sz = 0;
         for (int i = 0; i < 32; i++) {
             if (netmask & (1 << i)) {
@@ -84,8 +100,14 @@ struct Prefix {
         cidr.append(std::to_string(sz));
         return cidr;
     }
-    // comparison operators for maps
-    // comparing the addr first ensures the more specific address is greater
+    
+    /** Defined comparison operators for maps
+     *
+     * Comparing the addr first ensures the more specific address is greater
+     *
+     * @param b The Prefix object to which this object is compared.
+     * @return true if the operation holds, otherwise false
+     */
     bool operator<(const Prefix &b) const {
         uint64_t combined = 0;
         combined |= addr;
