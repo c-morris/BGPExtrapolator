@@ -87,6 +87,14 @@ void AS::receive_announcement(Announcement &ann) {
     if (search == all_anns->end()) {
         all_anns->insert(std::pair<Prefix<>, Announcement>(
             ann.prefix, ann));
+        // inverse results need to be computed also with announcements from monitors
+        if (inverse_results != NULL) {
+            auto set = inverse_results->find(
+                std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+            if (set != inverse_results->end()) {
+                set->second->erase(asn);
+            }
+        }
     } else if (ann.priority > search->second.priority) {
         search->second = ann;
     } 
@@ -96,23 +104,10 @@ void AS::receive_announcement(Announcement &ann) {
  * Meant to approximate BGP best path selection.
  */
 void AS::process_announcements() {
-    for (const auto &ann : *incoming_announcements) {
-        // from https://en.cppreference.com/w/cpp/container/map/find
+    for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
-        if (search == all_anns->end()) {
-            all_anns->insert(std::pair<Prefix<>, Announcement>(
-                ann.prefix, ann));
-            if (inverse_results != NULL) {
-                auto set = inverse_results->find(
-                    std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
-                if (set != inverse_results->end()) {
-                    set->second->erase(asn);
-                }
-            }
-        //An announcement recorded by a monitor won't be replaced
-        } else if (!search->second.from_monitor && 
-                ann.priority > search->second.priority) {
-            search->second = ann;
+        if (search == all_anns->end() || !search->second.from_monitor) {
+            receive_announcement(ann);
         }
     }
     incoming_announcements->clear();

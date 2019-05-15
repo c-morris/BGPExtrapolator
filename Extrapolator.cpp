@@ -312,12 +312,14 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         }
         // send announcements
         for (uint32_t provider_asn : *source_as->providers) {
-            graph->ases->find(provider_asn)->second->receive_announcements(
-                anns_to_providers);
+            auto *recving_as = graph->ases->find(provider_asn)->second;
+            recving_as->receive_announcements(anns_to_providers);
+            recving_as->process_announcements();
         }
         for (uint32_t peer_asn : *source_as->peers) {
-            graph->ases->find(peer_asn)->second->receive_announcements(
-                anns_to_peers);
+            auto *recving_as = graph->ases->find(peer_asn)->second;
+            recving_as->receive_announcements(anns_to_peers);
+            recving_as->process_announcements();
         }
     }
 

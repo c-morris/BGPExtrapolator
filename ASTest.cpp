@@ -141,6 +141,7 @@ bool test_process_announcements(){
     as.receive_announcements(vect);
     as.process_announcements();
     if (as.all_anns->find(ann1_prefix)->second.priority != 1.0) {
+        std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;
     }
     
@@ -151,6 +152,7 @@ bool test_process_announcements(){
     as.receive_announcements(vect);
     as.process_announcements();
     if (as.all_anns->find(ann1_prefix)->second.priority != 2.9) {
+        std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
     }
     
@@ -161,6 +163,7 @@ bool test_process_announcements(){
     as.receive_announcements(vect);
     as.process_announcements();
     if (as.all_anns->find(ann1_prefix)->second.priority != 2.9) {
+        std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
     }
 
@@ -171,6 +174,7 @@ bool test_process_announcements(){
     as.receive_announcements(vect);
     as.process_announcements();
     if (as.all_anns->find(ann1_prefix)->second.priority != 2.99) {
+        std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
     }
 
@@ -181,6 +185,7 @@ bool test_process_announcements(){
     as.receive_announcements(vect);
     as.process_announcements();
     if (as.all_anns->find(ann2_prefix)->second.priority != 2.0) {
+        std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
     }
 
