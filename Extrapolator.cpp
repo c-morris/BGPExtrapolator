@@ -184,7 +184,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     Announcement ann_to_check_for(as_path->at(as_path->size()-1),
                                   prefix.addr,
                                   prefix.netmask,
-                                  0); // invalid from_asn?
+                                  0); // invalid from_asn? yeah it means the announcement originates here 
     // i is used to traverse as_path
     uint32_t i = 0; 
     // iterate backwards through path
@@ -193,7 +193,9 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // if asn not in graph, continue
         if (graph->ases->find(*it) == graph->ases->end()) 
             continue;
-        uint32_t asn_on_path = graph->translate_asn(*it);
+        // announcements from monitors should ignore supernodes
+        //uint32_t asn_on_path = graph->translate_asn(*it);
+        uint32_t asn_on_path = *it;
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
             if (as_on_path->already_received(ann_to_check_for)) 
                 continue;

@@ -60,6 +60,7 @@ bool test_save_supernodes_to_db();
 bool test_Extrapolator_constructor();
 bool test_propagate_up();
 bool test_propagate_down();
+bool test_give_ann_to_as_path();
 
 // Prototypes for SQLQuerierTest.cpp
 

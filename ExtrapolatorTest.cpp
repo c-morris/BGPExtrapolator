@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cstdint>
+#include <vector>
 #include "Extrapolator.h"
 
 /** Unit tests for Extrapolator.h and Extrapolator.cpp
@@ -99,4 +101,51 @@ bool test_propagate_down() {
         return true;
     }
     return false;
+}
+
+/** Test seeding the graph with announcements from monitors. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  The test path vect is [3, 2, 5]. 
+ */
+bool test_give_ann_to_as_path() {
+    Extrapolator e = Extrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    e.give_ann_to_as_path(as_path, p);
+
+    if (e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0) {
+        return true;
+    }
+    return false;
+
+
+
+    delete as_path;
 }
