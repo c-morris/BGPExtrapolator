@@ -54,19 +54,11 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
     
-    //Get ROAs from "roas" table (prefix - origin pairs)
-    //std::cout << "Selecting prefixes with ROAs..." << std::endl;
-    //pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
-
-    //int num_prefixes = prefixes.size();
-
     //Continue if not exeeding user defined or record max
     std::cout << "Beginning propagation..." << std::endl;
-    //while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
     
     std::cerr << "Selecting Announcements..." << std::endl;
     //Get all announcements (R) from the table 
-    //pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE,prefixes_to_get);
     pqxx::result R = querier->select_ann_records();
     std::cerr << "Done." << std::endl;
 
@@ -137,21 +129,12 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
     propagate_up();
     propagate_down();
-//        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
-    //if (invert)
-        //invert_results();
     save_results(0);
     graph->clear_announcements();
 
     // create an index on the results
     if (!invert)
         querier->create_results_index();
-
-    /*
-    for (auto &t : *threads){
-        t.join();
-    }
-    */
 }
 
 
@@ -177,7 +160,7 @@ void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            //std::cout << "propagating down to " << asn << std::endl;
+            //std::cerr << "propagating down to " << asn << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, true);
@@ -395,7 +378,6 @@ void Extrapolator::invert_results(void) {
  * @param iteration The current iteration of the propagation
  */
 void Extrapolator::save_results(int iteration){
-//    SQLQuerier *thread_querier = new SQLQuerier;
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
