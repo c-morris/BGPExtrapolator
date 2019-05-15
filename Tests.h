@@ -59,6 +59,7 @@ bool test_save_supernodes_to_db();
 // Prototypes for ExtrapolatorTest.cpp
 bool test_Extrapolator_constructor();
 bool test_propagate_up();
+bool test_propagate_down();
 
 // Prototypes for SQLQuerierTest.cpp
 
