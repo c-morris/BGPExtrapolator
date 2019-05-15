@@ -42,12 +42,18 @@ bool test_propagate_up() {
     
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     ann.from_monitor = true;
+    ann.priority = 2.9;
     e.graph->ases->find(5)->second->receive_announcement(ann);
     e.propagate_up();
     e.propagate_up();
-    std::cout << e.graph->ases->find(1)->second->all_anns->size();
-    std::cout << e.graph->ases->find(2)->second->all_anns->size();
-    std::cout << e.graph->ases->find(5)->second->all_anns->size();
-    std::cout << e.graph->ases->find(6)->second->all_anns->size();
-    return true;
+    if (e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(7)->second->all_anns->size() == 0) {
+        return true;
+    }
+    return false;
 }
