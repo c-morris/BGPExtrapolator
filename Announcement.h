@@ -36,15 +36,15 @@ struct Announcement {
     /** Comparison operators
      *  
      *  Comparing first on prefix ensures the most specific announcement gets priority. The origin is not used in comparison.
-     *  Is this broken???
+     *  Is this broken??? YES, I think this is broken.
      *
-     *  @ return true if operation holds, otherwise false
+     *  @return true if operation holds, otherwise false
      */
     bool operator<(const Announcement &b) const {
         if (prefix < b.prefix) {
             return true;
-        } else if (priority < b.priority) { 
-            return true;
+        } else if (priority < b.priority) { // If announcement (a is MORE SPECIFIC than OR equal to b) AND (a has less priority)
+            return true; // If a is more specific then priority shouldn't matter?
         } else {
             return false;
         }
@@ -56,9 +56,10 @@ struct Announcement {
         return !(*this < b || *this == b);
     }
     
+
     /** Converts the Announcement struct to a string for SQL queries.
      * 
-     * @ return Announcement data in string form.
+     * @return Announcement data in string form.
      */
     std::string to_sql(){
         return ("'" + prefix.to_cidr() + 
@@ -67,13 +68,14 @@ struct Announcement {
                 "," + std::to_string(received_from_asn));
     }
     
+
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.
      * 
-     * @ param &os Specifies the output stream.
-     * @ param ann Specifies the announcement from which data is pulled.
-     * @ return The output stream parameter for reuse/recursion.
+     * @param &os Specifies the output stream.
+     * @param ann Specifies the announcement from which data is pulled.
+     * @return The output stream parameter for reuse/recursion.
      */ 
     friend std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
         os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
@@ -83,15 +85,15 @@ struct Announcement {
         return os;
     }
 
+
     /** Passes the announcement struct data to an output stream to csv generation.
      *
-     * @ param &os Specifies the output stream.
-     * @ return The output stream parameter for reuse/recursion.
+     * @param &os Specifies the output stream.
+     * @return The output stream parameter for reuse/recursion.
      */ 
     std::ostream& to_csv(std::ostream &os){
         os << prefix.to_cidr() << "," << origin << "," << received_from_asn << std::endl;
         return os;
     }
 };
-
 #endif

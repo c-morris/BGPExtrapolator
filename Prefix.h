@@ -39,7 +39,8 @@ struct Prefix {
         std::string s = addr_str;
         if (s.empty()) {
             error_f = true;
-        } else {
+        } 
+        else {
             while ((pos = s.find(delimiter)) != std::string::npos) {
                 
                 // Catch long malformed input
@@ -51,21 +52,27 @@ struct Prefix {
                 // Token is one 8-bit int
                 token = s.substr(0, pos);
                 // May need try-catch
-                uint32_t token_int = std::stoul(token);
-                
-                // Catch out of range ints, default to 255
-                if (token_int > 255) {
+                try {
+                    uint32_t token_int = std::stoul(token);
+                    
+                    // Catch out of range ints, default to 255
+                    if (token_int > 255) {
+                        error_f = true;
+                        break;
+                    }
+                    
+                    // Add token and shift left 8 bits
+                    ipv4_ip_int += token_int;
+                    ipv4_ip_int = ipv4_ip_int << 8;
+                    
+                    // Trim token from addr
+                    s.erase(0, pos + delimiter.length());
+                    counter += 1;
+                } 
+                catch (...) {
                     error_f = true;
                     break;
                 }
-                
-                // Add token and shift left 8 bits
-                ipv4_ip_int += std::stoul(token);
-                ipv4_ip_int = ipv4_ip_int << 8;
-                
-                // Trim token from addr
-                s.erase(0, pos + delimiter.length());
-                counter += 1;
             }
             
             // Catch short malformed input
@@ -75,12 +82,17 @@ struct Prefix {
             
             // Add last 8-bit token
             // May need try-catch
-            uint32_t s_int = std::stoul(s);
-            if (s_int > 255) {
+            try {
+                uint32_t s_int = std::stoul(s);
+                if (s_int > 255) {
+                    error_f = true;
+                } else {
+                    ipv4_ip_int += s_int;
+                }
+            } catch(...) {
                 error_f = true;
-            } else {
-                ipv4_ip_int += s_int;
             }
+
         }
         
 
@@ -101,21 +113,27 @@ struct Prefix {
 
                 // Token is one 8-bit int
                 token = s.substr(0, pos);
-                uint32_t token_int = std::stoul(token);
-                
-                // Catch out of range ints, default to 255
-                if (token_int > 255) {
+                try {
+                    uint32_t token_int = std::stoul(token);
+                    
+                    // Catch out of range ints, default to 255
+                    if (token_int > 255) {
+                        error_f = true;
+                        break;
+                    }
+                    
+                    // Add token and shift left 8 bits
+                    ipv4_mask_int += std::stoul(token);
+                    ipv4_mask_int = ipv4_mask_int << 8;
+                    
+                    // Trim token from addr
+                    s.erase(0, pos + delimiter.length());
+                    counter += 1;
+                }
+                catch (...) {
                     error_f = true;
                     break;
                 }
-                
-                // Add token and shift left 8 bits
-                ipv4_mask_int += std::stoul(token);
-                ipv4_mask_int = ipv4_mask_int << 8;
-                
-                // Trim token from addr
-                s.erase(0, pos + delimiter.length());
-                counter += 1;
             }
                 
             // Catch short malformed input
@@ -124,11 +142,16 @@ struct Prefix {
             }
                 
             // Add last 8-bit token
-            uint32_t s_int = std::stoul(s);
-            if (s_int > 255) {
+            try {
+                uint32_t s_int = std::stoul(s);
+                if (s_int > 255) {
+                    error_f = true;
+                } else {
+                    ipv4_mask_int += s_int;
+                }
+            }
+            catch (...) {
                 error_f = true;
-            } else {
-                ipv4_mask_int += s_int;
             }
         }
         
