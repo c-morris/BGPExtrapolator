@@ -247,6 +247,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
             }
             // assemble rows as pairs; asn in supernode, lowest asn in that supernode
             for (auto &cur_asn : *cur_node) {
+                // outfile << cur_asn << "," << low << "," << ases->find(cur_asn)->second->rank << "\n";
                 outfile << cur_asn << "," << low << "\n";
             }
         }
@@ -382,9 +383,9 @@ void ASGraph::combine_components(){
         AS *combined_AS = new AS(combined_asn, inverse_results);
         //DEBUG
         //std::cerr << "Testing for components" << std::endl;
-        if (component->size()>1){
-            std::cerr << component->size() << std::endl;
-        }
+        // if (component->size()>1){
+        //     std::cerr << component->size() << std::endl;
+        // }
         //For all members of component, gather neighbors
         for (unsigned int i = 0; i < component->size(); i++){
             uint32_t asn = component->at(i);
