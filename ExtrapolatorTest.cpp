@@ -136,7 +136,11 @@ bool test_give_ann_to_as_path() {
     e.give_ann_to_as_path(as_path, p);
 
     
-    std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second->from_monitor << std::endl;
+    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
+         e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
+         e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
+        return false;
+    }
 
     if (e.graph->ases->find(1)->second->all_anns->size() == 0 &&
         e.graph->ases->find(2)->second->all_anns->size() == 1 &&
