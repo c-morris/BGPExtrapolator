@@ -7,7 +7,7 @@
  *
  * @return true if successful, otherwise false.
  */
-bool test_Prefix(){
+bool test_prefix(){
     // Check correctness
     Prefix<> prefix = Prefix<>("1.1.1.0", "255.255.255.0");
     if (prefix.addr != 0x01010100 || prefix.netmask != 0xffffff00)
