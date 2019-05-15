@@ -34,6 +34,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_constructor ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up ) {
         BOOST_CHECK( test_propagate_up() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down ) {
+        BOOST_CHECK( test_propagate_down() );
+}
 #endif // RUN_TESTS
 
 

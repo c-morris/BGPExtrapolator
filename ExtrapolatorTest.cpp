@@ -57,3 +57,46 @@ bool test_propagate_up() {
     }
     return false;
 }
+
+/** Test propagating down in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Starting propagation at 2, 4 and 5 should see the announcement.
+ */
+bool test_propagate_down() {
+    Extrapolator e = Extrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    ann.from_monitor = true;
+    ann.priority = 2.9;
+    e.graph->ases->find(2)->second->receive_announcement(ann);
+    e.propagate_down();
+    e.propagate_down();
+    if (e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0) {
+        return true;
+    }
+    return false;
+}
