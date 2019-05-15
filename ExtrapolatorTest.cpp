@@ -135,6 +135,9 @@ bool test_give_ann_to_as_path() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     e.give_ann_to_as_path(as_path, p);
 
+    
+    std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second->from_monitor << std::endl;
+
     if (e.graph->ases->find(1)->second->all_anns->size() == 0 &&
         e.graph->ases->find(2)->second->all_anns->size() == 1 &&
         e.graph->ases->find(3)->second->all_anns->size() == 1 &&
