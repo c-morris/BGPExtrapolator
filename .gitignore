@@ -36,3 +36,5 @@ bgp-extrapolator
 *.swp
 *.swo
 .Rproj.user
+
+supernodes\.csv
