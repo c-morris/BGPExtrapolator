@@ -346,8 +346,9 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         }
         // send announcements
         for (uint32_t customer_asn : *source_as->customers) {
-            graph->ases->find(customer_asn)->second->receive_announcements(
-                anns_to_customers);
+            auto *recving_as = graph->ases->find(customer_asn)->second;
+            recving_as->receive_announcements(anns_to_customers);
+            recving_as->process_announcements();
         }
     }
 }

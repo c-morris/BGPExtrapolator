@@ -71,6 +71,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path ) {
         BOOST_CHECK( test_give_ann_to_as_path() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
+        BOOST_CHECK( test_send_all_announcements() );
+}
 
 #endif // RUN_TESTS
 
