@@ -152,9 +152,8 @@ bool test_give_ann_to_as_path() {
         e.graph->ases->find(6)->second->all_anns->size() == 0) {
         return true;
     }
-    return false;
-
     delete as_path;
+    return false;
 }
 
 /** Test send_all_announcements in the following test graph.

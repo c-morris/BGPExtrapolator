@@ -83,6 +83,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 
         //This bit of code parses array-like strings from db to get AS_PATH.
         //libpq++ doesn't currently support returning arrays.
+        // this should probably be a separate function
         std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
         std::string path_as_string(R[j]["as_path"].as<std::string>());
         //remove brackets from string
@@ -354,7 +355,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
 }
 
 
-// TODO Remove unused function?
+// TODO Remove unused function? 
 /** Invert the extrapolation results for more compact storage. 
  *
  * Since a prefix is most often reachable from every AS in the internet, it
