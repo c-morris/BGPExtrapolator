@@ -413,6 +413,7 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
  */
 void ASGraph::combine_components(){
     for (auto const& component : *components){
+        // TODO Combined Component will id as lowest ASN
         uint32_t combined_asn = component->at(0);
         AS *combined_AS = new AS(combined_asn, inverse_results);
         //DEBUG

@@ -33,41 +33,6 @@ struct Announcement {
         from_monitor = a_from_monitor;
     }
 
-    /** Comparison operators
-     *  
-     *  Comparing first on prefix ensures the most specific announcement gets priority. The origin is not used in comparison.
-     *  Is this broken??? YES, I think this is broken.
-     *
-     *  @return true if operation holds, otherwise false
-     */
-    bool operator<(const Announcement &b) const {
-        if (prefix < b.prefix) {
-            return true;
-        } else if (priority < b.priority) { // If announcement (a is MORE SPECIFIC than OR equal to b) AND (a has less priority)
-            return true; // If a is more specific then priority shouldn't matter?
-        } else {
-            return false;
-        }
-    }
-    bool operator==(const Announcement &b) const {
-        return !(*this < b || b < *this);
-    }
-    bool operator>(const Announcement &b) const {
-        return !(*this < b || *this == b);
-    }
-    
-
-    /** Converts the Announcement struct to a string for SQL queries.
-     * 
-     * @return Announcement data in string form.
-     */
-    std::string to_sql(){
-        return ("'" + prefix.to_cidr() + 
-                "," + std::to_string(origin) + "'" + 
-                "," + "'" + std::to_string(priority) + "'" + 
-                "," + std::to_string(received_from_asn));
-    }
-    
 
     /** Defines the << operator for the Announcements
      *

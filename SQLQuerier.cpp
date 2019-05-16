@@ -179,17 +179,6 @@ void SQLQuerier::check_for_relationship_changes(std::string peers_table_1,
 
 }
 
-//NOT CURRENTLY USED
-void SQLQuerier::insert_results(ASGraph* graph, std::string results_table_name){
-    std::string sql = "INSERT INTO " + results_table_name + " VALUES (DEFAULT,";
-    for(auto const &as : *graph->ases){
-        std::string sql2 = sql + std::to_string(as.second->asn) + ",";
-        for(auto &ann : *as.second->all_anns){
-            std::string sql3 = sql2 + ann.second.to_sql() + ")";
-            execute(sql3,true);
-        }
-    }
-}
 
 /** this should use the STUBS_TABLE macro
  */

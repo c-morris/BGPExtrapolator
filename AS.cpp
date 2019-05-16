@@ -1,11 +1,18 @@
 #include "AS.h"
 
+/** Constructor for AS class.
+ *
+ * AS objects represent a node in the AS Graph.
+ */
 AS::AS(uint32_t myasn, 
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
     std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     std::set<uint32_t> *cust) {
     asn = myasn;
-    rank = -1; // initialize to invalid rank
+    // Initialize AS to invalid rank
+    rank = -1;     
+    
+    // Generate AS relationship sets
     if (prov == NULL) {
         providers = new std::set<uint32_t>;
     } else {
@@ -21,11 +28,13 @@ AS::AS(uint32_t myasn,
     } else {
         customers = cust;
     }
+
     inverse_results = inv;
     member_ases = new std::vector<uint32_t>;
     anns_sent_to_peers_providers = new std::vector<Announcement>;
     incoming_announcements = new std::vector<Announcement>;
     all_anns = new std::map<Prefix<>, Announcement>;
+    depref_anns = new std::map<Prefix<>, Announcement>;
     index = -1;
     onStack = false;
 }
@@ -40,7 +49,8 @@ AS::~AS() {
     delete member_ases;
 }
 
-/** Add neighbor AS to the appropriate set based on the relationship.
+
+/** Add neighbor AS to the appropriate set in this AS based on the relationship.
  *
  * @param asn ASN of neighbor.
  * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
@@ -59,10 +69,13 @@ void AS::add_neighbor(uint32_t asn, int relationship) {
     }
 }
 
-// print asn only
+
+/** Debug to print this AS number
+ */
 void AS::printDebug() {
     std::cout << asn << std::endl;
 }
+
 
 /** Push the received announcements to the incoming_announcements vector. 
  *
@@ -73,21 +86,27 @@ void AS::printDebug() {
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
-        // do not check for duplicates here
-        // push_back should make a copy of the announcement
+        // Do not check for duplicates here
+        // push_back makes a copy of the announcement
         incoming_announcements->push_back(ann);
     }
 }
 
-//may need to put in incoming_annoncements for speed
-////called by ASGraph.give_ann_to_as_path()
+
+/** 
+ *
+ * may need to put in incoming_announcements for speed
+ * called by ASGraph.give_ann_to_as_path()
+ */ 
 void AS::receive_announcement(Announcement &ann) {
-    //incoming_announcements->push_back(ann);
+    // Check for existing annoucement for prefix
     auto search = all_anns->find(ann.prefix);
+    auto search_alt = depref_anns->find(ann.prefix);
+    
+    // No announcement found for incoming announcement prefix
     if (search == all_anns->end()) {
-        all_anns->insert(std::pair<Prefix<>, Announcement>(
-            ann.prefix, ann));
-        // inverse results need to be computed also with announcements from monitors
+        all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+        // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
             auto set = inverse_results->find(
                 std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
@@ -95,12 +114,59 @@ void AS::receive_announcement(Announcement &ann) {
                 set->second->erase(asn);
             }
         }
+
+    // Tiebraker for equal priority
+    } else if (ann.priority == search->second.priority) {
+        // Default to lower ASN
+        if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
+            if (search_alt == depref_anns->end()) {
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                      search->second));
+                search->second = ann;
+            } else {
+                search_alt->second = search->second;
+                search->second = ann;
+            }
+        } else {                                // Old ASN is lower
+            if (search_alt == depref_anns->end()) {
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                                                                      ann));
+            } else {
+                // Replace second best with the old priority announcement
+                search_alt->second = ann;
+            }
+        }
+
+    // Check announcements priority for best path selection
     } else if (ann.priority > search->second.priority) {
-        search->second = ann;
-    } 
+        if (search_alt == depref_anns->end()) {
+            // Insert new second best announcement
+            depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                  search->second));
+            // Replace the old announcement with the higher priority
+            search->second = ann;
+        } else {
+            // Replace second best with the old priority announcement
+            search_alt->second = search->second;
+            // Replace the old announcement with the higher priority
+            search->second = ann;
+        }
+    
+    // Check second best announcements priority for best path selection
+    } else {
+        if (search_alt == depref_anns->end()) {
+            // Insert new second best annoucement
+            depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+        } else if (ann.priority > search_alt->second.priority) {
+            // Replace the old depref announcement with the higher priority
+            search_alt->second = search->second;
+        }
+    }
 }
 
+
 /** Iterate through incoming_announcements and keep only the best. 
+ * 
  * Meant to approximate BGP best path selection.
  */
 void AS::process_announcements() {
@@ -113,6 +179,7 @@ void AS::process_announcements() {
     incoming_announcements->clear();
 }
 
+
 /** Clear all announcement collections. 
  */
 void AS::clear_announcements() {
@@ -120,6 +187,7 @@ void AS::clear_announcements() {
     incoming_announcements->clear();
     anns_sent_to_peers_providers->clear();
 }
+
 
 /** Check if annoucement is already recv'd by this AS. 
  *
@@ -130,6 +198,7 @@ bool AS::already_received(Announcement &ann) {
     auto search = all_anns->find(ann.prefix);
     return (search == all_anns->end()) ? false : true;
 }
+
 
 std::ostream& operator<<(std::ostream &os, const AS& as) {
     os << "ASN: " << as.asn << std::endl << "Rank: " << as.rank
@@ -151,14 +220,7 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
      return os;
 }
 
-std::ostream& AS::pandas_stream_announcements(std::ostream &os){
-    os << asn << "\n\n";
-    os << "prefix,origin,priority,received_from_asn\n";
-    for (auto &ann : *all_anns){
-        ann.second.to_csv(os);
-    }
-    return os;
-}
+
 std::ostream& AS::stream_announcements(std::ostream &os){
 //TODO re-add this, it allows members of "super nodes" to get announce records
 //replaced for debugging
@@ -175,3 +237,4 @@ std::ostream& AS::stream_announcements(std::ostream &os){
     }
     return os;
 }
+
