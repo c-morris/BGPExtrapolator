@@ -200,6 +200,12 @@ bool AS::already_received(Announcement &ann) {
 }
 
 
+/** Insertion operator for AS class.
+ *
+ * @param os
+ * @param as
+ * @return os passed as parameter
+ */
 std::ostream& operator<<(std::ostream &os, const AS& as) {
     os << "ASN: " << as.asn << std::endl << "Rank: " << as.rank
         << std::endl << "Providers: ";
@@ -217,20 +223,16 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
         os << customer << " ";
     }
     os << std::endl;
-     return os;
+    return os;
 }
 
 
+/** Streams announcements to an output stream in a .csv readable file format.
+ *
+ * @param os
+ * @return output stream into which is passed the .csv row formatted announcements
+ */
 std::ostream& AS::stream_announcements(std::ostream &os){
-//TODO re-add this, it allows members of "super nodes" to get announce records
-//replaced for debugging
-/*    for (uint32_t &member_asn : *member_ases){
-        for (auto &ann : *all_anns){
-            os << member_asn << ",";
-            ann.second.to_csv(os);
-        }
-    }
-*/
     for (auto &ann : *all_anns){
         os << asn << ",";
         ann.second.to_csv(os);

@@ -53,6 +53,12 @@ BOOST_AUTO_TEST_CASE( ASGraph_add_relationship ) {
 BOOST_AUTO_TEST_CASE( ASGraph_decide_ranks ) {
         BOOST_CHECK( test_decide_ranks() );
 }
+BOOST_AUTO_TEST_CASE( ASGraph_tarjan_test ) {
+        BOOST_CHECK( test_tarjan() );
+}
+BOOST_AUTO_TEST_CASE( ASGraph_combine_components_test ) {
+        BOOST_CHECK( test_combine_components() );
+}
 
 // Extrapolator.cpp
 BOOST_AUTO_TEST_CASE( Extrapolator_constructor ) {

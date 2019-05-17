@@ -66,7 +66,7 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
 uint32_t ASGraph::translate_asn(uint32_t asn){
     auto search = component_translation->find(asn);
     if(search == component_translation->end()){
-       return 0; 
+       return asn; 
     }
     return search->second;
 }
@@ -91,53 +91,6 @@ void ASGraph::process(SQLQuerier *querier){
     save_supernodes_to_db(querier);
     decide_ranks();
     return;
-}
-
-
-// TODO Remove unused function?
-void ASGraph::create_graph_from_files(){
-    std::ifstream file;
-    //TODO make file names part of config
-    file.open("../peers.csv");
-    if (file.is_open()){
-        std::string line;
-        while(getline(file, line)){
-            line.erase(remove(line.begin(),line.end(),' '),line.end());
-            if(line.empty() || line[0] == '#' || line[0] == '['){
-                continue;
-            }
-            auto delim_index = line.find(",");
-            std::string peer_as_1 = line.substr(0,delim_index);
-            std::string peer_as_2 = line.substr(delim_index+1);
-            add_relationship(std::stoul(peer_as_1), std::stoul(peer_as_2),1);
-            add_relationship(std::stoul(peer_as_2), std::stoul(peer_as_1),1);
-        }
-    }
-    file.close();
-    file.clear();
-
-    file.open("../customer_provider_pairs.csv");
-    if (file.is_open()){
-        std::string line;
-        while(getline(file, line)){
-            line.erase(remove(line.begin(),line.end(),' '),line.end());
-            if(line.empty() || line[0] == '#' || line[0] == '['){
-                continue;
-            }
-            auto delim_index = line.find(",");
-            std::string customer_as = line.substr(0,delim_index);
-            std::string provider_as = line.substr(delim_index+1);
-            add_relationship(std::stoul(customer_as), std::stoul(provider_as),0);
-            add_relationship(std::stoul(provider_as), std::stoul(customer_as),2);
-        }
-    }
-    file.close();
-    file.clear();
-
-    //process strongly connected components, decide ranks
-    //TODO need querier to give process for this function
-    //process();
-    return;   
 }
 
 
@@ -284,6 +237,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     //std::remove(file_name.c_str());
 }
 
+
 /** Saves the non_stub ASes to a table on the database.
  *
  * @param querier
@@ -412,67 +366,118 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
  *  Also append to component_translation for future reference.
  */
 void ASGraph::combine_components(){
+    //std::cerr << "Testing for strongly connected components..." << std::endl;
+    
+    // For each strongly connected component
     for (auto const& component : *components){
-        // TODO Combined Component will id as lowest ASN
-        uint32_t combined_asn = component->at(0);
-        AS *combined_AS = new AS(combined_asn, inverse_results);
-        //DEBUG
-        //std::cerr << "Testing for components" << std::endl;
-        if (component->size()>1){
-            std::cerr << component->size() << std::endl;
+        // Ignore single AS nodes
+        if (component->size() <= 1) {
+            continue;
         }
-        //For all members of component, gather neighbors
-        for (unsigned int i = 0; i < component->size(); i++){
-            uint32_t asn = component->at(i);
-            combined_AS->member_ases->push_back(asn);
 
-            auto search = ases->find(asn);
-            AS *as = search->second;
-            //Get providers
-            for(uint32_t const provider_asn: *as->providers){
-                //make sure provider isn't in this component
-                if(std::find(component->begin(),component->end(), provider_asn)
-                        == component->end())
-                {
+        // Find indentifying ASN for supernode 
+        uint32_t combined_asn = component->at(0);
+        for (auto &cur_asn : *component) {
+            if (cur_asn < combined_asn) {
+                combined_asn = cur_asn;
+            }
+        }
+
+        // Combined Component will id as lowest ASN
+        AS *combined_AS = new AS(combined_asn, inverse_results);
+        
+        // For all members of a component, gather neighbors
+        for (auto &cur_asn : *component) {
+            combined_AS->member_ases->push_back(cur_asn);
+            // Get the AS object associated to ASN
+            auto asn_search = ases->find(cur_asn);
+            AS *cur_AS = asn_search->second;
+
+            // Handle providers
+            for (auto &provider_asn : *cur_AS->providers) {
+                // Check if provider is in component
+                bool external = (std::find(component->begin(), 
+                                           component->end(), 
+                                           provider_asn) == component->end());
+                // Check if provider is already a provider in the combined AS
+                bool no_provider_rel = (combined_AS->providers->find(provider_asn) == 
+                                        combined_AS->providers->end());
+
+                if (external && no_provider_rel) {
+                    // Update the combined AS's relationship
                     combined_AS->providers->insert(provider_asn);
-                    //replace old customer of provider
+                    // Handle overlapping peers
+                    bool no_peer = (combined_AS->peers->find(provider_asn) == 
+                                    combined_AS->peers->end());
+                    if (!no_peer) {
+                        // Remove old peer
+                        combined_AS->peers->erase(provider_asn);
+                    }
+
+                    // Update the provider's relationship
                     AS *provider_AS = ases->find(provider_asn)->second;
-                    provider_AS->customers->erase(asn);
+                    provider_AS->customers->erase(cur_asn);
                     provider_AS->customers->insert(combined_asn);
                 }
             }
-            //Get peers
-            for(uint32_t const peer_asn: *as->peers){
-                //make sure peer isn't in this component
-                if(std::find(component->begin(),component->end(), peer_asn)
-                        == component->end())
-                {
+
+            // Handle customers
+            for (auto &customer_asn : *cur_AS->customers) {
+                // Check if customer is in component
+                bool external = (std::find(component->begin(), 
+                                           component->end(), 
+                                           customer_asn) == component->end());
+                // Check if provider is already a provider in the combined AS
+                bool no_customer_rel = (combined_AS->providers->find(customer_asn) == 
+                                        combined_AS->providers->end());
+
+                if (external && no_customer_rel) {
+                    // Update the combined AS's relationship
+                    combined_AS->customers->insert(customer_asn);
+                    // Handle overlapping peers
+                    bool no_peer = (combined_AS->peers->find(customer_asn) == 
+                                    combined_AS->peers->end());
+                    if (!no_peer) {
+                        // Remove old peer
+                        combined_AS->peers->erase(customer_asn);
+                    }
+                    
+                    // Update the customer's relationship
+                    AS *customer_AS = ases->find(customer_asn)->second;
+                    customer_AS->providers->erase(cur_asn);
+                    customer_AS->providers->insert(combined_asn);
+                }
+            }   
+
+            // Handle peers
+            for (auto &peer_asn: *cur_AS->peers){
+                // Check if peer is in component
+                bool external = (std::find(component->begin(), 
+                                      component->end(), 
+                                      peer_asn) == component->end());
+                // Check if peer is already a provider in the combined AS
+                bool no_provider_rel = (combined_AS->providers->find(peer_asn) ==
+                                        combined_AS->providers->end());
+                // Check if peer is already a customer in the combined AS
+                bool no_customer_rel = (combined_AS->customers->find(peer_asn) ==
+                                        combined_AS->customers->end());
+                // Peer is safe to add to combined AS
+                if (external && no_provider_rel && no_customer_rel) {
+                    // Update the combined AS's relationship
                     combined_AS->peers->insert(peer_asn);
-                    //replace old peer
+                    
+                    // Update the peer AS's relationship
                     AS *peer_AS = ases->find(peer_asn)->second;
-                    peer_AS->peers->erase(asn);
+                    peer_AS->peers->erase(cur_asn);
                     peer_AS->peers->insert(combined_asn);
                 }
             }
-            //Get customers
-            for(uint32_t const customer_asn: *as->customers){
-                //check if customer isn't in this component
-                if(std::find(component->begin(),component->end(), customer_asn)
-                        == component->end())
-                {
-                    combined_AS->customers->insert(customer_asn);
-                    //replace old customer of provider
-                    AS *customer_AS = ases->find(customer_asn)->second;
-                    customer_AS->providers->erase(asn);
-                    customer_AS->providers->insert(combined_asn);
-                }
-            }
-            //append ASN translation and discard member
-            component_translation->insert(std::pair<uint32_t, uint32_t>(asn,combined_asn));
-            delete as;
-            ases->erase(search);
+            // Append ASN translation and discard member
+            component_translation->insert(std::pair<uint32_t, uint32_t>(cur_asn,combined_asn));
+            delete cur_AS;
+            ases->erase(asn_search);
         }
-        //insert complete combined node to ases
+        // Insert complete combined node to ases
         ases->insert(std::pair<uint32_t,AS*>(combined_asn,combined_AS));
     }
     return;
