@@ -4,67 +4,177 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
+#include <iostream>
 
 // use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
 struct Prefix {
     Integer addr;
     Integer netmask;
+    
+    /** Default constructor
+     */
     Prefix() {}
+    
+    /** Priority constructor
+     *
+     * NEEDS DESCRIPTION
+     *
+     * @param addr_str The IP address as a string.
+     * @param mask_str The subnet mask/length as a string.
+     */ 
     Prefix(std::string addr_str, std::string mask_str) {
         // TODO IPv6 Address Parsing
         // IPv4 Address Parsing
         std::string delimiter = ".";
-        size_t pos = 0;
-        std::string token;
+        size_t pos = 0;                 // Position in string addr
+        std::string token;              // Buffer subseciton of addr
 
-        ////rename variables
         //IP to int
+        bool error_f = false;           // Error flag, drops malformed input
+        int counter = 0;                // Check for proper addr length
         uint32_t ipv4_ip_int = 0;
-        //i is 4 for ipv4
-        int i = 3;
-        std::string &s = addr_str;
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
-            try {
-              ipv4_ip_int += std::stoi(token) * std::pow(256,i--);
-              s.erase(0, pos + delimiter.length());
-            } catch(const std::out_of_range& e) {
-              std::cerr << "Caught out of range error in Prefix constructor loop, token was: " << token << std::endl; 
-            }
-        }
-        try {
-          ipv4_ip_int += std::stoi(s) * std::pow(256,i--);
-        } catch(const std::out_of_range& e) {
-          std::cerr << "Caught out of range error in Prefix constructor, token was: " << token << std::endl; 
-        }
+        
+        // Convert string address to an unsigned 32-bit int
+        std::string s = addr_str;
+        if (s.empty()) {
+            error_f = true;
+        } 
+        else {
+            while ((pos = s.find(delimiter)) != std::string::npos) {
+                
+                // Catch long malformed input
+                if (counter > 3) {
+                    error_f = true;
+                    break;
+                }
 
-        //Mask to int
-        uint32_t ipv4_mask_int = 0;
-        i = 3;
-        s = mask_str;
-        while ((pos = s.find(delimiter)) != std::string::npos) {
-            token = s.substr(0, pos);
+                // Token is one 8-bit int
+                token = s.substr(0, pos);
+                // May need try-catch
+                try {
+                    uint32_t token_int = std::stoul(token);
+                    
+                    // Catch out of range ints, default to 255
+                    if (token_int > 255) {
+                        error_f = true;
+                        break;
+                    }
+                    
+                    // Add token and shift left 8 bits
+                    ipv4_ip_int += token_int;
+                    ipv4_ip_int = ipv4_ip_int << 8;
+                    
+                    // Trim token from addr
+                    s.erase(0, pos + delimiter.length());
+                    counter += 1;
+                } 
+                catch (...) {
+                    error_f = true;
+                    break;
+                }
+            }
+            
+            // Catch short malformed input
+            if (counter != 3) {
+                error_f = true;
+            }
+            
+            // Add last 8-bit token
+            // May need try-catch
             try {
-              ipv4_mask_int += std::stoi(token) * std::pow(256,i--);
-              s.erase(0, pos + delimiter.length());
-            } catch(const std::out_of_range& e) {
-              std::cerr << "Caught out of range error in Prefix constructor mask loop, token was: " << token << std::endl; 
+                uint32_t s_int = std::stoul(s);
+                if (s_int > 255) {
+                    error_f = true;
+                } else {
+                    ipv4_ip_int += s_int;
+                }
+            } catch(...) {
+                error_f = true;
+            }
+
+        }
+        
+
+        // Convert Subnet Mask to int
+        counter = 0;                // Check for proper addr length
+        uint32_t ipv4_mask_int = 0;
+        
+        s = mask_str;
+        if (s.empty()) {
+            error_f = true;
+        } else {
+            while ((pos = s.find(delimiter)) != std::string::npos) { 
+                // Catch long malformed input
+                if (counter > 3) {
+                    error_f = true;
+                    break;
+                }
+
+                // Token is one 8-bit int
+                token = s.substr(0, pos);
+                try {
+                    uint32_t token_int = std::stoul(token);
+                    
+                    // Catch out of range ints, default to 255
+                    if (token_int > 255) {
+                        error_f = true;
+                        break;
+                    }
+                    
+                    // Add token and shift left 8 bits
+                    ipv4_mask_int += std::stoul(token);
+                    ipv4_mask_int = ipv4_mask_int << 8;
+                    
+                    // Trim token from addr
+                    s.erase(0, pos + delimiter.length());
+                    counter += 1;
+                }
+                catch (...) {
+                    error_f = true;
+                    break;
+                }
+            }
+                
+            // Catch short malformed input
+            if (counter != 3) {
+                error_f = true;
+            }
+                
+            // Add last 8-bit token
+            try {
+                uint32_t s_int = std::stoul(s);
+                if (s_int > 255) {
+                    error_f = true;
+                } else {
+                    ipv4_mask_int += s_int;
+                }
+            }
+            catch (...) {
+                error_f = true;
             }
         }
-        try {
-          ipv4_mask_int += std::stoi(s) * std::pow(256,i--);
-        } catch(const std::out_of_range& e) {
-          std::cerr << "Caught out of range error in Prefix constructor mask, token was: " << token << std::endl; 
+        
+        // Default errors to 0.0.0.0/0
+        if (error_f == true) {
+            ipv4_ip_int = 0;
+            ipv4_mask_int = 0;
+            std::cerr << "Caught malformed IPv4 address: " << addr_str << std::endl;
+            std::cerr << "Or IPv4 mask: " << mask_str << std::endl;
         }
 
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
     }
-    // this is IPv4 only
+    
+    /** Converts this prefix into a cidr formatted string.
+     *
+     *  This is IPv4 only.
+     *
+     *  @return cidr A string in cidr format.
+     */
     std::string to_cidr() const {
         std::string cidr = "";
-        // I could write this as a loop but I think this is clearer
         uint8_t quad = (addr & 0xFF000000) >> 24;
         cidr.append(std::to_string(quad) + ".");
         quad = (addr & 0x00FF0000) >> 16;
@@ -74,7 +184,7 @@ struct Prefix {
         quad = (addr & 0x000000FF) >> 0;
         cidr.append(std::to_string(quad));
         cidr.push_back('/');
-        // assume valid cidr netmask, e.g. no ones after the first zero
+        // Assume valid cidr netmask, e.g. no ones after the first zero
         uint8_t sz = 0;
         for (int i = 0; i < 32; i++) {
             if (netmask & (1 << i)) {
@@ -84,8 +194,14 @@ struct Prefix {
         cidr.append(std::to_string(sz));
         return cidr;
     }
-    // comparison operators for maps
-    // comparing the addr first ensures the more specific address is greater
+    
+    /** Defined comparison operators for maps
+     *
+     * Comparing the addr first ensures the more specific address is greater
+     *
+     * @param b The Prefix object to which this object is compared.
+     * @return true if the operation holds, otherwise false
+     */
     bool operator<(const Prefix &b) const {
         uint64_t combined = 0;
         combined |= addr;
@@ -102,6 +218,9 @@ struct Prefix {
     }
     bool operator>(const Prefix &b) const {
         return !(*this < b || *this == b);
+    }
+    bool operator!=(const Prefix &b) const {
+        return !(*this == b);
     }
 };
 

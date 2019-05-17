@@ -20,10 +20,20 @@ Extrapolator::~Extrapolator(){
     delete threads;
 }
 
+
+/** Performs all tasks necessary to propagate a set of announcements given:
+ *      1) A populated mrt_announcements table
+ *      2) A populated customer_provider table
+ *      3) A populated peers table
+ *
+ * @param test
+ * @param iteration_size
+ * @param max_total
+ */
 void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
     using namespace std;
 
-    // make tmp directory if it does not exist
+    // Make tmp directory if it does not exist
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
         mkdir("/dev/shm/bgp", 0777);
@@ -44,19 +54,11 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
 
-    //Get ROAs from "roas" table (prefix - origin pairs)
-    //std::cout << "Selecting prefixes with ROAs..." << std::endl;
-    //pqxx::result prefixes = querier->select_roa_prefixes(ROAS_TABLE, IPV4);
-
-    //int num_prefixes = prefixes.size();
-
     //Continue if not exeeding user defined or record max
     std::cout << "Beginning propagation..." << std::endl;
-    //while(row_to_start_group  < max_total && row_to_start_group  < num_prefixes){
 
     std::cerr << "Selecting Announcements..." << std::endl;
     //Get all announcements (R) from the table
-    //pqxx::result R = querier->select_ann_records(ANNOUNCEMENTS_TABLE,prefixes_to_get);
     pqxx::result R = querier->select_ann_records();
     std::cerr << "Done." << std::endl;
 
@@ -127,25 +129,16 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
     propagate_up();
     propagate_down();
-//        threads->push_back(std::thread(&Extrapolator::save_results,this,iteration_num));
-    //if (invert)
-        //invert_results();
     save_results(0);
     graph->clear_announcements();
 
     // create an index on the results
     if (!invert)
         querier->create_results_index();
-
-    /*
-    for (auto &t : *threads){
-        t.join();
-    }
-    */
 }
 
 
-/** Propagate announcements from customers to peers and providers.
+/** Propagate announcements from customers to peers and providers ASes.
  */
 void Extrapolator::propagate_up() {
     size_t levels = graph->ases_by_rank->size();
@@ -160,13 +153,14 @@ void Extrapolator::propagate_up() {
     }
 }
 
-/** Send "best" announces to customer ASes.
+
+/** Send "best" announces from providers to customer ASes.
  */
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            //std::cout << "propagating down to " << asn << std::endl;
+            //std::cerr << "propagating down to " << asn << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, true);
@@ -174,6 +168,7 @@ void Extrapolator::propagate_down() {
         }
     }
 }
+
 
 /** Record announcement on all ASes on as_path.
  *
@@ -271,20 +266,6 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
 }
 
 
-//TODO remove this unused function
-/** Query all announcements for a vector of prefixes from the database and
- * insert them into the graph.
- *
- * @param prefixes a vector of prefixes to query the db for
- */
-
-void Extrapolator::insert_announcements(std::vector<Prefix<>> *prefixes) {
-    using namespace pqxx;
-    // this is very db library dependent, so I'm leaving it for you, Michael
-  //  result R = querier->select_ann_records("simplified_elements"
-    return;
-}
-
 /** Send all announcements kept by an AS to its neighbors.
  *
  * This approximates the Adj-RIBs-out.
@@ -331,12 +312,14 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         }
         // send announcements
         for (uint32_t provider_asn : *source_as->providers) {
-            graph->ases->find(provider_asn)->second->receive_announcements(
-                anns_to_providers);
+            auto *recving_as = graph->ases->find(provider_asn)->second;
+            recving_as->receive_announcements(anns_to_providers);
+            recving_as->process_announcements();
         }
         for (uint32_t peer_asn : *source_as->peers) {
-            graph->ases->find(peer_asn)->second->receive_announcements(
-                anns_to_peers);
+            auto *recving_as = graph->ases->find(peer_asn)->second;
+            recving_as->receive_announcements(anns_to_peers);
+            recving_as->process_announcements();
         }
     }
 
@@ -367,6 +350,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     }
 }
 
+
+// TODO Remove unused function?
 /** Invert the extrapolation results for more compact storage.
  *
  * Since a prefix is most often reachable from every AS in the internet, it
@@ -389,8 +374,12 @@ void Extrapolator::invert_results(void) {
     }
 }
 
+
+/** Save the results of a single iteration to a in-memory
+ *
+ * @param iteration The current iteration of the propagation
+ */
 void Extrapolator::save_results(int iteration){
-//    SQLQuerier *thread_querier = new SQLQuerier;
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);

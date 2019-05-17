@@ -45,7 +45,6 @@ struct AS {
     void receive_announcements(std::vector<Announcement> &announcements);
     void receive_announcement(Announcement &ann);
     void clear_announcements();
-    bool update_rank(int newrank);
     bool already_received(Announcement &ann);
     void printDebug();
     void process_announcements();

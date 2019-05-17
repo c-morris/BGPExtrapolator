@@ -59,17 +59,6 @@ void AS::add_neighbor(uint32_t asn, int relationship) {
     }
 }
 
-/** Update rank of this AS only if newrank is greater than the current rank.
- *
- * @param newrank The height of the AS in the provider->customer DAG. Used for simple propagation up and down the graph. 
- * @return True if rank was changed, false otherwise. 
- */
-bool AS::update_rank(int newrank) {
-    int old = rank;
-    rank = std::max(rank, newrank);
-    return (old != rank) ? true : false;
-}
-
 // print asn only
 void AS::printDebug() {
     std::cout << asn << std::endl;
@@ -84,7 +73,7 @@ void AS::printDebug() {
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
-        // do not check for duplicates here-- hopefully this is fine
+        // do not check for duplicates here
         // push_back should make a copy of the announcement
         incoming_announcements->push_back(ann);
     }
@@ -98,6 +87,14 @@ void AS::receive_announcement(Announcement &ann) {
     if (search == all_anns->end()) {
         all_anns->insert(std::pair<Prefix<>, Announcement>(
             ann.prefix, ann));
+        // inverse results need to be computed also with announcements from monitors
+        if (inverse_results != NULL) {
+            auto set = inverse_results->find(
+                std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+            if (set != inverse_results->end()) {
+                set->second->erase(asn);
+            }
+        }
     } else if (ann.priority > search->second.priority) {
         search->second = ann;
     } 
@@ -107,23 +104,10 @@ void AS::receive_announcement(Announcement &ann) {
  * Meant to approximate BGP best path selection.
  */
 void AS::process_announcements() {
-    for (const auto &ann : *incoming_announcements) {
-        // from https://en.cppreference.com/w/cpp/container/map/find
+    for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
-        if (search == all_anns->end()) {
-            all_anns->insert(std::pair<Prefix<>, Announcement>(
-                ann.prefix, ann));
-            if (inverse_results != NULL) {
-                auto set = inverse_results->find(
-                    std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
-                if (set != inverse_results->end()) {
-                    set->second->erase(asn);
-                }
-            }
-        //An announcement recorded by a monitor won't be replaced
-        } else if (!search->second.from_monitor && 
-                ann.priority > search->second.priority) {
-            search->second = ann;
+        if (search == all_anns->end() || !search->second.from_monitor) {
+            receive_announcement(ann);
         }
     }
     incoming_announcements->clear();

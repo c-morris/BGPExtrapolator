@@ -1,22 +1,48 @@
+#include "Announcement.h"
+
 /** Unit tests for Announcements.h
  */
 
 
 /** Test the constructor for the Announcement struct
+ *
+ * @ return True for success
  */
 bool test_announcement(){
+    Announcement ann = Announcement(111, 0x01010101, 0xffffff00, 2.62, 222, false);
+    if (ann.origin != 111 || ann.prefix.addr != 0x01010101 || ann.prefix.netmask != 0xffffff00 || ann.received_from_asn != 222 || ann.priority != 2.62 || ann.from_monitor != false)
+        return false;
     return true;
 }
 
 
 /** Tests the < operator for Announcements struct
- */
+ *
+ * @ return True for success
+ */ 
 bool test_ann_lt_operator(){
+    // a is more specific
+    Announcement a = Announcement(111, 0x01010101, 0xffffff00, 3, 222, true);
+    Announcement b = Announcement(111, 0x01010100, 0xffffff00, 3, 222, true);
+    // c is higher priority
+    Announcement c = Announcement(111, 0x01010101, 0xffffff00, 3, 222, true);
+    Announcement d = Announcement(111, 0x01010101, 0xffffff00, 2.5, 222, true);
+    // e is more specific & lower priority
+    Announcement e = Announcement(111, 0x01010101, 0xffffff00, 2.5, 222, true);
+    Announcement f = Announcement(111, 0x01010100, 0xffffff00, 3, 222, true);
+    if (a < b)
+        return false;
+    if (c < d)
+        return false;
+    if (e < f)
+        return false;
     return true;
 }
 
 
 /** Tests the > operator for Announcements struct
+ *
+ * @ return True for success 
  */
 bool test_ann_gt_operator(){
     return true;
@@ -58,5 +84,3 @@ bool test_ann_os_operator(){
 bool test_to_csv(){
     return true;
 }
-
-
