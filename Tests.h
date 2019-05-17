@@ -52,14 +52,13 @@ bool test_decide_ranks();
 bool test_remove_stubs();
 bool test_tarjan();
 bool test_combine_components();
-bool test_save_stubs_to_db();
-bool test_save_non_stubs_to_db();
-bool test_save_supernodes_to_db();
 
 // Prototypes for ExtrapolatorTest.cpp
 bool test_Extrapolator_constructor();
 bool test_propagate_up();
 bool test_propagate_down();
+bool test_give_ann_to_as_path();
+bool test_send_all_announcements();
 
 // Prototypes for SQLQuerierTest.cpp
 

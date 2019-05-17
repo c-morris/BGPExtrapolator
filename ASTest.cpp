@@ -39,11 +39,35 @@ bool test_receive_announcement(){
     ann.prefix.netmask = 0xFFFFFF00;
     Prefix<> new_prefix = ann.prefix;
     as.receive_announcement(ann);
-    if (new_prefix == as.all_anns->find(ann.prefix)->second.prefix &&
-        old_prefix == as.all_anns->find(old_prefix)->second.prefix) {
-        return true;
+    if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
+        old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
+        return false;
     }
-    return false;
+
+    // Check priority
+    Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 2.00, 222, false);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 3.00, 223, false);
+    as.receive_announcement(a1);
+    as.receive_announcement(a2);
+    if (as.all_anns->find(p)->second.received_from_asn != 223 ||
+        as.depref_anns->find(p)->second.received_from_asn != 222) {
+        std::cerr << "Failed best path inference priority check." << std::endl;
+        return false;
+    }
+    
+    // Check tiebraker default
+    Prefix<> p2 = Prefix<>("1.1.1.1", "255.255.255.0");
+    Announcement a3 = Announcement(111, p2.addr, p2.netmask, 3.00, 222, false);
+    Announcement a4 = Announcement(111, p2.addr, p2.netmask, 3.00, 223, false);
+    as.receive_announcement(a3);
+    as.receive_announcement(a4);
+    if (as.all_anns->find(p2)->second.received_from_asn != 222 ||
+        as.depref_anns->find(p2)->second.received_from_asn != 223) {
+        std::cerr << "Failed tiebraker priority check." << std::endl;
+        return false;
+    }
+    return true;
 }
 
 
@@ -90,7 +114,6 @@ bool test_already_received(){
     }
     return false;
 }
-
 
 
 /** Test clearing all announcements.

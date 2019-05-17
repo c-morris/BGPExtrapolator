@@ -9,8 +9,8 @@
 #include "AS.h"
 
 ASGraph::ASGraph() {
-    ases = new std::map<uint32_t, AS*>;
-    ases_by_rank = new std::vector<std::set<uint32_t>*>(255);
+    ases = new std::map<uint32_t, AS*>;    
+    ases_by_rank = new std::vector<std::set<uint32_t>*>;
     components = new std::vector<std::vector<uint32_t>*>;
     component_translation = new std::map<uint32_t, uint32_t>;
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
@@ -312,13 +312,12 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
 
 
 /** Decide and assign ranks to all the AS's in the graph.
+ *
+ * The bottom of the DAG is rank 0.
  */
 void ASGraph::decide_ranks() {
-    // initialize the sets
-    for (int i = 0; i < 255; i++) {
-        (*ases_by_rank)[i] = new std::set<uint32_t>();
-    }
     // initial set of customer ASes at the bottom of the DAG
+    ases_by_rank->push_back(new std::set<uint32_t>());
     for (auto &as : *ases) {
         if (as.second->customers->empty()) {
             // if AS is a leaf node, or "stub" AS
@@ -327,39 +326,36 @@ void ASGraph::decide_ranks() {
         }
     }
 
-    // this is decreased from 1000 to 254 because the TTL on an IPv4 packet
-    // is at most 255, so in theory this is a reasonable maximum for ASes too.
-    for (int i = 0; i < 254; i++) {
-        if ((*ases_by_rank)[i]->empty()) {
-            // if we are above the top of the DAG, stop
-            return;
-        }
+    int i = 0;
+    while (!(*ases_by_rank)[i]->empty()) {
+        ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
-            //For all providers of asn
+            //For all providers of this AS
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
-                auto prov_AS = ases->find(provider_asn)->second;
-                //If provider's rank is unassigned
-                if (prov_AS->rank == -1) {
-                    int skip_provider = 0;
-                    //If any other customers of this provider are unassigned
-                    //  (higher rank than this AS), then skip this provider.
-                    for (auto sibling_asn : *prov_AS->customers) {
-                        auto *sibling_AS = ases->find(sibling_asn)->second;
-                        if (sibling_AS->rank == -1 ||
-                            sibling_AS->rank > i) {
-                            skip_provider = 1;
-                            break;
-                        }
-                    if(skip_provider){
-                        continue;
-                    }
-                    //If this is providers max height, add to next rank.
-                    ases->find(provider_asn)->second->rank = i + 1;
+                AS* prov_AS = ases->find(provider_asn)->second;
+                int oldrank = prov_AS->rank;
+                if (oldrank < i + 1) {
+                    prov_AS->rank = i + 1;
                     (*ases_by_rank)[i+1]->insert(provider_asn);
+                    if (oldrank != -1) {
+                        (*ases_by_rank)[oldrank]->erase(provider_asn);
+                    }
+                }
+            }
+            //For all peers of this AS
+            for (const uint32_t &peer_asn : *ases->find(asn)->second->peers) {
+                AS* peer_AS = ases->find(peer_asn)->second;
+                int oldrank = peer_AS->rank;
+                if (oldrank < i) {
+                    peer_AS->rank = i;
+                    (*ases_by_rank)[i]->insert(peer_asn);
+                    if (oldrank != -1) {
+                        (*ases_by_rank)[oldrank]->erase(peer_asn);
                     }
                 }
             }
         }
+        i++;
     }
     return;
 }
@@ -418,6 +414,7 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
  */
 void ASGraph::combine_components(){
     for (auto const& component : *components){
+        // TODO Combined Component will id as lowest ASN
         uint32_t combined_asn = component->at(0);
         AS *combined_AS = new AS(combined_asn, inverse_results);
         //DEBUG

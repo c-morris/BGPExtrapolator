@@ -14,23 +14,25 @@
 #include "Prefix.h"
 
 struct AS {
-    uint32_t asn;
-    bool visited;
-    int rank;
-    // converted these from map<Prefix, Announcement> to vector<Announcement>
+    uint32_t asn;       // Autonomous System Number
+    bool visited;       // Marks something
+    int rank;           // Rank in ASGraph heirarchy for propagation
+    
+    // These are for something 
     std::vector<Announcement> *anns_sent_to_peers_providers;
     std::vector<Announcement> *incoming_announcements;
-    // this one stays as a map
+    // Map of all announcements stored
     std::map<Prefix<>, Announcement> *all_anns;
-    // these should not need to be ordered
+    std::map<Prefix<>, Announcement> *depref_anns;
+    // AS Relationships
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 
     std::set<uint32_t> *customers; 
+    // Pointer to inverted results map for efficiency
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
-    //If this AS represents multiple ASes, it's "members" are listed here
+    // If this AS represents multiple ASes, it's "members" are listed here (Supernodes)
     std::vector<uint32_t> *member_ases;
-
-    // these are assigned and used in Tarjan's algorithm
+    // Assigned and used in Tarjan's algorithm
     int index;
     int lowlink;
     bool onStack;
@@ -49,7 +51,6 @@ struct AS {
     void printDebug();
     void process_announcements();
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
-    std::ostream& pandas_stream_announcements(std:: ostream &os);
     std::ostream& stream_announcements(std:: ostream &os);
 };
 

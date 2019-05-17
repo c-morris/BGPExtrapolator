@@ -83,6 +83,7 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
 
         //This bit of code parses array-like strings from db to get AS_PATH.
         //libpq++ doesn't currently support returning arrays.
+        // this should probably be a separate function
         std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
         std::string path_as_string(R[j]["as_path"].as<std::string>());
         //remove brackets from string
@@ -184,7 +185,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     Announcement ann_to_check_for(as_path->at(as_path->size()-1),
                                   prefix.addr,
                                   prefix.netmask,
-                                  0); // invalid from_asn?
+                                  0); // invalid from_asn? yeah it means the announcement originates here
     // i is used to traverse as_path
     uint32_t i = 0;
     // iterate backwards through path
@@ -193,7 +194,9 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // if asn not in graph, continue
         if (graph->ases->find(*it) == graph->ases->end())
             continue;
-        uint32_t asn_on_path = graph->translate_asn(*it);
+        // announcements from monitors should ignore supernodes
+        //uint32_t asn_on_path = graph->translate_asn(*it);
+        uint32_t asn_on_path = *it;
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
             if (as_on_path->already_received(ann_to_check_for))
                 continue;
@@ -344,14 +347,15 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         }
         // send announcements
         for (uint32_t customer_asn : *source_as->customers) {
-            graph->ases->find(customer_asn)->second->receive_announcements(
-                anns_to_customers);
+            auto *recving_as = graph->ases->find(customer_asn)->second;
+            recving_as->receive_announcements(anns_to_customers);
+            recving_as->process_announcements();
         }
     }
 }
 
 
-// TODO Remove unused function?
+// TODO Remove unused function? 
 /** Invert the extrapolation results for more compact storage.
  *
  * Since a prefix is most often reachable from every AS in the internet, it
