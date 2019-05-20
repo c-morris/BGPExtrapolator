@@ -71,11 +71,11 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
         uint32_t origin;
         R[j]["origin"].to(origin);
         auto po = std::pair<Prefix<>,uint32_t>(p,origin);
-        // add this prefix to the inverse results
+        // Add this prefix to the inverse results
         if (graph->inverse_results->find(po) == graph->inverse_results->end()) {
             graph->inverse_results->insert(std::pair<std::pair<Prefix<>,uint32_t>,std::set<uint32_t>*>(
                 po, new std::set<uint32_t>()));
-            // put all non-stub ASNs in the set
+            // Put all non-stub ASNs in the set
             for (uint32_t asn : *graph->non_stubs) {
                 graph->inverse_results->find(po)->second->insert(asn);
             }
@@ -177,8 +177,8 @@ void Extrapolator::propagate_down() {
  * @param prefix The prefix this announcement is for.
  * @param hop The first ASN on the as_path.
  */
-void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
-    Prefix<> prefix) {
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+                                       Prefix<> prefix) {
     // handle empty as_path
     if (as_path->empty())
         return;
@@ -285,17 +285,19 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         std::vector<Announcement> anns_to_providers;
         std::vector<Announcement> anns_to_peers;
         for (auto &ann : *source_as->all_anns) {
-            if (ann.second.priority < 2)
+            if (ann.second.priority < 2) {
                 continue;
+            }
             // priority is reduced by 0.01 for path length
             // base priority is 2 for providers
             // base priority is 1 for peers
             // do not propagate any announcements from peers
             double priority = ann.second.priority;
-            if(priority - floor(priority) == 0)
+            if(priority - floor(priority) == 0) {
                 priority = 2.99;
-            else
+            } else {
                 priority = priority - floor(priority) - 0.01 + 2;
+            }
             anns_to_providers.push_back(
                 Announcement(
                     ann.second.origin,
@@ -355,7 +357,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
 }
 
 
-// TODO Remove unused function? 
+// TODO Remove unused function?
 /** Invert the extrapolation results for more compact storage.
  *
  * Since a prefix is most often reachable from every AS in the internet, it
