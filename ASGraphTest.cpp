@@ -109,20 +109,125 @@ bool test_remove_stubs(){
 }
 
 
-/**
+/** Test the Tarjan algorithm for detecting strongly connected components.
+ * Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *   / \
+ *  2<- 3--4
+ *     / \
+ *    5   6
  *
  * @return true if successful, otherwise false.
  */
 bool test_tarjan(){ // includes tarjan_helper()
+    ASGraph graph = ASGraph();
+    // Cycle 
+    graph.add_relationship(2, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 2, AS_REL_CUSTOMER);
+    graph.add_relationship(1, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 1, AS_REL_CUSTOMER);
+    graph.add_relationship(3, 2, AS_REL_PROVIDER);
+    graph.add_relationship(2, 3, AS_REL_CUSTOMER);
+    // Customer
+    graph.add_relationship(5, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 5, AS_REL_CUSTOMER);
+    graph.add_relationship(6, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 6, AS_REL_CUSTOMER);
+    // Peer
+    graph.add_relationship(4, 3, AS_REL_PEER);
+    graph.add_relationship(3, 4, AS_REL_PEER);
+    graph.tarjan();
+    if (graph.components->size() != 4) {
+        return false;
+    }
+    // Verify the cycle was detected
+    for (auto const& c : *graph.components) {
+        if (c->size() > 1 && c->size() != 3)
+            return false;
+    }   
     return true;
 }
 
 
-/**
+/** Test the combining of strongly connected components into supernodes.
+ * 
+ *        7
+ *        |
+ *        1
+ *     /  |  \
+ * 8--2 ->3-- 4
+ *       / \
+ *      5   6
  *
  * @return true if successful, otherwise false.
  */
 bool test_combine_components(){
+     ASGraph graph = ASGraph();
+    // Cycle 1->2->3->1
+    graph.add_relationship(2, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 2, AS_REL_CUSTOMER);
+    graph.add_relationship(3, 2, AS_REL_PROVIDER);
+    graph.add_relationship(2, 3, AS_REL_CUSTOMER);
+    graph.add_relationship(1, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 1, AS_REL_CUSTOMER);
+    // Provider
+    graph.add_relationship(1, 7, AS_REL_PROVIDER);
+    graph.add_relationship(7, 1, AS_REL_CUSTOMER);
+    graph.add_relationship(4, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 4, AS_REL_CUSTOMER);
+    // Customer
+    graph.add_relationship(5, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 5, AS_REL_CUSTOMER);
+    graph.add_relationship(6, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 6, AS_REL_CUSTOMER);
+    // Peer
+    graph.add_relationship(4, 3, AS_REL_PEER);
+    graph.add_relationship(3, 4, AS_REL_PEER);
+    graph.add_relationship(8, 2, AS_REL_PEER);
+    graph.add_relationship(2, 8, AS_REL_PEER);
+
+    graph.tarjan();
+    graph.combine_components();
+    // Check for the supernode
+    if (graph.component_translation->size() != 3) {
+        std::cerr << "Incorrect translation size." << std::endl;
+        return false;
+    }
+    // Verify lowest ASN is identifier
+    for (auto c : *graph.component_translation) {
+        if (c.second != 1) {
+            std::cerr << "Incorrect translation ID for supernode." << std::endl;
+            return false;
+        }
+    }
+
+    // Find supernode AS
+    auto SCC = graph.ases->find(1);
+    AS *supernode = SCC->second;
+    // Check supernode providers
+    if (supernode->providers->find(7) == supernode->providers->end()) {
+        std::cerr << "Incorrect supernode provider set." << std::endl;
+        return false;
+    }
+    // Check supernode customers
+    if (supernode->customers->find(4) == supernode->customers->end() ||
+        supernode->customers->find(5) == supernode->customers->end() ||
+        supernode->customers->find(6) == supernode->customers->end()) {
+        std::cerr << "Incorrect supernode customer set." << std::endl;
+        return false;
+    }
+    // Check supernode peers
+    if (supernode->peers->find(8) == supernode->peers->end()) {
+        std::cerr << "Incorrect supernode peer set." << std::endl;
+        return false;
+    }
+    // Check supernode peers
+    if (supernode->peers->find(4) != supernode->peers->end()) {
+        std::cerr << "Incorrect supernode peer-customer override." << std::endl;
+        return false;
+    }
+
     return true;
 }
 
