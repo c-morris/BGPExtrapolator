@@ -173,6 +173,9 @@ void Extrapolator::propagate_down() {
 
 /** Record announcement on all ASes on as_path. 
  *
+ * The from_monitor attribute is set to true on these announcements so they are
+ * not replaced later during propagation. 
+ *
  * @param as_path List of ASes for this announcement.
  * @param prefix The prefix this announcement is for.
  * @param hop The first ASN on the as_path.

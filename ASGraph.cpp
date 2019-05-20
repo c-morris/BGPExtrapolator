@@ -41,6 +41,8 @@ ASGraph::~ASGraph() {
 
 /** Adds an AS relationship to the graph.
  *
+ * If the AS does not exist in the graph, it will be created.
+ *
  * @param asn ASN of AS to add the relationship to
  * @param neighbor_asn ASN of neighbor.
  * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
@@ -312,7 +314,11 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
 
 /** Decide and assign ranks to all the AS's in the graph. 
  *
- * The bottom of the DAG is rank 0. 
+ *  The rank of an AS is the maximum number of nodes it has below it. This means
+ *  it is possible to have an AS of rank 0 directly below an AS of rank 4, but
+ *  not possible to have an AS of rank 3 below one of rank 2. 
+ *
+ *  The bottom of the DAG is rank 0. 
  */
 void ASGraph::decide_ranks() {
     // initial set of customer ASes at the bottom of the DAG
