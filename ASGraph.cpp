@@ -221,7 +221,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     // Object: components = new std::vector<std::vector<uint32_t>*>;
     // Iterate over each strongly connected component
     for (auto &cur_node : *components) {
-        if (cur_node->size() > 2) {
+        if (cur_node->size() >= 2) {
             // find the lowest asn in supernode
             uint32_t low = UINT_MAX;
             for (auto &cur_asn : *cur_node) {
@@ -277,6 +277,7 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
 void ASGraph::decide_ranks() {
     // initial set of customer ASes at the bottom of the DAG
     ases_by_rank->push_back(new std::set<uint32_t>());
+    std::cerr << "about to do the first iteration" << std::endl;
     for (auto &as : *ases) {
         if (as.second->customers->empty()) {
             // if AS is a leaf node, or "stub" AS
@@ -287,11 +288,12 @@ void ASGraph::decide_ranks() {
     
     int i = 0;
     while (!(*ases_by_rank)[i]->empty()) {
+        std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
         ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
-                AS* prov_AS = ases->find(provider_asn)->second;
+                AS* prov_AS = ases->find(translate_asn(provider_asn))->second;
                 int oldrank = prov_AS->rank;
                 if (oldrank < i + 1) {
                     prov_AS->rank = i + 1;
@@ -303,7 +305,7 @@ void ASGraph::decide_ranks() {
             }
             //For all peers of this AS
             for (const uint32_t &peer_asn : *ases->find(asn)->second->peers) {
-                AS* peer_AS = ases->find(peer_asn)->second;
+                AS* peer_AS = ases->find(translate_asn(peer_asn))->second;
                 int oldrank = peer_AS->rank;
                 if (oldrank < i) {
                     peer_AS->rank = i;
@@ -316,6 +318,7 @@ void ASGraph::decide_ranks() {
         } 
         i++;
     } 
+    std::cerr << "done" << std::endl;
     return;
 }
 
@@ -405,25 +408,19 @@ void ASGraph::combine_components(){
                 bool external = (std::find(component->begin(), 
                                            component->end(), 
                                            provider_asn) == component->end());
-                // Check if provider is already a provider in the combined AS
-                bool no_provider_rel = (combined_AS->providers->find(provider_asn) == 
-                                        combined_AS->providers->end());
-
-                if (external && no_provider_rel) {
+                if (external) {
                     // Update the combined AS's relationship
-                    combined_AS->providers->insert(provider_asn);
+                    combined_AS->add_neighbor(provider_asn, AS_REL_PROVIDER);
+
                     // Handle overlapping peers
-                    bool no_peer = (combined_AS->peers->find(provider_asn) == 
-                                    combined_AS->peers->end());
-                    if (!no_peer) {
-                        // Remove old peer
-                        combined_AS->peers->erase(provider_asn);
-                    }
+                    combined_AS->remove_neighbor(provider_asn, AS_REL_PEER);
 
                     // Update the provider's relationship
                     AS *provider_AS = ases->find(provider_asn)->second;
-                    provider_AS->customers->erase(cur_asn);
-                    provider_AS->customers->insert(combined_asn);
+                    provider_AS->remove_neighbor(cur_asn, AS_REL_CUSTOMER);
+                    // we don't know if we removed a peer relationship, but just in case
+                    provider_AS->remove_neighbor(cur_asn, AS_REL_PEER);
+                    provider_AS->add_neighbor(combined_asn, AS_REL_CUSTOMER);
                 }
             }
 
@@ -433,25 +430,19 @@ void ASGraph::combine_components(){
                 bool external = (std::find(component->begin(), 
                                            component->end(), 
                                            customer_asn) == component->end());
-                // Check if provider is already a provider in the combined AS
-                bool no_customer_rel = (combined_AS->providers->find(customer_asn) == 
-                                        combined_AS->providers->end());
-
-                if (external && no_customer_rel) {
+                if (external) {
                     // Update the combined AS's relationship
-                    combined_AS->customers->insert(customer_asn);
-                    // Handle overlapping peers
-                    bool no_peer = (combined_AS->peers->find(customer_asn) == 
-                                    combined_AS->peers->end());
-                    if (!no_peer) {
-                        // Remove old peer
-                        combined_AS->peers->erase(customer_asn);
-                    }
+                    combined_AS->add_neighbor(customer_asn, AS_REL_CUSTOMER);
                     
+                    // Handle overlapping peers
+                    combined_AS->remove_neighbor(customer_asn, AS_REL_PEER);
+
                     // Update the customer's relationship
                     AS *customer_AS = ases->find(customer_asn)->second;
-                    customer_AS->providers->erase(cur_asn);
-                    customer_AS->providers->insert(combined_asn);
+                    customer_AS->remove_neighbor(cur_asn, AS_REL_PROVIDER);
+                    // we don't know if we removed a peer relationship, but just in case
+                    customer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
+                    customer_AS->add_neighbor(combined_asn, AS_REL_PROVIDER);
                 }
             }   
 
@@ -470,20 +461,46 @@ void ASGraph::combine_components(){
                 // Peer is safe to add to combined AS
                 if (external && no_provider_rel && no_customer_rel) {
                     // Update the combined AS's relationship
-                    combined_AS->peers->insert(peer_asn);
                     
-                    // Update the peer AS's relationship
-                    AS *peer_AS = ases->find(peer_asn)->second;
-                    peer_AS->peers->erase(cur_asn);
-                    peer_AS->peers->insert(combined_asn);
+                    // Update the peer AS's relationship, if it exists
+                    if (ases->find(peer_asn) != ases->end()) {
+                        combined_AS->add_neighbor(peer_asn, AS_REL_PEER);
+                        AS *peer_AS = ases->find(peer_asn)->second;
+                        peer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
+                        peer_AS->add_neighbor(combined_asn, AS_REL_PEER);
+                    } else { // make sure it isn't a peer
+                        combined_AS->remove_neighbor(peer_asn, AS_REL_PEER);
+                    }
                 }
             }
+
+            // remove relationships to ASes which no longer exist
+            for (auto neighbor_asn : *combined_AS->peers) {
+                if (ases->find(neighbor_asn) == ases->end()) {
+                    std::cerr << "Found relationship that shouldn't exist!" << std::endl;
+                    combined_AS->remove_neighbor(neighbor_asn, AS_REL_PEER);
+                }
+            }
+            for (auto neighbor_asn : *combined_AS->customers) {
+                if (ases->find(neighbor_asn) == ases->end()) {
+                    std::cerr << "Found relationship that shouldn't exist!" << std::endl;
+                    combined_AS->remove_neighbor(neighbor_asn, AS_REL_CUSTOMER);
+                }
+            }
+            for (auto neighbor_asn : *combined_AS->providers) {
+                if (ases->find(neighbor_asn) == ases->end()) {
+                    std::cerr << "Found relationship that shouldn't exist!" << std::endl;
+                    combined_AS->remove_neighbor(neighbor_asn, AS_REL_PROVIDER);
+                }
+            }
+
             // Append ASN translation and discard member
             component_translation->insert(std::pair<uint32_t, uint32_t>(cur_asn,combined_asn));
             delete cur_AS;
             ases->erase(asn_search);
         }
         // Insert complete combined node to ases
+        //std::cout << *combined_AS;
         ases->insert(std::pair<uint32_t,AS*>(combined_asn,combined_AS));
     }
     return;
