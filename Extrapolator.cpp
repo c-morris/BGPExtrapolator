@@ -198,8 +198,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         if (graph->ases->find(*it) == graph->ases->end()) 
             continue;
         // announcements from monitors should ignore supernodes
-        //uint32_t asn_on_path = graph->translate_asn(*it);
-        uint32_t asn_on_path = *it;
+        uint32_t asn_on_path = graph->translate_asn(*it);
+        //uint32_t asn_on_path = *it;
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
             if (as_on_path->already_received(ann_to_check_for)) 
                 continue;
