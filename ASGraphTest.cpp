@@ -1,6 +1,7 @@
 #include <iostream>
 #include "ASGraph.h"
 #include "AS.h"
+#include "RanGraph.h"
 
 /** Unit tests for ASGraph.h and ASGraph.cpp
  */
@@ -176,6 +177,11 @@ bool test_tarjan(){ // includes tarjan_helper()
         if (c->size() > 1 && c->size() != 3)
             return false;
     }
+    
+    ASGraph *graph3;
+    graph3 = ran_graph(5, 10);
+    std::cout << *graph3 << std::endl;
+    graph3->tarjan();
     return true;
 }
 

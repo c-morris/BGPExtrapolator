@@ -342,8 +342,8 @@ void ASGraph::tarjan() {
             tarjan_helper(as.second, index, s);
         }
     }
-    std::cerr << "Processed " << count << " ASes" << std::endl;
-    std::cerr << "Disconnected Restarts: " << uc_count << std::endl;
+    //std::cerr << "Processed " << count << " ASes" << std::endl;
+    //std::cerr << "Disconnected Restarts: " << uc_count << std::endl;
     std::cerr << "Final index: " << index << std::endl;
     return;
 }
@@ -448,7 +448,7 @@ void ASGraph::combine_components(){
                     combined_AS->remove_neighbor(customer_asn, AS_REL_PEER);
                     // Remove old subnode provider relationship from external provider
                     customer_AS->remove_neighbor(cur_asn, AS_REL_PROVIDER);
-                    // Remove redudant subnode peer relationship from external provider if it exists
+                    // Remove redundant subnode peer relationship from external provider if it exists
                     customer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
                 }
             }   
