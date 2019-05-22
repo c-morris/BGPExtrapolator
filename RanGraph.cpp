@@ -31,9 +31,25 @@ ASGraph* ran_graph(int num_edges, int num_vertices) {
     return graph;
 }
 
-bool cyclic_util(int asn, std::map<uint32_t, bool>* visited, std::map<uint32_t, bool>* recStack) {
-    return true;
+
+bool cyclic_util(ASGraph* graph, int asn, std::map<uint32_t, bool>* visited, std::map<uint32_t, bool>* recStack) { 
+    if (visited->find(asn)->second == false) {
+        visited->find(asn)->second = true;
+        recStack->find(asn)->second = true;
+        AS* cur_AS = graph->ases->find(asn)->second;
+        for (auto &provider_asn : *cur_AS->providers) {
+            if (!visited->find(provider_asn)->second &&
+                cyclic_util(graph, provider_asn, visited, recStack)) {
+                return true;
+            } else if (recStack->find(provider_asn)->second) {
+                return true;
+            }
+        }
+    }
+    recStack->find(asn)->second = false;
+    return false;
 }
+
 
 bool is_cyclic(ASGraph* graph) {
     auto visited = new std::map<uint32_t, bool>;
@@ -46,7 +62,7 @@ bool is_cyclic(ASGraph* graph) {
   
     // Call the recursive helper function to detect cycle in different 
     for (auto const& as : *graph->ases) {
-        if (cyclic_util(as.first, visited, recStack)) 
+        if (cyclic_util(graph, as.first, visited, recStack)) 
             return true;
     }
   

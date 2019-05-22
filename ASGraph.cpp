@@ -331,19 +331,13 @@ void ASGraph::decide_ranks() {
 void ASGraph::tarjan() {
     int index = 0;
     std::stack<AS*> s;
-    int count = 0;
-    int uc_count = 0;
     std::cerr << "Starting Tarjan..." << std::endl;
 
     for (auto &as : *ases) {
-        count++;
         if (as.second->index == -1){
-            uc_count++;
             tarjan_helper(as.second, index, s);
         }
     }
-    //std::cerr << "Processed " << count << " ASes" << std::endl;
-    //std::cerr << "Disconnected Restarts: " << uc_count << std::endl;
     std::cerr << "Final index: " << index << std::endl;
     return;
 }
@@ -357,7 +351,6 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     s.push(as);
     as->onStack = true;
     
-    //std::cerr << "" << std::endl;
     for (auto &neighbor : *(as->providers)) {
         AS *n = ases->find(neighbor)->second;
         if (n->index == -1){
@@ -377,8 +370,10 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
         components->push_back(component);
+        /* DEBUG
         if (component->size() > 1)
             std::cerr << "Root node found: " << as->asn << " of size " << component->size() << std::endl;
+        */
     }
 }
 
@@ -517,6 +512,7 @@ void ASGraph::printDebug() {
     return; 
 }
 
+
 /** Output python code for making graphviz digraph.
  */
 void ASGraph::to_graphviz(std::ostream &os) {
@@ -530,6 +526,7 @@ void ASGraph::to_graphviz(std::ostream &os) {
     }
     os << "--End Python Code--" << std::endl;
 }
+
 
 /** Operation for debug printing AS
  */
