@@ -10,5 +10,6 @@
 #define NON_STUBS_TABLE "non_stubs"
 #define SUPERNODES_TABLE "supernodes"
 #define ANNOUNCEMENTS_TABLE "mrt_announcements"
+#define ROV_ASES_TABLE "rov_ases"
 
 #endif

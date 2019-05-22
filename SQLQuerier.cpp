@@ -1,4 +1,5 @@
 #include "SQLQuerier.h"
+#include "TableNames.h"
 
 SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, bool ram) {
     ram_tablespace = ram;
@@ -142,6 +143,10 @@ pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_fami
     return execute(sql);
 }
 
+pqxx::result SQLQuerier::select_rov_ases(std::string table_name) {
+  std::string sql = "SELECT * FROM " + table_name;
+  return execute(sql);
+}
 
 
 //TODO add return type

@@ -9,16 +9,21 @@
 #include "Tests.h"
 
 
+// Simulation global variables
+extern uint32_t global_attacker_asn;
+extern uint32_t global_victim_asn;
+extern uint32_t global_victim_prefix;
+
 int main(int argc, char *argv[]) {
-    using namespace std;   
+    using namespace std;
     namespace po = boost::program_options;
 
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
-        ("invert-results,i", po::value<bool>()->default_value(true), 
+        ("invert-results,i", po::value<bool>()->default_value(true),
           "record ASNs which do *not* have a route to a prefix-origin (smaller results size)")
-        ("ram", po::value<bool>()->default_value(false), 
+        ("ram", po::value<bool>()->default_value(false),
           "use the RAM tablespace (it must exist in the db)")
         ("results-table,r", po::value<string>()->default_value(RESULTS_TABLE),
           "name of the results table")
@@ -27,7 +32,13 @@ int main(int argc, char *argv[]) {
           "name of the inverse results table")
         ("announcements-table,a",
           po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
-          "name of announcements table");
+          "name of announcements table")
+        ("global_attacker_asn", po::value<uint32_t>(),
+          "attacker ASN")
+        ("global_victim_asn", po::value<uint32_t>(),
+          "victim ASN")
+        ("global_victim_prefix", po::value<Prefix>(),
+          "victim prefix (i.e. prefix attacker will announce)");
         //("batch-size", po::value<int>(&batch_size)->default_value(100),
         // "number of prefixes to be used in one propagation cycle")
     ;
@@ -40,6 +51,11 @@ int main(int argc, char *argv[]) {
         cout << desc << endl;
         exit(0);
     }
+
+    // Initialize simulation variables
+    global_attacker_asn = vm["global_attacker_asn"];
+    global_victim_asn = vm["global_victim_asn"];
+    global_victim_prefix = vm["global_victim_prefix"];
 
     Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
         (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),

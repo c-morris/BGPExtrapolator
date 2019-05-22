@@ -18,16 +18,17 @@ struct SQLQuerier;
 #include "TableNames.h"
 
 struct ASGraph {
-    std::map<uint32_t, AS*> *ases; // map of ASN to AS object 
+    std::map<uint32_t, AS*> *ases; // map of ASN to AS object
     std::vector<uint32_t> *ases_with_anns;
     std::vector<std::set<uint32_t>*> *ases_by_rank;
+    std::set<uint32_t> rov_asn_set;  // Set of ROV ASNs
     std::vector<std::vector<uint32_t>*> *components;
     std::map<uint32_t, uint32_t> *stubs_to_parents;
     std::vector<uint32_t> *non_stubs;
-    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
+    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results;
     //component_translation keeps key-value pairs for each ASN and the ASN
     //it became a part of due to strongly connected component combination.
-    //This is used in Extrapolator.give_ann_to_as_path() where ASNs on an 
+    //This is used in Extrapolator.give_ann_to_as_path() where ASNs on an
     //announcements AS_PATH need to be located.
     std::map<uint32_t, uint32_t> *component_translation;
 
@@ -55,4 +56,3 @@ struct ASGraph {
 };
 
 #endif
-

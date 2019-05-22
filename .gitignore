@@ -37,4 +37,7 @@ bgp-extrapolator
 *.swo
 .Rproj.user
 
+# Analysis Files
 supernodes\.csv
+analysis/*
+simresults/*
