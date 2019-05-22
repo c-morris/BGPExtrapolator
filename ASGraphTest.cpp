@@ -323,11 +323,6 @@ bool test_combine_components(){
         std::cerr << "Incorrect supernode peer set." << std::endl;
         return false;
     }
-    //for (auto node : *graph2.component_translation) {
-    //    std::cout << node.first << " " << node.second << std::endl;
-    //}
-    
-
     return true;
 }
 
