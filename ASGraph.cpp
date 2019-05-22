@@ -517,6 +517,19 @@ void ASGraph::printDebug() {
     return; 
 }
 
+/** Output python code for making graphviz digraph.
+ */
+void ASGraph::to_graphviz(std::ostream &os) {
+    os << "--Begin Python Code--" << std::endl;
+    std::string id = "";
+    for (auto const &as : *ases) {
+        os << "dot.node('" << as.second->asn << "', '" << as.second->asn << "')" << std::endl;
+        for (auto customer : *as.second->customers) {
+            os << "dot.edge('" << as.second->asn << "', '" << customer << "')" << std::endl;
+        }
+    }
+    os << "--End Python Code--" << std::endl;
+}
 
 /** Operation for debug printing AS
  */

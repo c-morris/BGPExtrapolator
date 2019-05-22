@@ -180,7 +180,7 @@ bool test_tarjan(){ // includes tarjan_helper()
     
     ASGraph *graph3;
     graph3 = ran_graph(5, 10);
-    std::cout << *graph3 << std::endl;
+    graph3->to_graphviz(std::cout);
     graph3->tarjan();
     return true;
 }
