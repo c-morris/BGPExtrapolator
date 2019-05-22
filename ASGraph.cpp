@@ -285,11 +285,11 @@ void ASGraph::decide_ranks() {
             as.second->rank = 0;
         }
     }
-    std::cerr << "Started rank 0" << std::endl;
+    //std::cerr << "Started rank 0" << std::endl;
     
     int i = 0;
     while (!(*ases_by_rank)[i]->empty()) {
-        std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
+        //std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
         ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
@@ -317,7 +317,7 @@ void ASGraph::decide_ranks() {
                 }
             }
         }
-        std::cerr << "Completed rank " << i << std::endl; 
+        //std::cerr << "Completed rank " << i << std::endl; 
         i++;
     } 
     std::cerr << "Done" << std::endl;

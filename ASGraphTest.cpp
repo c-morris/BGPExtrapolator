@@ -179,9 +179,11 @@ bool test_tarjan(){ // includes tarjan_helper()
     }
     
     ASGraph *graph3;
-    graph3 = ran_graph(5, 10);
+    graph3 = ran_graph(20, 12);
     graph3->to_graphviz(std::cout);
     graph3->tarjan();
+    graph3->combine_components();
+    graph3->to_graphviz(std::cout);
     return true;
 }
 
@@ -305,7 +307,7 @@ bool test_combine_components(){
     }
 
     // Find supernode AS
-    std::cout << graph2 << std::endl;
+    //std::cout << graph2 << std::endl;
     auto SCC1 = graph2.ases->find(10);
     auto SCC2 = graph2.ases->find(13);
     AS *supernode1 = SCC1->second;
@@ -321,9 +323,9 @@ bool test_combine_components(){
         std::cerr << "Incorrect supernode peer set." << std::endl;
         return false;
     }
-    for (auto node : *graph2.component_translation) {
-        std::cout << node.first << " " << node.second << std::endl;
-    }
+    //for (auto node : *graph2.component_translation) {
+    //    std::cout << node.first << " " << node.second << std::endl;
+    //}
     
 
     return true;
