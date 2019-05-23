@@ -44,6 +44,7 @@ struct AS {
         std::set<uint32_t> *cust=NULL);
     ~AS();
     void add_neighbor(uint32_t asn, int relationship);
+    void remove_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);
     void receive_announcement(Announcement &ann);
     void clear_announcements();

@@ -173,6 +173,9 @@ void Extrapolator::propagate_down() {
 
 /** Record announcement on all ASes on as_path.
  *
+ * The from_monitor attribute is set to true on these announcements so they are
+ * not replaced later during propagation. 
+ *
  * @param as_path List of ASes for this announcement.
  * @param prefix The prefix this announcement is for.
  * @param hop The first ASN on the as_path.
@@ -195,8 +198,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         if (graph->ases->find(*it) == graph->ases->end())
             continue;
         // announcements from monitors should ignore supernodes
-        //uint32_t asn_on_path = graph->translate_asn(*it);
-        uint32_t asn_on_path = *it;
+        uint32_t asn_on_path = graph->translate_asn(*it);
+        //uint32_t asn_on_path = *it;
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
             if (as_on_path->already_received(ann_to_check_for))
                 continue;

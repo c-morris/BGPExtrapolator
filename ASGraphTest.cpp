@@ -1,6 +1,7 @@
 #include <iostream>
 #include "ASGraph.h"
 #include "AS.h"
+#include "RanGraph.h"
 
 /** Unit tests for ASGraph.h and ASGraph.cpp
  */
@@ -146,6 +147,41 @@ bool test_tarjan(){ // includes tarjan_helper()
         if (c->size() > 1 && c->size() != 3)
             return false;
     }   
+     
+    // Multi supernode test
+    ASGraph graph2 = ASGraph();
+    // Cycle 10->11->12->10
+    graph2.add_relationship(11, 10, AS_REL_PROVIDER);
+    graph2.add_relationship(10, 11, AS_REL_CUSTOMER);
+    graph2.add_relationship(12, 11, AS_REL_PROVIDER);
+    graph2.add_relationship(11, 12, AS_REL_CUSTOMER);
+    graph2.add_relationship(10, 12, AS_REL_PROVIDER);
+    graph2.add_relationship(12, 10, AS_REL_CUSTOMER);
+    // Cycle 13->14->15->13
+    graph2.add_relationship(14, 13, AS_REL_PROVIDER);
+    graph2.add_relationship(13, 14, AS_REL_CUSTOMER);
+    graph2.add_relationship(15, 14, AS_REL_PROVIDER);
+    graph2.add_relationship(14, 15, AS_REL_CUSTOMER);
+    graph2.add_relationship(13, 15, AS_REL_PROVIDER);
+    graph2.add_relationship(15, 13, AS_REL_CUSTOMER);
+    // Peer
+    graph2.add_relationship(11, 14, AS_REL_PEER);
+    graph2.add_relationship(14, 11, AS_REL_PEER);
+    graph2.tarjan();
+    
+    if (graph2.components->size() != 2) {
+        return false;
+    }
+    // Verify the cycle was detected
+    for (auto const& c : *graph2.components) {
+        if (c->size() > 1 && c->size() != 3)
+            return false;
+    }
+   
+    ASGraph *graph3;
+    graph3 = ran_graph(5, 10);
+    graph3->to_graphviz(std::cout);
+    graph3->tarjan();
     return true;
 }
 
@@ -159,6 +195,7 @@ bool test_tarjan(){ // includes tarjan_helper()
  * 8--2 ->3-- 4
  *       / \
  *      5   6
+ *
  *
  * @return true if successful, otherwise false.
  */
@@ -225,6 +262,63 @@ bool test_combine_components(){
     // Check supernode peers
     if (supernode->peers->find(4) != supernode->peers->end()) {
         std::cerr << "Incorrect supernode peer-customer override." << std::endl;
+        return false;
+    }
+
+
+    // Multi supernode test
+    ASGraph graph2 = ASGraph();
+    // Cycle 10->11->12->10
+    graph2.add_relationship(11, 10, AS_REL_PROVIDER);
+    graph2.add_relationship(10, 11, AS_REL_CUSTOMER);
+    graph2.add_relationship(12, 11, AS_REL_PROVIDER);
+    graph2.add_relationship(11, 12, AS_REL_CUSTOMER);
+    graph2.add_relationship(10, 12, AS_REL_PROVIDER);
+    graph2.add_relationship(12, 10, AS_REL_CUSTOMER);
+    // Cycle 13->14->15->13
+    graph2.add_relationship(14, 13, AS_REL_PROVIDER);
+    graph2.add_relationship(13, 14, AS_REL_CUSTOMER);
+    graph2.add_relationship(15, 14, AS_REL_PROVIDER);
+    graph2.add_relationship(14, 15, AS_REL_CUSTOMER);
+    graph2.add_relationship(13, 15, AS_REL_PROVIDER);
+    graph2.add_relationship(15, 13, AS_REL_CUSTOMER);
+    // Peer
+    graph2.add_relationship(11, 14, AS_REL_PEER);
+    graph2.add_relationship(14, 11, AS_REL_PEER);
+    
+    graph2.add_relationship(12, 14, AS_REL_PEER);
+    graph2.add_relationship(14, 12, AS_REL_PEER);
+    
+    graph2.add_relationship(12, 15, AS_REL_PEER);
+    graph2.add_relationship(15, 12, AS_REL_PEER);
+
+    // Provider
+    //graph2.add_relationship(11, 15, AS_REL_PROVIDER);
+    //graph2.add_relationship(15, 11, AS_REL_CUSTOMER);
+
+    graph2.tarjan();
+    graph2.combine_components();
+
+    if (graph2.component_translation->size() != 6) {
+        std::cerr << "Incorrect translation size: " << std::endl;
+        return false;
+    }
+
+    // Find supernode AS
+    std::cout << graph2 << std::endl;
+    auto SCC1 = graph2.ases->find(10);
+    auto SCC2 = graph2.ases->find(13);
+    AS *supernode1 = SCC1->second;
+    AS *supernode2 = SCC2->second;
+    // Check supernode providers
+    if (supernode1->providers->find(13) != supernode1->providers->end()) {
+        std::cerr << "Incorrect supernode provider set." << std::endl;
+        return false;
+    }
+    // Check supernode peers
+    if (supernode1->peers->find(13) == supernode1->peers->end() ||
+        supernode2->peers->find(10) == supernode2->peers->end()) {
+        std::cerr << "Incorrect supernode peer set." << std::endl;
         return false;
     }
 

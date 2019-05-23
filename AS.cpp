@@ -69,6 +69,26 @@ void AS::add_neighbor(uint32_t asn, int relationship) {
     }
 }
 
+/** Remove neighbor AS from the appropriate set in this AS based on the relationship.
+ *
+ * @param asn ASN of neighbor.
+ * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
+ */
+void AS::remove_neighbor(uint32_t asn, int relationship) {
+    switch (relationship) {
+        case AS_REL_PROVIDER:
+            providers->erase(asn);
+            break;
+        case AS_REL_PEER:
+            peers->erase(asn);
+            break;
+        case AS_REL_CUSTOMER:
+            customers->erase(asn);
+            break;
+    }
+}
+
+
 
 /** Debug to print this AS number
  */

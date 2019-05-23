@@ -42,6 +42,8 @@ ASGraph::~ASGraph() {
 
 /** Adds an AS relationship to the graph.
  *
+ * If the AS does not exist in the graph, it will be created.
+ *
  * @param asn ASN of AS to add the relationship to
  * @param neighbor_asn ASN of neighbor.
  * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
@@ -233,14 +235,13 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
 
     std::ofstream outfile;
     std::cerr << "Saving Supernodes..." << std::endl;
-    std::string file_name = "supernodes.csv";
-    outfile.open("supernodes.csv");
+    std::string file_name = "/dev/shm/bgp/supernodes.csv";
+    outfile.open(file_name);
 
-    // Object: components = new std::vector<std::vector<uint32_t>*>;
     // Iterate over each strongly connected component
     for (auto &cur_node : *components) {
-        if (cur_node->size() > 2) {
-            // find the lowest asn in supernode
+        if (cur_node->size() >= 2) {
+            // Find the lowest asn in supernode
             uint32_t low = UINT_MAX;
             for (auto &cur_asn : *cur_node) {
                 if (cur_asn < low)
@@ -255,6 +256,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     }
     outfile.close();
     querier->copy_supernodes_to_db(file_name);
+    std::cerr << "Saving Supernodes completed." << std::endl;
     //std::remove(file_name.c_str());
 }
 
@@ -287,11 +289,16 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
 
 /** Decide and assign ranks to all the AS's in the graph.
  *
- * The bottom of the DAG is rank 0.
+ *  The rank of an AS is the maximum number of nodes it has below it. This means
+ *  it is possible to have an AS of rank 0 directly below an AS of rank 4, but
+ *  not possible to have an AS of rank 3 below one of rank 2.
+ *
+ *  The bottom of the DAG is rank 0.
  */
 void ASGraph::decide_ranks() {
     // initial set of customer ASes at the bottom of the DAG
     ases_by_rank->push_back(new std::set<uint32_t>());
+    // For ASes with no customers
     for (auto &as : *ases) {
         if (as.second->customers->empty()) {
             // if AS is a leaf node, or "stub" AS
@@ -299,14 +306,16 @@ void ASGraph::decide_ranks() {
             as.second->rank = 0;
         }
     }
+    std::cerr << "Started rank 0" << std::endl;
 
     int i = 0;
     while (!(*ases_by_rank)[i]->empty()) {
+        std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
         ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
-                AS* prov_AS = ases->find(provider_asn)->second;
+                AS* prov_AS = ases->find(translate_asn(provider_asn))->second;
                 int oldrank = prov_AS->rank;
                 if (oldrank < i + 1) {
                     prov_AS->rank = i + 1;
@@ -318,7 +327,7 @@ void ASGraph::decide_ranks() {
             }
             //For all peers of this AS
             for (const uint32_t &peer_asn : *ases->find(asn)->second->peers) {
-                AS* peer_AS = ases->find(peer_asn)->second;
+                AS* peer_AS = ases->find(translate_asn(peer_asn))->second;
                 int oldrank = peer_AS->rank;
                 if (oldrank < i) {
                     peer_AS->rank = i;
@@ -329,8 +338,10 @@ void ASGraph::decide_ranks() {
                 }
             }
         }
+        std::cerr << "Completed rank " << i << std::endl;
         i++;
     }
+    std::cerr << "Done" << std::endl;
     return;
 }
 
@@ -341,12 +352,14 @@ void ASGraph::decide_ranks() {
 void ASGraph::tarjan() {
     int index = 0;
     std::stack<AS*> s;
+    std::cerr << "Starting Tarjan..." << std::endl;
 
     for (auto &as : *ases) {
         if (as.second->index == -1){
             tarjan_helper(as.second, index, s);
         }
     }
+    std::cerr << "Final index: " << index << std::endl;
     return;
 }
 
@@ -359,17 +372,16 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     s.push(as);
     as->onStack = true;
 
-    for (auto &neighbor : *(as->providers)){
+    for (auto &neighbor : *(as->providers)) {
         AS *n = ases->find(neighbor)->second;
         if (n->index == -1){
             tarjan_helper(n, index, s);
-            as->lowlink = std::min(as->lowlink,n->lowlink);
-        }
-        else if (n->onStack){
+            as->lowlink = std::min(as->lowlink, n->lowlink);
+        } else if (n->onStack) {
             as->lowlink = std::min(as->lowlink, n->index);
         }
     }
-    if (as->lowlink == as->index){
+    if (as->lowlink == as->index) {
         std::vector<uint32_t> *component = new std::vector<uint32_t>;
         AS *as_from_stack;
         do{
@@ -379,6 +391,10 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
         components->push_back(component);
+        /* DEBUG
+        if (component->size() > 1)
+            std::cerr << "Root node found: " << as->asn << " of size " << component->size() << std::endl;
+        */
     }
 }
 
@@ -387,7 +403,6 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
  *  Also append to component_translation for future reference.
  */
 void ASGraph::combine_components(){
-    //std::cerr << "Testing for strongly connected components..." << std::endl;
 
     // For each strongly connected component
     for (auto const& component : *components){
@@ -420,25 +435,17 @@ void ASGraph::combine_components(){
                 bool external = (std::find(component->begin(),
                                            component->end(),
                                            provider_asn) == component->end());
-                // Check if provider is already a provider in the combined AS
-                bool no_provider_rel = (combined_AS->providers->find(provider_asn) ==
-                                        combined_AS->providers->end());
-
-                if (external && no_provider_rel) {
-                    // Update the combined AS's relationship
-                    combined_AS->providers->insert(provider_asn);
-                    // Handle overlapping peers
-                    bool no_peer = (combined_AS->peers->find(provider_asn) ==
-                                    combined_AS->peers->end());
-                    if (!no_peer) {
-                        // Remove old peer
-                        combined_AS->peers->erase(provider_asn);
-                    }
-
-                    // Update the provider's relationship
+                if (external) {
                     AS *provider_AS = ases->find(provider_asn)->second;
-                    provider_AS->customers->erase(cur_asn);
-                    provider_AS->customers->insert(combined_asn);
+                    // Add new relationship
+                    combined_AS->add_neighbor(provider_asn, AS_REL_PROVIDER);
+                    provider_AS->add_neighbor(combined_asn, AS_REL_CUSTOMER);
+                    // Handle overlapping peer, remove peer relationship from supernode
+                    combined_AS->remove_neighbor(provider_asn, AS_REL_PEER);
+                    // Remove old subnode customer relationship from external provider
+                    provider_AS->remove_neighbor(cur_asn, AS_REL_CUSTOMER);
+                    // Remove subnode peer relationship from external provider if it exists
+                    provider_AS->remove_neighbor(cur_asn, AS_REL_PEER);
                 }
             }
 
@@ -448,25 +455,17 @@ void ASGraph::combine_components(){
                 bool external = (std::find(component->begin(),
                                            component->end(),
                                            customer_asn) == component->end());
-                // Check if provider is already a provider in the combined AS
-                bool no_customer_rel = (combined_AS->providers->find(customer_asn) ==
-                                        combined_AS->providers->end());
-
-                if (external && no_customer_rel) {
-                    // Update the combined AS's relationship
-                    combined_AS->customers->insert(customer_asn);
-                    // Handle overlapping peers
-                    bool no_peer = (combined_AS->peers->find(customer_asn) ==
-                                    combined_AS->peers->end());
-                    if (!no_peer) {
-                        // Remove old peer
-                        combined_AS->peers->erase(customer_asn);
-                    }
-
-                    // Update the customer's relationship
+                if (external) {
                     AS *customer_AS = ases->find(customer_asn)->second;
-                    customer_AS->providers->erase(cur_asn);
-                    customer_AS->providers->insert(combined_asn);
+                    // Add new relationship
+                    combined_AS->add_neighbor(customer_asn, AS_REL_CUSTOMER);
+                    customer_AS->add_neighbor(combined_asn, AS_REL_PROVIDER);
+                    // Handle overlapping peer, remove redundant peer relationship from supernode
+                    combined_AS->remove_neighbor(customer_asn, AS_REL_PEER);
+                    // Remove old subnode provider relationship from external provider
+                    customer_AS->remove_neighbor(cur_asn, AS_REL_PROVIDER);
+                    // Remove redundant subnode peer relationship from external provider if it exists
+                    customer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
                 }
             }
 
@@ -482,23 +481,34 @@ void ASGraph::combine_components(){
                 // Check if peer is already a customer in the combined AS
                 bool no_customer_rel = (combined_AS->customers->find(peer_asn) ==
                                         combined_AS->customers->end());
+
                 // Peer is safe to add to combined AS
                 if (external && no_provider_rel && no_customer_rel) {
-                    // Update the combined AS's relationship
-                    combined_AS->peers->insert(peer_asn);
-
-                    // Update the peer AS's relationship
+                    // DEBUG
+                    if (ases->find(peer_asn) == ases->end()) {
+                        std::cout << cur_AS->asn << " peer missing, " << peer_asn << std::endl;
+                        continue;
+                    }
                     AS *peer_AS = ases->find(peer_asn)->second;
-                    peer_AS->peers->erase(cur_asn);
-                    peer_AS->peers->insert(combined_asn);
+                    // Add new relationship
+                    combined_AS->add_neighbor(peer_asn, AS_REL_PEER);
+                    peer_AS->add_neighbor(combined_asn, AS_REL_PEER);
+                    // Remove old peer relation to the subnode
+                    peer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
+                } else if (external) {
+                    // Other relationship superseeds peer
+                    AS *peer_AS = ases->find(peer_asn)->second;
+                    // Remove the subnode peer relationship from the external node
+                    peer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
                 }
             }
             // Append ASN translation and discard member
             component_translation->insert(std::pair<uint32_t, uint32_t>(cur_asn,combined_asn));
+            ases->erase(cur_AS->asn);
             delete cur_AS;
-            ases->erase(asn_search);
         }
         // Insert complete combined node to ases
+        //std::cout << *combined_AS;
         ases->insert(std::pair<uint32_t,AS*>(combined_asn,combined_AS));
     }
     return;
@@ -521,6 +531,21 @@ void ASGraph::printDebug() {
         std::cout << as.first << ':' << as.second->asn << std::endl;
     }
     return;
+}
+
+
+/** Output python code for making graphviz digraph.
+ */
+void ASGraph::to_graphviz(std::ostream &os) {
+    os << "--Begin Python Code--" << std::endl;
+    std::string id = "";
+    for (auto const &as : *ases) {
+        os << "dot.node('" << as.second->asn << "', '" << as.second->asn << "')" << std::endl;
+        for (auto customer : *as.second->customers) {
+            os << "dot.edge('" << as.second->asn << "', '" << customer << "')" << std::endl;
+        }
+    }
+    os << "--End Python Code--" << std::endl;
 }
 
 
