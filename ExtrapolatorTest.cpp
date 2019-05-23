@@ -189,7 +189,18 @@ bool test_send_all_announcements() {
     as_path->push_back(4);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     e.give_ann_to_as_path(as_path, p);
-    e.send_all_announcements(2, true, false); // to peers and providers
+    e.send_all_announcements(2, true, false, false); // to providers
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        return false;
+    }
+
+    e.send_all_announcements(2, false, true, false); // to peers
     if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->all_anns->size() == 1 &&
@@ -200,7 +211,7 @@ bool test_send_all_announcements() {
         return false;
     }
 
-    e.send_all_announcements(2, false, true); // to customers
+    e.send_all_announcements(2, false, false, true); // to customers
     if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->all_anns->size() == 1 &&

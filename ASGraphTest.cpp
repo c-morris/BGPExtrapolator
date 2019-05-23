@@ -93,7 +93,7 @@ bool test_decide_ranks(){
     if (graph.ases->find(1)->second->rank == 2 &&
         graph.ases->find(2)->second->rank == 0 &&
         graph.ases->find(3)->second->rank == 1 &&
-        graph.ases->find(4)->second->rank == 1 &&
+        graph.ases->find(4)->second->rank == 0 &&
         graph.ases->find(5)->second->rank == 0 &&
         graph.ases->find(6)->second->rank == 0) {
         return true;
@@ -181,21 +181,11 @@ bool test_tarjan(){ // includes tarjan_helper()
     
     ASGraph *graph3;
     srand(time(NULL));
-    for (int i = 0; i < 10000; i++) {
-        std::cout << "script " << i << std::endl;
-        graph3 = ran_graph(2000, 2000);
-        std::ofstream outfile;
-        std::string fname = "graph";
-        fname += std::to_string(i);
-        fname += ".py";
-        outfile.open(fname, std::ios::out | std::ios::trunc);
-        outfile << "import graphviz\ndot = graphviz.Digraph()\n";
-        //graph3->to_graphviz(outfile);
+    for (int i = 0; i < 100; i++) {
+        graph3 = ran_graph(100, 100);
         graph3->tarjan();
         graph3->combine_components();
-        graph3->to_graphviz(outfile);
-        outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
-        outfile.close();
+        // if this terminates, there are no cycles in the graph
         graph3->decide_ranks();
     }
     return true;

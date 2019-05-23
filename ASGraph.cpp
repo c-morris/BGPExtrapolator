@@ -302,13 +302,6 @@ void ASGraph::decide_ranks() {
     int i = 0;
     while (!(*ases_by_rank)[i]->empty()) {
         //std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
-        if (i == 15 || i == 16 || i == 17) {
-            std::cout << "Iteration " << i << "= [";
-            for (uint32_t asn : *(*ases_by_rank)[i]) {
-                std::cout << asn << ", ";
-            }
-            std::cout << "]" << std::endl;
-        }
         ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
@@ -323,23 +316,10 @@ void ASGraph::decide_ranks() {
                     }
                 }
             }
-            ////For all peers of this AS
-            //for (const uint32_t &peer_asn : *ases->find(asn)->second->peers) {
-            //    AS* peer_AS = ases->find(translate_asn(peer_asn))->second;
-            //    int oldrank = peer_AS->rank;
-            //    if (oldrank < i) {
-            //        peer_AS->rank = i;
-            //        (*ases_by_rank)[i]->insert(peer_asn);
-            //        if (oldrank != -1) {
-            //            (*ases_by_rank)[oldrank]->erase(peer_asn);
-            //        }
-            //    }
-            //}
         }
         //std::cerr << "Completed rank " << i << std::endl; 
         i++;
     } 
-    std::cerr << "Done" << std::endl;
     return;
 }
 
@@ -352,7 +332,6 @@ void ASGraph::tarjan() {
     std::stack<AS*> s;
     int count = 0;
     int uc_count = 0;
-    std::cerr << "Starting Tarjan..." << std::endl;
 
     for (auto &as : *ases) {
         count++;
@@ -361,9 +340,6 @@ void ASGraph::tarjan() {
             tarjan_helper(as.second, index, s);
         }
     }
-    //std::cerr << "Processed " << count << " ASes" << std::endl;
-    //std::cerr << "Disconnected Restarts: " << uc_count << std::endl;
-    std::cerr << "Final index: " << index << std::endl;
     return;
 }
 
@@ -396,8 +372,8 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
         components->push_back(component);
-        if (component->size() > 1)
-            std::cerr << "Root node found: " << as->asn << " of size " << component->size() << std::endl;
+        //if (component->size() > 1)
+        //    std::cerr << "Root node found: " << as->asn << " of size " << component->size() << std::endl;
     }
 }
 
