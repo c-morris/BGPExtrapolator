@@ -189,8 +189,7 @@ void Extrapolator::propagate_down() {
  * @param prefix The prefix this announcement is for.
  * @param hop The first ASN on the as_path.
  */
-void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
-                                       Prefix<> prefix) {
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix) {
     // handle empty as_path
     if (as_path->empty()) 
         return;
@@ -276,6 +275,13 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                 as_on_path->anns_sent_to_peers_providers->push_back(ann);
             }
             as_on_path->receive_announcement(ann);
+            if (graph->inverse_results != NULL) {
+                auto set = graph->inverse_results->find(
+                    std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+                if (set != graph->inverse_results->end()) {
+                    set->second->erase(as_on_path->asn);
+                }
+            }
         }
     }
 }
