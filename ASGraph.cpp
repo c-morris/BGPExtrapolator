@@ -92,15 +92,15 @@ void ASGraph::process(SQLQuerier *querier){
     combine_components();
 
     // debug
-    std::ofstream outfile;
-    std::string fname = "graph";
-    fname += std::to_string(0);
-    fname += ".py";
-    outfile.open(fname, std::ios::out | std::ios::trunc);
-    outfile << "import graphviz\ndot = graphviz.Digraph()\n";
-    this->to_graphviz(outfile);
-    outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
-    outfile.close();
+    //std::ofstream outfile;
+    //std::string fname = "graph";
+    //fname += std::to_string(0);
+    //fname += ".py";
+    //outfile.open(fname, std::ios::out | std::ios::trunc);
+    //outfile << "import graphviz\ndot = graphviz.Digraph()\n";
+    //this->to_graphviz(outfile);
+    //outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
+    //outfile.close();
 
     save_supernodes_to_db(querier);
     decide_ranks();
