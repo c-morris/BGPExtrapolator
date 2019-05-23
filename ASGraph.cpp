@@ -334,9 +334,7 @@ void ASGraph::tarjan() {
     int uc_count = 0;
 
     for (auto &as : *ases) {
-        count++;
         if (as.second->index == -1){
-            uc_count++;
             tarjan_helper(as.second, index, s);
         }
     }
@@ -352,7 +350,6 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     s.push(as);
     as->onStack = true;
     
-    //std::cerr << "" << std::endl;
     for (auto &neighbor : *(as->providers)) {
         AS *n = ases->find(neighbor)->second;
         if (n->index == -1){
@@ -512,6 +509,7 @@ void ASGraph::printDebug() {
     return; 
 }
 
+
 /** Output python code for making graphviz digraph.
  */
 void ASGraph::to_graphviz(std::ostream &os) {
@@ -523,6 +521,7 @@ void ASGraph::to_graphviz(std::ostream &os) {
         }
     }
 }
+
 
 /** Operation for debug printing AS
  */

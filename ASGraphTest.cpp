@@ -178,7 +178,7 @@ bool test_tarjan(){ // includes tarjan_helper()
         if (c->size() > 1 && c->size() != 3)
             return false;
     }
-    
+   
     ASGraph *graph3;
     srand(time(NULL));
     for (int i = 0; i < 100; i++) {
