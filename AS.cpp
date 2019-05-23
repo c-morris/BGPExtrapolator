@@ -96,6 +96,20 @@ void AS::printDebug() {
     std::cout << asn << std::endl;
 }
 
+void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<>,uint32_t> current) {
+    if (inverse_results != NULL) {
+        // add back to old set, remove from new set
+        auto set = inverse_results->find(old);
+        if (set != inverse_results->end()) {
+            set->second->insert(asn);
+        }
+        set = inverse_results->find(current);
+        if (set != inverse_results->end()) {
+            set->second->erase(asn);
+        }
+    }
+}
+
 
 /** Push the received announcements to the incoming_announcements vector. 
  *
@@ -140,10 +154,16 @@ void AS::receive_announcement(Announcement &ann) {
         // Default to lower ASN
         if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
             if (search_alt == depref_anns->end()) {
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                       search->second));
                 search->second = ann;
             } else {
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 search_alt->second = search->second;
                 search->second = ann;
             }
@@ -160,12 +180,20 @@ void AS::receive_announcement(Announcement &ann) {
     // Check announcements priority for best path selection
     } else if (ann.priority > search->second.priority) {
         if (search_alt == depref_anns->end()) {
+            // update inverse results
+            swap_inverse_result(
+                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
             // Insert new second best announcement
             depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                   search->second));
             // Replace the old announcement with the higher priority
             search->second = ann;
         } else {
+            // update inverse results
+            swap_inverse_result(
+                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
             // Replace second best with the old priority announcement
             search_alt->second = search->second;
             // Replace the old announcement with the higher priority
