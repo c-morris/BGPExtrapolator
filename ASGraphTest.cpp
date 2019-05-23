@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "ASGraph.h"
 #include "AS.h"
 #include "RanGraph.h"
@@ -179,11 +180,24 @@ bool test_tarjan(){ // includes tarjan_helper()
     }
     
     ASGraph *graph3;
-    graph3 = ran_graph(20, 12);
-    graph3->to_graphviz(std::cout);
-    graph3->tarjan();
-    graph3->combine_components();
-    graph3->to_graphviz(std::cout);
+    srand(time(NULL));
+    for (int i = 0; i < 10000; i++) {
+        std::cout << "script " << i << std::endl;
+        graph3 = ran_graph(2000, 2000);
+        std::ofstream outfile;
+        std::string fname = "graph";
+        fname += std::to_string(i);
+        fname += ".py";
+        outfile.open(fname, std::ios::out | std::ios::trunc);
+        outfile << "import graphviz\ndot = graphviz.Digraph()\n";
+        //graph3->to_graphviz(outfile);
+        graph3->tarjan();
+        graph3->combine_components();
+        graph3->to_graphviz(outfile);
+        outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
+        outfile.close();
+        graph3->decide_ranks();
+    }
     return true;
 }
 

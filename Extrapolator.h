@@ -33,7 +33,8 @@ struct Extrapolator {
 
     void perform_propagation(bool test = false, int group_size = 1000, int max_total = 0);
     void send_all_announcements(uint32_t asn, 
-        bool to_peers_providers = false, 
+        bool to_providers = false, 
+        bool to_peers = false, 
         bool to_customers = false);
     void insert_announcements(std::vector<Prefix<>> *prefixes);
     void prop_anns_sent_to_peers_providers();

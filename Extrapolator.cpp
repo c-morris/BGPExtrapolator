@@ -148,7 +148,16 @@ void Extrapolator::propagate_up() {
             graph->ases->find(asn)->second->process_announcements();
            // auto test = graph->ases->find(asn)->second;
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
-                send_all_announcements(asn, true, false);
+                send_all_announcements(asn, true, false, false);
+            }
+        }
+    }
+    for (size_t level = 0; level < levels; level++) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            graph->ases->find(asn)->second->process_announcements();
+           // auto test = graph->ases->find(asn)->second;
+            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+                send_all_announcements(asn, false, true, false);
             }
         }
     }
@@ -164,7 +173,7 @@ void Extrapolator::propagate_down() {
             //std::cerr << "propagating down to " << asn << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
-                send_all_announcements(asn, false, true);
+                send_all_announcements(asn, false, false, true);
             }
         }
     }
@@ -281,12 +290,12 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
  * @param to_customers send to customers
  */
 void Extrapolator::send_all_announcements(uint32_t asn, 
-    bool to_peers_providers, 
+    bool to_providers, 
+    bool to_peers, 
     bool to_customers) {
     auto *source_as = graph->ases->find(asn)->second; 
-    if (to_peers_providers) {
+    if (to_providers) {
         std::vector<Announcement> anns_to_providers;
-        std::vector<Announcement> anns_to_peers;
         for (auto &ann : *source_as->all_anns) {
             if (ann.second.priority < 2) {
                 continue;
@@ -308,6 +317,32 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                     ann.second.prefix.netmask,
                     priority,
                     asn));
+        }
+        // send announcements
+        for (uint32_t provider_asn : *source_as->providers) {
+            auto *recving_as = graph->ases->find(provider_asn)->second;
+            recving_as->receive_announcements(anns_to_providers);
+            recving_as->process_announcements();
+        }
+    }
+
+    if (to_peers) {
+        std::vector<Announcement> anns_to_peers;
+        
+        for (auto &ann : *source_as->all_anns) {
+            if (ann.second.priority < 2) {
+                continue;
+            }
+            // priority is reduced by 0.01 for path length
+            // base priority is 2 for providers
+            // base priority is 1 for peers
+            // do not propagate any announcements from peers
+            double priority = ann.second.priority;
+            if(priority - floor(priority) == 0) {
+                priority = 2.99;
+            } else {
+                priority = priority - floor(priority) - 0.01 + 2;
+            }
 
             priority--; // subtract 1 for peers
             anns_to_peers.push_back(
@@ -318,12 +353,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                     priority,
                     asn));
         }
-        // send announcements
-        for (uint32_t provider_asn : *source_as->providers) {
-            auto *recving_as = graph->ases->find(provider_asn)->second;
-            recving_as->receive_announcements(anns_to_providers);
-            recving_as->process_announcements();
-        }
+
+
         for (uint32_t peer_asn : *source_as->peers) {
             auto *recving_as = graph->ases->find(peer_asn)->second;
             recving_as->receive_announcements(anns_to_peers);
