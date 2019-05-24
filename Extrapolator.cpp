@@ -27,10 +27,10 @@ Extrapolator::~Extrapolator(){
  *      3) A populated peers table
  *
  * @param test
- * @param iteration_size
- * @param max_total
+ * @param iteration_size number of rows to process each iteration, rounded down to the nearest full prefix
+ * @param max_total maximum number of rows to process, ignored if zero
  */
-void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
+void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t max_total){
     using namespace std;
    
     // Make tmp directory if it does not exist
@@ -54,89 +54,120 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
     
-    //Continue if not exeeding user defined or record max
-    std::cout << "Beginning propagation..." << std::endl;
+    std::cerr << "Beginning propagation..." << std::endl;
+    uint64_t offset = 0;
+    int iter = 0;
     
-    std::cerr << "Selecting Announcements..." << std::endl;
-    //Get all announcements (R) from the table 
-    pqxx::result R = querier->select_ann_records();
-    std::cerr << "Done." << std::endl;
+    while (offset < max_total) {
+        std::cerr << "Selecting Announcements..." << std::endl;
+        //Get all announcements (R) from the table 
+        pqxx::result R = querier->select_ann_records("", "", iteration_size, offset);
 
-    std::cerr << "Parsing path vectors..." << std::endl;
-    //For all returned announcements
-    for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
-        std::string s = R[j]["host"].c_str();
-        
-        Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
-        uint32_t origin;
-        R[j]["origin"].to(origin);
-        auto po = std::pair<Prefix<>,uint32_t>(p,origin);
-        // Add this prefix to the inverse results
-        if (graph->inverse_results->find(po) == graph->inverse_results->end()) {
-            graph->inverse_results->insert(std::pair<std::pair<Prefix<>,uint32_t>,std::set<uint32_t>*>(
-                po, new std::set<uint32_t>()));
-            // Put all non-stub ASNs in the set
-            for (uint32_t asn : *graph->non_stubs) {
-                graph->inverse_results->find(po)->second->insert(asn);
+        auto rsize = R.size();
+        std::cout << "rsize " << rsize << " offset " << offset << std::endl;
+        if (rsize == 0) { break; }
+        // remove last, potentially incomplete prefix
+        offset += iteration_size;
+        int count = 0;
+        Prefix<> p_end(R[rsize-1]["host"].c_str(), R[rsize-1]["netmask"].c_str());
+        for (int i = rsize - 1; i >= 0; i--) {
+            Prefix<> p(R[i]["host"].c_str(), R[i]["netmask"].c_str());
+            if (p != p_end) {
+                offset -= count;
+                break;
             }
+            count++;
         }
 
-        //This bit of code parses array-like strings from db to get AS_PATH.
-        //libpq++ doesn't currently support returning arrays.
-        // this should probably be a separate function
-        std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
-        std::string path_as_string(R[j]["as_path"].as<std::string>());
-        //remove brackets from string
-        path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '}'));
-        path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '{'));
 
-        //fill as_path vector from parsing string
-        std::string delimiter = ",";
-        std::string::size_type pos = 0;
-        std::string token;
-        while((pos = path_as_string.find(delimiter)) != std::string::npos){
-            token = path_as_string.substr(0,pos);
-            try {
-              as_path->push_back(std::stoul(token));
-            } catch(const std::out_of_range& e) {
-              std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl; 
-            } catch(const std::invalid_argument& e) {
-              std::cerr << "Invalid argument filling path vect, token was:"
-                << token << std::endl;
+        std::cerr << "Parsing path vectors..." << std::endl;
+        //For all returned announcements
+        for (pqxx::result::size_type j = 0; j<rsize-count; ++j){
+            std::string s = R[j]["host"].c_str();
+            
+            Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str()); 
+            uint32_t origin;
+            R[j]["origin"].to(origin);
+            auto po = std::pair<Prefix<>,uint32_t>(p,origin);
+            // Add this prefix to the inverse results
+            if (graph->inverse_results->find(po) == graph->inverse_results->end()) {
+                graph->inverse_results->insert(std::pair<std::pair<Prefix<>,uint32_t>,std::set<uint32_t>*>(
+                    po, new std::set<uint32_t>()));
+                // Put all non-stub ASNs in the set
+                for (uint32_t asn : *graph->non_stubs) {
+                    graph->inverse_results->find(po)->second->insert(asn);
+                }
             }
-            path_as_string.erase(0,pos + delimiter.length());
+
+            std::string path_as_string(R[j]["as_path"].as<std::string>());
+            std::vector<uint32_t> *as_path = parse_path(path_as_string);
+               
+            give_ann_to_as_path(as_path,p);
+            delete as_path;
         }
-        try {
-          as_path->push_back(std::stoul(path_as_string));
-        } catch(const std::out_of_range& e) {
-          std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl; 
-          std::cerr << "Path as string was: " << path_as_string << std::endl; 
-        } catch(const std::invalid_argument& e) {
-              if (path_as_string.length() == 0) {
-                std::cerr << "Ignoring announcement with empty as_path" <<
-                  std::endl;
-              } else {
-                std::cerr << "Invalid argument filling path vect (last), token was:"
-                  << token << std::endl;
-                std::cerr << "Path as string was: " << path_as_string << std::endl;
-              }
-        }
-   
-        give_ann_to_as_path(as_path,p);
-        delete as_path;
+        std::cerr << "Propagating..." << std::endl;
+        //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
+        propagate_up();
+        propagate_down();
+        save_results(iter);
+        graph->clear_announcements();
+        iter++;
     }
-    std::cerr << "Done." << std::endl;
-    std::cerr << "Propagating..." << std::endl;
-    //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
-    propagate_up();
-    propagate_down();
-    save_results(0);
-    graph->clear_announcements();
 
     // create an index on the results
-    if (!invert)
+    if (!invert) {
         querier->create_results_index();
+    }
 }
+
+/** Parse array-like strings from db to get AS_PATH in a vector.
+ *
+ * libpqxx doesn't currently support returning arrays, so we need to do this. 
+ * path_as_string is passed in as a copy on purpose, since otherwise it would
+ * be destroyed.
+ *
+ * @param path_as_string the as_path as a string returned by libpqxx
+ */
+std::vector<uint32_t>* Extrapolator::parse_path(std::string path_as_string) {
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
+    //remove brackets from string
+    path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '}'));
+    path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '{'));
+
+    //fill as_path vector from parsing string
+    std::string delimiter = ",";
+    std::string::size_type pos = 0;
+    std::string token;
+    while((pos = path_as_string.find(delimiter)) != std::string::npos){
+        token = path_as_string.substr(0,pos);
+        try {
+          as_path->push_back(std::stoul(token));
+        } catch(const std::out_of_range& e) {
+          std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl; 
+        } catch(const std::invalid_argument& e) {
+          std::cerr << "Invalid argument filling path vect, token was:"
+            << token << std::endl;
+        }
+        path_as_string.erase(0,pos + delimiter.length());
+    }
+    try {
+      as_path->push_back(std::stoul(path_as_string));
+    } catch(const std::out_of_range& e) {
+      std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl; 
+      std::cerr << "Path as string was: " << path_as_string << std::endl; 
+    } catch(const std::invalid_argument& e) {
+          if (path_as_string.length() == 0) {
+            std::cerr << "Ignoring announcement with empty as_path" <<
+              std::endl;
+          } else {
+            std::cerr << "Invalid argument filling path vect (last), token was:"
+              << token << std::endl;
+            std::cerr << "Path as string was: " << path_as_string << std::endl;
+          }
+    }
+    return as_path;
+}
+
 
 
 /** Propagate announcements from customers to peers and providers ASes.

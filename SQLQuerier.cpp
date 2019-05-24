@@ -99,23 +99,26 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
 
 /**
  */
-pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit){
+pqxx::result SQLQuerier::select_ann_records(std::string table_name, std::string prefix, int limit, uint64_t offset){
     std::string sql = "SELECT  host(prefix), netmask(prefix), as_path, origin FROM ";
     if (!table_name.empty()) {
       sql += table_name;
     } else {
       sql += announcements_table;
     }
+    sql += " ORDER BY prefix DESC";
     if (!prefix.empty()){
         sql += (" WHERE prefix = "+ std::string("'") + prefix + std::string("'"));
     }
     if (limit){
         sql += " LIMIT " + std::to_string(limit);
     }
+    if (offset) {
+        sql += " OFFSET " + std::to_string(offset);
+    }
     sql += ";";
     return execute(sql);
 }
-
 
 /**
  */

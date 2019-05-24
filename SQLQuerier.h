@@ -25,7 +25,7 @@ struct SQLQuerier {
     bool ram_tablespace;
     pqxx::result execute(std::string sql, bool insert = false);
     pqxx::result select_from_table(std::string table_name, int limit = 0);
-    pqxx::result select_ann_records(std::string table_name = "", std::string prefix = "", int limit = 0);
+    pqxx::result select_ann_records(std::string table_name = "", std::string prefix = "", int limit = 0, uint64_t offset = 0);
     pqxx::result select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit = 0);
     pqxx::result select_distinct_prefixes_from_table(std::string table_name);
     pqxx::result select_roa_prefixes(std::string table_name, int ip_family = IPV4);

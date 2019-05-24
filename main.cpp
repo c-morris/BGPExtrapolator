@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),
         (vm.count("ram") ? vm["ram"].as<bool>() : false));
     // TODO make 100 an option, make 800k something more reasonable
-    extrap->perform_propagation(true, 100, 10000000);
+    extrap->perform_propagation(true, 500000, 100000000000);
     delete extrap;
 
     return 0;
