@@ -64,7 +64,6 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
         pqxx::result R = querier->select_ann_records("", "", iteration_size, offset);
 
         auto rsize = R.size();
-        std::cout << "rsize " << rsize << " offset " << offset << std::endl;
         if (rsize == 0) { break; }
         // remove last, potentially incomplete prefix
         offset += iteration_size;
