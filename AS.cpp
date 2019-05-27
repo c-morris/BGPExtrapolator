@@ -234,6 +234,7 @@ void AS::clear_announcements() {
     all_anns->clear();
     incoming_announcements->clear();
     anns_sent_to_peers_providers->clear();
+    depref_anns->clear();
 }
 
 

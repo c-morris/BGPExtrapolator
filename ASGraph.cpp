@@ -33,6 +33,12 @@ ASGraph::~ASGraph() {
         delete c;
     }
     delete components;
+
+    for (auto const& i : *inverse_results) {
+        delete i.second;
+    }
+    delete inverse_results;
+
     delete component_translation;
     delete stubs_to_parents;
     delete non_stubs;
@@ -497,6 +503,10 @@ void ASGraph::clear_announcements(){
     for (auto const& as : *ases){
         as.second->clear_announcements();
     }
+    for (auto const& i : *inverse_results) {
+        delete i.second;
+    }
+    inverse_results->clear();
 }
 
 
