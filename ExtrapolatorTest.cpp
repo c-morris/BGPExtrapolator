@@ -190,35 +190,38 @@ bool test_send_all_announcements() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     e.give_ann_to_as_path(as_path, p);
     e.send_all_announcements(2, true, false, false); // to providers
-    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
           e.graph->ases->find(5)->second->all_anns->size() == 0 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to providers" << std::endl;
         return false;
     }
 
     e.send_all_announcements(2, false, true, false); // to peers
-    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->incoming_announcements->size() == 0 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to peers" << std::endl;
         return false;
     }
 
     e.send_all_announcements(2, false, false, true); // to customers
-    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to customers" << std::endl;
         return false;
     }
 

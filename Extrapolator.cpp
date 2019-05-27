@@ -358,7 +358,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         for (uint32_t provider_asn : *source_as->providers) {
             auto *recving_as = graph->ases->find(provider_asn)->second;
             recving_as->receive_announcements(anns_to_providers);
-            recving_as->process_announcements();
+            //recving_as->process_announcements();
         }
     }
 
@@ -394,7 +394,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         for (uint32_t peer_asn : *source_as->peers) {
             auto *recving_as = graph->ases->find(peer_asn)->second;
             recving_as->receive_announcements(anns_to_peers);
-            recving_as->process_announcements();
+            //recving_as->process_announcements();
         }
     }
 
@@ -421,7 +421,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         for (uint32_t customer_asn : *source_as->customers) {
             auto *recving_as = graph->ases->find(customer_asn)->second;
             recving_as->receive_announcements(anns_to_customers);
-            recving_as->process_announcements();
+            //recving_as->process_announcements();
         }
     }
 }
