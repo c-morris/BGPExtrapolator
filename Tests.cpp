@@ -26,6 +26,11 @@ BOOST_AUTO_TEST_CASE( Announcement_constructor ) {
         BOOST_CHECK( test_announcement() );
 }
 
+// NegativeAnnouncement.h
+BOOST_AUTO_TEST_CASE( NegativeAnnouncement_constructor ) {
+        BOOST_CHECK( test_nannouncement_constructor() );
+}
+
 // AS.cpp
 BOOST_AUTO_TEST_CASE( AS_add_neighbor ) {
         BOOST_CHECK( test_add_neighbor() );

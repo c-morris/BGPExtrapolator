@@ -36,6 +36,9 @@ bool test_to_sql();
 bool test_ann_os_operator();
 bool test_to_csv();
 
+// Prototypes for NegativeAnnouncement.cpp
+bool test_nannouncement_constructor();
+
 // Prototypes for ASTest.cpp
 bool test_add_neighbor();
 bool test_receive_announcement();
