@@ -7,6 +7,7 @@
 #include <limits.h>
 #include "ASGraph.h"
 #include "AS.h"
+#include "NegativeAnnouncement.h"
 
 ASGraph::ASGraph() {
     ases = new std::map<uint32_t, AS*>;    
