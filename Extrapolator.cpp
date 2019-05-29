@@ -9,7 +9,18 @@ Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r,
         std::string i, bool ram) {
     invert = invert_results;
     ram_tablespace = ram;
-    graph = new ASGraph;
+    graph = new ASGraph();
+    threads = new std::vector<std::thread>;
+    querier = new SQLQuerier(a, r, i, ram);
+}
+
+Extrapolator::Extrapolator(
+        std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix,
+        bool invert_results, std::string a, std::string r,
+        std::string i, bool ram) {
+    invert = invert_results;
+    ram_tablespace = ram;
+    graph = new ASGraph(attacker_asn, victim_asn, victim_prefix);
     threads = new std::vector<std::thread>;
     querier = new SQLQuerier(a, r, i, ram);
 }
@@ -174,13 +185,13 @@ void Extrapolator::propagate_down() {
 /** Record announcement on all ASes on as_path.
  *
  * The from_monitor attribute is set to true on these announcements so they are
- * not replaced later during propagation. 
+ * not replaced later during propagation.
  *
  * @param as_path List of ASes for this announcement.
  * @param prefix The prefix this announcement is for.
  * @param hop The first ASN on the as_path.
  */
-void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                        Prefix<> prefix) {
     // handle empty as_path
     if (as_path->empty())

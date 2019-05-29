@@ -21,7 +21,7 @@ struct ASGraph {
     std::map<uint32_t, AS*> *ases; // map of ASN to AS object
     std::vector<uint32_t> *ases_with_anns;
     std::vector<std::set<uint32_t>*> *ases_by_rank;
-    std::set<uint32_t> rov_asn_set;  // Set of ROV ASNs
+    std::set<uint32_t> *rov_asn_set;  // Set of ROV ASNs
     std::vector<std::vector<uint32_t>*> *components;
     std::map<uint32_t, uint32_t> *stubs_to_parents;
     std::vector<uint32_t> *non_stubs;
@@ -31,8 +31,13 @@ struct ASGraph {
     //This is used in Extrapolator.give_ann_to_as_path() where ASNs on an
     //announcements AS_PATH need to be located.
     std::map<uint32_t, uint32_t> *component_translation;
+    // Simulation variables
+    std::uint32_t attacker_asn;
+    std::uint32_t victim_asn;
+    std::string victim_prefix;
 
     ASGraph();
+    ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix);
     ~ASGraph();
     void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
     void decide_ranks();
@@ -49,6 +54,7 @@ struct ASGraph {
     void save_supernodes_to_db(SQLQuerier *querier);
     void save_non_stubs_to_db(SQLQuerier *querier);
     void to_graphviz(std::ostream &os);
+    void load_rov_ases(SQLQuerier *querier);
 
     uint32_t translate_asn(uint32_t asn);
     void clear_announcements();

@@ -1,5 +1,6 @@
 #ifndef RUN_TESTS
 #include <iostream>
+#include <cstdint>
 #include <boost/program_options.hpp>
 
 #include "AS.h"
@@ -7,12 +8,6 @@
 #include "Announcement.h"
 #include "Extrapolator.h"
 #include "Tests.h"
-
-
-// Simulation global variables
-extern uint32_t global_attacker_asn;
-extern uint32_t global_victim_asn;
-extern uint32_t global_victim_prefix;
 
 int main(int argc, char *argv[]) {
     using namespace std;
@@ -33,11 +28,11 @@ int main(int argc, char *argv[]) {
         ("announcements-table,a",
           po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
           "name of announcements table")
-        ("global_attacker_asn", po::value<uint32_t>(),
+        ("attacker_asn", po::value<std::uint32_t>(),
           "attacker ASN")
-        ("global_victim_asn", po::value<uint32_t>(),
+        ("victim_asn", po::value<std::uint32_t>(),
           "victim ASN")
-        ("global_victim_prefix", po::value<Prefix>(),
+        ("victim_prefix", po::value<string>(),
           "victim prefix (i.e. prefix attacker will announce)");
         //("batch-size", po::value<int>(&batch_size)->default_value(100),
         // "number of prefixes to be used in one propagation cycle")
@@ -53,11 +48,13 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialize simulation variables
-    global_attacker_asn = vm["global_attacker_asn"];
-    global_victim_asn = vm["global_victim_asn"];
-    global_victim_prefix = vm["global_victim_prefix"];
+    std::uint32_t attacker_asn = vm["attacker_asn"].as<std::uint32_t>();
+    std::uint32_t victim_asn = vm["victim_asn"].as<std::uint32_t>();
+    std::string victim_prefix = vm["victim_prefix"].as<std::string>();
 
-    Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
+    Extrapolator *extrap = new Extrapolator(
+        attacker_asn, victim_asn, victim_prefix,
+        vm["invert-results"].as<bool>(),
         (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
         (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
         (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),

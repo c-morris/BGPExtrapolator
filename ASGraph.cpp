@@ -7,6 +7,7 @@
 #include <limits.h>
 #include "ASGraph.h"
 #include "AS.h"
+#include "ROVAS.h"
 
 ASGraph::ASGraph() {
     ases = new std::map<uint32_t, AS*>;
@@ -17,6 +18,21 @@ ASGraph::ASGraph() {
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
     non_stubs = new std::vector<uint32_t>;
     inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
+}
+
+ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix) {
+  this->attacker_asn = attacker_asn;
+  this->victim_asn = victim_asn;
+  this->victim_prefix = victim_prefix;
+
+  ases = new std::map<uint32_t, AS*>;
+  ases_by_rank = new std::vector<std::set<uint32_t>*>;
+  rov_asn_set = new std::set<uint32_t>;
+  components = new std::vector<std::vector<uint32_t>*>;
+  component_translation = new std::map<uint32_t, uint32_t>;
+  stubs_to_parents = new std::map<uint32_t, uint32_t>;
+  non_stubs = new std::vector<uint32_t>;
+  inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
 }
 
 ASGraph::~ASGraph() {
@@ -56,13 +72,13 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
     if (search == ases->end()) {
         // if AS not yet in graph, create it
         // What kind of AS is it (Regular BGP or ROV)?
-        auto rov_search = rov_asn_set.find(asn);
-        if (search == ases->end()) {  // Check if it's not in the ROV set
+        auto rov_search = rov_asn_set->find(asn);
+        if (rov_search == rov_asn_set->end()) {  // Check if it's not in the ROV set
           // Create a BGP AS
           ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
         } else {
           // Create a ROV AS
-          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVAS(asn, inverse_results)));
+          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results)));
         }
         search = ases->find(asn);
     }
@@ -110,7 +126,7 @@ void ASGraph::process(SQLQuerier *querier){
 void ASGraph::load_rov_ases(SQLQuerier *querier) {
   pqxx::result rov_ases_result = querier->select_rov_ases(ROV_ASES_TABLE);
   for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c){
-      rov_asn_set.insert(c["asn"].as<uint32_t>());
+      rov_asn_set->insert(c["asn"].as<uint32_t>());
   }
 }
 
@@ -123,7 +139,7 @@ void ASGraph::load_rov_ases(SQLQuerier *querier) {
  */
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
     //TODO add table names to config
-    load_rov_ases(load_rov_ases); // initialize map of ASes
+    load_rov_ases(querier); // initialize map of ASes
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c["peer_as_1"].as<uint32_t>(),

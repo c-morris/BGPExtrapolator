@@ -4,14 +4,14 @@
  *
  * AS objects represent a node in the AS Graph.
  */
-AS::AS(uint32_t myasn, 
-    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
+AS::AS(uint32_t myasn,
+    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv,
     std::set<uint32_t> *prov, std::set<uint32_t> *peer,
     std::set<uint32_t> *cust) {
     asn = myasn;
     // Initialize AS to invalid rank
-    rank = -1;     
-    
+    rank = -1;
+
     // Generate AS relationship sets
     if (prov == NULL) {
         providers = new std::set<uint32_t>;
@@ -97,7 +97,7 @@ void AS::printDebug() {
 }
 
 
-/** Push the received announcements to the incoming_announcements vector. 
+/** Push the received announcements to the incoming_announcements vector.
  *
  * Note that this differs from the Python version in that it does not store
  * a dict of (prefix -> list of announcements for that prefix).
@@ -113,16 +113,16 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
 }
 
 
-/** 
+/**
  *
  * may need to put in incoming_announcements for speed
  * called by ASGraph.give_ann_to_as_path()
- */ 
+ */
 void AS::receive_announcement(Announcement &ann) {
     // Check for existing annoucement for prefix
     auto search = all_anns->find(ann.prefix);
     auto search_alt = depref_anns->find(ann.prefix);
-    
+
     // No announcement found for incoming announcement prefix
     if (search == all_anns->end()) {
         all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
@@ -140,7 +140,7 @@ void AS::receive_announcement(Announcement &ann) {
         // Default to lower ASN
         if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
             if (search_alt == depref_anns->end()) {
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix,
                                                                       search->second));
                 search->second = ann;
             } else {
@@ -149,7 +149,7 @@ void AS::receive_announcement(Announcement &ann) {
             }
         } else {                                // Old ASN is lower
             if (search_alt == depref_anns->end()) {
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix,
                                                                       ann));
             } else {
                 // Replace second best with the old priority announcement
@@ -161,7 +161,7 @@ void AS::receive_announcement(Announcement &ann) {
     } else if (ann.priority > search->second.priority) {
         if (search_alt == depref_anns->end()) {
             // Insert new second best announcement
-            depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+            depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix,
                                                                   search->second));
             // Replace the old announcement with the higher priority
             search->second = ann;
@@ -171,7 +171,7 @@ void AS::receive_announcement(Announcement &ann) {
             // Replace the old announcement with the higher priority
             search->second = ann;
         }
-    
+
     // Check second best announcements priority for best path selection
     } else {
         if (search_alt == depref_anns->end()) {
@@ -185,8 +185,8 @@ void AS::receive_announcement(Announcement &ann) {
 }
 
 
-/** Iterate through incoming_announcements and keep only the best. 
- * 
+/** Iterate through incoming_announcements and keep only the best.
+ *
  * Meant to approximate BGP best path selection.
  */
 void AS::process_announcements() {
@@ -200,7 +200,7 @@ void AS::process_announcements() {
 }
 
 
-/** Clear all announcement collections. 
+/** Clear all announcement collections.
  */
 void AS::clear_announcements() {
     all_anns->clear();
@@ -209,9 +209,9 @@ void AS::clear_announcements() {
 }
 
 
-/** Check if annoucement is already recv'd by this AS. 
+/** Check if annoucement is already recv'd by this AS.
  *
- * @param ann Announcement to check for. 
+ * @param ann Announcement to check for.
  * @return True if recv'd, false otherwise.
  */
 bool AS::already_received(Announcement &ann) {
@@ -259,4 +259,3 @@ std::ostream& AS::stream_announcements(std::ostream &os){
     }
     return os;
 }
-

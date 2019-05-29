@@ -25,6 +25,11 @@ struct Extrapolator {
     Extrapolator(bool invert_results=true, std::string
         a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE, std::string
         i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
+    Extrapolator(
+        std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix,
+        bool invert_results=true, std::string
+        a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE, std::string
+        i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
     ~Extrapolator();
     std::set<uint32_t> *ases_with_anns;
     std::vector<std::thread> *threads;
@@ -32,14 +37,14 @@ struct Extrapolator {
     bool ram_tablespace;
 
     void perform_propagation(bool test = false, int group_size = 1000, int max_total = 0);
-    void send_all_announcements(uint32_t asn, 
-        bool to_peers_providers = false, 
+    void send_all_announcements(uint32_t asn,
+        bool to_peers_providers = false,
         bool to_customers = false);
     void insert_announcements(std::vector<Prefix<>> *prefixes);
     void prop_anns_sent_to_peers_providers();
     void propagate_up();
     void propagate_down();
-    void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+    void give_ann_to_as_path(std::vector<uint32_t>* as_path,
         Prefix<> prefix);
     void save_results(int iteration);
     void invert_results(void);
