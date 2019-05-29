@@ -5,6 +5,7 @@
 #include <iostream>
 #include <set>
 #include "Prefix.h"
+#include "Announcement.h"
 
 /** Supports ROV++ negative announcements. 
  * 
@@ -30,6 +31,12 @@ struct NegativeAnnouncement: public Announcement {
         null_routed = n_routed;
     }
 
+    /** Add a subprefix to the set of null_routed subprefixes.
+     */
+    void null_route_subprefix(Prefix<> p) {
+        // maybe add error checking to confirm p is a subprefix of this->prefix
+        null_routed.insert(p);
+    }
 
     /** Defines the << operator for the NegativeAnnouncements
      *
@@ -43,7 +50,12 @@ struct NegativeAnnouncement: public Announcement {
         os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
             ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
             << std::endl << "Priority:\t" << ann.priority << std::endl 
-            << "Recv'd from:\t" << std::dec << ann.received_from_asn;
+            << "Recv'd from:\t" << std::dec << ann.received_from_asn << std::endl;
+        os << "Null-routed subprefixes: ";
+        for (auto p : ann.null_routed) {
+            os << p.to_cidr() << " ";
+        }
+        os << std::endl;
         return os;
     }
 };
