@@ -133,9 +133,12 @@ void ASGraph::process(SQLQuerier *querier){
 *
 */
 void ASGraph::load_rov_ases(SQLQuerier *querier) {
-  pqxx::result rov_ases_result = querier->select_rov_ases(ROV_ASES_TABLE);
-  for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c){
+  pqxx::result rov_ases_result = querier->select_rov_ases(ASES_TABLE);
+  for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c) {
+    if (c["as_type"].as<std::string>() == "rov") {
+      std::cout << "ROV AS " << c["asn"].as<uint32_t>() << std::endl;
       rov_asn_set->insert(c["asn"].as<uint32_t>());
+    }
   }
 }
 

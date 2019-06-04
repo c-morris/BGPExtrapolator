@@ -1,9 +1,9 @@
 #include <cstdint>
-#include "ROVAS.h"
+#include "ROVppAS.h"
 #include "NegativeAnnouncement.h"
 
 
-ROVAS::ROVAS(uint32_t myasn,
+ROVppAS::ROVppAS(uint32_t myasn,
     std::uint32_t attacker_asn,
     std::uint32_t victim_asn,
     std::string victim_prefix,
@@ -52,7 +52,7 @@ ROVAS::ROVAS(uint32_t myasn,
   onStack = false;
 }
 
-ROVAS::~ROVAS() {
+ROVppAS::~ROVppAS() {
     delete incoming_announcements;
     delete anns_sent_to_peers_providers;
     delete all_anns;
@@ -64,13 +64,14 @@ ROVAS::~ROVAS() {
 }
 
 
-bool ROVAS::pass_rov(Announcement &ann) {
+bool ROVppAS::pass_rov(Announcement &ann) {
   if (ann.origin == attacker_asn) {
     return false;
   } else {
     return true;
   }
 }
+
 
 /** Push the received announcements to the incoming_announcements vector.
  *
@@ -79,13 +80,59 @@ bool ROVAS::pass_rov(Announcement &ann) {
  *
  * @param announcements to be pushed onto the incoming_announcements vector.
  */
-void ROVAS::receive_announcements(std::vector<Announcement> &announcements) {
+void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
         // Check if the Announcement is valid
         if (pass_rov(ann)) {
           // Do not check for duplicates here
           // push_back makes a copy of the announcement
           incoming_announcements->push_back(ann);
+        } else {
+          // Create a NegativeAnnouncement
+          // Extract prefix to Blackhole
+          Prefix<> s("137.99.0.0", "255.255.255.0");
+          Prefix<> p("137.99.0.0", "255.255.0.0");
+          NegativeAnnouncement neg_ann = NegativeAnnouncement(13796, p.addr, p.netmask, 22742, std::set<Prefix<>>());
+          neg_ann.null_route_subprefix(s);
+          incoming_announcements->push_back(neg_ann);
         }
     }
+}
+
+
+bool ROVppAS::should_make_neg_announcement(Announcement &announcement) {
+  // TODO: Implement
+}
+
+bool ROVppAS::does_path_intersect(std::vector<uint32_t> p1, std::vector<uint32_t> p2) {
+
+  for (std::size_t i=1; i<p1.size()-1; ++i) {
+    for (std::size_t j=1; j<p1.size()-1; ++j) {
+      if (p1[i] == p2[j]) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::vector<uint32_t> ROVppAS::get_as_path(Announcement &announcement) {
+  // will hold the entire path from origin to this node,
+  // including itself
+  std::vector<uint32_t> as_path;
+  uint32_t current_asn = asn;  // it's own ASN
+  AS * curr_as = this;
+  uint32_t origin_asn = announcement.origin;  // the origin AS of the announcement
+  Announcement * curr_announcement = &announcement;
+  // Add to the path vector until we reach the origin
+  while (current_asn != origin_asn) {
+    // append to end of ASN path
+    as_path.push_back(current_asn);
+    // Get the previous AS in path
+    current_asn = curr_announcement->received_from_asn;
+    curr_as = as_graph->get_as_with_asn(current_asn);
+    // Get same announcement from previous AS
+    curr_announcement = curr_as->get_ann_for_prefix(curr_announcement->prefix);
+  }
+  return as_path;
 }
