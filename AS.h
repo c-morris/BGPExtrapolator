@@ -13,6 +13,7 @@
 #include "Announcement.h"
 #include "Prefix.h"
 
+
 struct AS {
     uint32_t asn;       // Autonomous System Number
     bool visited;       // Marks something
@@ -53,6 +54,7 @@ struct AS {
     void process_announcements();
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
     std::ostream& stream_announcements(std:: ostream &os);
+    Announcement * get_ann_for_prefix(Prefix<> prefix);
 };
 
 #endif

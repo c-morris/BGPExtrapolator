@@ -79,13 +79,21 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
           ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
         } else {
           // Create a ROV AS
-          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results)));
+          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this)));
         }
         search = ases->find(asn);
     }
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
+
+AS * ASGraph::get_as_with_asn(uint32_t asn) {
+  auto search = ases->find(asn);
+  if(search == ases->end()){
+     return NULL;
+  }
+  return search->second;
+}
 
 /** Translates asn to asn of component it belongs to in graph.
  *

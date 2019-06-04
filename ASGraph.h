@@ -17,6 +17,7 @@ struct SQLQuerier;
 #include "SQLQuerier.h"
 #include "TableNames.h"
 
+
 struct ASGraph {
     std::map<uint32_t, AS*> *ases; // map of ASN to AS object
     std::vector<uint32_t> *ases_with_anns;
@@ -55,6 +56,7 @@ struct ASGraph {
     void save_non_stubs_to_db(SQLQuerier *querier);
     void to_graphviz(std::ostream &os);
     void load_rov_ases(SQLQuerier *querier);
+    AS * get_as_with_asn(uint32_t asn);
 
     uint32_t translate_asn(uint32_t asn);
     void clear_announcements();

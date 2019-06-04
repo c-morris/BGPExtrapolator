@@ -23,13 +23,13 @@ struct Announcement {
         priority = 0.0;
         from_monitor = false;
     }
-    
+
     /** Priority constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        double pr, uint32_t from_asn, bool a_from_monitor = false) 
-        : Announcement(aorigin, aprefix, anetmask, from_asn) { 
-        priority = pr; 
+        double pr, uint32_t from_asn, bool a_from_monitor = false)
+        : Announcement(aorigin, aprefix, anetmask, from_asn) {
+        priority = pr;
         from_monitor = a_from_monitor;
     }
 
@@ -37,15 +37,15 @@ struct Announcement {
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.
-     * 
+     *
      * @param &os Specifies the output stream.
      * @param ann Specifies the announcement from which data is pulled.
      * @return The output stream parameter for reuse/recursion.
-     */ 
+     */
     friend std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
-        os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
+        os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex <<
             ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
-            << std::endl << "Priority:\t" << ann.priority << std::endl 
+            << std::endl << "Priority:\t" << ann.priority << std::endl
             << "Recv'd from:\t" << std::dec << ann.received_from_asn;
         return os;
     }
@@ -55,7 +55,7 @@ struct Announcement {
      *
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
-     */ 
+     */
     std::ostream& to_csv(std::ostream &os){
         os << prefix.to_cidr() << "," << origin << "," << received_from_asn << std::endl;
         return os;

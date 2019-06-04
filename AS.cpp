@@ -259,3 +259,11 @@ std::ostream& AS::stream_announcements(std::ostream &os){
     }
     return os;
 }
+
+Announcement * AS::get_ann_for_prefix(Prefix<> prefix) {
+  auto search = all_anns->find(prefix);
+  if(search == all_anns->end()){
+     return NULL;
+  }
+  return &(search->second);
+}
