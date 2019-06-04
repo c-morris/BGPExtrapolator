@@ -38,10 +38,10 @@ Extrapolator::~Extrapolator(){
  *      3) A populated peers table
  *
  * @param test
- * @param iteration_size
- * @param max_total
+ * @param iteration_size number of rows to process each iteration, rounded down to the nearest full prefix
+ * @param max_total maximum number of rows to process, ignored if zero
  */
-void Extrapolator::perform_propagation(bool test, int iteration_size, int max_total){
+void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t max_total){
     using namespace std;
 
     // Make tmp directory if it does not exist
@@ -65,89 +65,119 @@ void Extrapolator::perform_propagation(bool test, int iteration_size, int max_to
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
 
-    //Continue if not exeeding user defined or record max
-    std::cout << "Beginning propagation..." << std::endl;
+    std::cerr << "Beginning propagation..." << std::endl;
+    uint64_t offset = 0;
+    int iter = 0;
 
-    std::cerr << "Selecting Announcements..." << std::endl;
-    //Get all announcements (R) from the table
-    pqxx::result R = querier->select_ann_records();
-    std::cerr << "Done." << std::endl;
+    while (offset < max_total) {
+        std::cerr << "Selecting Announcements..." << std::endl;
+        //Get all announcements (R) from the table
+        pqxx::result R = querier->select_ann_records("", "", iteration_size, offset);
 
-    std::cerr << "Parsing path vectors..." << std::endl;
-    //For all returned announcements
-    for (pqxx::result::size_type j = 0; j!=R.size(); ++j){
-        std::string s = R[j]["host"].c_str();
-
-        Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str());
-        uint32_t origin;
-        R[j]["origin"].to(origin);
-        auto po = std::pair<Prefix<>,uint32_t>(p,origin);
-        // Add this prefix to the inverse results
-        if (graph->inverse_results->find(po) == graph->inverse_results->end()) {
-            graph->inverse_results->insert(std::pair<std::pair<Prefix<>,uint32_t>,std::set<uint32_t>*>(
-                po, new std::set<uint32_t>()));
-            // Put all non-stub ASNs in the set
-            for (uint32_t asn : *graph->non_stubs) {
-                graph->inverse_results->find(po)->second->insert(asn);
+        auto rsize = R.size();
+        if (rsize == 0) { break; }
+        // remove last, potentially incomplete prefix
+        offset += iteration_size;
+        int count = 0;
+        Prefix<> p_end(R[rsize-1]["host"].c_str(), R[rsize-1]["netmask"].c_str());
+        for (int i = rsize - 1; i >= 0; i--) {
+            Prefix<> p(R[i]["host"].c_str(), R[i]["netmask"].c_str());
+            if (p != p_end) {
+                offset -= count;
+                break;
             }
+            count++;
         }
 
-        //This bit of code parses array-like strings from db to get AS_PATH.
-        //libpq++ doesn't currently support returning arrays.
-        // this should probably be a separate function
-        std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
-        std::string path_as_string(R[j]["as_path"].as<std::string>());
-        //remove brackets from string
-        path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '}'));
-        path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '{'));
 
-        //fill as_path vector from parsing string
-        std::string delimiter = ",";
-        std::string::size_type pos = 0;
-        std::string token;
-        while((pos = path_as_string.find(delimiter)) != std::string::npos){
-            token = path_as_string.substr(0,pos);
-            try {
-              as_path->push_back(std::stoul(token));
-            } catch(const std::out_of_range& e) {
-              std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl;
-            } catch(const std::invalid_argument& e) {
-              std::cerr << "Invalid argument filling path vect, token was:"
-                << token << std::endl;
+        std::cerr << "Parsing path vectors..." << std::endl;
+        //For all returned announcements
+        for (pqxx::result::size_type j = 0; j<rsize-count; ++j){
+            std::string s = R[j]["host"].c_str();
+
+            Prefix<> p(R[j]["host"].c_str(),R[j]["netmask"].c_str());
+            uint32_t origin;
+            R[j]["origin"].to(origin);
+            auto po = std::pair<Prefix<>,uint32_t>(p,origin);
+            // Add this prefix to the inverse results
+            if (graph->inverse_results->find(po) == graph->inverse_results->end()) {
+                graph->inverse_results->insert(std::pair<std::pair<Prefix<>,uint32_t>,std::set<uint32_t>*>(
+                    po, new std::set<uint32_t>()));
+                // Put all non-stub ASNs in the set
+                for (uint32_t asn : *graph->non_stubs) {
+                    graph->inverse_results->find(po)->second->insert(asn);
+                }
             }
-            path_as_string.erase(0,pos + delimiter.length());
-        }
-        try {
-          as_path->push_back(std::stoul(path_as_string));
-        } catch(const std::out_of_range& e) {
-          std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl;
-          std::cerr << "Path as string was: " << path_as_string << std::endl;
-        } catch(const std::invalid_argument& e) {
-              if (path_as_string.length() == 0) {
-                std::cerr << "Ignoring announcement with empty as_path" <<
-                  std::endl;
-              } else {
-                std::cerr << "Invalid argument filling path vect (last), token was:"
-                  << token << std::endl;
-                std::cerr << "Path as string was: " << path_as_string << std::endl;
-              }
-        }
 
-        give_ann_to_as_path(as_path,p);
-        delete as_path;
+            std::string path_as_string(R[j]["as_path"].as<std::string>());
+            std::vector<uint32_t> *as_path = parse_path(path_as_string);
+
+            give_ann_to_as_path(as_path,p);
+            delete as_path;
+        }
+        std::cerr << "Propagating..." << std::endl;
+        //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
+        propagate_up();
+        propagate_down();
+        save_results(iter);
+        graph->clear_announcements();
+        iter++;
     }
-    std::cerr << "Done." << std::endl;
-    std::cerr << "Propagating..." << std::endl;
-    //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
-    propagate_up();
-    propagate_down();
-    save_results(0);
-    graph->clear_announcements();
 
     // create an index on the results
-    if (!invert)
+    if (!invert) {
         querier->create_results_index();
+    }
 }
+
+/** Parse array-like strings from db to get AS_PATH in a vector.
+ *
+ * libpqxx doesn't currently support returning arrays, so we need to do this.
+ * path_as_string is passed in as a copy on purpose, since otherwise it would
+ * be destroyed.
+ *
+ * @param path_as_string the as_path as a string returned by libpqxx
+ */
+std::vector<uint32_t>* Extrapolator::parse_path(std::string path_as_string) {
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
+    //remove brackets from string
+    path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '}'));
+    path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '{'));
+
+    //fill as_path vector from parsing string
+    std::string delimiter = ",";
+    std::string::size_type pos = 0;
+    std::string token;
+    while((pos = path_as_string.find(delimiter)) != std::string::npos){
+        token = path_as_string.substr(0,pos);
+        try {
+          as_path->push_back(std::stoul(token));
+        } catch(const std::out_of_range& e) {
+          std::cerr << "Caught out of range error filling path vect, token was: " << token << std::endl;
+        } catch(const std::invalid_argument& e) {
+          std::cerr << "Invalid argument filling path vect, token was:"
+            << token << std::endl;
+        }
+        path_as_string.erase(0,pos + delimiter.length());
+    }
+    try {
+      as_path->push_back(std::stoul(path_as_string));
+    } catch(const std::out_of_range& e) {
+      std::cerr << "Caught out of range error filling path vect (last), token was: " << token << std::endl;
+      std::cerr << "Path as string was: " << path_as_string << std::endl;
+    } catch(const std::invalid_argument& e) {
+          if (path_as_string.length() == 0) {
+            std::cerr << "Ignoring announcement with empty as_path" <<
+              std::endl;
+          } else {
+            std::cerr << "Invalid argument filling path vect (last), token was:"
+              << token << std::endl;
+            std::cerr << "Path as string was: " << path_as_string << std::endl;
+          }
+    }
+    return as_path;
+}
+
 
 
 /** Propagate announcements from customers to peers and providers ASes.
@@ -159,7 +189,16 @@ void Extrapolator::propagate_up() {
             graph->ases->find(asn)->second->process_announcements();
            // auto test = graph->ases->find(asn)->second;
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
-                send_all_announcements(asn, true, false);
+                send_all_announcements(asn, true, false, false);
+            }
+        }
+    }
+    for (size_t level = 0; level < levels; level++) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            graph->ases->find(asn)->second->process_announcements();
+           // auto test = graph->ases->find(asn)->second;
+            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+                send_all_announcements(asn, false, true, false);
             }
         }
     }
@@ -175,7 +214,7 @@ void Extrapolator::propagate_down() {
             //std::cerr << "propagating down to " << asn << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
-                send_all_announcements(asn, false, true);
+                send_all_announcements(asn, false, false, true);
             }
         }
     }
@@ -191,8 +230,7 @@ void Extrapolator::propagate_down() {
  * @param prefix The prefix this announcement is for.
  * @param hop The first ASN on the as_path.
  */
-void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
-                                       Prefix<> prefix) {
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix) {
     // handle empty as_path
     if (as_path->empty())
         return;
@@ -278,6 +316,13 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                 as_on_path->anns_sent_to_peers_providers->push_back(ann);
             }
             as_on_path->receive_announcement(ann);
+            if (graph->inverse_results != NULL) {
+                auto set = graph->inverse_results->find(
+                    std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+                if (set != graph->inverse_results->end()) {
+                    set->second->erase(as_on_path->asn);
+                }
+            }
         }
     }
 }
@@ -292,12 +337,12 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
  * @param to_customers send to customers
  */
 void Extrapolator::send_all_announcements(uint32_t asn,
-    bool to_peers_providers,
+    bool to_providers,
+    bool to_peers,
     bool to_customers) {
     auto *source_as = graph->ases->find(asn)->second;
-    if (to_peers_providers) {
+    if (to_providers) {
         std::vector<Announcement> anns_to_providers;
-        std::vector<Announcement> anns_to_peers;
         for (auto &ann : *source_as->all_anns) {
             if (ann.second.priority < 2) {
                 continue;
@@ -319,6 +364,32 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                     ann.second.prefix.netmask,
                     priority,
                     asn));
+        }
+        // send announcements
+        for (uint32_t provider_asn : *source_as->providers) {
+            auto *recving_as = graph->ases->find(provider_asn)->second;
+            recving_as->receive_announcements(anns_to_providers);
+            //recving_as->process_announcements();
+        }
+    }
+
+    if (to_peers) {
+        std::vector<Announcement> anns_to_peers;
+
+        for (auto &ann : *source_as->all_anns) {
+            if (ann.second.priority < 2) {
+                continue;
+            }
+            // priority is reduced by 0.01 for path length
+            // base priority is 2 for providers
+            // base priority is 1 for peers
+            // do not propagate any announcements from peers
+            double priority = ann.second.priority;
+            if(priority - floor(priority) == 0) {
+                priority = 2.99;
+            } else {
+                priority = priority - floor(priority) - 0.01 + 2;
+            }
 
             priority--; // subtract 1 for peers
             anns_to_peers.push_back(
@@ -329,16 +400,12 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                     priority,
                     asn));
         }
-        // send announcements
-        for (uint32_t provider_asn : *source_as->providers) {
-            auto *recving_as = graph->ases->find(provider_asn)->second;
-            recving_as->receive_announcements(anns_to_providers);
-            recving_as->process_announcements();
-        }
+
+
         for (uint32_t peer_asn : *source_as->peers) {
             auto *recving_as = graph->ases->find(peer_asn)->second;
             recving_as->receive_announcements(anns_to_peers);
-            recving_as->process_announcements();
+            //recving_as->process_announcements();
         }
     }
 
@@ -365,7 +432,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         for (uint32_t customer_asn : *source_as->customers) {
             auto *recving_as = graph->ases->find(customer_asn)->second;
             recving_as->receive_announcements(anns_to_customers);
-            recving_as->process_announcements();
+            //recving_as->process_announcements();
         }
     }
 }

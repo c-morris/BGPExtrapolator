@@ -51,6 +51,12 @@ ASGraph::~ASGraph() {
         delete c;
     }
     delete components;
+
+    for (auto const& i : *inverse_results) {
+        delete i.second;
+    }
+    delete inverse_results;
+
     delete component_translation;
     delete stubs_to_parents;
     delete non_stubs;
@@ -124,6 +130,18 @@ void ASGraph::process(SQLQuerier *querier){
     remove_stubs(querier);
     tarjan();
     combine_components();
+
+    // debug
+    //std::ofstream outfile;
+    //std::string fname = "graph";
+    //fname += std::to_string(0);
+    //fname += ".py";
+    //outfile.open(fname, std::ios::out | std::ios::trunc);
+    //outfile << "import graphviz\ndot = graphviz.Digraph()\n";
+    //this->to_graphviz(outfile);
+    //outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
+    //outfile.close();
+
     save_supernodes_to_db(querier);
     decide_ranks();
     return;
@@ -334,11 +352,11 @@ void ASGraph::decide_ranks() {
             as.second->rank = 0;
         }
     }
-    std::cerr << "Started rank 0" << std::endl;
+    //std::cerr << "Started rank 0" << std::endl;
 
     int i = 0;
     while (!(*ases_by_rank)[i]->empty()) {
-        std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
+        //std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
         ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
@@ -353,23 +371,10 @@ void ASGraph::decide_ranks() {
                     }
                 }
             }
-            //For all peers of this AS
-            for (const uint32_t &peer_asn : *ases->find(asn)->second->peers) {
-                AS* peer_AS = ases->find(translate_asn(peer_asn))->second;
-                int oldrank = peer_AS->rank;
-                if (oldrank < i) {
-                    peer_AS->rank = i;
-                    (*ases_by_rank)[i]->insert(peer_asn);
-                    if (oldrank != -1) {
-                        (*ases_by_rank)[oldrank]->erase(peer_asn);
-                    }
-                }
-            }
         }
-        std::cerr << "Completed rank " << i << std::endl;
+        //std::cerr << "Completed rank " << i << std::endl;
         i++;
     }
-    std::cerr << "Done" << std::endl;
     return;
 }
 
@@ -380,14 +385,14 @@ void ASGraph::decide_ranks() {
 void ASGraph::tarjan() {
     int index = 0;
     std::stack<AS*> s;
-    std::cerr << "Starting Tarjan..." << std::endl;
+    int count = 0;
+    int uc_count = 0;
 
     for (auto &as : *ases) {
         if (as.second->index == -1){
             tarjan_helper(as.second, index, s);
         }
     }
-    std::cerr << "Final index: " << index << std::endl;
     return;
 }
 
@@ -419,10 +424,8 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
         components->push_back(component);
-        /* DEBUG
-        if (component->size() > 1)
-            std::cerr << "Root node found: " << as->asn << " of size " << component->size() << std::endl;
-        */
+        //if (component->size() > 1)
+        //    std::cerr << "Root node found: " << as->asn << " of size " << component->size() << std::endl;
     }
 }
 
@@ -549,6 +552,10 @@ void ASGraph::clear_announcements(){
     for (auto const& as : *ases){
         as.second->clear_announcements();
     }
+    for (auto const& i : *inverse_results) {
+        delete i.second;
+    }
+    inverse_results->clear();
 }
 
 
@@ -565,7 +572,6 @@ void ASGraph::printDebug() {
 /** Output python code for making graphviz digraph.
  */
 void ASGraph::to_graphviz(std::ostream &os) {
-    os << "--Begin Python Code--" << std::endl;
     std::string id = "";
     for (auto const &as : *ases) {
         os << "dot.node('" << as.second->asn << "', '" << as.second->asn << "')" << std::endl;
@@ -573,7 +579,6 @@ void ASGraph::to_graphviz(std::ostream &os) {
             os << "dot.edge('" << as.second->asn << "', '" << customer << "')" << std::endl;
         }
     }
-    os << "--End Python Code--" << std::endl;
 }
 
 

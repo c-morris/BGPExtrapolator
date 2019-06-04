@@ -36,12 +36,14 @@ struct Extrapolator {
     bool invert;
     bool ram_tablespace;
 
-    void perform_propagation(bool test = false, int group_size = 1000, int max_total = 0);
+    void perform_propagation(bool test = false, size_t group_size = 1000, size_t max_total = 0);
     void send_all_announcements(uint32_t asn,
-        bool to_peers_providers = false,
+        bool to_providers = false, 
+        bool to_peers = false,
         bool to_customers = false);
     void insert_announcements(std::vector<Prefix<>> *prefixes);
     void prop_anns_sent_to_peers_providers();
+    std::vector<uint32_t>* parse_path(std::string path_as_string);
     void propagate_up();
     void propagate_down();
     void give_ann_to_as_path(std::vector<uint32_t>* as_path,

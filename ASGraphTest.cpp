@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "ASGraph.h"
 #include "AS.h"
 #include "RanGraph.h"
@@ -92,7 +93,7 @@ bool test_decide_ranks(){
     if (graph.ases->find(1)->second->rank == 2 &&
         graph.ases->find(2)->second->rank == 0 &&
         graph.ases->find(3)->second->rank == 1 &&
-        graph.ases->find(4)->second->rank == 1 &&
+        graph.ases->find(4)->second->rank == 0 &&
         graph.ases->find(5)->second->rank == 0 &&
         graph.ases->find(6)->second->rank == 0) {
         return true;
@@ -179,9 +180,14 @@ bool test_tarjan(){ // includes tarjan_helper()
     }
    
     ASGraph *graph3;
-    graph3 = ran_graph(5, 10);
-    graph3->to_graphviz(std::cout);
-    graph3->tarjan();
+    srand(time(NULL));
+    for (int i = 0; i < 100; i++) {
+        graph3 = ran_graph(100, 100);
+        graph3->tarjan();
+        graph3->combine_components();
+        // if this terminates, there are no cycles in the graph
+        graph3->decide_ranks();
+    }
     return true;
 }
 
@@ -305,7 +311,7 @@ bool test_combine_components(){
     }
 
     // Find supernode AS
-    std::cout << graph2 << std::endl;
+    //std::cout << graph2 << std::endl;
     auto SCC1 = graph2.ases->find(10);
     auto SCC2 = graph2.ases->find(13);
     AS *supernode1 = SCC1->second;
@@ -321,7 +327,6 @@ bool test_combine_components(){
         std::cerr << "Incorrect supernode peer set." << std::endl;
         return false;
     }
-
     return true;
 }
 

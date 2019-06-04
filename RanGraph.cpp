@@ -6,7 +6,7 @@
 
 ASGraph* ran_graph(int num_edges, int num_vertices) {
     ASGraph* graph = new ASGraph;
-    srand(time(NULL));
+    //srand(time(NULL));
     //v = 11+rand()%10;
     //e = rand()%((v*(v-1))/2);
     int i; 

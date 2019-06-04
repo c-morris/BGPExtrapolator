@@ -19,9 +19,10 @@ struct AS {
     bool visited;       // Marks something
     int rank;           // Rank in ASGraph heirarchy for propagation
 
-    // These are for something
-    std::vector<Announcement> *anns_sent_to_peers_providers;
+    // Defer processing of incoming announcements for efficiency
     std::vector<Announcement> *incoming_announcements;
+    // This vector is for something?
+    std::vector<Announcement> *anns_sent_to_peers_providers;
     // Map of all announcements stored
     std::map<Prefix<>, Announcement> *all_anns;
     std::map<Prefix<>, Announcement> *depref_anns;
@@ -52,6 +53,7 @@ struct AS {
     bool already_received(Announcement &ann);
     void printDebug();
     void process_announcements();
+    void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<>,uint32_t> current);
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
     std::ostream& stream_announcements(std:: ostream &os);
     Announcement * get_ann_for_prefix(Prefix<> prefix);

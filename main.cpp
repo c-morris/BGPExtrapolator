@@ -59,8 +59,9 @@ int main(int argc, char *argv[]) {
         (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
         (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),
         (vm.count("ram") ? vm["ram"].as<bool>() : false));
-    // TODO make 100 an option, make 800k something more reasonable
-    extrap->perform_propagation(true, 100, 10000000);
+    // TODO make iteration size an option, make the second arg something more reasonable
+    extrap->perform_propagation(true, 500000, 100000000000);
+    //extrap->perform_propagation(true, 20000, 120001);
     delete extrap;
 
     return 0;
