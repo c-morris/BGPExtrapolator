@@ -16,6 +16,11 @@ struct Prefix {
      */
     Prefix() {}
     
+    Prefix(uint32_t addr_in, uint32_t mask_in) {
+        addr = addr_in;
+        netmask = mask_in;
+    }
+        
     /** Priority constructor
      *
      * NEEDS DESCRIPTION

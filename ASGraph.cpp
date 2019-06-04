@@ -95,6 +95,26 @@ void ASGraph::process(){
 void ASGraph::process(SQLQuerier *querier){
     remove_stubs(querier);
     tarjan();
+
+    /** DEBUG
+    for (auto const& component : *components){
+        if (component->size() <= 1) {
+            continue;
+        }
+
+        for (auto &cur_asn : *component) {
+            auto asn_search = ases->find(cur_asn);
+            AS *cur_AS = asn_search->second;
+            std::cout << "dot.node('" << cur_AS->asn << "', '" << cur_AS->asn << "')" << std::endl;
+            
+            for (auto customer : *cur_AS->customers) {
+                std::cout << "dot.edge('" << cur_AS->asn << "', '" << customer << "')" << std::endl;
+            }
+            
+        }
+    }
+    */
+
     combine_components();
 
     // debug
@@ -107,7 +127,7 @@ void ASGraph::process(SQLQuerier *querier){
     //this->to_graphviz(outfile);
     //outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
     //outfile.close();
-
+    
     save_supernodes_to_db(querier);
     decide_ranks();
     return;
@@ -253,8 +273,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     }
     outfile.close();
     querier->copy_supernodes_to_db(file_name);
-    std::cerr << "Saving Supernodes completed." << std::endl;
-    //std::remove(file_name.c_str());
+    std::remove(file_name.c_str());
 }
 
 
@@ -303,11 +322,9 @@ void ASGraph::decide_ranks() {
             as.second->rank = 0;
         }
     }
-    //std::cerr << "Started rank 0" << std::endl;
     
     int i = 0;
     while (!(*ases_by_rank)[i]->empty()) {
-        //std::cerr << "iter " << i << " size " << (*ases_by_rank)[i]->size() << std::endl;
         ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
@@ -323,7 +340,6 @@ void ASGraph::decide_ranks() {
                 }
             }
         }
-        //std::cerr << "Completed rank " << i << std::endl; 
         i++;
     } 
     return;
@@ -336,8 +352,6 @@ void ASGraph::decide_ranks() {
 void ASGraph::tarjan() {
     int index = 0;
     std::stack<AS*> s;
-    int count = 0;
-    int uc_count = 0;
 
     for (auto &as : *ases) {
         if (as.second->index == -1){
@@ -374,9 +388,9 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
             as_from_stack->onStack = false;
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
+        if (component->size() > 1)
+            std::cout << "Supernode found" << std::endl;
         components->push_back(component);
-        //if (component->size() > 1)
-        //    std::cerr << "Root node found: " << as->asn << " of size " << component->size() << std::endl;
     }
 }
 
@@ -466,11 +480,6 @@ void ASGraph::combine_components(){
                 
                 // Peer is safe to add to combined AS
                 if (external && no_provider_rel && no_customer_rel) {
-                    // DEBUG 
-                    if (ases->find(peer_asn) == ases->end()) {
-                        std::cout << cur_AS->asn << " peer missing, " << peer_asn << std::endl;
-                        continue;
-                    }
                     AS *peer_AS = ases->find(peer_asn)->second;
                     // Add new relationship
                     combined_AS->add_neighbor(peer_asn, AS_REL_PEER);
@@ -490,7 +499,6 @@ void ASGraph::combine_components(){
             delete cur_AS;
         }
         // Insert complete combined node to ases
-        //std::cout << *combined_AS;
         ases->insert(std::pair<uint32_t,AS*>(combined_asn,combined_AS));
     }
     return;

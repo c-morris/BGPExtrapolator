@@ -43,6 +43,7 @@ AS::~AS() {
     delete incoming_announcements;
     delete anns_sent_to_peers_providers;
     delete all_anns;
+    delete depref_anns;
     delete peers;
     delete providers;
     delete customers;
@@ -69,6 +70,7 @@ void AS::add_neighbor(uint32_t asn, int relationship) {
     }
 }
 
+
 /** Remove neighbor AS from the appropriate set in this AS based on the relationship.
  *
  * @param asn ASN of neighbor.
@@ -89,16 +91,16 @@ void AS::remove_neighbor(uint32_t asn, int relationship) {
 }
 
 
-
 /** Debug to print this AS number
  */
 void AS::printDebug() {
     std::cout << asn << std::endl;
 }
 
+// TODO What does this do?
 void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<>,uint32_t> current) {
     if (inverse_results != NULL) {
-        // add back to old set, remove from new set
+        // Add back to old set, remove from new set
         auto set = inverse_results->find(old);
         if (set != inverse_results->end()) {
             set->second->insert(asn);
@@ -167,7 +169,7 @@ void AS::receive_announcement(Announcement &ann) {
                 search_alt->second = search->second;
                 search->second = ann;
             }
-        } else {                                // Old ASN is lower
+        } else {    // Old ASN is lower
             if (search_alt == depref_anns->end()) {
                 depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
                                                                       ann));
@@ -180,7 +182,7 @@ void AS::receive_announcement(Announcement &ann) {
     // Check announcements priority for best path selection
     } else if (ann.priority > search->second.priority) {
         if (search_alt == depref_anns->end()) {
-            // update inverse results
+            // Update inverse results
             swap_inverse_result(
                 std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                 std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
@@ -289,3 +291,16 @@ std::ostream& AS::stream_announcements(std::ostream &os){
     return os;
 }
 
+
+/** Streams depref announcements to an output stream in a .csv readable file format.
+ *
+ * @param os
+ * @return output stream into which is passed the .csv row formatted announcements
+ */
+std::ostream& AS::stream_depref(std::ostream &os){
+    for (auto &ann : *depref_anns){
+        os << asn << ",";
+        ann.second.to_csv(os);
+    }
+    return os;
+}

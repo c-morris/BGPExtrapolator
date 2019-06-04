@@ -50,6 +50,9 @@ BOOST_AUTO_TEST_CASE( AS_process_announcements ) {
 BOOST_AUTO_TEST_CASE( ASGraph_add_relationship ) {
         BOOST_CHECK( test_add_relationship() );
 }
+BOOST_AUTO_TEST_CASE( AS_translate_asn ) {
+        BOOST_CHECK( test_translate_asn() );
+}
 BOOST_AUTO_TEST_CASE( ASGraph_decide_ranks ) {
         BOOST_CHECK( test_decide_ranks() );
 }

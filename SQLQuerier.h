@@ -17,39 +17,52 @@ struct ASGraph;
 #include "TableNames.h"
 
 struct SQLQuerier {
-    SQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE,
-    std::string i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
+    SQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, 
+               std::string r=RESULTS_TABLE,
+               std::string i=INVERSE_RESULTS_TABLE,
+               std::string d=DEPREF_RESULTS_TABLE);
     ~SQLQuerier();
     void open_connection();
     void close_connection();
-    bool ram_tablespace;
     pqxx::result execute(std::string sql, bool insert = false);
+
     pqxx::result select_from_table(std::string table_name, int limit = 0);
+    pqxx::result select_prefix_count(Prefix<>*);
+    pqxx::result select_prefix_ann(Prefix<>*);
     pqxx::result select_ann_records(std::string table_name = "", std::string prefix = "", int limit = 0, uint64_t offset = 0);
     pqxx::result select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit = 0);
     pqxx::result select_distinct_prefixes_from_table(std::string table_name);
     pqxx::result select_roa_prefixes(std::string table_name, int ip_family = IPV4);
+    
     void check_for_relationship_changes(std::string peers_table_1,
                                                 std::string customer_provider_pairs_table_1,
                                                 std::string peers_table_2,
                                                 std::string customer_provider_paris_table_2);
     void insert_results(ASGraph* graph, std::string results_table_name);
+    
     void copy_results_to_db(std::string file_name);
+    void copy_depref_to_db(std::string file_name);
     void copy_inverse_results_to_db(std::string file_name);
+    
     void clear_stubs_from_db();
     void clear_non_stubs_from_db();
+    
     void copy_stubs_to_db(std::string file_name);
+    void copy_non_stubs_to_db(std::string file_name);
     void copy_supernodes_to_db(std::string file_name);
+    
     void create_supernodes_tbl();
     void create_stubs_tbl();
     void create_non_stubs_tbl();
     void create_results_tbl();
+    void create_depref_tbl();
     void create_inverse_results_tbl();
     void create_results_index();
-    void copy_non_stubs_to_db(std::string file_name);
+    
     void read_config();
 private:
     std::string results_table;
+    std::string depref_table;
     std::string inverse_results_table;
     std::string announcements_table;
     std::string user;

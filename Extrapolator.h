@@ -22,16 +22,23 @@
 struct Extrapolator {
     ASGraph *graph;
     SQLQuerier *querier;
-    Extrapolator(bool invert_results=true, std::string
-        a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE, std::string
-        i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
+    Extrapolator(bool invert_results=true, 
+                 bool store_depref=false, 
+                 std::string a=ANNOUNCEMENTS_TABLE,
+                 std::string r=RESULTS_TABLE, 
+                 std::string i=INVERSE_RESULTS_TABLE, 
+                 std::string d=DEPREF_RESULTS_TABLE, 
+                 uint32_t iteration_size=false);
     ~Extrapolator();
     std::set<uint32_t> *ases_with_anns;
     std::vector<std::thread> *threads;
     bool invert;
-    bool ram_tablespace;
+    bool depref;
+    uint32_t it_size;
 
     void perform_propagation(bool test = false, size_t group_size = 1000, size_t max_total = 0);
+    template <typename Integer>
+    void populate_blocks(Prefix<Integer>*, std::vector<Prefix<>*>*);
     void send_all_announcements(uint32_t asn, 
         bool to_providers = false, 
         bool to_peers = false, 

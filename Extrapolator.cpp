@@ -3,15 +3,17 @@
 #include <sys/wait.h>
 #include <cstring>
 #include <thread>
+#include <chrono>
 #include "Extrapolator.h"
 
-Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r, 
-        std::string i, bool ram) {
-    invert = invert_results;
-    ram_tablespace = ram;
+Extrapolator::Extrapolator(bool invert_results, bool store_depref, std::string a, std::string r, 
+        std::string i, std::string d, uint32_t iteration_size) {
+    invert = invert_results;                    // True to store the results inverted
+    depref = store_depref;                      // True to store the second best ann for depref
+    it_size = iteration_size;                   // Number of prefix to be precessed per iteration
     graph = new ASGraph;
     threads = new std::vector<std::thread>;
-    querier = new SQLQuerier(a, r, i, ram);
+    querier = new SQLQuerier(a, r, i, d);
 }
 
 Extrapolator::~Extrapolator(){
@@ -47,26 +49,53 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     } else {
         querier->create_results_tbl();
     }
+    if (depref) {
+        querier->create_depref_tbl();
+    }
     querier->create_stubs_tbl();
     querier->create_non_stubs_tbl();
     querier->create_supernodes_tbl();
     
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
-    
-    std::cerr << "Beginning propagation..." << std::endl;
-    uint64_t offset = 0;
-    int iter = 0;
-    
-    while (offset < max_total) {
+   
+    // Generate prefix blocks
+    /** TODO complete the prefix block iterations for testing
+    std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>;
+    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "128.0.0.0"); // Start at /1
+    populate_blocks(cur_prefix, prefix_blocks);
+
+    // For each prefix block unprocessed
+    for (Prefix<>* subnet : *prefix_blocks) {
         std::cerr << "Selecting Announcements..." << std::endl;
-        //Get all announcements (R) from the table 
-        pqxx::result R = querier->select_ann_records("", "", iteration_size, offset);
+        pqxx::result ann_block = querier->select_prefix_count(subnet);
+        auto bsize = ann_block.size();
+        if (bsize == 0)
+            break;
+        // For all announcements in this block
+        for ()
+    }
+    */
+   
+    std::cerr << "Beginning propagation..." << std::endl;
+    
+    // Record start time
+    auto prop_start = std::chrono::high_resolution_clock::now();
+
+    uint64_t offset = 0; // Cutoff for next iteration
+    int iter = 0;
+    // While there are announcements unprocessed
+    while (offset < max_total) {
+        auto it_start = std::chrono::high_resolution_clock::now();
+        
+        std::cerr << "Selecting Announcements for Iteration " << iter << std::endl;
+        // Get all announcements (R) from the table 
+        pqxx::result R = querier->select_ann_records("", "", this->it_size, offset);
 
         auto rsize = R.size();
         if (rsize == 0) { break; }
-        // remove last, potentially incomplete prefix
-        offset += iteration_size;
+        // Remove last, potentially incomplete prefix
+        offset += this->it_size;
         int count = 0;
         Prefix<> p_end(R[rsize-1]["host"].c_str(), R[rsize-1]["netmask"].c_str());
         for (int i = rsize - 1; i >= 0; i--) {
@@ -111,13 +140,61 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
         save_results(iter);
         graph->clear_announcements();
         iter++;
+        
+        auto it_finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = it_finish - it_start;
+        std::cout << "Iteration elapsed time: " << elapsed.count() << std::endl;
     }
-
+    auto prop_finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = prop_finish - prop_start;
+    std::cout << "Propagation elapsed time: " << elapsed.count() << std::endl;
+    
     // create an index on the results
     if (!invert) {
         querier->create_results_index();
     }
 }
+
+
+/** Recursive function to break the input mrt_announcements into manageable blocks.
+ *
+ * @param p The current subnet for checking announcement block size
+ * @param prefix_vector The vector of prefixes of appropriate size
+ */
+template <typename Integer>
+void Extrapolator::populate_blocks(Prefix<Integer>* p, std::vector<Prefix<>*>* prefix_vector) {
+    pqxx::result r = querier->select_prefix_count(p);
+
+    // TODO use iteration size for this
+    if (r[0][0].as<int>() < 1000000) {
+        // add to blocks vector
+        std::cout << "Prefix: " << p->to_cidr() << std::endl;
+        std::cout << "Count: "<< r[0][0].as<int>() << std::endl;
+        if (r[0][0].as<int>() > 0)
+            prefix_vector->push_back(p);
+        return;
+    } else {
+        // split prefix
+        Integer new_mask = (p->netmask >> 1) | p->netmask;
+        Prefix<Integer>* p1 = new Prefix<Integer>(p->addr, new_mask);
+	int8_t sz = 0;
+        Integer new_addr = p->addr;
+        for (int i = 0; i < 32; i++) {
+            if (p->netmask & (1 << i)) {
+                sz++;
+            }
+        }
+        new_addr |= 1UL << (32 - sz - 1);
+        Prefix<Integer>* p2 = new Prefix<Integer>(new_addr, new_mask);
+        populate_blocks(p1, prefix_vector);
+        populate_blocks(p2, prefix_vector);
+
+        delete p1;
+        delete p2;
+        return;
+    }
+}
+
 
 /** Parse array-like strings from db to get AS_PATH in a vector.
  *
@@ -261,7 +338,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                 sent_to = 2;
             }
         }
-        // if ASes in the path aren't neighbors (If data is out of sync)
+        // If ASes in the path aren't neighbors (If data is out of sync)
         bool broken_path = false;
         // now check recv'd from
         // It is 3 by default. It stays as 3 if it's the origin.
@@ -459,7 +536,8 @@ void Extrapolator::save_results(int iteration){
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
-
+    
+    // Handle inverse results
     if (invert) {
         std::cerr << "Saving Inverse Results From Iteration: " << iteration << std::endl;
         for (auto po : *graph->inverse_results){
@@ -471,6 +549,7 @@ void Extrapolator::save_results(int iteration){
         }
         outfile.close();
         querier->copy_inverse_results_to_db(file_name);
+    // Handle standard results
     } else {
         std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases){
@@ -481,4 +560,17 @@ void Extrapolator::save_results(int iteration){
 
     }
     std::remove(file_name.c_str());
+    
+    // Handle depref results
+    if (depref) {
+        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + ".csv";
+        outfile.open(depref_name);
+        std::cerr << "Saving Depref From Iteration: " << iteration << std::endl;
+        for (auto &as : *graph->ases) {
+            as.second->stream_depref(outfile);
+        }
+        outfile.close();
+        querier->copy_depref_to_db(depref_name);
+        std::remove(depref_name.c_str());
+    }
 }

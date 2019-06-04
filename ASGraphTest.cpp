@@ -39,20 +39,60 @@ bool test_add_relationship(){
 }
 
 
-/** TODO
+/** Test translating a ASN into it's supernode Identifier
  *
  * @return true if successful, otherwise false.
  */
 bool test_translate_asn(){
+    ASGraph graph = ASGraph();
+    // Cycle 
+    graph.add_relationship(2, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 2, AS_REL_CUSTOMER);
+    graph.add_relationship(1, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 1, AS_REL_CUSTOMER);
+    graph.add_relationship(3, 2, AS_REL_PROVIDER);
+    graph.add_relationship(2, 3, AS_REL_CUSTOMER);
+    // Customer
+    graph.add_relationship(5, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 5, AS_REL_CUSTOMER);
+    graph.add_relationship(6, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 6, AS_REL_CUSTOMER);
+    // Peer
+    graph.add_relationship(4, 3, AS_REL_PEER);
+    graph.add_relationship(3, 4, AS_REL_PEER);
+    graph.tarjan();
+    graph.combine_components();
+
+    if (graph.translate_asn(1) != 1 ||
+        graph.translate_asn(2) != 1 ||
+        graph.translate_asn(3) != 1)
+        return false;
+    if (graph.translate_asn(4) != 4 ||
+        graph.translate_asn(5) != 5 ||
+        graph.translate_asn(6) != 6)
+        return false;
     return true;
 }
 
 
-/** Test generation of ASGraph from database tables.
- *
- * @return true if successful, otherwise false.
- */
-bool test_create_graph_from_db(){
+bool test_create_graph_from_database() {
+    ASGraph* graph = new ASGraph();
+    SQLQuerier* q = new SQLQuerier("mrt_announcements", "test_results", "test_results", "depref_results");
+    graph->create_graph_from_db(q);
+    
+    std::ofstream outfile;
+    std::string fname = "graph";
+    fname += ".csv";
+    outfile.open(fname, std::ios::out | std::ios::trunc);
+    /** TODO print graph to csv for verification
+    for (auto &as : *graph->ases) {
+        AS* cur_AS = as->second;
+        for (auto &provider : *cur_AS->providers) {
+            outfile << as->second->asn << ", "<< provider << std::endl;
+        }
+    }
+    */
+    outfile.close();
     return true;
 }
 
@@ -103,10 +143,27 @@ bool test_decide_ranks(){
 
 
 /** Test removing stub ASes from the graph. 
+ * 
+ *    1
+ *   / \
+ *  2   3--4
+ *     / \
+ *    5   6
  *
  * @return true if successful, otherwise false.
  */
 bool test_remove_stubs(){
+    ASGraph graph = ASGraph();
+    graph.add_relationship(2, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 2, AS_REL_CUSTOMER);
+    graph.add_relationship(3, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 3, AS_REL_CUSTOMER);
+    graph.add_relationship(5, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 5, AS_REL_CUSTOMER);
+    graph.add_relationship(6, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 6, AS_REL_CUSTOMER);
+    graph.add_relationship(4, 3, AS_REL_PEER);
+    graph.add_relationship(3, 4, AS_REL_PEER);
     return true;
 }
 
