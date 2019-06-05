@@ -79,15 +79,17 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
         // remove last, potentially incomplete prefix
         offset += iteration_size;
         int count = 0;
-        Prefix<> p_end(R[rsize-1]["host"].c_str(), R[rsize-1]["netmask"].c_str());
-        for (int i = rsize - 1; i >= 0; i--) {
-            Prefix<> p(R[i]["host"].c_str(), R[i]["netmask"].c_str());
-            if (p != p_end) {
-                offset -= count;
-                break;
-            }
-            count++;
-        }
+        // I commented out the following lines as a temporary solution to getting all the announcements
+        // The following method is broken, because it forgets to get the last announcement in the list
+        // Prefix<> p_end(R[rsize-1]["host"].c_str(), R[rsize-1]["netmask"].c_str());
+        // for (int i = rsize - 1; i >= 0; i--) {
+        //     Prefix<> p(R[i]["host"].c_str(), R[i]["netmask"].c_str());
+        //     if (p != p_end) {
+        //         offset -= count;
+        //         break;
+        //     }
+        //     count++;
+        // }
 
 
         std::cerr << "Parsing path vectors..." << std::endl;

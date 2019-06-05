@@ -127,7 +127,7 @@ void ASGraph::process(){
 /** Process with removing stubs (needs querier to save them).
  */
 void ASGraph::process(SQLQuerier *querier){
-    remove_stubs(querier);
+    // remove_stubs(querier);  //  For Out simulations we don't need this
     tarjan();
     combine_components();
 
