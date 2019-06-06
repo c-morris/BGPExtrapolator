@@ -414,7 +414,7 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
         } while (as_from_stack != as);
         // DEBUG
         if (component->size() > 1)
-            std::cout << "Supernode found" << std::endl;
+            std::cout << "Supernode found of size " << component->size() << std::endl;
         components->push_back(component);
     }
 }
