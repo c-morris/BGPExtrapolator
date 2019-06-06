@@ -50,6 +50,12 @@ struct Announcement {
         return os;
     }
 
+    /** To allow it to be used in sets
+    *
+    */
+    friend bool operator< (const Announcement& ann1, const Announcement& ann2) {
+      return ann2.prefix > ann1.prefix;
+    }
 
     /** Passes the announcement struct data to an output stream to csv generation.
      *

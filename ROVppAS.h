@@ -27,7 +27,7 @@ struct ROVppAS: public AS {
 
   // ROV Methods
   bool pass_rov(Announcement &ann);
-  
+
   // ROVpp methods
   void make_negative_announcement(Announcement &announcement);  // TODO: Implement
   bool should_make_neg_announcement(Announcement &announcement);  // TODO: Implement

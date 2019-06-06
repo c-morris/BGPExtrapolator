@@ -1,6 +1,7 @@
 #include <cstdint>
 #include "ROVppAS.h"
 #include "NegativeAnnouncement.h"
+#include "Prefix.h"
 
 
 ROVppAS::ROVppAS(uint32_t myasn,
@@ -50,6 +51,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
   depref_anns = new std::map<Prefix<>, Announcement>;
   index = -1;
   onStack = false;
+  // blocked_announcements = new std::set<Announcement>;
 }
 
 ROVppAS::~ROVppAS() {
@@ -61,6 +63,7 @@ ROVppAS::~ROVppAS() {
     delete customers;
     delete member_ases;
     delete as_graph;
+    // delete blocked_announcements;
 }
 
 
@@ -81,31 +84,97 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  * @param announcements to be pushed onto the incoming_announcements vector.
  */
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
-    for (Announcement &ann : announcements) {
-        // Check if the Announcement is valid
-        if (pass_rov(ann)) {
-          // Do not check for duplicates here
-          // push_back makes a copy of the announcement
-          incoming_announcements->push_back(ann);
-        } else {
-          // Create a NegativeAnnouncement
-          // Extract prefix to Blackhole
-          Prefix<> s("137.99.0.0", "255.255.255.0");
-          Prefix<> p("137.99.0.0", "255.255.0.0");
-          NegativeAnnouncement neg_ann = NegativeAnnouncement(13796, p.addr, p.netmask, 22742, std::set<Prefix<>>());
-          neg_ann.null_route_subprefix(s);
-          incoming_announcements->push_back(neg_ann);
-        }
+  for (Announcement &ann : announcements) {
+    // Check if the Announcement is valid
+    if (pass_rov(ann)) {
+      // Do not check for duplicates here
+      // push_back makes a copy of the announcement
+      incoming_announcements->push_back(ann);
+    } else {
+      // Add Announcement to blocked list
+      blocked_announcements.insert(ann);
     }
+    // Check if Negative Announcement should be made
+    if (should_make_neg_announcement(ann)) {
+      // Create a NegativeAnnouncement
+      NegativeAnnouncement neg_ann = compose_negative_announcement(ann);
+      // Add to Announcements to propagate
+      incoming_announcements->push_back(neg_ann);
+    }
+  }
 }
 
+// TODO: Implement
+NegativeAnnouncement ROVppAS::compose_negative_announcement(Announcement &announcement) {
+  // Extract prefix to Blackhole
+  Prefix<> s("137.99.0.0", "255.255.255.0");
+  Prefix<> p("137.99.0.0", "255.255.0.0");
+  NegativeAnnouncement neg_ann = NegativeAnnouncement(13796, p.addr, p.netmask, 22742, std::set<Prefix<>>());
+  neg_ann.null_route_subprefix(s);
+  return neg_ann;
+}
 
+// TODO: Implement
 bool ROVppAS::should_make_neg_announcement(Announcement &announcement) {
-  // TODO: Implement
+  // Case 1: Received Valid Announcement first, then Invalid Announcement second
+  // Check if you have received the Valid announcement in the past
+  // The announcement needs to be converted to the super-prefix
+  if (received_valid_announcement(announcement)) {
+    if () {
+
+    }
+  }
+  // Case 2: Received  Invalid Announcement first, then Valid Announcement second
+  // Check if you have received the Invalid Announcement in the past
+  // The announcement needs to be converted into the sub-prefix
+  if (received_hijack_announcement(announcement)) {
+
+  }
+  return false;
+}
+
+bool ROVppAS::received_valid_announcement(Announcement &announcement) {
+  // Check if it's in all_anns (i.e. RIB in)
+  // TODO: Delete following code block after testing
+  // auto search = all_anns.find(announcement.prefix);
+  // if (search != all_anns.end()) {
+  //   return true;
+  // }
+  for (std::pair<Prefix<>, Announcement> ann : *all_anns) {
+    if (ann.first < announcement.prefix) {
+      return true;
+    }
+  }
+
+  // Check if it was just received and hasn't been processed yet
+  // TODO: Delete following code block after testing
+  // search = incoming_announcements.find(announcement.prefix);
+  // if (search != incoming_announcements.end()) {
+  //   return true;
+  // }
+  for (auto& ann : *incoming_announcements) {
+    if (ann.prefix < announcement.prefix) {
+      return true;
+    }
+  }
+}
+
+bool ROVppAS::received_hijack_announcement(Announcement &announcement) {
+  // Check if announcement is in blocked list
+  // TODO: Delete following code block after testing
+  // auto search = blocked_announcements.find(announcement.prefix);
+  // if (search != blocked_announcements.end()) {
+  //   return true;
+  // }
+  for (auto& ann : blocked_announcements) {
+    if (announcement.prefix < ann.prefix) {
+      return true;
+    }
+  }
 }
 
 bool ROVppAS::does_path_intersect(std::vector<uint32_t> p1, std::vector<uint32_t> p2) {
-
+  // Double for loop to check over entire (except the beginning and end of each path)
   for (std::size_t i=1; i<p1.size()-1; ++i) {
     for (std::size_t j=1; j<p1.size()-1; ++j) {
       if (p1[i] == p2[j]) {
@@ -113,6 +182,7 @@ bool ROVppAS::does_path_intersect(std::vector<uint32_t> p1, std::vector<uint32_t
       }
     }
   }
+  // No hops of the paths match
   return false;
 }
 
