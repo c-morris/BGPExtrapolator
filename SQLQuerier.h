@@ -29,6 +29,8 @@ struct SQLQuerier {
     pqxx::result select_from_table(std::string table_name, int limit = 0);
     pqxx::result select_prefix_count(Prefix<>*);
     pqxx::result select_prefix_ann(Prefix<>*);
+    pqxx::result select_subnet_count(Prefix<>*);
+    pqxx::result select_subnet_ann(Prefix<>*);
     pqxx::result select_ann_records(std::string table_name = "", std::string prefix = "", int limit = 0, uint64_t offset = 0);
     pqxx::result select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit = 0);
     pqxx::result select_distinct_prefixes_from_table(std::string table_name);

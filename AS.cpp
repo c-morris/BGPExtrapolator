@@ -5,14 +5,16 @@
  * AS objects represent a node in the AS Graph.
  */
 AS::AS(uint32_t myasn, 
-    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
-    std::set<uint32_t> *prov, std::set<uint32_t> *peer,
-    std::set<uint32_t> *cust) {
+       std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
+       std::set<uint32_t> *prov,
+       std::set<uint32_t> *peer,
+       std::set<uint32_t> *cust) {
+    // Set ASN
     asn = myasn;
     // Initialize AS to invalid rank
     rank = -1;     
     
-    // Generate AS relationship sets
+    // Create AS relationship sets
     if (prov == NULL) {
         providers = new std::set<uint32_t>;
     } else {
@@ -28,13 +30,13 @@ AS::AS(uint32_t myasn,
     } else {
         customers = cust;
     }
-
-    inverse_results = inv;
-    member_ases = new std::vector<uint32_t>;
+    inverse_results = inv;                      // Inverted results map
+    member_ases = new std::vector<uint32_t>;    // Supernode members
     anns_sent_to_peers_providers = new std::vector<Announcement>;
     incoming_announcements = new std::vector<Announcement>;
     all_anns = new std::map<Prefix<>, Announcement>;
     depref_anns = new std::map<Prefix<>, Announcement>;
+    // Tarjan variables
     index = -1;
     onStack = false;
 }
@@ -97,7 +99,12 @@ void AS::printDebug() {
     std::cout << asn << std::endl;
 }
 
-// TODO What does this do?
+
+/** Swap a pair of prefix/origins for this AS in the inverse results.
+ *
+ * @param old The prefix/origin to be inserted
+ * @param current The prefix/origin to be removed
+ */
 void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<>,uint32_t> current) {
     if (inverse_results != NULL) {
         // Add back to old set, remove from new set
@@ -115,10 +122,7 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
 
 /** Push the received announcements to the incoming_announcements vector. 
  *
- * Note that this differs from the Python version in that it does not store
- * a dict of (prefix -> list of announcements for that prefix).
- *
- * @param announcements to be pushed onto the incoming_announcements vector.
+ * @param announcements The announcements to be pushed onto the incoming_announcements vector.
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
@@ -192,7 +196,7 @@ void AS::receive_announcement(Announcement &ann) {
             // Replace the old announcement with the higher priority
             search->second = ann;
         } else {
-            // update inverse results
+            // Update inverse results
             swap_inverse_result(
                 std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                 std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));

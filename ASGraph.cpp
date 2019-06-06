@@ -9,13 +9,14 @@
 #include "AS.h"
 
 ASGraph::ASGraph() {
-    ases = new std::map<uint32_t, AS*>;    
-    ases_by_rank = new std::vector<std::set<uint32_t>*>;
-    components = new std::vector<std::vector<uint32_t>*>;
-    component_translation = new std::map<uint32_t, uint32_t>;
-    stubs_to_parents = new std::map<uint32_t, uint32_t>;
+    ases = new std::map<uint32_t, AS*>;                         // Map of all ASes
+    ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
+    components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
+    component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
+    stubs_to_parents = new std::map<uint32_t, uint32_t>; 
     non_stubs = new std::vector<uint32_t>;
-    inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
+    inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,
+                                             std::set<uint32_t>*>;
 }
 
 ASGraph::~ASGraph() {
@@ -45,6 +46,32 @@ ASGraph::~ASGraph() {
 }
 
 
+/** Clear all announcements in AS.
+ */
+void ASGraph::clear_announcements(){
+    for (auto const& as : *ases){
+        as.second->clear_announcements();
+    }
+    for (auto const& i : *inverse_results) {
+        delete i.second;
+    }
+    inverse_results->clear();
+}
+
+
+/** Translates asn to asn of component it belongs to in graph.
+ *
+ * @return 0 if asn isn't found, otherwise return identifying ASN
+ */
+uint32_t ASGraph::translate_asn(uint32_t asn){
+    auto search = component_translation->find(asn);
+    if(search == component_translation->end()){
+       return asn; 
+    }
+    return search->second;
+}
+
+
 /** Adds an AS relationship to the graph.
  *
  * If the AS does not exist in the graph, it will be created.
@@ -53,8 +80,7 @@ ASGraph::~ASGraph() {
  * @param neighbor_asn ASN of neighbor.
  * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
-//TODO probably make this do bi-directional assignment instead of calling this
-//twice for each pair
+//TODO bi-directional assignment instead of calling this twice for each pair
 void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn, 
     int relation) {
     auto search = ases->find(asn);
@@ -67,20 +93,10 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
 }
 
 
-/** Translates asn to asn of component it belongs to in graph.
- *
- * @return 0 if asn isn't found
- */
-uint32_t ASGraph::translate_asn(uint32_t asn){
-    auto search = component_translation->find(asn);
-    if(search == component_translation->end()){
-       return asn; 
-    }
-    return search->second;
-}
-
 
 /** Process without removing stubs (doesn't need querier).
+ *
+ *  TODO Unused?
  */
 void ASGraph::process(){
     tarjan();
@@ -141,20 +157,22 @@ void ASGraph::process(SQLQuerier *querier){
  * @param querier
  */
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
-    //TODO add table names to config
+    // Assemble Peers
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c["peer_as_1"].as<uint32_t>(),
-                        c["peer_as_2"].as<uint32_t>(),AS_REL_PEER);
+                         c["peer_as_2"].as<uint32_t>(),AS_REL_PEER);
         add_relationship(c["peer_as_2"].as<uint32_t>(),
-                        c["peer_as_1"].as<uint32_t>(),AS_REL_PEER);
+                         c["peer_as_1"].as<uint32_t>(),AS_REL_PEER);
     }
+    // Assemble Customer-Providers
     R = querier->select_from_table(CUSTOMER_PROVIDER_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
-        add_relationship(c["customer_as"].as<uint32_t>(),c["provider_as"].as<uint32_t>(),AS_REL_PROVIDER);
-        add_relationship(c["provider_as"].as<uint32_t>(),c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
+        add_relationship(c["customer_as"].as<uint32_t>(),
+                         c["provider_as"].as<uint32_t>(),AS_REL_PROVIDER);
+        add_relationship(c["provider_as"].as<uint32_t>(),
+                         c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
     }
-
     process(querier);
     return;
 }
@@ -166,26 +184,29 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
  */
 void ASGraph::remove_stubs(SQLQuerier *querier){
     std::vector<AS*> to_remove;
+    // For all ASes in the graph
     for (auto &as : *ases){
+        // If this AS is a stub
         if(as.second->peers->size() == 0 &&
            as.second->providers->size() == 1 && 
-           (as.second->customers->size() == 0)) {// || as.second->customers->size() == 1)) {
+           as.second->customers->size() == 0) {
             to_remove.push_back(as.second);    
         } else {
             non_stubs->push_back(as.first);
         }
     }
+    // Handle stub removal
     for (auto *as : to_remove) {
-        // remove any edges to this stub from graph 
+        // Remove any edges to this stub from graph
         for(uint32_t provider_asn : *as->providers){
             auto iter = ases->find(provider_asn);
             if (iter != ases->end()) {
                 AS* provider = iter->second;
                 provider->customers->erase(as->asn);
             }
-            stubs_to_parents->insert(std::pair<uint32_t,uint32_t>(
-                        as->asn,provider_asn));
+            stubs_to_parents->insert(std::pair<uint32_t, uint32_t>(as->asn,provider_asn));
         }
+        // TODO Is this necessary?
         for(uint32_t peer_asn : *as->peers){
             auto iter = ases->find(peer_asn);
             if (iter != ases->end()) {
@@ -200,7 +221,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
                 customer->providers->erase(as->asn);
             }
         }
-        // remove from graph if it has not been already removed
+        // Remove from graph if it has not been already removed
         auto iter = ases->find(as->asn);
         if (iter != ases->end()) { 
             ases->erase(as->asn);
@@ -239,44 +260,6 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
 }
 
 
-/** Generate a csv with all supernodes, then dump them to database.
- *
- * @param querier
- */
-void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
-    DIR* dir = opendir("/dev/shm/bgp");
-    if(!dir) {
-        mkdir("/dev/shm/bgp",0777);
-    } else {
-        closedir(dir);
-    }
-
-    std::ofstream outfile;
-    std::cerr << "Saving Supernodes..." << std::endl;
-    std::string file_name = "/dev/shm/bgp/supernodes.csv";
-    outfile.open(file_name); 
-    
-    // Iterate over each strongly connected component
-    for (auto &cur_node : *components) {
-        if (cur_node->size() >= 2) {
-            // Find the lowest asn in supernode
-            uint32_t low = UINT_MAX;
-            for (auto &cur_asn : *cur_node) {
-                if (cur_asn < low) 
-                    low = cur_asn;
-            }
-            // assemble rows as pairs; asn in supernode, lowest asn in that supernode
-            for (auto &cur_asn : *cur_node) {
-                outfile << cur_asn << "," << low << "\n";
-            }
-        }
-    }
-    outfile.close();
-    querier->copy_supernodes_to_db(file_name);
-    std::remove(file_name.c_str());
-}
-
-
 /** Saves the non_stub ASes to a table on the database.
  *
  * @param querier
@@ -303,6 +286,45 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
 }
 
 
+/** Generate a csv with all supernodes, then dump them to database.
+ *
+ * @param querier
+ */
+void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
+    DIR* dir = opendir("/dev/shm/bgp");
+    if(!dir) {
+        mkdir("/dev/shm/bgp",0777);
+    } else {
+        closedir(dir);
+    }
+
+    std::ofstream outfile;
+    std::cerr << "Saving Supernodes..." << std::endl;
+    std::string file_name = "/dev/shm/bgp/supernodes.csv";
+    outfile.open(file_name); 
+    
+    // Iterate over each strongly connected components
+    for (auto &cur_node : *components) {
+        // For each supernode
+        if (cur_node->size() > 1) {
+            // Find the lowest ASN in supernode
+            uint32_t low = UINT_MAX;
+            for (auto &cur_asn : *cur_node) {
+                if (cur_asn < low) 
+                    low = cur_asn;
+            }
+            // Assemble rows as pairs; ASN in supernode, lowest ASN in that supernode
+            for (auto &cur_asn : *cur_node) {
+                outfile << cur_asn << "," << low << "\n";
+            }
+        }
+    }
+    outfile.close();
+    querier->copy_supernodes_to_db(file_name);
+    std::remove(file_name.c_str());
+}
+
+
 /** Decide and assign ranks to all the AS's in the graph. 
  *
  *  The rank of an AS is the maximum number of nodes it has below it. This means
@@ -312,18 +334,19 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
  *  The bottom of the DAG is rank 0. 
  */
 void ASGraph::decide_ranks() {
-    // initial set of customer ASes at the bottom of the DAG
+    // Initial set of customer ASes at the bottom of the DAG
     ases_by_rank->push_back(new std::set<uint32_t>());
     // For ASes with no customers
     for (auto &as : *ases) {
+        // If AS is a leaf node
         if (as.second->customers->empty()) {
-            // if AS is a leaf node, or "stub" AS
             (*ases_by_rank)[0]->insert(as.first);
             as.second->rank = 0;
         }
     }
     
     int i = 0;
+    // While there are elements to process current rank
     while (!(*ases_by_rank)[i]->empty()) {
         ases_by_rank->push_back(new std::set<uint32_t>());
         for (uint32_t asn : *(*ases_by_rank)[i]) {
@@ -331,6 +354,7 @@ void ASGraph::decide_ranks() {
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
                 AS* prov_AS = ases->find(translate_asn(provider_asn))->second;
                 int oldrank = prov_AS->rank;
+                // Move provider up to next rank
                 if (oldrank < i + 1) {
                     prov_AS->rank = i + 1;
                     (*ases_by_rank)[i+1]->insert(provider_asn);
@@ -388,6 +412,7 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
             as_from_stack->onStack = false;
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
+        // DEBUG
         if (component->size() > 1)
             std::cout << "Supernode found" << std::endl;
         components->push_back(component);
@@ -502,19 +527,6 @@ void ASGraph::combine_components(){
         ases->insert(std::pair<uint32_t,AS*>(combined_asn,combined_AS));
     }
     return;
-}
-
-
-/** Clear all announcements in AS.
- */
-void ASGraph::clear_announcements(){
-    for (auto const& as : *ases){
-        as.second->clear_announcements();
-    }
-    for (auto const& i : *inverse_results) {
-        delete i.second;
-    }
-    inverse_results->clear();
 }
 
 

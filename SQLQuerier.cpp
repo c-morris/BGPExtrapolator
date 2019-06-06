@@ -5,8 +5,7 @@ SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string 
     results_table = r;
     inverse_results_table = i;
     depref_table = d;
-    std::cout << r << std::endl;
-    std::cout << d << std::endl;
+    
     // Default host and port numbers
     // Strings for connection arg
     host = "127.0.0.1";
@@ -99,11 +98,35 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
 }
 
 
+/** Pulls the count for all announcements for the prefix.
+ *
+ * @param p The prefix
+ */
+pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
+    std::string cidr = p->to_cidr();
+    std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
+    sql += " WHERE prefix = \'" + cidr + "\';";
+    return execute(sql);
+}
+
+
+/** Pulls all announcements for the announcements for the given prefix.
+ *
+ * @param p The prefix
+ */
+pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p){
+    std::string cidr = p->to_cidr();
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + announcements_table;
+    sql += " WHERE prefix = \'" + cidr + "\';";
+    return execute(sql);
+}
+
+
 /** Pulls the count for all announcements for the prefixes contained within the passed subnet.
  *
  * @param p is the prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
+pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p){
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
@@ -115,9 +138,9 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
  *
  * @param p is the prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p){
+pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT * FROM " + announcements_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + announcements_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
     return execute(sql);
 }

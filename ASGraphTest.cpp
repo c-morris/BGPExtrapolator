@@ -75,7 +75,11 @@ bool test_translate_asn(){
 }
 
 
-bool test_create_graph_from_database() {
+/** Test generation of ASGraph from database tables.
+ *
+ * @return true if successful, otherwise false.
+ */
+bool test_create_graph_from_db() {
     ASGraph* graph = new ASGraph();
     SQLQuerier* q = new SQLQuerier("mrt_announcements", "test_results", "test_results", "depref_results");
     graph->create_graph_from_db(q);
@@ -384,32 +388,5 @@ bool test_combine_components(){
         std::cerr << "Incorrect supernode peer set." << std::endl;
         return false;
     }
-    return true;
-}
-
-
-/** 
- *
- * @return true if successful, otherwise false.
- */
-bool test_save_stubs_to_db(){
-    return true;
-}
-
-
-/** 
- *
- * @return true if successful, otherwise false.
- */
-bool test_save_non_stubs_to_db(){
-    return true;
-}
-
-
-/**
- *
- * @return true if successful, otherwise false.
- */
-bool test_save_supernodes_to_db(){
     return true;
 }

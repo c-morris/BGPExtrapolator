@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-// use uint32_t for IPv4, unsigned __int128 for IPv6
+// Use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
 struct Prefix {
     Integer addr;
@@ -23,7 +23,7 @@ struct Prefix {
         
     /** Priority constructor
      *
-     * NEEDS DESCRIPTION
+     * Takes a ipv4 address as input and converts it into two integers
      *
      * @param addr_str The IP address as a string.
      * @param mask_str The subnet mask/length as a string.
@@ -172,6 +172,7 @@ struct Prefix {
         netmask = ipv4_mask_int;
     }
     
+
     /** Converts this prefix into a cidr formatted string.
      *
      *  This is IPv4 only.
@@ -200,6 +201,7 @@ struct Prefix {
         return cidr;
     }
     
+
     /** Defined comparison operators for maps
      *
      * Comparing the addr first ensures the more specific address is greater
