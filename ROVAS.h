@@ -3,13 +3,13 @@
 
 #include "AS.h"
 #include "ASGraph.h"
-
+#include "Announcement.h"
 
 struct ROVAS: public AS {
   std::uint32_t attacker_asn;
   std::uint32_t victim_asn;
   std::string victim_prefix;
-  std::set<Prefix<>> dropped_prefixes;
+  std::set<Announcement> blocked_announcements;
   ASGraph *as_graph;
 
   ROVAS(uint32_t myasn=0,

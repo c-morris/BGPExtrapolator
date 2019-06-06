@@ -3,13 +3,16 @@
 
 #include "ROVAS.h"
 #include "ASGraph.h"
+#include "Announcement.h"
+#include "NegativeAnnouncement.h"
 
 
 struct ROVppAS: public AS {
   std::uint32_t attacker_asn;
   std::uint32_t victim_asn;
   std::string victim_prefix;
-  std::set<Prefix<>> Blackholed_prefixes;
+  std::set<Announcement> blocked_announcements;
+  std::set<NegativeAnnouncement> negative_announcements;
   ASGraph *as_graph;
 
   ROVppAS(uint32_t myasn=0,
@@ -29,10 +32,11 @@ struct ROVppAS: public AS {
   bool pass_rov(Announcement &ann);
 
   // ROVpp methods
-  void make_negative_announcement(Announcement &announcement);  // TODO: Implement
-  bool should_make_neg_announcement(Announcement &announcement);  // TODO: Implement
+  void make_negative_announcement(Announcement &legit_ann, Announcement &hijacked_ann);  // TODO: Implement
   std::vector<uint32_t> get_as_path(Announcement &announcement);
-  bool does_path_intersect(std::vector<uint32_t> p1, std::vector<uint32_t> p2);  // TODO: Implement
+  bool paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann);
+  std::pair<bool, Announcement*> received_valid_announcement(Announcement &announcement);
+  std::pair<bool, Announcement*> received_hijack_announcement(Announcement &announcement);
 };
 
 #endif

@@ -90,94 +90,108 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
       // Do not check for duplicates here
       // push_back makes a copy of the announcement
       incoming_announcements->push_back(ann);
+
+      // Check if should make negative announcement
+      // Check if you have received the Invalid Announcement in the past
+      std::pair<bool, Announcement*> check = received_hijack_announcement(ann);
+      if (check.first) {
+        // Check if the attaker's path and this path intersect
+        // MARK: Can this be done in practice?
+        if (paths_intersect(ann, *(check.second))) {
+          make_negative_announcement(ann, *(check.second));
+        }
+      }
     } else {
       // Add Announcement to blocked list
       blocked_announcements.insert(ann);
-    }
-    // Check if Negative Announcement should be made
-    if (should_make_neg_announcement(ann)) {
-      // Create a NegativeAnnouncement
-      NegativeAnnouncement neg_ann = compose_negative_announcement(ann);
-      // Add to Announcements to propagate
-      incoming_announcements->push_back(neg_ann);
+
+      // Check if should make negative announcement
+      // Check if you have received the Valid announcement in the past
+      // The announcement needs to be converted to the super-prefix
+      std::pair<bool, Announcement*> check = received_valid_announcement(ann);
+      if (check.first) {
+        // Also check if the attaker's path and this path intersect
+        if (paths_intersect(*(check.second), ann)) {
+          make_negative_announcement(*(check.second), ann);
+        }
+      }
     }
   }
 }
+
+
 
 // TODO: Implement
-NegativeAnnouncement ROVppAS::compose_negative_announcement(Announcement &announcement) {
-  // Extract prefix to Blackhole
-  Prefix<> s("137.99.0.0", "255.255.255.0");
-  Prefix<> p("137.99.0.0", "255.255.0.0");
-  NegativeAnnouncement neg_ann = NegativeAnnouncement(13796, p.addr, p.netmask, 22742, std::set<Prefix<>>());
-  neg_ann.null_route_subprefix(s);
-  return neg_ann;
+void ROVppAS::make_negative_announcement(Announcement &legit_ann, Announcement &hijacked_ann) {
+  // Create Negative Announcement
+  // TODO: Delete following block of code after testing
+  // Prefix<> s("137.99.0.0", "255.255.255.0");
+  // Prefix<> p("137.99.0.0", "255.255.0.0");
+  // NegativeAnnouncement neg_ann = NegativeAnnouncement(13796, p.addr, p.netmask, 22742, std::set<Prefix<>>());
+  // NegativeAnnouncement neg_ann = NegativeAnnouncement(uint32_t aorigin,
+  //                                                     uint32_t aprefix,
+  //                                                     uint32_t anetmask,
+  //                                                     uint32_t from_asn,
+  //                                                     std::set<Prefix<>> n_routed);
+  NegativeAnnouncement neg_ann = NegativeAnnouncement(legit_ann.origin,
+                                                      legit_ann.prefix.addr,
+                                                      legit_ann.prefix.netmask,
+                                                      legit_ann.priority,
+                                                      legit_ann.received_from_asn,
+                                                      false,
+                                                      std::set<Prefix<>>());
+  neg_ann.null_route_subprefix(hijacked_ann.prefix);
+  // Add to set of negative_announcements
+  negative_announcements.insert(neg_ann);
+  // Add to Announcements to propagate
+  incoming_announcements->push_back(neg_ann);
 }
 
-// TODO: Implement
-bool ROVppAS::should_make_neg_announcement(Announcement &announcement) {
-  // Case 1: Received Valid Announcement first, then Invalid Announcement second
-  // Check if you have received the Valid announcement in the past
-  // The announcement needs to be converted to the super-prefix
-  if (received_valid_announcement(announcement)) {
-    if () {
 
-    }
-  }
-  // Case 2: Received  Invalid Announcement first, then Valid Announcement second
-  // Check if you have received the Invalid Announcement in the past
-  // The announcement needs to be converted into the sub-prefix
-  if (received_hijack_announcement(announcement)) {
-
-  }
-  return false;
-}
-
-bool ROVppAS::received_valid_announcement(Announcement &announcement) {
+std::pair<bool, Announcement*> ROVppAS::received_valid_announcement(Announcement &announcement) {
   // Check if it's in all_anns (i.e. RIB in)
-  // TODO: Delete following code block after testing
-  // auto search = all_anns.find(announcement.prefix);
-  // if (search != all_anns.end()) {
-  //   return true;
-  // }
   for (std::pair<Prefix<>, Announcement> ann : *all_anns) {
     if (ann.first < announcement.prefix) {
-      return true;
+      return std::make_pair(true, &(ann.second));
     }
   }
 
   // Check if it was just received and hasn't been processed yet
-  // TODO: Delete following code block after testing
-  // search = incoming_announcements.find(announcement.prefix);
-  // if (search != incoming_announcements.end()) {
-  //   return true;
-  // }
-  for (auto& ann : *incoming_announcements) {
+  for (Announcement ann : *incoming_announcements) {
     if (ann.prefix < announcement.prefix) {
-      return true;
+      return std::make_pair(true, &ann);
     }
   }
+
+  // Otherwise
+  return std::make_pair(false, nullptr);
 }
 
-bool ROVppAS::received_hijack_announcement(Announcement &announcement) {
+std::pair<bool, Announcement*> ROVppAS::received_hijack_announcement(Announcement &announcement) {
   // Check if announcement is in blocked list
   // TODO: Delete following code block after testing
   // auto search = blocked_announcements.find(announcement.prefix);
   // if (search != blocked_announcements.end()) {
   //   return true;
   // }
-  for (auto& ann : blocked_announcements) {
+  for (Announcement ann : blocked_announcements) {
     if (announcement.prefix < ann.prefix) {
-      return true;
+      return std::make_pair(true, &ann);
     }
   }
+
+  // otherwise
+  return std::make_pair(false, nullptr);
 }
 
-bool ROVppAS::does_path_intersect(std::vector<uint32_t> p1, std::vector<uint32_t> p2) {
+bool ROVppAS::paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann) {
+  // Get the paths for the announcements
+  std::vector<uint32_t> legit_path = get_as_path(legit_ann);
+  std::vector<uint32_t> hijacked_path = get_as_path(hijacked_ann);
   // Double for loop to check over entire (except the beginning and end of each path)
-  for (std::size_t i=1; i<p1.size()-1; ++i) {
-    for (std::size_t j=1; j<p1.size()-1; ++j) {
-      if (p1[i] == p2[j]) {
+  for (std::size_t i=1; i<legit_path.size()-1; ++i) {
+    for (std::size_t j=1; j<hijacked_path.size()-1; ++j) {
+      if (legit_path[i] == hijacked_path[j]) {
         return true;
       }
     }
