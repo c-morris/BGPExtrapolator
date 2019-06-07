@@ -274,7 +274,7 @@ void SQLQuerier::copy_supernodes_to_db(std::string file_name){
 }
 
 
-/** 
+/** Drop the Querier's results table.
  */
 void SQLQuerier::clear_results_from_db(){
     std::string sql = std::string("DROP TABLE IF EXISTS " + results_table + ";");
@@ -282,7 +282,7 @@ void SQLQuerier::clear_results_from_db(){
 }
 
 
-/** Takes a .csv filename and bulk copies all elements to the stubs table.
+/** Drop the Querier's depref table.
  */
 void SQLQuerier::clear_depref_from_db(){
     std::string sql = std::string("DROP TABLE IF EXISTS " + depref_table + ";");
@@ -290,7 +290,7 @@ void SQLQuerier::clear_depref_from_db(){
 }
 
 
-/** Takes a .csv filename and bulk copies all elements to the stubs table.
+/** Drop the Querier's inverse results table.
  */
 void SQLQuerier::clear_inverse_from_db(){
     std::string sql = std::string("DROP TABLE IF EXISTS " + inverse_results_table + ";");

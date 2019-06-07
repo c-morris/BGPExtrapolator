@@ -45,16 +45,22 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
 
     // Generate required tables
     if (invert) {
+        querier->clear_inverse_from_db();
         querier->create_inverse_results_tbl();
     } else {
+        querier->clear_results_from_db();
         querier->create_results_tbl();
     }
     if (depref) {
+        querier->clear_depref_from_db();
         querier->create_depref_tbl();
     }
     querier->create_stubs_tbl();
+    querier->clear_stubs_from_db();
     querier->create_non_stubs_tbl();
+    querier->clear_non_stubs_from_db();
     querier->create_supernodes_tbl();
+    querier->clear_supernodes_from_db();
     
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);

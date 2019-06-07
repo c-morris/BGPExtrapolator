@@ -240,14 +240,28 @@ bool test_tarjan(){ // includes tarjan_helper()
             return false;
     }
    
-    ASGraph *graph3;
     srand(time(NULL));
     for (int i = 0; i < 100; i++) {
+        ASGraph *graph3;
         graph3 = ran_graph(100, 100);
         graph3->tarjan();
-        graph3->combine_components();
+
+        bool tarjan_cyclic = false;
+        bool cyclic = is_cyclic(graph3);
+        if (cyclic) {
+            for (auto &component : *graph3->components) {
+               if (component->size() > 1) {
+                  tarjan_cyclic = true;
+               }
+            }
+            if (tarjan_cyclic != cyclic) {
+                return false;
+            }
+        } 
+        //graph3->combine_components();
         // if this terminates, there are no cycles in the graph
-        graph3->decide_ranks();
+        //graph3->decide_ranks();
+        delete graph3;
     }
     return true;
 }
