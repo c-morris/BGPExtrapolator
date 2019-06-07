@@ -81,7 +81,7 @@ bool test_translate_asn(){
  */
 bool test_create_graph_from_db() {
     ASGraph* graph = new ASGraph();
-    SQLQuerier* q = new SQLQuerier("mrt_announcements", "test_results", "test_results", "depref_results");
+    SQLQuerier* q = new SQLQuerier("mrt_w_roas", "test_results", "test_results", "depref_results");
     graph->create_graph_from_db(q);
     
     std::ofstream outfile;
@@ -89,13 +89,13 @@ bool test_create_graph_from_db() {
     fname += ".csv";
     outfile.open(fname, std::ios::out | std::ios::trunc);
     /** TODO print graph to csv for verification
+     */
     for (auto &as : *graph->ases) {
-        AS* cur_AS = as->second;
+        AS* cur_AS = as.second;
         for (auto &provider : *cur_AS->providers) {
-            outfile << as->second->asn << ", "<< provider << std::endl;
+            outfile << cur_AS->asn << ", "<< provider << std::endl;
         }
     }
-    */
     outfile.close();
     return true;
 }
