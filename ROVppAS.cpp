@@ -233,3 +233,13 @@ std::vector<uint32_t> ROVppAS::get_as_path(Announcement &announcement) {
   }
   return as_path;
 }
+
+
+std::ostream& ROVppAS::stream_blacklist(std:: ostream &os) {
+  for (std::pair<Prefix<>, Announcement> prefix_ann_pair : blocked_map){
+      // rovpp_asn,prefix,hijacked_ann_received_from_asn
+      os << asn << ",";
+      prefix_ann_pair.second.to_csv(os);
+  }
+  return os;
+}

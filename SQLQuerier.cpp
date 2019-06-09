@@ -238,6 +238,17 @@ void SQLQuerier::create_supernodes_tbl(){
     execute(sql, false);
 }
 
+void SQLQuerier::create_rovpp_blacklist_tbl() {
+  // Drop the results table
+  std::string sql = std::string("DROP TABLE IF EXISTS " ROVPP_BLACKLIST_TABLE " ;");
+  std::cout << "Dropping rovpp_blacklist table..." << std::endl;
+  execute(sql, false);
+  // Create it again
+  sql = std::string("CREATE TABLE IF NOT EXISTS " ROVPP_BLACKLIST_TABLE "(rovpp_asn BIGINT, prefix CIDR, hijacked_ann_received_from_asn BIGINT)");
+  std::cout << "Creating rovpp_blacklist table..." << std::endl;
+  execute(sql, false);
+}
+
 /*
  *  Instantiates a new, empty stubs table in the database, if it doesn't exist.
  */

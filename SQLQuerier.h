@@ -47,6 +47,7 @@ struct SQLQuerier {
     void create_results_tbl();
     void create_inverse_results_tbl();
     void create_results_index();
+    void create_rovpp_blacklist_tbl();
     void copy_non_stubs_to_db(std::string file_name);
     void read_config();
 private:

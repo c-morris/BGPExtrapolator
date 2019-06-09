@@ -4,7 +4,7 @@
 #include <cstring>
 #include <thread>
 #include "Extrapolator.h"
-
+#include "ROVppAS.h"
 Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r,
         std::string i, bool ram) {
     invert = invert_results;
@@ -61,6 +61,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     querier->create_stubs_tbl();
     querier->create_non_stubs_tbl();
     querier->create_supernodes_tbl();
+    querier->create_rovpp_blacklist_tbl();
 
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
@@ -470,8 +471,11 @@ void Extrapolator::invert_results(void) {
  */
 void Extrapolator::save_results(int iteration){
     std::ofstream outfile;
+    std::ofstream blacklist_outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
+    std::string blacklist_file_name = "/dev/shm/bgp/rovpp_blacklist.csv";
     outfile.open(file_name);
+    blacklist_outfile.open(blacklist_file_name);
 
     if (invert) {
         std::cerr << "Saving Inverse Results From Iteration: " << iteration << std::endl;
@@ -488,10 +492,14 @@ void Extrapolator::save_results(int iteration){
         std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases){
             as.second->stream_announcements(outfile);
+            // Check if it's a ROVpp node
+            if (ROVppAS* rovpp_as = dynamic_cast<ROVppAS*>(as.second)) {
+              // It is, so now output the blacklist
+              rovpp_as->stream_blacklist(blacklist_outfile);
+            }
         }
         outfile.close();
         querier->copy_results_to_db(file_name);
-
     }
     // std::remove(file_name.c_str());
 }

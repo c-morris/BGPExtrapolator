@@ -37,6 +37,7 @@ struct ROVppAS: public AS {
   bool paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann);
   std::pair<bool, Announcement*> received_valid_announcement(Announcement &announcement);
   std::pair<bool, Announcement*> received_hijack_announcement(Announcement &announcement);
+  std::ostream& stream_blacklist(std:: ostream &os);
 };
 
 #endif
