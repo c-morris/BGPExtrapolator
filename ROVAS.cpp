@@ -80,12 +80,19 @@ bool ROVAS::pass_rov(Announcement &ann) {
  * @param announcements to be pushed onto the incoming_announcements vector.
  */
 void ROVAS::receive_announcements(std::vector<Announcement> &announcements) {
-    for (Announcement &ann : announcements) {
-        // Check if the Announcement is valid
-        if (pass_rov(ann)) {
-          // Do not check for duplicates here
-          // push_back makes a copy of the announcement
-          incoming_announcements->push_back(ann);
-        }
+  for (Announcement &ann : announcements) {
+    // Check if it's a negative annoucement
+    if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&ann)) {
+      // Drop the announcement
+    } else {
+      // Check if the Announcement is valid
+      if (pass_rov(ann)) {
+        // Do not check for duplicates here
+        // push_back makes a copy of the announcement
+        incoming_announcements->push_back(ann);
+      } else {
+        blocked_map[ann.prefix] = ann;
+      }
     }
+  }
 }

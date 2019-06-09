@@ -12,6 +12,9 @@ struct Announcement {
     uint32_t received_from_asn; // ASN that sent the ann
     bool from_monitor = false;  // flag for seeded ann
 
+    // Default Constructor!
+    Announcement() {}
+    
     /** Default constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
@@ -62,7 +65,7 @@ struct Announcement {
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */
-    std::ostream& to_csv(std::ostream &os){
+    virtual std::ostream& to_csv(std::ostream &os){
         os << prefix.to_cidr() << "," << origin << "," << received_from_asn << std::endl;
         return os;
     }

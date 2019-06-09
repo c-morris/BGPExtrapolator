@@ -11,7 +11,7 @@ struct ROVppAS: public AS {
   std::uint32_t attacker_asn;
   std::uint32_t victim_asn;
   std::string victim_prefix;
-  std::set<Announcement> blocked_announcements;
+  std::map<Prefix<>, Announcement> blocked_map;  // Prefix, annoucement map
   std::set<NegativeAnnouncement> negative_announcements;
   ASGraph *as_graph;
 
@@ -32,7 +32,7 @@ struct ROVppAS: public AS {
   bool pass_rov(Announcement &ann);
 
   // ROVpp methods
-  void make_negative_announcement(Announcement &legit_ann, Announcement &hijacked_ann);  // TODO: Implement
+  void make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijacked_ann);  // TODO: Implement
   std::vector<uint32_t> get_as_path(Announcement &announcement);
   bool paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann);
   std::pair<bool, Announcement*> received_valid_announcement(Announcement &announcement);

@@ -1,4 +1,5 @@
 #include "AS.h"
+#include "NegativeAnnouncement.h"
 
 /** Constructor for AS class.
  *
@@ -120,9 +121,14 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
+      // Check if it's a negative annoucement
+      if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&ann)) {
+        // Drop the announcement
+      } else {
         // Do not check for duplicates here
         // push_back makes a copy of the announcement
         incoming_announcements->push_back(ann);
+      }
     }
 }
 
