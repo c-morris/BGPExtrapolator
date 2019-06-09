@@ -8,6 +8,7 @@
 #include "ASGraph.h"
 #include "AS.h"
 #include "ROVAS.h"
+#include "ROVppAS.h"
 #include "NegativeAnnouncement.h"
 
 ASGraph::ASGraph() {
@@ -80,12 +81,20 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
         // if AS not yet in graph, create it
         // What kind of AS is it (Regular BGP or ROV)?
         auto rov_search = rov_asn_set->find(asn);
-        if (rov_search == rov_asn_set->end()) {  // Check if it's not in the ROV set
-          // Create a BGP AS
-          ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
-        } else {
+        auto rovpp_search = rovpp_asn_set->find(asn);
+        // Create AS based on what type it is
+        // Check if it's a ROV AS
+        if (rov_search != rov_asn_set->end()) {
           // Create a ROV AS
           ases->insert(std::pair<uint32_t, AS*>(asn, new ROVAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this)));
+
+        } else if (rovpp_search != rovpp_asn_set->end()) {  // Check if it's ROVpp AS
+          // Create ROVpp AS
+          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this)));
+
+        } else {  // It must be a Regular BGP AS
+          // Create a BGP AS
+          ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
         }
         search = ases->find(asn);
     }
@@ -151,10 +160,23 @@ void ASGraph::process(SQLQuerier *querier){
 *
 */
 void ASGraph::load_rov_ases(SQLQuerier *querier) {
-  pqxx::result rov_ases_result = querier->select_rov_ases(ASES_TABLE);
+  pqxx::result rov_ases_result = querier->select_as_types(ASES_TABLE);
   for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c) {
     if (c["as_type"].as<std::string>() == "rov") {
       std::cout << "ROV AS " << c["asn"].as<uint32_t>() << std::endl;
+      rov_asn_set->insert(c["asn"].as<uint32_t>());
+    }
+  }
+}
+
+/** Initializes the set of ASNs (rovpp_asn_set) variable, with entries from database.
+*
+*/
+void ASGraph::load_rovpp_ases(SQLQuerier *querier) {
+  pqxx::result rov_ases_result = querier->select_as_types(ASES_TABLE);
+  for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c) {
+    if (c["as_type"].as<std::string>() == "rovpp") {
+      std::cout << "ROVpp AS " << c["asn"].as<uint32_t>() << std::endl;
       rov_asn_set->insert(c["asn"].as<uint32_t>());
     }
   }
@@ -169,7 +191,8 @@ void ASGraph::load_rov_ases(SQLQuerier *querier) {
  */
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
     //TODO add table names to config
-    load_rov_ases(querier); // initialize map of ASes
+    load_rov_ases(querier);  // initializes rov_asn_set
+    load_rovpp_ases(querier);  // initializes rovpp_asn_set
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c["peer_as_1"].as<uint32_t>(),

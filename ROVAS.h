@@ -31,10 +31,10 @@ struct ROVAS: public AS {
   void process_announcements();
   friend std::ostream& operator<<(std::ostream &os, const AS& as);
   std::ostream& stream_announcements(std:: ostream &os);
-  void receive_announcements(std::vector<Announcement> &announcements);
+  virtual void receive_announcements(std::vector<Announcement> &announcements);
 
   // ROV Methods
-  bool pass_rov(Announcement &ann);
+  virtual bool pass_rov(Announcement &ann);
 };
 
 #endif

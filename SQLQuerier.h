@@ -29,7 +29,7 @@ struct SQLQuerier {
     pqxx::result select_ann_records(std::string table_name, std::vector<std::string> prefixes, int limit = 0);
     pqxx::result select_distinct_prefixes_from_table(std::string table_name);
     pqxx::result select_roa_prefixes(std::string table_name, int ip_family = IPV4);
-    pqxx::result select_rov_ases(std::string table_name);
+    pqxx::result select_as_types(std::string table_name);
     void check_for_relationship_changes(std::string peers_table_1,
                                                 std::string customer_provider_pairs_table_1,
                                                 std::string peers_table_2,

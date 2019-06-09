@@ -23,6 +23,7 @@ struct ASGraph {
     std::vector<uint32_t> *ases_with_anns;
     std::vector<std::set<uint32_t>*> *ases_by_rank;
     std::set<uint32_t> *rov_asn_set;  // Set of ROV ASNs
+    std::set<uint32_t> *rovpp_asn_set;
     std::vector<std::vector<uint32_t>*> *components;
     std::map<uint32_t, uint32_t> *stubs_to_parents;
     std::vector<uint32_t> *non_stubs;
@@ -56,6 +57,7 @@ struct ASGraph {
     void save_non_stubs_to_db(SQLQuerier *querier);
     void to_graphviz(std::ostream &os);
     void load_rov_ases(SQLQuerier *querier);
+    void load_rovpp_ases(SQLQuerier *querier);
     AS * get_as_with_asn(uint32_t asn);
 
     uint32_t translate_asn(uint32_t asn);

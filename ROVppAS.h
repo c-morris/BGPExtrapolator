@@ -1,13 +1,11 @@
-#ifndef ROVAS_H
-#define ROVAS_H
+#ifndef ROVPPAS_H
+#define ROVPPAS_H
 
 #include "ROVAS.h"
-#include "ASGraph.h"
-#include "Announcement.h"
 #include "NegativeAnnouncement.h"
 
 
-struct ROVppAS: public AS {
+struct ROVppAS: public ROVAS {
   std::uint32_t attacker_asn;
   std::uint32_t victim_asn;
   std::string victim_prefix;
@@ -23,7 +21,10 @@ struct ROVppAS: public AS {
       ASGraph *graph=NULL,
       std::set<uint32_t> *prov=NULL,
       std::set<uint32_t> *peer=NULL,
-      std::set<uint32_t> *cust=NULL);
+      std::set<uint32_t> *cust=NULL) : ROVAS(myasn, attacker_asn, victim_asn,
+      victim_prefix, inv, graph, prov, peer, cust) {
+        // Nothing new here
+      }
   ~ROVppAS();
   // AS Methods
   void receive_announcements(std::vector<Announcement> &announcements);
@@ -37,7 +38,7 @@ struct ROVppAS: public AS {
   bool paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann);
   std::pair<bool, Announcement*> received_valid_announcement(Announcement &announcement);
   std::pair<bool, Announcement*> received_hijack_announcement(Announcement &announcement);
-  std::ostream& stream_blacklist(std:: ostream &os);
+  std::ostream& stream_blacklist(std::ostream &os);
 };
 
 #endif

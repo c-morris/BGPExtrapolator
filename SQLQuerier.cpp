@@ -152,7 +152,7 @@ pqxx::result SQLQuerier::select_roa_prefixes(std::string table_name, int ip_fami
     return execute(sql);
 }
 
-pqxx::result SQLQuerier::select_rov_ases(std::string table_name) {
+pqxx::result SQLQuerier::select_as_types(std::string table_name) {
   std::string sql = "SELECT asn, as_type FROM " + table_name;
   return execute(sql);
 }
