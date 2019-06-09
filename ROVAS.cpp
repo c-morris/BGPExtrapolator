@@ -50,6 +50,7 @@ ROVAS::ROVAS(uint32_t myasn,
   depref_anns = new std::map<Prefix<>, Announcement>;
   index = -1;
   onStack = false;
+  blocked_map = std::map<Prefix<>, Announcement>();
 }
 
 ROVAS::~ROVAS() {

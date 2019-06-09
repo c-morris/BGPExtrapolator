@@ -15,6 +15,7 @@ ASGraph::ASGraph() {
     ases = new std::map<uint32_t, AS*>;
     ases_by_rank = new std::vector<std::set<uint32_t>*>;
     rov_asn_set = new std::set<uint32_t>;
+    rovpp_asn_set = new std::set<uint32_t>;
     components = new std::vector<std::vector<uint32_t>*>;
     component_translation = new std::map<uint32_t, uint32_t>;
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
@@ -30,6 +31,7 @@ ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::stri
   ases = new std::map<uint32_t, AS*>;
   ases_by_rank = new std::vector<std::set<uint32_t>*>;
   rov_asn_set = new std::set<uint32_t>;
+  rovpp_asn_set = new std::set<uint32_t>;
   components = new std::vector<std::vector<uint32_t>*>;
   component_translation = new std::map<uint32_t, uint32_t>;
   stubs_to_parents = new std::map<uint32_t, uint32_t>;
@@ -177,7 +179,7 @@ void ASGraph::load_rovpp_ases(SQLQuerier *querier) {
   for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c) {
     if (c["as_type"].as<std::string>() == "rovpp") {
       std::cout << "ROVpp AS " << c["asn"].as<uint32_t>() << std::endl;
-      rov_asn_set->insert(c["asn"].as<uint32_t>());
+      rovpp_asn_set->insert(c["asn"].as<uint32_t>());
     }
   }
 }
