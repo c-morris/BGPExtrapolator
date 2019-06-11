@@ -301,7 +301,10 @@ void SQLQuerier::clear_inverse_from_db(){
 /** Instantiates a new, empty results table in the database, dropping the old table.
  */
 void SQLQuerier::create_results_tbl(){
+    /**
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (ann_id serial PRIMARY KEY,\
+    */
+    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
     std::cout << "Creating results table..." << std::endl;
@@ -312,7 +315,7 @@ void SQLQuerier::create_results_tbl(){
 /** Instantiates a new, empty depref table in the database, dropping the old table.
  */
 void SQLQuerier::create_depref_tbl(){
-    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table + " (ann_id serial PRIMARY KEY,\
+    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
     std::cout << "Creating depref table..." << std::endl;

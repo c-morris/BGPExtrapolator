@@ -65,7 +65,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
    
-    std::cerr << "Beginning propagation..." << std::endl;
+    std::cout << "Generating subnet blocks..." << std::endl;
     
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
@@ -73,7 +73,9 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
     populate_blocks(cur_prefix, prefix_blocks, subnet_blocks);
     delete cur_prefix;
+   
     
+    std::cout << "Beginning propagation..." << std::endl;
     uint32_t announcement_count = 0; 
     // For each unprocessed prefix block  
     int iteration = 0;
@@ -211,9 +213,11 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     std::cout << "Announcement count: " << announcement_count << std::endl;
 
     // Create an index on the results
+    /**
     if (!invert) {
         querier->create_results_index();
     }
+    */
 }
 
 

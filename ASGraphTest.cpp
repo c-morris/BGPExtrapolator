@@ -93,7 +93,7 @@ bool test_create_graph_from_db() {
     for (auto &as : *graph->ases) {
         AS* cur_AS = as.second;
         for (auto &provider : *cur_AS->providers) {
-            outfile << cur_AS->asn << ", "<< provider << std::endl;
+            outfile << provider << ", "<< cur_AS->asn << std::endl;
         }
     }
     outfile.close();
