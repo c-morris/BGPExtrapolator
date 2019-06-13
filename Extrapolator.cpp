@@ -499,7 +499,9 @@ void Extrapolator::save_results(int iteration){
             }
         }
         outfile.close();
+        blacklist_outfile.close();
         querier->copy_results_to_db(file_name);
+        // TODO: Copy blacklist to database
     }
     // std::remove(file_name.c_str());
 }

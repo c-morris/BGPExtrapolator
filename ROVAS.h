@@ -9,7 +9,7 @@ struct ROVAS: public AS {
   std::uint32_t attacker_asn;
   std::uint32_t victim_asn;
   std::string victim_prefix;
-  std::map<Prefix<>, Announcement> blocked_map;
+  std::map<Prefix<>, Announcement> dropped_ann_map;
   ASGraph *as_graph;
 
   ROVAS(uint32_t myasn=0,

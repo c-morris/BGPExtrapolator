@@ -7,6 +7,7 @@
 
 struct ROVppAS: public ROVAS {
   std::set<NegativeAnnouncement> negative_announcements;
+  std::map<Prefix<>, Announcement> blackhole_map;
 
   ROVppAS(uint32_t myasn=0,
       std::uint32_t attacker_asn=0,
@@ -19,6 +20,7 @@ struct ROVppAS: public ROVAS {
       std::set<uint32_t> *cust=NULL) : ROVAS(myasn, attacker_asn, victim_asn,
       victim_prefix, inv, graph, prov, peer, cust) {
         negative_announcements = std::set<NegativeAnnouncement>();
+        blackhole_map = std::map<Prefix<>, Announcement>();
       }
   ~ROVppAS();
   // AS Methods
@@ -34,6 +36,9 @@ struct ROVppAS: public ROVAS {
   std::pair<bool, Announcement*> received_valid_announcement(Announcement &announcement);
   std::pair<bool, Announcement*> received_hijack_announcement(Announcement &announcement);
   std::ostream& stream_blacklist(std::ostream &os);
+  void incoming_negative_announcement(Announcement &ann);
+  void incoming_valid_announcement(Announcement &ann);
+  void incoming_hijack_announcement(Announcement &ann);
 };
 
 #endif

@@ -50,7 +50,7 @@ ROVAS::ROVAS(uint32_t myasn,
   depref_anns = new std::map<Prefix<>, Announcement>;
   index = -1;
   onStack = false;
-  blocked_map = std::map<Prefix<>, Announcement>();
+  dropped_ann_map = std::map<Prefix<>, Announcement>();
 }
 
 ROVAS::~ROVAS() {
@@ -92,7 +92,7 @@ void ROVAS::receive_announcements(std::vector<Announcement> &announcements) {
         // push_back makes a copy of the announcement
         incoming_announcements->push_back(ann);
       } else {
-        blocked_map[ann.prefix] = ann;
+        dropped_ann_map[ann.prefix] = ann;
       }
     }
   }

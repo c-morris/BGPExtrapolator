@@ -25,6 +25,57 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 }
 
 
+void ROVppAS::incoming_negative_announcement(Announcement &ann) {
+  // Check if you have an alternative route (i.e. escape route)
+  // WARNING: This is the first thing that must be done in this scope
+  std::pair<bool, Announcement*> check = received_valid_announcement(ann);
+  if (check.first) {
+    // Check if the attaker's path and this path intersect
+    // MARK: Can this be done in practice?
+    // TODO: ann should be the hijacked announcement (modify NegativeAnnouncement to save the HijackedAnn)
+    if (paths_intersect(*(check.second), ann)) {
+      make_negative_announcement_and_blackhole(ann, *(check.second));
+    }
+  } else {  // You don't have an escapce route
+    make_negative_announcement_and_blackhole(ann, *(check.second));
+  }
+}
+
+
+void ROVppAS::incoming_valid_announcement(Announcement &ann) {
+  // Do not check for duplicates here
+  // push_back makes a copy of the announcement
+  incoming_announcements->push_back(ann);
+
+  // Check if should make negative announcement
+  // Check if you have received the Invalid Announcement in the past
+  std::pair<bool, Announcement*> check = received_hijack_announcement(ann);
+  if (check.first) {
+    // Check if the attaker's path and this path intersect
+    // MARK: Can this be done in practice?
+    if (paths_intersect(ann, *(check.second))) {
+      make_negative_announcement_and_blackhole(ann, *(check.second));
+    } // TODO: You should remove the blocked announcement if you made a negative announces already
+  }
+}
+
+
+void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
+  // Drop the announcement (i.e. don't add it to incoming_announcements)
+  // Add announcement to dropped list
+  dropped_ann_map[ann.prefix] = ann;
+  // Check if should make negative announcement
+  // Check if you have received the Valid announcement in the past
+  std::pair<bool, Announcement*> check = received_valid_announcement(ann);
+  if (check.first) {
+    // Also check if the attaker's path and this path intersect
+    if (paths_intersect(*(check.second), ann)) {
+      make_negative_announcement_and_blackhole(*(check.second), ann);
+    }
+  }
+}
+
+
 /** Push the received announcements to the incoming_announcements vector.
  *
  * Note that this differs from the Python version in that it does not store
@@ -36,47 +87,11 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
   for (Announcement &ann : announcements) {
     // Check if it's a NegativeAnnouncement
     if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&ann)) {
-      // Check if you have an alternative route (i.e. escape route)
-      // WARNING: This is the first thing that must be done in this scope
-      std::pair<bool, Announcement*> check = received_valid_announcement(ann);
-      if (check.first) {
-        // Check if the attaker's path and this path intersect
-        // MARK: Can this be done in practice?
-        // TODO: ann should be the hijacked announcement (modify NegativeAnnouncement to save the HijackedAnn)
-        if (paths_intersect(*(check.second), ann)) {
-          make_negative_announcement_and_blackhole(ann, *(check.second));
-        }
-      } else {  // You don't have an escapce route
-        make_negative_announcement_and_blackhole(ann, *(check.second));
-      }
-    } else {  // It's not a negative announcement (i.e. it's just a regular annoucement)
-      // Check if the Announcement is valid
-      if (pass_rov(ann)) {
-        // Do not check for duplicates here
-        // push_back makes a copy of the announcement
-        incoming_announcements->push_back(ann);
-
-        // Check if should make negative announcement
-        // Check if you have received the Invalid Announcement in the past
-        std::pair<bool, Announcement*> check = received_hijack_announcement(ann);
-        if (check.first) {
-          // Check if the attaker's path and this path intersect
-          // MARK: Can this be done in practice?
-          if (paths_intersect(ann, *(check.second))) {
-            make_negative_announcement_and_blackhole(ann, *(check.second));
-          }
-        }
-      } else {  // Not valid, so you drop the announcement (i.e. don't add it to incoming_announcements)
-        // Check if should make negative announcement
-        // Check if you have received the Valid announcement in the past
-        std::pair<bool, Announcement*> check = received_valid_announcement(ann);
-        if (check.first) {
-          // Also check if the attaker's path and this path intersect
-          if (paths_intersect(*(check.second), ann)) {
-            make_negative_announcement_and_blackhole(*(check.second), ann);
-          }
-        }
-      }
+      incoming_negative_announcement(ann);
+    } else if (pass_rov(ann)) { // It's not a negative announcement. Check if the Announcement is valid
+      incoming_valid_announcement(ann);
+    } else {  // Not valid (i.e. hijack announcement)
+      incoming_hijack_announcement(ann);
     }
   }
 }
@@ -108,7 +123,7 @@ void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, 
   // Add to Announcements to propagate
   incoming_announcements->push_back(neg_ann);
   // Add Announcement to blocked list (i.e. blackhole list)
-  blocked_map[hijacked_ann.prefix] = hijacked_ann;
+  blackhole_map[hijacked_ann.prefix] = hijacked_ann;
 }
 
 
@@ -132,13 +147,15 @@ std::pair<bool, Announcement*> ROVppAS::received_valid_announcement(Announcement
 }
 
 std::pair<bool, Announcement*> ROVppAS::received_hijack_announcement(Announcement &announcement) {
-  // Check if announcement is in blocked list
-  // TODO: Delete following code block after testing
-  // auto search = blocked_announcements.find(announcement.prefix);
-  // if (search != blocked_announcements.end()) {
-  //   return true;
-  // }
-  for (std::pair<Prefix<>, Announcement> prefix_ann_pair : blocked_map) {
+  // Check if announcement is in dropped list
+  for (std::pair<Prefix<>, Announcement> prefix_ann_pair : dropped_ann_map) {
+    if (announcement.prefix < prefix_ann_pair.first && prefix_ann_pair.second.origin == attacker_asn) {
+      return std::make_pair(true, &prefix_ann_pair.second);
+    }
+  }
+
+  // Check if the announcement is in the blackhole list
+  for (std::pair<Prefix<>, Announcement> prefix_ann_pair : blackhole_map) {
     if (announcement.prefix < prefix_ann_pair.first && prefix_ann_pair.second.origin == attacker_asn) {
       return std::make_pair(true, &prefix_ann_pair.second);
     }
@@ -153,8 +170,8 @@ bool ROVppAS::paths_intersect(Announcement &legit_ann, Announcement &hijacked_an
   std::vector<uint32_t> legit_path = get_as_path(legit_ann);
   std::vector<uint32_t> hijacked_path = get_as_path(hijacked_ann);
   // Double for loop to check over entire (except the beginning and end of each path)
-  for (std::size_t i=1; i<legit_path.size()-1; ++i) {
-    for (std::size_t j=1; j<hijacked_path.size()-1; ++j) {
+  for (std::size_t i=1; i<legit_path.size(); ++i) {
+    for (std::size_t j=1; j<hijacked_path.size(); ++j) {
       if (legit_path[i] == hijacked_path[j]) {
         return true;
       }
@@ -171,23 +188,32 @@ std::vector<uint32_t> ROVppAS::get_as_path(Announcement &announcement) {
   uint32_t current_asn = asn;  // it's own ASN
   AS * curr_as = this;
   uint32_t origin_asn = announcement.origin;  // the origin AS of the announcement
-  Announcement * curr_announcement = &announcement;
+  Announcement curr_announcement = announcement;
+  // append to end of ASN path
+  as_path.push_back(current_asn);
   // Add to the path vector until we reach the origin
   while (current_asn != origin_asn) {
-    // append to end of ASN path
-    as_path.push_back(current_asn);
+    // Check if the received from asn is 0
+    // This means it's coming from an AS which was seeded with this announcement
+    // Just take the origin as the ASN in this case
+    if (curr_announcement.received_from_asn == 0) {
+      as_path.push_back(curr_announcement.origin);
+      break;
+    }
     // Get the previous AS in path
-    current_asn = curr_announcement->received_from_asn;
+    current_asn = curr_announcement.received_from_asn;
     curr_as = as_graph->get_as_with_asn(current_asn);
     // Get same announcement from previous AS
-    curr_announcement = curr_as->get_ann_for_prefix(curr_announcement->prefix);
+    curr_announcement = *(curr_as->get_ann_for_prefix(curr_announcement.prefix));
+    // append to end of ASN path
+    as_path.push_back(current_asn);
   }
   return as_path;
 }
 
 
 std::ostream& ROVppAS::stream_blacklist(std:: ostream &os) {
-  for (std::pair<Prefix<>, Announcement> prefix_ann_pair : blocked_map){
+  for (std::pair<Prefix<>, Announcement> prefix_ann_pair : blackhole_map){
       // rovpp_asn,prefix,hijacked_ann_received_from_asn
       os << asn << ",";
       prefix_ann_pair.second.to_csv(os);
