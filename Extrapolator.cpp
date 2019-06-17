@@ -310,7 +310,7 @@ std::vector<uint32_t>* Extrapolator::parse_path(std::string path_as_string) {
         }
         path_as_string.erase(0,pos + delimiter.length());
     }
-
+    // Handle last ASN after loop
     try {
         as_path->push_back(std::stoul(path_as_string));
     } catch(...) {
@@ -476,6 +476,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                                           bool to_providers, 
                                           bool to_peers, 
                                           bool to_customers) {
+    // TODO Cleanup
     auto *source_as = graph->ases->find(asn)->second; 
     if (to_providers) {
         std::vector<Announcement> anns_to_providers;
