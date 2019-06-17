@@ -51,16 +51,17 @@ When the database is set up and the config file is in place, you can run
 ./bgp-extrapolator
 ```
 
+
 Optional arguments:
-| Parameter             | Default   | Description   |
-| :-------------------- |:---------:|:--------------|
-| -i --invert-results   | true      | record ASNs without route to a prefix-origin (smaller results)
-| -d --store-depref     | false     | record announcements for depreference policy (doubles normal results)
-| -s --iteration-size   | 500000    | max number of announcements per iteration (higher = more memory use)
-| -r --results-table    | extrapolation-results | name of the normal results table (if -i 0)
-| -d --depref-table     | depref-results | name of the depref results table (if -d 1)
-| -o --inverse-results-table    | extrapolation-results | name of the inverse results table
-| -a --announcements-table  | mrt_w_roas    | name of the announcements input table
+| Parameter | Default   | Description |
+| :--- | :---: | :--- |
+| -i --invert-results | true | record ASNs without route to a prefix-origin (smaller results)
+| -d --store-depref | false | record announcements for depreference policy (doubles normal results)
+| -s --iteration-size | 500000 | max number of announcements per iteration (higher = more memory use)
+| -r --results-table | extrapolation-results | name of the normal results table (if -i 0)
+| -d --depref-table | depref-results | name of the depref results table (if -d 1)
+| -o --inverse-results-table | extrapolation-results | name of the inverse results table
+| -a --announcements-table | mrt_w_roas | name of the announcements input table
 
 
 
