@@ -122,7 +122,7 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
       // Check if it's a negative annoucement
-      if (dynamic_cast<NegativeAnnouncement*>(&ann)) {
+      if (ann.has_blackholes) {
         // Drop the announcement
       } else {
         // Do not check for duplicates here

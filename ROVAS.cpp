@@ -83,7 +83,7 @@ bool ROVAS::pass_rov(Announcement &ann) {
 void ROVAS::receive_announcements(std::vector<Announcement> &announcements) {
   for (Announcement &ann : announcements) {
     // Check if it's a negative annoucement
-    if (dynamic_cast<NegativeAnnouncement*>(&ann)) {
+    if (ann.has_blackholes) {
       // Drop the announcement
     } else {
       // Check if the Announcement is valid

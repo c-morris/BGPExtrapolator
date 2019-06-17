@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <set>
 #include "Prefix.h"
 
 struct Announcement {
@@ -11,6 +12,10 @@ struct Announcement {
     double priority;            // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
     bool from_monitor = false;  // flag for seeded ann
+    // Negative/Blackhole Announcement
+    bool has_blackholes;
+    std::set<Prefix<>> blackholed_prefixes; // subprefixes without valid routes
+
 
     // Default Constructor!
     Announcement() {}
@@ -25,6 +30,8 @@ struct Announcement {
         received_from_asn = from_asn;
         priority = 0.0;
         from_monitor = false;
+        has_blackholes = false;
+        blackholed_prefixes = std::set<Prefix<>>();
     }
 
     /** Priority constructor
@@ -44,8 +51,16 @@ struct Announcement {
       received_from_asn = obj.received_from_asn;
       priority = obj.priority;
       from_monitor = obj.from_monitor;
+      has_blackholes = obj.has_blackholes;
+      blackholed_prefixes = obj.blackholed_prefixes;
     }
 
+    /** Adds to the blackhole set
+    */
+    void add_blackhole(Prefix<> prefix) {
+      has_blackholes = true;
+      blackholed_prefixes.insert(prefix);
+    }
 
     /** Defines the << operator for the Announcements
      *
