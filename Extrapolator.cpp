@@ -5,6 +5,8 @@
 #include <thread>
 #include "Extrapolator.h"
 #include "ROVppAS.h"
+#include "NegativeAnnouncement.h"
+
 Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r,
         std::string i, bool ram) {
     invert = invert_results;
@@ -118,10 +120,13 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
             give_ann_to_as_path(as_path,p);
             delete as_path;
         }
-        std::cerr << "Propagating..." << std::endl;
+        std::cerr << "Propagating Up ..." << std::endl;
         //TODO send AS.anns_sent_to_peers_providers to rest of peers/providers
         propagate_up();
+        print_results(iter);
+        std::cerr << "Propagating Down ..." << std::endl;
         propagate_down();
+        print_results(iter);
         save_results(iter);
         graph->clear_announcements();
         iter++;
@@ -214,7 +219,7 @@ void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            //std::cerr << "propagating down to " << asn << std::endl;
+            // std::cerr << "propagating down to " << asn << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, false, true);
@@ -360,13 +365,21 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             } else {
                 priority = priority - floor(priority) - 0.01 + 2;
             }
-            anns_to_providers.push_back(
-                Announcement(
-                    ann.second.origin,
-                    ann.second.prefix.addr,
-                    ann.second.prefix.netmask,
-                    priority,
-                    asn));
+            // Check if it's a NegativeAnnouncement
+            if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&(ann.second))) {
+                NegativeAnnouncement neg_ann = NegativeAnnouncement(*d);
+                neg_ann.priority = priority;
+                neg_ann.received_from_asn = asn;
+                anns_to_providers.push_back(neg_ann);
+            } else {
+                anns_to_providers.push_back(
+                    Announcement(
+                        ann.second.origin,
+                        ann.second.prefix.addr,
+                        ann.second.prefix.netmask,
+                        priority,
+                        asn));
+            }
         }
         // send announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -395,13 +408,21 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             }
 
             priority--; // subtract 1 for peers
-            anns_to_peers.push_back(
-                Announcement(
-                    ann.second.origin,
-                    ann.second.prefix.addr,
-                    ann.second.prefix.netmask,
-                    priority,
-                    asn));
+            // Check if it's a NegativeAnnouncement
+            if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&(ann.second))) {
+                NegativeAnnouncement neg_ann = NegativeAnnouncement(*d);
+                neg_ann.priority = priority;
+                neg_ann.received_from_asn = asn;
+                anns_to_peers.push_back(neg_ann);
+            } else {
+                anns_to_peers.push_back(
+                    Announcement(
+                        ann.second.origin,
+                        ann.second.prefix.addr,
+                        ann.second.prefix.netmask,
+                        priority,
+                        asn));
+            }
         }
 
 
@@ -423,13 +444,22 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                 priority = 0.99;
             else
                 priority = priority - floor(priority) - 0.01;
-            anns_to_customers.push_back(
-                Announcement(
-                    ann.second.origin,
-                    ann.second.prefix.addr,
-                    ann.second.prefix.netmask,
-                    priority,
-                    asn));
+
+            // Check if it's a NegativeAnnouncement
+            if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&(ann.second))) {
+                NegativeAnnouncement neg_ann = NegativeAnnouncement(*d);
+                neg_ann.priority = priority;
+                neg_ann.received_from_asn = asn;
+                anns_to_customers.push_back(neg_ann);
+            } else {
+                anns_to_customers.push_back(
+                    Announcement(
+                        ann.second.origin,
+                        ann.second.prefix.addr,
+                        ann.second.prefix.netmask,
+                        priority,
+                        asn));
+            }
         }
         // send announcements
         for (uint32_t customer_asn : *source_as->customers) {
@@ -464,7 +494,18 @@ void Extrapolator::invert_results(void) {
     }
 }
 
-
+void Extrapolator::print_results(int iteration) {
+  std::cerr << "Printing Results From Iteration: " << iteration << std::endl;
+  for (auto &as : *graph->ases) {
+      std::cout << "----- AS " << as.second->asn << " -----" << std::endl;
+      as.second->stream_announcements(std::cout);
+      // Check if it's a ROVpp node
+      // if (ROVppAS* rovpp_as = dynamic_cast<ROVppAS*>(as.second)) {
+      //   // It is, so now output the blacklist
+      //   rovpp_as->stream_blacklist(blacklist_outfile);
+      // }
+  }
+}
 /** Save the results of a single iteration to a in-memory
  *
  * @param iteration The current iteration of the propagation

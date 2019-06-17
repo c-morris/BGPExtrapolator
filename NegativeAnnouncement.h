@@ -32,7 +32,14 @@ struct NegativeAnnouncement: public Announcement {
     : Announcement(aorigin, aprefix, anetmask, pr, from_asn, false) {
         null_routed = n_routed;
         hijacked_ann = bad_announcement;
-    }
+      }
+
+
+    /** Copy Constructor
+    */
+    // NegativeAnnouncement(const NegativeAnnouncement &obj): NegativeAnnouncement(obj.origin, obj.prefix.addr, obj.prefix.netmask, obj.priority,  obj.received_from_asn, obj.from_monitor, obj.null_routed, obj.hijacked_ann) {
+    //
+    // }
 
     /** Add a subprefix to the set of null_routed subprefixes.
      */

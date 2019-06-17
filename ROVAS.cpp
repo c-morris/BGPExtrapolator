@@ -83,7 +83,7 @@ bool ROVAS::pass_rov(Announcement &ann) {
 void ROVAS::receive_announcements(std::vector<Announcement> &announcements) {
   for (Announcement &ann : announcements) {
     // Check if it's a negative annoucement
-    if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&ann)) {
+    if (dynamic_cast<NegativeAnnouncement*>(&ann)) {
       // Drop the announcement
     } else {
       // Check if the Announcement is valid
@@ -96,4 +96,10 @@ void ROVAS::receive_announcements(std::vector<Announcement> &announcements) {
       }
     }
   }
+}
+
+/** Does the same thing an AS does.
+*/
+void ROVAS::receive_announcement(Announcement &ann) {
+    AS::receive_announcement(ann);
 }

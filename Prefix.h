@@ -11,18 +11,25 @@ template <typename Integer = uint32_t>
 struct Prefix {
     Integer addr;
     Integer netmask;
-    
+
     /** Default constructor
      */
     Prefix() {}
-    
+
+    /** Copy Constructor
+    */
+    Prefix(const Prefix &obj) {
+      addr = obj.addr;
+      netmask = obj.netmask;
+    }
+
     /** Priority constructor
      *
      * NEEDS DESCRIPTION
      *
      * @param addr_str The IP address as a string.
      * @param mask_str The subnet mask/length as a string.
-     */ 
+     */
     Prefix(std::string addr_str, std::string mask_str) {
         // TODO IPv6 Address Parsing
         // IPv4 Address Parsing
@@ -34,15 +41,15 @@ struct Prefix {
         bool error_f = false;           // Error flag, drops malformed input
         int counter = 0;                // Check for proper addr length
         uint32_t ipv4_ip_int = 0;
-        
+
         // Convert string address to an unsigned 32-bit int
         std::string s = addr_str;
         if (s.empty()) {
             error_f = true;
-        } 
+        }
         else {
             while ((pos = s.find(delimiter)) != std::string::npos) {
-                
+
                 // Catch long malformed input
                 if (counter > 3) {
                     error_f = true;
@@ -54,32 +61,32 @@ struct Prefix {
                 // May need try-catch
                 try {
                     uint32_t token_int = std::stoul(token);
-                    
+
                     // Catch out of range ints, default to 255
                     if (token_int > 255) {
                         error_f = true;
                         break;
                     }
-                    
+
                     // Add token and shift left 8 bits
                     ipv4_ip_int += token_int;
                     ipv4_ip_int = ipv4_ip_int << 8;
-                    
+
                     // Trim token from addr
                     s.erase(0, pos + delimiter.length());
                     counter += 1;
-                } 
+                }
                 catch (...) {
                     error_f = true;
                     break;
                 }
             }
-            
+
             // Catch short malformed input
             if (counter != 3) {
                 error_f = true;
             }
-            
+
             // Add last 8-bit token
             // May need try-catch
             try {
@@ -94,17 +101,17 @@ struct Prefix {
             }
 
         }
-        
+
 
         // Convert Subnet Mask to int
         counter = 0;                // Check for proper addr length
         uint32_t ipv4_mask_int = 0;
-        
+
         s = mask_str;
         if (s.empty()) {
             error_f = true;
         } else {
-            while ((pos = s.find(delimiter)) != std::string::npos) { 
+            while ((pos = s.find(delimiter)) != std::string::npos) {
                 // Catch long malformed input
                 if (counter > 3) {
                     error_f = true;
@@ -115,17 +122,17 @@ struct Prefix {
                 token = s.substr(0, pos);
                 try {
                     uint32_t token_int = std::stoul(token);
-                    
+
                     // Catch out of range ints, default to 255
                     if (token_int > 255) {
                         error_f = true;
                         break;
                     }
-                    
+
                     // Add token and shift left 8 bits
                     ipv4_mask_int += std::stoul(token);
                     ipv4_mask_int = ipv4_mask_int << 8;
-                    
+
                     // Trim token from addr
                     s.erase(0, pos + delimiter.length());
                     counter += 1;
@@ -135,12 +142,12 @@ struct Prefix {
                     break;
                 }
             }
-                
+
             // Catch short malformed input
             if (counter != 3) {
                 error_f = true;
             }
-                
+
             // Add last 8-bit token
             try {
                 uint32_t s_int = std::stoul(s);
@@ -154,7 +161,7 @@ struct Prefix {
                 error_f = true;
             }
         }
-        
+
         // Default errors to 0.0.0.0/0
         if (error_f == true) {
             ipv4_ip_int = 0;
@@ -166,7 +173,7 @@ struct Prefix {
         addr = ipv4_ip_int;
         netmask = ipv4_mask_int;
     }
-    
+
     /** Converts this prefix into a cidr formatted string.
      *
      *  This is IPv4 only.
@@ -194,7 +201,7 @@ struct Prefix {
         cidr.append(std::to_string(sz));
         return cidr;
     }
-    
+
     /** Defined comparison operators for maps
      *
      * Comparing the addr first ensures the more specific address is greater
@@ -206,11 +213,11 @@ struct Prefix {
         uint64_t combined = 0;
         combined |= addr;
         combined = combined << 32;
-        combined |= netmask; 
+        combined |= netmask;
         uint64_t combined_b = 0;
         combined_b |= b.addr;
         combined_b = combined_b << 32;
-        combined_b |= b.netmask; 
+        combined_b |= b.netmask;
         return combined < combined_b;
     }
     bool operator==(const Prefix &b) const {
@@ -225,4 +232,3 @@ struct Prefix {
 };
 
 #endif
-

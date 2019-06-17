@@ -18,6 +18,7 @@
 #include "Prefix.h"
 #include "SQLQuerier.h"
 #include "TableNames.h"
+// #include "NegativeAnnouncement.h"
 
 struct Extrapolator {
     ASGraph *graph;
@@ -38,7 +39,7 @@ struct Extrapolator {
 
     void perform_propagation(bool test = false, size_t group_size = 1000, size_t max_total = 0);
     void send_all_announcements(uint32_t asn,
-        bool to_providers = false, 
+        bool to_providers = false,
         bool to_peers = false,
         bool to_customers = false);
     void insert_announcements(std::vector<Prefix<>> *prefixes);
@@ -50,6 +51,7 @@ struct Extrapolator {
         Prefix<> prefix);
     void save_results(int iteration);
     void invert_results(void);
+    void print_results(int iter);
     };
 
 #endif

@@ -14,7 +14,7 @@ struct Announcement {
 
     // Default Constructor!
     Announcement() {}
-    
+
     /** Default constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
@@ -34,6 +34,16 @@ struct Announcement {
         : Announcement(aorigin, aprefix, anetmask, from_asn) {
         priority = pr;
         from_monitor = a_from_monitor;
+    }
+
+    /** Copy Constructor
+    */
+    Announcement(const Announcement &obj) {
+      prefix = obj.prefix;
+      origin = obj.origin;
+      received_from_asn = obj.received_from_asn;
+      priority = obj.priority;
+      from_monitor = obj.from_monitor;
     }
 
 

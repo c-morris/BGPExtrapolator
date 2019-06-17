@@ -22,15 +22,9 @@ struct ROVAS: public AS {
       std::set<uint32_t> *peer=NULL,
       std::set<uint32_t> *cust=NULL);
   ~ROVAS();
-  void add_neighbor(uint32_t asn, int relationship);
-  void remove_neighbor(uint32_t asn, int relationship);
-  void receive_announcement(Announcement &ann);
-  void clear_announcements();
-  bool already_received(Announcement &ann);
-  void printDebug();
-  void process_announcements();
-  friend std::ostream& operator<<(std::ostream &os, const AS& as);
-  std::ostream& stream_announcements(std:: ostream &os);
+
+  // Overrided AS Methods
+  virtual void receive_announcement(Announcement &ann);
   virtual void receive_announcements(std::vector<Announcement> &announcements);
 
   // ROV Methods

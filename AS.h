@@ -48,7 +48,7 @@ struct AS {
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
     virtual void receive_announcements(std::vector<Announcement> &announcements);
-    void receive_announcement(Announcement &ann);
+    virtual void receive_announcement(Announcement &ann);
     void clear_announcements();
     bool already_received(Announcement &ann);
     void printDebug();

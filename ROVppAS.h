@@ -23,15 +23,16 @@ struct ROVppAS: public ROVAS {
         blackhole_map = std::map<Prefix<>, Announcement>();
       }
   ~ROVppAS();
-  // AS Methods
-  void receive_announcements(std::vector<Announcement> &announcements);
+  // Overrided AS Methods
+  virtual void receive_announcements(std::vector<Announcement> &announcements);
+  virtual void receive_announcement(Announcement &ann);
 
   // ROV Methods
   bool pass_rov(Announcement &ann);
 
   // ROVpp methods
   void make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijacked_ann);
-  std::vector<uint32_t> get_as_path(Announcement &announcement);
+  std::vector<uint32_t> get_as_path(Announcement &ann);
   bool paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann);
   std::pair<bool, Announcement*> received_valid_announcement(Announcement &announcement);
   std::pair<bool, Announcement*> received_hijack_announcement(Announcement &announcement);
