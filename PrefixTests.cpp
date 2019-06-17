@@ -15,27 +15,27 @@ bool test_prefix(){
 
     // Check out of 8-bit range 
     Prefix<> p1 = Prefix<>("256.1.1.0", "255.255.255.0");
-    if (p1.addr != 0x0 || p1.netmask != 0x0)
+    if (p1.addr != 0x0 || p1.netmask != 0xffffff00)
         return false;
     
     // Check Malformed 
     Prefix<> p2 = Prefix<>("1.1.1.1.1", "255.255.255.0");
-    if (p2.addr != 0x0 || p2.netmask != 0x0)
+    if (p2.addr != 0x0 || p2.netmask != 0xffffff00)
         return false;
     
     // Check Malformed 
     Prefix<> p3 = Prefix<>("1. .1.1", "255.255.255.0");
-    if (p3.addr != 0x0 || p3.netmask != 0x0)
+    if (p3.addr != 0x0 || p3.netmask != 0xffffff00)
         return false;
 
     // Check Malformed 
     Prefix<> p4 = Prefix<>("1.1.1. ", "255.255.255.0");
-    if (p4.addr != 0x0 || p4.netmask != 0x0)
+    if (p4.addr != 0x0 || p4.netmask != 0xffffff00)
         return false;
 
     // Check Empty
     Prefix<> p5 = Prefix<>("", "255.255.255.0");
-    if (p5.addr != 0x0 || p5.netmask != 0x0)
+    if (p5.addr != 0x0 || p5.netmask != 0xffffff00)
         return false;
 
    return true;

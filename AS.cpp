@@ -93,13 +93,6 @@ void AS::remove_neighbor(uint32_t asn, int relationship) {
 }
 
 
-/** Debug to print this AS number
- */
-void AS::printDebug() {
-    std::cout << asn << std::endl;
-}
-
-
 /** Swap a pair of prefix/origins for this AS in the inverse results.
  *
  * @param old The prefix/origin to be inserted
@@ -160,6 +153,7 @@ void AS::receive_announcement(Announcement &ann) {
         // Default to lower ASN
         if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
             if (search_alt == depref_anns->end()) {
+                // Update inverse results
                 swap_inverse_result(
                     std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
@@ -244,12 +238,14 @@ void AS::clear_announcements() {
 }
 
 
-/** Check if annoucement is already recv'd by this AS. 
+/** Check if a monitor announcement is already recv'd by this AS. 
  *
  * @param ann Announcement to check for. 
  * @return True if recv'd, false otherwise.
  */
 bool AS::already_received(Announcement &ann) {
+    // TODO Only checks prefix, ignores origin
+    // How do we decide between conflicting monitor ann?
     auto search = all_anns->find(ann.prefix);
     return (search == all_anns->end()) ? false : true;
 }
@@ -288,7 +284,7 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
  * @return output stream into which is passed the .csv row formatted announcements
  */
 std::ostream& AS::stream_announcements(std::ostream &os){
-    for (auto &ann : *all_anns){
+    for (auto &ann : *all_anns) {
         os << asn << ",";
         ann.second.to_csv(os);
     }
@@ -302,7 +298,7 @@ std::ostream& AS::stream_announcements(std::ostream &os){
  * @return output stream into which is passed the .csv row formatted announcements
  */
 std::ostream& AS::stream_depref(std::ostream &os){
-    for (auto &ann : *depref_anns){
+    for (auto &ann : *depref_anns) {
         os << asn << ",";
         ann.second.to_csv(os);
     }

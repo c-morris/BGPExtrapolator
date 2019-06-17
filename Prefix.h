@@ -15,7 +15,9 @@ struct Prefix {
     /** Default constructor
      */
     Prefix() {}
-    
+   
+    /** Integer input constructor
+     */
     Prefix(uint32_t addr_in, uint32_t mask_in) {
         addr = addr_in;
         netmask = mask_in;
@@ -31,62 +33,61 @@ struct Prefix {
     Prefix(std::string addr_str, std::string mask_str) {
         // TODO IPv6 Address Parsing
         // IPv4 Address Parsing
-        std::string delimiter = ".";
-        size_t pos = 0;                 // Position in string addr
-        std::string token;              // Buffer subseciton of addr
-
-        //IP to int
-        bool error_f = false;           // Error flag, drops malformed input
+        addr = addr_to_int(addr_str);  
+        netmask = mask_to_int(mask_str);  
+    }
+    
+    
+    /** Converts a IPv4 address as a string into a integer.
+     *
+     *  This is IPv4 only.
+     *
+     *  @return ipv4_ip_int An integer representation of an address
+     */
+    uint32_t addr_to_int(std::string addr_str) const {
         int counter = 0;                // Check for proper addr length
-        uint32_t ipv4_ip_int = 0;
-        
-        // Convert string address to an unsigned 32-bit int
+        size_t pos = 0;                 // Position in string addr
+        uint32_t ipv4_ip_int = 0;       // Stores the address as an int
+        std::string token;              // Buffer subseciton of addr
+        std::string delimiter = ".";    // String dilimiter
+        bool error_f = false;           // Error flag, drops malformed input
+       
+        // Create a copy of address string
         std::string s = addr_str;
         if (s.empty()) {
             error_f = true;
-        } 
-        else {
+        } else {
             while ((pos = s.find(delimiter)) != std::string::npos) {
-                
                 // Catch long malformed input
                 if (counter > 3) {
                     error_f = true;
                     break;
                 }
-
                 // Token is one 8-bit int
                 token = s.substr(0, pos);
-                // May need try-catch
                 try {
-                    uint32_t token_int = std::stoul(token);
-                    
+                    uint32_t token_int = std::stoul(token); 
                     // Catch out of range ints, default to 255
                     if (token_int > 255) {
                         error_f = true;
                         break;
                     }
-                    
                     // Add token and shift left 8 bits
                     ipv4_ip_int += token_int;
                     ipv4_ip_int = ipv4_ip_int << 8;
-                    
                     // Trim token from addr
                     s.erase(0, pos + delimiter.length());
                     counter += 1;
-                } 
-                catch (...) {
+                } catch (...) {
                     error_f = true;
                     break;
                 }
             }
-            
             // Catch short malformed input
             if (counter != 3) {
                 error_f = true;
             }
-            
             // Add last 8-bit token
-            // May need try-catch
             try {
                 uint32_t s_int = std::stoul(s);
                 if (s_int > 255) {
@@ -97,15 +98,31 @@ struct Prefix {
             } catch(...) {
                 error_f = true;
             }
-
         }
-        
+        // Default errors to 0.0.0.0
+        if (error_f == true) {
+            ipv4_ip_int = 0;
+            std::cerr << "Caught malformed IPv4 address: " << addr_str << std::endl;
+        }
+        return ipv4_ip_int;
+    }
+    
+    
+    /** Converts a IPv4 netmask as a string into a integer.
+     *
+     *  This is IPv4 only.
+     *
+     *  @return ipv4_mask_int An integer representation of a netmask
+     */
+    uint32_t mask_to_int(std::string mask_str) const {
+        int counter = 0;                // Check for proper addr length
+        size_t pos = 0;                 // Position in string addr
+        uint32_t ipv4_mask_int = 0;     // Stores the netmask as an int
+        std::string token;              // Buffer subseciton of addr
+        std::string delimiter = ".";    // String dilimiter
+        bool error_f = false;           // Error flag, drops malformed input
 
-        // Convert Subnet Mask to int
-        counter = 0;                // Check for proper addr length
-        uint32_t ipv4_mask_int = 0;
-        
-        s = mask_str;
+        std::string s = mask_str;
         if (s.empty()) {
             error_f = true;
         } else {
@@ -115,22 +132,18 @@ struct Prefix {
                     error_f = true;
                     break;
                 }
-
                 // Token is one 8-bit int
                 token = s.substr(0, pos);
                 try {
                     uint32_t token_int = std::stoul(token);
-                    
                     // Catch out of range ints, default to 255
                     if (token_int > 255) {
                         error_f = true;
                         break;
                     }
-                    
                     // Add token and shift left 8 bits
                     ipv4_mask_int += std::stoul(token);
                     ipv4_mask_int = ipv4_mask_int << 8;
-                    
                     // Trim token from addr
                     s.erase(0, pos + delimiter.length());
                     counter += 1;
@@ -140,12 +153,10 @@ struct Prefix {
                     break;
                 }
             }
-                
             // Catch short malformed input
             if (counter != 3) {
                 error_f = true;
             }
-                
             // Add last 8-bit token
             try {
                 uint32_t s_int = std::stoul(s);
@@ -159,19 +170,14 @@ struct Prefix {
                 error_f = true;
             }
         }
-        
-        // Default errors to 0.0.0.0/0
+        // Default errors to /0
         if (error_f == true) {
-            ipv4_ip_int = 0;
             ipv4_mask_int = 0;
-            std::cerr << "Caught malformed IPv4 address: " << addr_str << std::endl;
-            std::cerr << "Or IPv4 mask: " << mask_str << std::endl;
+            std::cerr << "Caught malformed IPv4 subnet mask: " << mask_str << std::endl;
         }
-
-        addr = ipv4_ip_int;
-        netmask = ipv4_mask_int;
+        return ipv4_mask_int;
     }
-    
+
 
     /** Converts this prefix into a cidr formatted string.
      *

@@ -229,8 +229,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
 template <typename Integer>
 void Extrapolator::populate_blocks(Prefix<Integer>* p,
                                    std::vector<Prefix<>*>* prefix_vector,
-                                   std::vector<Prefix<>*>* bloc_vector) {
-    
+                                   std::vector<Prefix<>*>* bloc_vector) { 
     // Find the number of announcements within the subnet
     pqxx::result r = querier->select_subnet_count(p);
     
@@ -290,6 +289,7 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
  * be destroyed.
  *
  * @param path_as_string the as_path as a string returned by libpqxx
+ * @return as_path The AS path as vector of integers
  */
 std::vector<uint32_t>* Extrapolator::parse_path(std::string path_as_string) {
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>;
@@ -301,7 +301,7 @@ std::vector<uint32_t>* Extrapolator::parse_path(std::string path_as_string) {
     std::string delimiter = ",";
     std::string::size_type pos = 0;
     std::string token;
-    while((pos = path_as_string.find(delimiter)) != std::string::npos){
+    while ((pos = path_as_string.find(delimiter)) != std::string::npos) {
         token = path_as_string.substr(0,pos);
         try {
             as_path->push_back(std::stoul(token));
@@ -328,7 +328,6 @@ void Extrapolator::propagate_up() {
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
-           // auto test = graph->ases->find(asn)->second;
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, true, false, false);
             }
@@ -338,7 +337,6 @@ void Extrapolator::propagate_up() {
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
-           // auto test = graph->ases->find(asn)->second;
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, true, false);
             }
@@ -353,7 +351,6 @@ void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            //std::cerr << "propagating down to " << asn << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, false, true);
@@ -363,7 +360,7 @@ void Extrapolator::propagate_down() {
 }
 
 
-/** Record announcement on all ASes on as_path. 
+/** Seed announcement on all ASes on as_path. 
  *
  * The from_monitor attribute is set to true on these announcements so they are
  * not replaced later during propagation. 
@@ -375,97 +372,93 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
     // Handle empty as_path
     if (as_path->empty()) 
         return;
+    // Announcement at origin for checking along the path
     Announcement ann_to_check_for(as_path->at(as_path->size()-1),
                                   prefix.addr,
                                   prefix.netmask,
-                                  0); // invalid from_asn? yeah it means the announcement originates here 
-    uint32_t i = 0; 
-    // Iterate through path starting at the monitor
+                                  0); 
+    
+    uint32_t i = 0;
+    // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
         i++;
-        // TODO We're ignoring missing ASes
         // If ASN not in graph, continue
         if (graph->ases->find(*it) == graph->ases->end()) 
             continue;
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
-        // TODO Fix this
+        // Get the current AS on the path
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
+        // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) 
             continue;
         int sent_to = -1;
-        // "If not at the most recent AS (rightmost in reversed path),
-        // record the AS it is sent to next"
-        //TODO maybe use iterator instead of i
+        // If there are still AS further along the path
         if (i < as_path->size() - 1) {
+            // Get the ASN the announcement was sent to
             auto asn_sent_to = *(it + 1);
-            //TODO use relationship macros instead of 0,1,2
-            if (as_on_path->providers->find(asn_sent_to) !=
-                as_on_path->providers->end()) {
+            // Get the next ASes relationship to current AS
+            if (as_on_path->providers->find(asn_sent_to) != as_on_path->providers->end()) {
                 sent_to = AS_REL_PROVIDER;
-                //sent_to = 0;
-            } else if (as_on_path->peers->find(asn_sent_to) !=
-                       as_on_path->peers->end()) {
+            } else if (as_on_path->peers->find(asn_sent_to) != as_on_path->peers->end()) {
                 sent_to = AS_REL_PEER;
-                //sent_to = 1;
-            } else if (as_on_path->customers->find(asn_sent_to) != 
-                       as_on_path->customers->end()) {
+            } else if (as_on_path->customers->find(asn_sent_to) != as_on_path->customers->end()) {
                 sent_to = AS_REL_CUSTOMER;
-                //sent_to = 2;
             }
         }
-        // TODO Never checked
-        // If ASes in the path aren't neighbors (If data is out of sync)
+
+        // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
-        // now check recv'd from
+
         // It is 3 by default. It stays as 3 if it's the origin.
         int received_from = 3;
+        // If this is not the origin AS
         if (i > 1) {
-            if (as_on_path->providers->find(*(it - 1)) != 
-                as_on_path->providers->end()) {
-                received_from = 0;
-            } else if (as_on_path->peers->find(*(it - 1)) != 
-                as_on_path->providers->end()) {
-                received_from = 1;
-            } else if (as_on_path->customers->find(*(it - 1)) !=
-                as_on_path->providers->end()) {
-                received_from = 2;
+            // Get the previous ASes relationship to current AS
+            if (as_on_path->providers->find(*(it - 1)) != as_on_path->providers->end()) {
+                received_from = AS_REL_PROVIDER;
+            } else if (as_on_path->peers->find(*(it - 1)) != as_on_path->providers->end()) {
+                received_from = AS_REL_PEER;
+            } else if (as_on_path->customers->find(*(it - 1)) != as_on_path->providers->end()) {
+                received_from = AS_REL_CUSTOMER;
             } else {
                 broken_path = true;
             }
         }
 
-        //This is how priority is calculated
+        // This is how priority is calculated
         double path_len_weighted = 1 - (i - 1) / 100;
         double priority = received_from + path_len_weighted;
        
         uint32_t received_from_asn = 0;
-        //If this AS is the origin, it "received" the ann from itself
+        // If this AS is the origin
         if (it == as_path->rbegin()){
+            // It received the ann from itself
             received_from_asn = *it;
-        }
-        else
+        } else {
+            // Otherwise received it from previous AS
             received_from_asn = *(it-1);
+        }
+
         if (!broken_path) {
             Announcement ann = Announcement(*as_path->rbegin(),
                                             prefix.addr,
                                             prefix.netmask,
                                             priority,
                                             received_from_asn,
-                                            true); //from_monitor
-            //If announcement was sent to a peer or provider
-            //Append it to list of anns sent to peers and providers
-            if (sent_to == 1 or sent_to == 0) {
-                as_on_path->anns_sent_to_peers_providers->push_back(ann);
-            }
+                                            true);
+            // Send the announcement to the current AS
             as_on_path->receive_announcement(ann);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
-                    std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+                        std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+                // Remove the AS from the prefix's inverse results
                 if (set != graph->inverse_results->end()) {
                     set->second->erase(as_on_path->asn);
                 }
             }
+        } else {
+            // Report the broken path
         }
     }
 }
