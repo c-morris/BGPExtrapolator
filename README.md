@@ -51,8 +51,8 @@ When the database is set up and the config file is in place, you can run
 ./bgp-extrapolator
 ```
 
-
 Optional arguments:
+
 | Parameter | Default   | Description |
 | :--- | :---: | :--- |
 | -i --invert-results | true | record ASNs without route to a prefix-origin (smaller results)
