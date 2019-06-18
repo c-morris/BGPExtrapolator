@@ -5,7 +5,6 @@
 #include <thread>
 #include "Extrapolator.h"
 #include "ROVppAS.h"
-#include "NegativeAnnouncement.h"
 
 Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r,
         std::string i, bool ram) {
@@ -365,21 +364,16 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             } else {
                 priority = priority - floor(priority) - 0.01 + 2;
             }
-            // Check if it's a NegativeAnnouncement
-            if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&(ann.second))) {
-                NegativeAnnouncement neg_ann = NegativeAnnouncement(*d);
-                neg_ann.priority = priority;
-                neg_ann.received_from_asn = asn;
-                anns_to_providers.push_back(neg_ann);
-            } else {
-                anns_to_providers.push_back(
-                    Announcement(
-                        ann.second.origin,
-                        ann.second.prefix.addr,
-                        ann.second.prefix.netmask,
-                        priority,
-                        asn));
+            Announcement new_ann = Announcement(
+                                                ann.second.origin,
+                                                ann.second.prefix.addr,
+                                                ann.second.prefix.netmask,
+                                                priority,
+                                                asn);
+            if (ann.second.has_blackholes) {
+              new_ann.add_blackhole_set(ann.second.blackholed_prefixes);
             }
+            anns_to_providers.push_back(new_ann);
         }
         // send announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -408,21 +402,16 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             }
 
             priority--; // subtract 1 for peers
-            // Check if it's a NegativeAnnouncement
-            if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&(ann.second))) {
-                NegativeAnnouncement neg_ann = NegativeAnnouncement(*d);
-                neg_ann.priority = priority;
-                neg_ann.received_from_asn = asn;
-                anns_to_peers.push_back(neg_ann);
-            } else {
-                anns_to_peers.push_back(
-                    Announcement(
-                        ann.second.origin,
-                        ann.second.prefix.addr,
-                        ann.second.prefix.netmask,
-                        priority,
-                        asn));
+            Announcement new_ann = Announcement(
+                                                ann.second.origin,
+                                                ann.second.prefix.addr,
+                                                ann.second.prefix.netmask,
+                                                priority,
+                                                asn);
+            if (ann.second.has_blackholes) {
+              new_ann.add_blackhole_set(ann.second.blackholed_prefixes);
             }
+            anns_to_peers.push_back(new_ann);
         }
 
 
@@ -445,21 +434,16 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             else
                 priority = priority - floor(priority) - 0.01;
 
-            // Check if it's a NegativeAnnouncement
-            if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&(ann.second))) {
-                NegativeAnnouncement neg_ann = NegativeAnnouncement(*d);
-                neg_ann.priority = priority;
-                neg_ann.received_from_asn = asn;
-                anns_to_customers.push_back(neg_ann);
-            } else {
-                anns_to_customers.push_back(
-                    Announcement(
-                        ann.second.origin,
-                        ann.second.prefix.addr,
-                        ann.second.prefix.netmask,
-                        priority,
-                        asn));
+            Announcement new_ann = Announcement(
+                                                ann.second.origin,
+                                                ann.second.prefix.addr,
+                                                ann.second.prefix.netmask,
+                                                priority,
+                                                asn);
+            if (ann.second.has_blackholes) {
+              new_ann.add_blackhole_set(ann.second.blackholed_prefixes);
             }
+            anns_to_customers.push_back(new_ann);
         }
         // send announcements
         for (uint32_t customer_asn : *source_as->customers) {

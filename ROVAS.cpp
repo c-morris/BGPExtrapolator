@@ -1,6 +1,5 @@
 #include <cstdint>
 #include "ROVAS.h"
-#include "NegativeAnnouncement.h"
 
 
 ROVAS::ROVAS(uint32_t myasn,
@@ -84,7 +83,7 @@ void ROVAS::receive_announcements(std::vector<Announcement> &announcements) {
   for (Announcement &ann : announcements) {
     // Check if it's a negative annoucement
     if (ann.has_blackholes) {
-      // Drop the announcement
+      incoming_announcements->push_back(AS::extract_positive_part(ann));
     } else {
       // Check if the Announcement is valid
       if (pass_rov(ann)) {

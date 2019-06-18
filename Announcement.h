@@ -62,6 +62,13 @@ struct Announcement {
       blackholed_prefixes.insert(prefix);
     }
 
+    /** Adds to the blackhole set
+    */
+    void add_blackhole_set(std::set<Prefix<>> prefixes) {
+      has_blackholes = true;
+      blackholed_prefixes.insert(prefixes.begin(), prefixes.end());
+    }
+
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.

@@ -1,5 +1,4 @@
 #include "AS.h"
-#include "NegativeAnnouncement.h"
 
 /** Constructor for AS class.
  *
@@ -123,7 +122,7 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
       // Check if it's a negative annoucement
       if (ann.has_blackholes) {
-        // Drop the announcement
+        incoming_announcements->push_back(extract_positive_part(ann));
       } else {
         // Do not check for duplicates here
         // push_back makes a copy of the announcement
@@ -254,6 +253,11 @@ bool AS::already_received(Announcement &ann) {
     return (search == all_anns->end()) ? false : true;
 }
 
+Announcement AS::extract_positive_part(Announcement &ann) {
+    Announcement new_ann = Announcement(ann.origin, ann.prefix.addr, ann.prefix.netmask,
+        ann.priority, ann.received_from_asn, ann.from_monitor);
+    return new_ann;
+}
 
 /** Insertion operator for AS class.
  *

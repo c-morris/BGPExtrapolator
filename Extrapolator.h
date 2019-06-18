@@ -18,7 +18,6 @@
 #include "Prefix.h"
 #include "SQLQuerier.h"
 #include "TableNames.h"
-// #include "NegativeAnnouncement.h"
 
 struct Extrapolator {
     ASGraph *graph;

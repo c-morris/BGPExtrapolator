@@ -57,6 +57,7 @@ struct AS {
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
     std::ostream& stream_announcements(std:: ostream &os);
     Announcement * get_ann_for_prefix(Prefix<> prefix);
+    Announcement extract_positive_part(Announcement &ann);
 };
 
 #endif

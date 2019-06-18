@@ -9,7 +9,6 @@
 #include "AS.h"
 #include "ROVAS.h"
 #include "ROVppAS.h"
-#include "NegativeAnnouncement.h"
 
 ASGraph::ASGraph() {
     ases = new std::map<uint32_t, AS*>;

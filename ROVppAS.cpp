@@ -1,6 +1,5 @@
 #include <cstdint>
 #include "ROVppAS.h"
-#include "NegativeAnnouncement.h"
 #include "Prefix.h"
 
 
@@ -31,12 +30,13 @@ void ROVppAS::incoming_negative_announcement(Announcement &ann) {
   if (check.first) {
     // Check if the attaker's path and this path intersect
     // MARK: Can this be done in practice?
-    // TODO: ann should be the hijacked announcement (modify NegativeAnnouncement to save the HijackedAnn)
-    if (paths_intersect(*(check.second), ann)) {
+    // if (paths_intersect(*(check.second), ann)) {
       make_negative_announcement_and_blackhole(ann, *(check.second));
-    }
-  } else {  // You don't have an escapce route
-    make_negative_announcement_and_blackhole(ann, *(check.second));
+  //   }
+  // } else {  // You don't have an escapce route
+  //   make_negative_announcement_and_blackhole(ann, *(check.second));
+  } else {
+    make_blackhole_announcement(ann);
   }
 }
 
@@ -52,14 +52,14 @@ void ROVppAS::incoming_valid_announcement(Announcement &ann) {
   if (check.first) {
     // Check if the a ttaker's path and this path intersect
     // MARK: Can this be done in practice?
-    if (paths_intersect(ann, *(check.second))) {
+    // if (paths_intersect(ann, *(check.second))) {
       make_negative_announcement_and_blackhole(ann, *(check.second));
-    } else {  // If already blocked this in the past, then you need to unblock and unblackhole
-      // Remove from dropped list
-      dropped_ann_map.erase(check.second->prefix);
-      // Remove from blackhole list
-      blackhole_map.erase(check.second->prefix);
-    }
+    // } else {  // If already blocked this in the past, then you need to unblock and unblackhole
+    //   // Remove from dropped list
+    //   dropped_ann_map.erase(check.second->prefix);
+    //   // Remove from blackhole list
+    //   blackhole_map.erase(check.second->prefix);
+    // }
   }
 }
 
@@ -73,9 +73,9 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
   std::pair<bool, Announcement*> check = received_valid_announcement(ann);
   if (check.first) {
     // Also check if the attaker's path and this path intersect
-    if (paths_intersect(*(check.second), ann)) {
+    // if (paths_intersect(*(check.second), ann)) {
       make_negative_announcement_and_blackhole(*(check.second), ann);
-    }
+    // }
   }
 }
 
@@ -90,8 +90,8 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
   for (Announcement &ann : announcements) {
     // Check if it's a NegativeAnnouncement
-    if (NegativeAnnouncement* d = dynamic_cast<NegativeAnnouncement*>(&ann)) {
-      incoming_negative_announcement(*d);
+    if (ann.has_blackholes) {
+      incoming_negative_announcement(ann);
     } else if (pass_rov(ann)) { // It's not a negative announcement. Check if the Announcement is valid
       incoming_valid_announcement(ann);
     } else {  // Not valid (i.e. hijack announcement)
@@ -107,83 +107,7 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
  * called by ASGraph.give_ann_to_as_path()
  */
 void ROVppAS::receive_announcement(Announcement &ann) {
-    // Check for existing annoucement for prefix
-    auto search = all_anns->find(ann.prefix);
-    auto search_alt = depref_anns->find(ann.prefix);
-
-    // No announcement found for incoming announcement prefix
-    if (search == all_anns->end()) {
-        all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
-        // Inverse results need to be computed also with announcements from monitors
-        if (inverse_results != NULL) {
-            auto set = inverse_results->find(
-                std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
-            if (set != inverse_results->end()) {
-                set->second->erase(asn);
-            }
-        }
-
-    // Tiebraker for equal priority
-    } else if (ann.priority == search->second.priority) {
-        // Default to lower ASN
-        if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
-            if (search_alt == depref_anns->end()) {
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix,
-                                                                      search->second));
-                search->second = ann;
-            } else {
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                search_alt->second = search->second;
-                search->second = ann;
-            }
-        } else {                                // Old ASN is lower
-            if (search_alt == depref_anns->end()) {
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix,
-                                                                      ann));
-            } else {
-                // Replace second best with the old priority announcement
-                search_alt->second = ann;
-            }
-        }
-
-    // Check announcements priority for best path selection
-    } else if (ann.priority > search->second.priority) {
-        if (search_alt == depref_anns->end()) {
-            // update inverse results
-            swap_inverse_result(
-                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-            // Insert new second best announcement
-            depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix,
-                                                                  search->second));
-            // Replace the old announcement with the higher priority
-            search->second = ann;
-        } else {
-            // update inverse results
-            swap_inverse_result(
-                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-            // Replace second best with the old priority announcement
-            search_alt->second = search->second;
-            // Replace the old announcement with the higher priority
-            search->second = ann;
-        }
-
-    // Check second best announcements priority for best path selection
-    } else {
-        if (search_alt == depref_anns->end()) {
-            // Insert new second best annoucement
-            depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
-        } else if (ann.priority > search_alt->second.priority) {
-            // Replace the old depref announcement with the higher priority
-            search_alt->second = search->second;
-        }
-    }
+  AS::receive_announcement(ann);
 }
 
 
@@ -191,31 +115,40 @@ void ROVppAS::receive_announcement(Announcement &ann) {
 */
 void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijack_ann) {
   // Create Negative Announcement
-  // TODO: Delete following block of code after testing
-  // Prefix<> s("137.99.0.0", "255.255.255.0");
-  // Prefix<> p("137.99.0.0", "255.255.0.0");
-  // NegativeAnnouncement neg_ann = NegativeAnnouncement(13796, p.addr, p.netmask, 22742, std::set<Prefix<>>());
-  // NegativeAnnouncement neg_ann = NegativeAnnouncement(uint32_t aorigin,
-  //                                                     uint32_t aprefix,
-  //                                                     uint32_t anetmask,
-  //                                                     uint32_t from_asn,
-  //                                                     std::set<Prefix<>> n_routed);
   std::cout << "Making Blackhole at AS" << asn << " for prefix: " << hijack_ann.prefix.to_cidr() << std::endl;
-  NegativeAnnouncement neg_ann = NegativeAnnouncement(legit_ann.origin,
-                                                      legit_ann.prefix.addr,
-                                                      legit_ann.prefix.netmask,
-                                                      4,
-                                                      asn,
-                                                      false,
-                                                      std::set<Prefix<>>(),
-                                                      hijack_ann);
-  neg_ann.null_route_subprefix(hijack_ann.prefix);
+  Announcement neg_ann = Announcement(legit_ann.origin,
+                                      legit_ann.prefix.addr,
+                                      legit_ann.prefix.netmask,
+                                      4,
+                                      legit_ann.received_from_asn,
+                                      false);
+  neg_ann.add_blackhole(hijack_ann.prefix);
   // Add to set of negative_announcements
   negative_announcements.insert(neg_ann);
   // Add to Announcements to propagate
   incoming_announcements->push_back(neg_ann);
   // Add Announcement to blocked list (i.e. blackhole list)
   blackhole_map[hijack_ann.prefix] = hijack_ann;
+}
+
+
+void ROVppAS::make_blackhole_announcement(Announcement &neg_ann) {
+  // Create Negative Announcement
+  Prefix<> blackhole_prefix = *(neg_ann.blackholed_prefixes.begin());  // TODO: This needs to be changed if we're doing more than one hijack per simulation
+  std::cout << "Making Blackhole at AS" << asn << " for prefix: " << blackhole_prefix.to_cidr() << std::endl;
+  Announcement new_neg_ann = Announcement(neg_ann.origin,
+                                          neg_ann.prefix.addr,
+                                          neg_ann.prefix.netmask,
+                                          4,
+                                          neg_ann.received_from_asn,
+                                          false);
+  new_neg_ann.add_blackhole_set(neg_ann.blackholed_prefixes);
+  // Add to set of negative_announcements
+  negative_announcements.insert(new_neg_ann);
+  // Add to Announcements to propagate
+  incoming_announcements->push_back(new_neg_ann);
+  // Add Announcement to blocked list (i.e. blackhole list)
+  blackhole_map[blackhole_prefix] = neg_ann;
 }
 
 

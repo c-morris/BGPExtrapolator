@@ -2,11 +2,10 @@
 #define ROVPPAS_H
 
 #include "ROVAS.h"
-#include "NegativeAnnouncement.h"
 
 
 struct ROVppAS: public ROVAS {
-  std::set<NegativeAnnouncement> negative_announcements;
+  std::set<Announcement> negative_announcements;
   std::map<Prefix<>, Announcement> blackhole_map;
 
   ROVppAS(uint32_t myasn=0,
@@ -19,7 +18,7 @@ struct ROVppAS: public ROVAS {
       std::set<uint32_t> *peer=NULL,
       std::set<uint32_t> *cust=NULL) : ROVAS(myasn, attacker_asn, victim_asn,
       victim_prefix, inv, graph, prov, peer, cust) {
-        negative_announcements = std::set<NegativeAnnouncement>();
+        negative_announcements = std::set<Announcement>();
         blackhole_map = std::map<Prefix<>, Announcement>();
       }
   ~ROVppAS();
@@ -32,6 +31,7 @@ struct ROVppAS: public ROVAS {
 
   // ROVpp methods
   void make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijacked_ann);
+  void make_blackhole_announcement(Announcement &blackhole_ann);
   std::vector<uint32_t> get_as_path(Announcement &ann);
   bool paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann);
   std::pair<bool, Announcement*> received_valid_announcement(Announcement &announcement);
