@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <math.h>
 #include "ROVppAS.h"
 #include "Prefix.h"
 
@@ -28,13 +29,16 @@ void ROVppAS::incoming_negative_announcement(Announcement &ann) {
   // Check if you have an alternative route (i.e. escape route)
   std::pair<bool, Announcement*> check = received_valid_announcement(ann);
   if (check.first) {
-    // Check if the attaker's path and this path intersect
-    // MARK: Can this be done in practice?
-    // if (paths_intersect(*(check.second), ann)) {
-      make_negative_announcement_and_blackhole(ann, *(check.second));
-  //   }
-  // } else {  // You don't have an escapce route
-  //   make_negative_announcement_and_blackhole(ann, *(check.second));
+    // Check if it's from the same neighbor
+    if (ann.received_from_asn == check.second->received_from_asn) {
+      // Okay, before we admit we're screwed, see if we have an alternative route
+      std::pair<bool, Announcement> alternate_route = best_alternative_route(ann);
+      if (alternate_route.first) {
+        (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
+      } else {
+        make_blackhole_announcement(ann);
+      }
+    }
   } else {
     make_blackhole_announcement(ann);
   }
@@ -42,24 +46,17 @@ void ROVppAS::incoming_negative_announcement(Announcement &ann) {
 
 
 void ROVppAS::incoming_valid_announcement(Announcement &ann) {
-  // Do not check for duplicates here
-  // push_back makes a copy of the announcement
-  incoming_announcements->push_back(ann);
-
-  // Check if should make negative announcement
-  // Check if you have received the Invalid Announcement in the past
-  std::pair<bool, Announcement*> check = received_hijack_announcement(ann);
-  if (check.first) {
-    // Check if the a ttaker's path and this path intersect
-    // MARK: Can this be done in practice?
-    // if (paths_intersect(ann, *(check.second))) {
-      make_negative_announcement_and_blackhole(ann, *(check.second));
-    // } else {  // If already blocked this in the past, then you need to unblock and unblackhole
-    //   // Remove from dropped list
-    //   dropped_ann_map.erase(check.second->prefix);
-    //   // Remove from blackhole list
-    //   blackhole_map.erase(check.second->prefix);
-    // }
+  // See if we already have announcement for this prefix
+  // makes a copy of the announcement
+  auto search = all_anns->find(ann.prefix);
+  if (search != all_anns->end()) {
+    if (is_better(ann, search->second)) {
+        (*all_anns)[ann.prefix] = ann;
+        dropped_ann_map.erase(ann.prefix);
+        blackhole_map.erase(ann.prefix);
+      }
+    } else {
+    (*all_anns)[ann.prefix] = ann;
   }
 }
 
@@ -70,12 +67,10 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
   dropped_ann_map[ann.prefix] = ann;
   // Check if should make negative announcement
   // Check if you have received the Valid announcement in the past
+  // This check needs to be made in order to know if we have a path to the legit origin (otherwise, we may not have such a path yet).
   std::pair<bool, Announcement*> check = received_valid_announcement(ann);
   if (check.first) {
-    // Also check if the attaker's path and this path intersect
-    // if (paths_intersect(*(check.second), ann)) {
-      make_negative_announcement_and_blackhole(*(check.second), ann);
-    // }
+    make_negative_announcement_and_blackhole(*(check.second), ann);
   }
 }
 
@@ -89,14 +84,38 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
  */
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
   for (Announcement &ann : announcements) {
-    // Check if it's a NegativeAnnouncement
-    if (ann.has_blackholes) {
-      incoming_negative_announcement(ann);
-    } else if (pass_rov(ann)) { // It's not a negative announcement. Check if the Announcement is valid
-      incoming_valid_announcement(ann);
-    } else {  // Not valid (i.e. hijack announcement)
-      incoming_hijack_announcement(ann);
+    if (pass_rov(ann)) {
+      // Add ann to considerable announcements history
+      ann_history[ann.prefix].insert(ann);
     }
+    incoming_announcements->push_back(ann);
+  }
+}
+
+
+bool ROVppAS::is_better(Announcement &new_ann, Announcement &curr_ann) {
+  // Check if BGP Relationship is greater
+  // Customers = 3, Peers = 2, Providers = 1
+  double new_ann_rel = std::ceil(new_ann.priority);
+  double curr_ann_rel = std::ceil(curr_ann.priority);
+
+  // Precompute some conditions
+  // Check if relationship is the same
+  bool same_relationship = new_ann_rel == curr_ann_rel;
+  // Check blackhole size
+  bool same_blackhole_size = new_ann.blackholed_prefixes.size() == curr_ann.blackholed_prefixes.size();
+
+  // Check if BGP Relationship is greater
+  if (new_ann_rel > curr_ann_rel) {
+    return true;
+    // Check blackhole size
+  } else if (same_relationship && new_ann.blackholed_prefixes.size() < curr_ann.blackholed_prefixes.size()) {
+    return true;
+    // Use BGP priority to make decision
+  } else if (same_blackhole_size && new_ann.priority > curr_ann.priority) {
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -107,7 +126,29 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
  * called by ASGraph.give_ann_to_as_path()
  */
 void ROVppAS::receive_announcement(Announcement &ann) {
-  AS::receive_announcement(ann);
+  // Check for existing annoucement for prefix
+  // auto search = all_anns->find(ann.prefix);
+  // auto search_alt = depref_anns->find(ann.prefix);
+  // auto search_history = ann_history[ann.prefix].find(ann.prefix);
+
+  // Check if it's a NegativeAnnouncement
+  if (ann.has_blackholes) {
+    incoming_negative_announcement(ann);
+  } else if (pass_rov(ann)) {  // It's not a negative announcement. Check if the Announcement is valid
+    incoming_valid_announcement(ann);
+  } else {  // Not valid (i.e. hijack announcement)
+    incoming_hijack_announcement(ann);
+  }
+
+  // // No announcement found for incoming announcement prefix
+  // if (search == all_anns->end()) {
+  //     all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+  //
+  //   // See if this announcement is better than the one we're currently using
+  // } else if (is_better(ann, *(search->second))) {
+  //     // Replace the one we're currenlty using with the better one
+  //     search->second = ann;
+  // }
 }
 
 
@@ -119,14 +160,14 @@ void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, 
   Announcement neg_ann = Announcement(legit_ann.origin,
                                       legit_ann.prefix.addr,
                                       legit_ann.prefix.netmask,
-                                      4,
+                                      legit_ann.priority,
                                       legit_ann.received_from_asn,
                                       false);
   neg_ann.add_blackhole(hijack_ann.prefix);
   // Add to set of negative_announcements
   negative_announcements.insert(neg_ann);
   // Add to Announcements to propagate
-  incoming_announcements->push_back(neg_ann);
+  (*all_anns)[neg_ann.prefix] = neg_ann;
   // Add Announcement to blocked list (i.e. blackhole list)
   blackhole_map[hijack_ann.prefix] = hijack_ann;
 }
@@ -139,16 +180,16 @@ void ROVppAS::make_blackhole_announcement(Announcement &neg_ann) {
   Announcement new_neg_ann = Announcement(neg_ann.origin,
                                           neg_ann.prefix.addr,
                                           neg_ann.prefix.netmask,
-                                          4,
+                                          neg_ann.priority,
                                           neg_ann.received_from_asn,
                                           false);
   new_neg_ann.add_blackhole_set(neg_ann.blackholed_prefixes);
   // Add to set of negative_announcements
   negative_announcements.insert(new_neg_ann);
   // Add to Announcements to propagate
-  incoming_announcements->push_back(new_neg_ann);
+  (*all_anns)[new_neg_ann.prefix] = new_neg_ann;
   // Add Announcement to blocked list (i.e. blackhole list)
-  blackhole_map[blackhole_prefix] = neg_ann;
+  blackhole_map[blackhole_prefix] = new_neg_ann;
 }
 
 
@@ -159,17 +200,16 @@ std::pair<bool, Announcement*> ROVppAS::received_valid_announcement(Announcement
       return std::make_pair(true, &ann.second);
     }
   }
-
   // Check if it was just received and hasn't been processed yet
   for (Announcement& ann : *incoming_announcements) {
     if (ann.prefix < announcement.prefix && ann.origin == victim_asn) {
       return std::make_pair(true, &ann);
     }
   }
-
   // Otherwise
   return std::make_pair(false, nullptr);
 }
+
 
 std::pair<bool, Announcement*> ROVppAS::received_hijack_announcement(Announcement &announcement) {
   // Check if announcement is in dropped list
@@ -178,14 +218,12 @@ std::pair<bool, Announcement*> ROVppAS::received_hijack_announcement(Announcemen
       return std::make_pair(true, &prefix_ann_pair.second);
     }
   }
-
   // Check if the announcement is in the blackhole list
   for (std::pair<const Prefix<>, Announcement>& prefix_ann_pair : blackhole_map) {
     if (announcement.prefix < prefix_ann_pair.first && prefix_ann_pair.second.origin == attacker_asn) {
       return std::make_pair(true, &prefix_ann_pair.second);
     }
   }
-
   // otherwise
   return std::make_pair(false, nullptr);
 }
@@ -208,6 +246,7 @@ bool ROVppAS::paths_intersect(Announcement &legit_ann, Announcement &hijack_ann)
   // No hops of the paths match
   return false;
 }
+
 
 std::vector<uint32_t> ROVppAS::get_as_path(Announcement &ann) {
   // will hold the entire path from origin to this node,
@@ -237,6 +276,26 @@ std::vector<uint32_t> ROVppAS::get_as_path(Announcement &ann) {
     as_path.push_back(current_asn);
   }
   return as_path;
+}
+
+/** This method is called when you get a blackhole annoucement, and you want to
+* know if you have an alternative path besides this one you currently using.
+*/
+std::pair<bool, Announcement> ROVppAS::best_alternative_route(Announcement &blackhole_ann) {
+  // Check if the prefix is in our history
+  auto search = ann_history.find(blackhole_ann.prefix);
+  if (search != ann_history.end()) {
+    // Get the set of annnoucements for this prefix
+    std::set<Announcement> announcements_for_prefix = search->second;
+
+    for (Announcement ann_candidate : announcements_for_prefix) {
+      // TOOD: Should I check that it's not comming from the same ASN?
+      if (is_better(ann_candidate, blackhole_ann)) {
+        return std::make_pair(true, ann_candidate);
+      }
+    }
+  }
+  return std::make_pair(false, Announcement());
 }
 
 

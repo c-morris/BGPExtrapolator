@@ -5,8 +5,10 @@
 
 
 struct ROVppAS: public ROVAS {
-  std::set<Announcement> negative_announcements;
-  std::map<Prefix<>, Announcement> blackhole_map;
+  std::set<Announcement> negative_announcements;  // keep tabs on all negative_announcements made
+  std::map<Prefix<>, Announcement> blackhole_map;  // keeps a record of the blackholes for a given prefix
+  std::map<Prefix<>, std::set<Announcement>> ann_history;  // stores all announcements seen for a given prefix
+  std::map<Prefix<>, Announcement> dropped_ann_map;
 
   ROVppAS(uint32_t myasn=0,
       std::uint32_t attacker_asn=0,
@@ -20,6 +22,8 @@ struct ROVppAS: public ROVAS {
       victim_prefix, inv, graph, prov, peer, cust) {
         negative_announcements = std::set<Announcement>();
         blackhole_map = std::map<Prefix<>, Announcement>();
+        ann_history = std::map<Prefix<>, std::set<Announcement>>();
+        dropped_ann_map = std::map<Prefix<>, Announcement>();
       }
   ~ROVppAS();
   // Overrided AS Methods
@@ -40,6 +44,8 @@ struct ROVppAS: public ROVAS {
   void incoming_negative_announcement(Announcement &ann);
   void incoming_valid_announcement(Announcement &ann);
   void incoming_hijack_announcement(Announcement &ann);
+  bool is_better(Announcement &new_ann, Announcement &curr_ann);
+  std::pair<bool, Announcement> best_alternative_route(Announcement &ann);
 };
 
 #endif

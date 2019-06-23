@@ -204,6 +204,7 @@ void Extrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             graph->ases->find(asn)->second->process_announcements();
            // auto test = graph->ases->find(asn)->second;
+           bool answer = !graph->ases->find(asn)->second->all_anns->empty();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, true, false);
             }
@@ -338,7 +339,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
 /** Send all announcements kept by an AS to its neighbors.
  *
  * This approximates the Adj-RIBs-out.
- *
+ * It also recreates the announcemtns to prepare them with the correct parameters for sending
  * @param asn AS that is sending out announces
  * @param to_peers_providers send to peers and providers
  * @param to_customers send to customers
@@ -351,8 +352,16 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_providers) {
         std::vector<Announcement> anns_to_providers;
         for (auto &ann : *source_as->all_anns) {
+            // The if statement has the following purpose
+            // Don't consider announcements that came from providers
             if (ann.second.priority < 2) {
                 continue;
+            }
+            // If this announcement has a blackhole and is from a customer,
+            // then we must send to everyone.
+            if (ann.second.has_blackholes && ann.second.priority > 2 && ann.second.priority <= 3) {
+              // Change boolean to also send to customers
+              to_customers = true;
             }
             // priority is reduced by 0.01 for path length
             // base priority is 2 for providers
@@ -410,6 +419,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                                                 asn);
             if (ann.second.has_blackholes) {
               new_ann.add_blackhole_set(ann.second.blackholed_prefixes);
+              // Change boolean to also send to customers
+              to_customers = true;
             }
             anns_to_peers.push_back(new_ann);
         }
