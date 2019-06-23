@@ -34,8 +34,8 @@ int main(int argc, char *argv[]) {
           "victim ASN")
         ("victim_prefix", po::value<string>(),
           "victim prefix (i.e. prefix attacker will announce)")
-        ("rovpp_version", po::value<int>(),
-          "The ROVpp version specifies what capabilites/mechnisms are active. Version 1: Only Negative Announcement (i.e. blackholes), Version 2: Blackholes and Friends, Version 3; Blackholes, Friends, and Preference.");
+        ("rovpp_version", po::value<int>()->default_value(0),
+          "The ROVpp version specifies what capabilites/mechnisms are active. Version 0: No ROVpp, Version 1: Only Negative Announcement (i.e. blackholes), Version 2: Blackholes and Friends, Version 3; Blackholes, Friends, and Preference.");
         //("batch-size", po::value<int>(&batch_size)->default_value(100),
         // "number of prefixes to be used in one propagation cycle")
     ;
