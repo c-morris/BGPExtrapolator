@@ -33,7 +33,9 @@ int main(int argc, char *argv[]) {
         ("victim_asn", po::value<std::uint32_t>(),
           "victim ASN")
         ("victim_prefix", po::value<string>(),
-          "victim prefix (i.e. prefix attacker will announce)");
+          "victim prefix (i.e. prefix attacker will announce)")
+        ("rovpp_version", po::value<int>(),
+          "The ROVpp version specifies what capabilites/mechnisms are active. Version 1: Only Negative Announcement (i.e. blackholes), Version 2: Blackholes and Friends, Version 3; Blackholes, Friends, and Preference.");
         //("batch-size", po::value<int>(&batch_size)->default_value(100),
         // "number of prefixes to be used in one propagation cycle")
     ;
@@ -51,6 +53,7 @@ int main(int argc, char *argv[]) {
     std::uint32_t attacker_asn = vm["attacker_asn"].as<std::uint32_t>();
     std::uint32_t victim_asn = vm["victim_asn"].as<std::uint32_t>();
     std::string victim_prefix = vm["victim_prefix"].as<std::string>();
+    int rovpp_version = vm["rovpp_version"].as<int>();
 
     Extrapolator *extrap = new Extrapolator(
         attacker_asn, victim_asn, victim_prefix,
