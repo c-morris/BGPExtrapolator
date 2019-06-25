@@ -69,6 +69,12 @@ struct Announcement {
       blackholed_prefixes.insert(prefixes.begin(), prefixes.end());
     }
 
+    /** Returns the first blackhole prefix in the set
+    */
+    Prefix<> get_blackhole_prefix() {
+      return *(blackholed_prefixes.begin());
+    }
+
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.

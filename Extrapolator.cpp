@@ -17,11 +17,12 @@ Extrapolator::Extrapolator(bool invert_results, std::string a, std::string r,
 
 Extrapolator::Extrapolator(
         std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix,
+        bool enable_negative_anns, bool enable_friends, bool enable_preferences,
         bool invert_results, std::string a, std::string r,
         std::string i, bool ram) {
     invert = invert_results;
     ram_tablespace = ram;
-    graph = new ASGraph(attacker_asn, victim_asn, victim_prefix);
+    graph = new ASGraph(attacker_asn, victim_asn, victim_prefix, enable_negative_anns, enable_friends, enable_preferences);
     threads = new std::vector<std::thread>;
     querier = new SQLQuerier(a, r, i, ram);
 }
@@ -384,7 +385,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             std::cout << "Created Announcement for providers for prefix " <<
             new_ann.prefix.to_cidr() << std::endl;
             if (ann.second.has_blackholes) {
-              std::cout << "With blackhole for prefix " << (*(new_ann.blackholed_prefixes.begin())).to_cidr() << std::endl;
+              std::cout << "With blackhole for prefix " << new_ann.get_blackhole_prefix().to_cidr() << std::endl;
             }
         }
         // send announcements
@@ -431,7 +432,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             std::cout << "Created Announcement for peers for prefix " <<
             new_ann.prefix.to_cidr() << std::endl;
             if (ann.second.has_blackholes) {
-              std::cout << "With blackhole for prefix " << (*(new_ann.blackholed_prefixes.begin())).to_cidr() << std::endl;
+              std::cout << "With blackhole for prefix " << new_ann.get_blackhole_prefix().to_cidr() << std::endl;
             }
         }
 
@@ -470,7 +471,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             std::cout << "Created Announcement for customers for prefix " <<
             new_ann.prefix.to_cidr() << std::endl;
             if (ann.second.has_blackholes) {
-              std::cout << "With blackhole for prefix " << (*(new_ann.blackholed_prefixes.begin())).to_cidr() << std::endl;
+              std::cout << "With blackhole for prefix " << new_ann.get_blackhole_prefix().to_cidr() << std::endl;
             }
         }
         // send announcements

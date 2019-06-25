@@ -40,13 +40,17 @@ struct ASGraph {
     std::uint32_t attacker_asn;
     std::uint32_t victim_asn;
     std::string victim_prefix;
+    bool negative_anns_enabled;
+    bool friends_enabled;
+    bool preferences_enabled;
     // Friends Repository (will fill with friendly warnings)
     std::map<Prefix<>, std::set<Announcement>> hazard_bulletin;
     std::vector<uint32_t> *hazard_subscribers;
 
 
     ASGraph();
-    ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix);
+    ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix,
+    bool enable_negative_anns, bool enable_friends, bool enable_preferences);
     ~ASGraph();
     void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
     void decide_ranks();
@@ -66,6 +70,7 @@ struct ASGraph {
     void load_rov_ases(SQLQuerier *querier);
     void load_rovpp_ases(SQLQuerier *querier);
     AS * get_as_with_asn(uint32_t asn);
+    bool implements_rovpp(uint32_t asn);
 
     uint32_t translate_asn(uint32_t asn);
     void clear_announcements();

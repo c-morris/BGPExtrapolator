@@ -83,20 +83,16 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
       }
     }
   }
-  // Publish Hazard
-  if (friends_enabled) {
-    as_graph->publish_harzard(ann);
-  }
 }
 
 /** Processes hazards from freinds
 */
-void ROVppAS::incoming_hazard_announcement(Announcement &ann) {
+void ROVppAS::incoming_hazard_announcement(Announcement ann) {
   // Check if it's in all_anns (i.e. RIB in)
   for (auto& prefix_ann_pair : *all_anns) {
     if (paths_intersect(prefix_ann_pair.second, ann)) {
       // Okay, before we admit we're screwed, see if we have an alternative route
-      std::pair<bool, Announcement> alternate_route = best_alternative_route(ann);
+      std::pair<bool, Announcement> alternate_route = best_alternative_route(prefix_ann_pair.second);
       if (alternate_route.first) {
         (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
       } else {
@@ -201,12 +197,17 @@ void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, 
   (*all_anns)[neg_ann.prefix] = neg_ann;
   // Add Announcement to blocked list (i.e. blackhole list)
   blackhole_map[hijack_ann.prefix] = hijack_ann;
+
+  // Publish Hazard
+  if (friends_enabled) {
+    as_graph->publish_harzard(neg_ann);
+  }
 }
 
 
 void ROVppAS::make_blackhole_announcement(Announcement &neg_ann) {
   // Create Negative Announcement
-  Prefix<> blackhole_prefix = *(neg_ann.blackholed_prefixes.begin());  // TODO: This needs to be changed if we're doing more than one hijack per simulation
+  Prefix<> blackhole_prefix = neg_ann.get_blackhole_prefix();  // TODO: This needs to be changed if we're doing more than one hijack per simulation
   std::cout << "Making Blackhole at AS" << asn << " for prefix: " << blackhole_prefix.to_cidr() << std::endl;
   Announcement new_neg_ann = Announcement(neg_ann.origin,
                                           neg_ann.prefix.addr,
@@ -322,7 +323,13 @@ std::pair<bool, Announcement> ROVppAS::best_alternative_route(Announcement &blac
     for (Announcement ann_candidate : announcements_for_prefix) {
       // TOOD: Should I check that it's not comming from the same ASN?
       if (is_better(ann_candidate, blackhole_ann)) {
-        return std::make_pair(true, ann_candidate);
+        if (preference_enabled) {
+          if(as_graph->implements_rovpp(ann_candidate.received_from_asn)) {
+            return std::make_pair(true, ann_candidate);
+          }
+        } else {
+          return std::make_pair(true, ann_candidate);
+        }
       }
     }
   }

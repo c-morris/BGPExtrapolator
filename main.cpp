@@ -54,9 +54,24 @@ int main(int argc, char *argv[]) {
     std::uint32_t victim_asn = vm["victim_asn"].as<std::uint32_t>();
     std::string victim_prefix = vm["victim_prefix"].as<std::string>();
     int rovpp_version = vm["rovpp_version"].as<int>();
+    bool enable_negative_anns = false;
+    bool enable_friends = false;
+    bool enable_preferences = false;
+
+    if (rovpp_version == 1) {
+      enable_negative_anns = true;
+    } else if (rovpp_version == 2) {
+      enable_negative_anns = true;
+      enable_friends = true;
+    } else if (rovpp_version == 3) {
+      enable_negative_anns = true;
+      enable_friends = true;
+      enable_preferences = true;
+    }
 
     Extrapolator *extrap = new Extrapolator(
         attacker_asn, victim_asn, victim_prefix,
+        enable_negative_anns, enable_friends, enable_preferences,
         vm["invert-results"].as<bool>(),
         (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
         (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),

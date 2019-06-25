@@ -58,7 +58,7 @@ struct ROVppAS: public ROVAS {
   void incoming_negative_announcement(Announcement &ann);
   void incoming_valid_announcement(Announcement &ann);
   void incoming_hijack_announcement(Announcement &ann);
-  void incoming_hazard_announcement(Announcement &ann);
+  void incoming_hazard_announcement(Announcement ann);
   bool is_better(Announcement &new_ann, Announcement &curr_ann);
   std::pair<bool, Announcement> best_alternative_route(Announcement &ann);
 };

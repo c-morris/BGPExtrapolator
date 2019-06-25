@@ -22,13 +22,24 @@ ASGraph::ASGraph() {
     inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
     hazard_bulletin = std::map<Prefix<>, std::set<Announcement>>();
     hazard_subscribers = new std::vector<uint32_t>;
+    negative_anns_enabled = false;
+    friends_enabled = false;
+    preferences_enabled = false;
+
 }
 
-ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix) {
+ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix,
+                 bool enable_negative_anns, bool enable_friends, bool enable_preferences) {
+  // ROVpp Simulation properties
   this->attacker_asn = attacker_asn;
   this->victim_asn = victim_asn;
   this->victim_prefix = victim_prefix;
-
+  negative_anns_enabled = enable_negative_anns;
+  friends_enabled = enable_friends;
+  preferences_enabled = enable_preferences;
+  hazard_bulletin = std::map<Prefix<>, std::set<Announcement>>();
+  hazard_subscribers = new std::vector<uint32_t>;
+  // Regular Extrapolation paramters
   ases = new std::map<uint32_t, AS*>;
   ases_by_rank = new std::vector<std::set<uint32_t>*>;
   rov_asn_set = new std::set<uint32_t>;
@@ -38,8 +49,6 @@ ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::stri
   stubs_to_parents = new std::map<uint32_t, uint32_t>;
   non_stubs = new std::vector<uint32_t>;
   inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
-  hazard_bulletin = std::map<Prefix<>, std::set<Announcement>>();
-  hazard_subscribers = new std::vector<uint32_t>;
 }
 
 ASGraph::~ASGraph() {
@@ -96,7 +105,7 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
 
         } else if (rovpp_search != rovpp_asn_set->end()) {  // Check if it's ROVpp AS
           // Create ROVpp AS
-          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this)));
+          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this, negative_anns_enabled, friends_enabled, preferences_enabled)));
 
         } else {  // It must be a Regular BGP AS
           // Create a BGP AS
@@ -181,7 +190,7 @@ void ASGraph::load_rov_ases(SQLQuerier *querier) {
 void ASGraph::load_rovpp_ases(SQLQuerier *querier) {
   pqxx::result rov_ases_result = querier->select_as_types(ASES_TABLE);
   for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c) {
-    if (c["as_type"].as<std::string>() == "rovpp") {
+    if (c["as_type"].as<std::string>() == "rovpp" || c["as_type"].as<std::string>() == "rovppf" || c["as_type"].as<std::string>() == "rovppfp" ) {
       std::cout << "ROVpp AS " << c["asn"].as<uint32_t>() << std::endl;
       rovpp_asn_set->insert(c["asn"].as<uint32_t>());
     }
@@ -606,6 +615,15 @@ void ASGraph::publish_harzard(Announcement hazard_ann) {
       rovpp_as->incoming_hazard_announcement(hazard_ann);
     }
   }
+}
+
+
+bool ASGraph::implements_rovpp(uint32_t asn) {
+  auto search = rovpp_asn_set->find(asn);
+  if (search != rovpp_asn_set->end()) {
+    return true;
+  }
+  return false;
 }
 
 

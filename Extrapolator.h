@@ -27,6 +27,7 @@ struct Extrapolator {
         i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
     Extrapolator(
         std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix,
+        bool enable_negative_anns, bool enable_friends, bool enable_preferences,
         bool invert_results=true, std::string
         a=ANNOUNCEMENTS_TABLE, std::string r=RESULTS_TABLE, std::string
         i=INVERSE_RESULTS_TABLE, bool ram_tablespace=false);
