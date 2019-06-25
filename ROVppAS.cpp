@@ -319,17 +319,21 @@ std::pair<bool, Announcement> ROVppAS::best_alternative_route(Announcement &blac
   if (search != ann_history.end()) {
     // Get the set of annnoucements for this prefix
     std::set<Announcement> announcements_for_prefix = search->second;
-
-    for (Announcement ann_candidate : announcements_for_prefix) {
-      // TOOD: Should I check that it's not comming from the same ASN?
-      if (is_better(ann_candidate, blackhole_ann)) {
-        if (preference_enabled) {
-          if(as_graph->implements_rovpp(ann_candidate.received_from_asn)) {
+    // If Prefering ROV++ nodes are enabled
+    if (preference_enabled) {
+      // Check if we have an ROV++ neighbor alternative
+      for (Announcement ann_candidate : announcements_for_prefix) {
+        if (as_graph->implements_rovpp(ann_candidate.received_from_asn)) {
+          if (is_better(ann_candidate, blackhole_ann)) {
             return std::make_pair(true, ann_candidate);
           }
-        } else {
-          return std::make_pair(true, ann_candidate);
         }
+      }
+    }
+    // Otherwise, we'll settle for a non-ROV++ neighbor
+    for (Announcement ann_candidate : announcements_for_prefix) {
+      if (is_better(ann_candidate, blackhole_ann)) {
+        return std::make_pair(true, ann_candidate);
       }
     }
   }
