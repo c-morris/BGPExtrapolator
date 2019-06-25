@@ -193,6 +193,7 @@ void Extrapolator::propagate_up() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            std::cout << "------ Processing Provider Announcements at AS " << asn << " ------" << std::endl;
             graph->ases->find(asn)->second->process_announcements();
            // auto test = graph->ases->find(asn)->second;
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
@@ -202,6 +203,7 @@ void Extrapolator::propagate_up() {
     }
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            std::cout << "------ Processing Peer Announcements at AS " << asn << " ------" << std::endl;
             graph->ases->find(asn)->second->process_announcements();
            // auto test = graph->ases->find(asn)->second;
            bool answer = !graph->ases->find(asn)->second->all_anns->empty();
@@ -220,6 +222,7 @@ void Extrapolator::propagate_down() {
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             // std::cerr << "propagating down to " << asn << std::endl;
+            std::cout << "------ Processing Customer Announcements at AS " << asn << " ------" << std::endl;
             graph->ases->find(asn)->second->process_announcements();
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, false, true);
@@ -357,12 +360,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 2) {
                 continue;
             }
-            // If this announcement has a blackhole and is from a customer,
-            // then we must send to everyone.
-            if (ann.second.has_blackholes && ann.second.priority > 2 && ann.second.priority <= 3) {
-              // Change boolean to also send to customers
-              to_customers = true;
-            }
             // priority is reduced by 0.01 for path length
             // base priority is 2 for providers
             // base priority is 1 for peers
@@ -383,10 +380,17 @@ void Extrapolator::send_all_announcements(uint32_t asn,
               new_ann.add_blackhole_set(ann.second.blackholed_prefixes);
             }
             anns_to_providers.push_back(new_ann);
+
+            std::cout << "Created Announcement for providers for prefix " <<
+            new_ann.prefix.to_cidr() << std::endl;
+            if (ann.second.has_blackholes) {
+              std::cout << "With blackhole for prefix " << (*(new_ann.blackholed_prefixes.begin())).to_cidr() << std::endl;
+            }
         }
         // send announcements
         for (uint32_t provider_asn : *source_as->providers) {
             auto *recving_as = graph->ases->find(provider_asn)->second;
+            std::cout << "Sending announcements to provider AS " << provider_asn << std::endl;
             recving_as->receive_announcements(anns_to_providers);
             //recving_as->process_announcements();
         }
@@ -423,11 +427,18 @@ void Extrapolator::send_all_announcements(uint32_t asn,
               to_customers = true;
             }
             anns_to_peers.push_back(new_ann);
+
+            std::cout << "Created Announcement for peers for prefix " <<
+            new_ann.prefix.to_cidr() << std::endl;
+            if (ann.second.has_blackholes) {
+              std::cout << "With blackhole for prefix " << (*(new_ann.blackholed_prefixes.begin())).to_cidr() << std::endl;
+            }
         }
 
 
         for (uint32_t peer_asn : *source_as->peers) {
             auto *recving_as = graph->ases->find(peer_asn)->second;
+            std::cout << "Sending announcements to peer AS " << peer_asn << std::endl;
             recving_as->receive_announcements(anns_to_peers);
             //recving_as->process_announcements();
         }
@@ -455,10 +466,17 @@ void Extrapolator::send_all_announcements(uint32_t asn,
               new_ann.add_blackhole_set(ann.second.blackholed_prefixes);
             }
             anns_to_customers.push_back(new_ann);
+
+            std::cout << "Created Announcement for customers for prefix " <<
+            new_ann.prefix.to_cidr() << std::endl;
+            if (ann.second.has_blackholes) {
+              std::cout << "With blackhole for prefix " << (*(new_ann.blackholed_prefixes.begin())).to_cidr() << std::endl;
+            }
         }
         // send announcements
         for (uint32_t customer_asn : *source_as->customers) {
             auto *recving_as = graph->ases->find(customer_asn)->second;
+            std::cout << "Sending announcements to customer AS " << customer_asn << std::endl;
             recving_as->receive_announcements(anns_to_customers);
             //recving_as->process_announcements();
         }

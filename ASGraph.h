@@ -16,14 +16,14 @@ struct SQLQuerier;
 #include "AS.h"
 #include "SQLQuerier.h"
 #include "TableNames.h"
+#include "Prefix.h"
+#include "Announcement.h"
 
 
 struct ASGraph {
     std::map<uint32_t, AS*> *ases; // map of ASN to AS object
     std::vector<uint32_t> *ases_with_anns;
     std::vector<std::set<uint32_t>*> *ases_by_rank;
-    std::set<uint32_t> *rov_asn_set;  // Set of ROV ASNs
-    std::set<uint32_t> *rovpp_asn_set;
     std::vector<std::vector<uint32_t>*> *components;
     std::map<uint32_t, uint32_t> *stubs_to_parents;
     std::vector<uint32_t> *non_stubs;
@@ -33,10 +33,17 @@ struct ASGraph {
     //This is used in Extrapolator.give_ann_to_as_path() where ASNs on an
     //announcements AS_PATH need to be located.
     std::map<uint32_t, uint32_t> *component_translation;
+    // ROV and ROVpp related properties
+    std::set<uint32_t> *rov_asn_set;  // Set of ROV ASNs
+    std::set<uint32_t> *rovpp_asn_set;  // Set of ROVpp ASNs
     // Simulation variables
     std::uint32_t attacker_asn;
     std::uint32_t victim_asn;
     std::string victim_prefix;
+    // Friends Repository (will fill with friendly warnings)
+    std::map<Prefix<>, std::set<Announcement>> hazard_bulletin;
+    std::vector<uint32_t> *hazard_subscribers;
+
 
     ASGraph();
     ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix);
@@ -62,6 +69,9 @@ struct ASGraph {
 
     uint32_t translate_asn(uint32_t asn);
     void clear_announcements();
+    // ROVpp Related methods
+    void subscribe_to_hazards(uint32_t asn);  // TODO: Impelement
+    void publish_harzard(Announcement hazard_ann);  // TODO: Impelement
 
     friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
 };

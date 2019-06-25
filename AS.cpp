@@ -226,6 +226,7 @@ void AS::process_announcements() {
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
+            std::cout << "receive_announcement for prefix " << ann.prefix.to_cidr()  << " from AS "<< ann.received_from_asn <<  std::endl;
             receive_announcement(ann);
         }
     }

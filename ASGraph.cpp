@@ -20,6 +20,8 @@ ASGraph::ASGraph() {
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
     non_stubs = new std::vector<uint32_t>;
     inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
+    hazard_bulletin = std::map<Prefix<>, std::set<Announcement>>();
+    hazard_subscribers = new std::vector<uint32_t>;
 }
 
 ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix) {
@@ -36,6 +38,8 @@ ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::stri
   stubs_to_parents = new std::map<uint32_t, uint32_t>;
   non_stubs = new std::vector<uint32_t>;
   inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
+  hazard_bulletin = std::map<Prefix<>, std::set<Announcement>>();
+  hazard_subscribers = new std::vector<uint32_t>;
 }
 
 ASGraph::~ASGraph() {
@@ -62,6 +66,7 @@ ASGraph::~ASGraph() {
     delete component_translation;
     delete stubs_to_parents;
     delete non_stubs;
+    delete hazard_subscribers;
 }
 
 
@@ -580,6 +585,27 @@ void ASGraph::clear_announcements(){
         delete i.second;
     }
     inverse_results->clear();
+}
+
+/** Add AS via ASN to list of ASes to get hazard notifications
+*/
+void ASGraph::subscribe_to_hazards(uint32_t asn) {
+  hazard_subscribers->push_back(asn);
+}
+
+/** Publish a hazard
+*/
+void ASGraph::publish_harzard(Announcement hazard_ann) {
+  // Add to hazards
+  hazard_bulletin[hazard_ann.prefix].insert(hazard_ann);
+  // Publish hazard to all subscribers
+  for (uint32_t asn : *hazard_subscribers) {
+    auto search = ases->find(asn);
+    if (search != ases->end()) {
+      ROVppAS * rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+      rovpp_as->incoming_hazard_announcement(hazard_ann);
+    }
+  }
 }
 
 

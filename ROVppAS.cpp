@@ -54,8 +54,8 @@ void ROVppAS::incoming_valid_announcement(Announcement &ann) {
         (*all_anns)[ann.prefix] = ann;
         dropped_ann_map.erase(ann.prefix);
         blackhole_map.erase(ann.prefix);
-      }
-    } else {
+    }
+  } else {
     (*all_anns)[ann.prefix] = ann;
   }
 }
@@ -64,16 +64,47 @@ void ROVppAS::incoming_valid_announcement(Announcement &ann) {
 void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
   // Drop the announcement (i.e. don't add it to incoming_announcements)
   // Add announcement to dropped list
+  std::cout << "Dropping announcement for prefix "<< ann.prefix.to_cidr() << " from AS " << ann.received_from_asn <<  std::endl;
   dropped_ann_map[ann.prefix] = ann;
   // Check if should make negative announcement
   // Check if you have received the Valid announcement in the past
   // This check needs to be made in order to know if we have a path to the legit origin (otherwise, we may not have such a path yet).
+  // Check if you have an alternative route (i.e. escape route)
   std::pair<bool, Announcement*> check = received_valid_announcement(ann);
   if (check.first) {
-    make_negative_announcement_and_blackhole(*(check.second), ann);
+    // Check if it's from the same neighbor
+    if (ann.received_from_asn == check.second->received_from_asn) {
+      // Okay, before we admit we're screwed, see if we have an alternative route
+      std::pair<bool, Announcement> alternate_route = best_alternative_route(ann);
+      if (alternate_route.first) {
+        (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
+      } else {
+        make_negative_announcement_and_blackhole(*(check.second), ann);
+      }
+    }
+  }
+  // Publish Hazard
+  if (friends_enabled) {
+    as_graph->publish_harzard(ann);
   }
 }
 
+/** Processes hazards from freinds
+*/
+void ROVppAS::incoming_hazard_announcement(Announcement &ann) {
+  // Check if it's in all_anns (i.e. RIB in)
+  for (auto& prefix_ann_pair : *all_anns) {
+    if (paths_intersect(prefix_ann_pair.second, ann)) {
+      // Okay, before we admit we're screwed, see if we have an alternative route
+      std::pair<bool, Announcement> alternate_route = best_alternative_route(ann);
+      if (alternate_route.first) {
+        (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
+      } else {
+        make_blackhole_announcement(ann);
+      }
+    }
+  }
+}
 
 /** Push the received announcements to the incoming_announcements vector.
  *
