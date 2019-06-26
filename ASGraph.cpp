@@ -645,7 +645,7 @@ void ASGraph::publish_harzard(Announcement hazard_ann, uint32_t publishing_asn) 
       auto search = ases->find(asn);
       if (search != ases->end()) {
         ROVppAS * rovpp_as = dynamic_cast<ROVppAS*>(search->second);
-        rovpp_as->incoming_hazard_announcement(hazard_ann);
+        rovpp_as->incoming_hazard_announcement(hazard_ann, publishing_asn);
       }
     }
   }

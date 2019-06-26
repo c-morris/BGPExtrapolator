@@ -61,7 +61,10 @@ void ROVppAS::incoming_valid_announcement(Announcement &ann) {
   // Check if you should make blackhole announcement (now that you have the positive part)
   std::pair<bool, Announcement*> check = received_hijack_announcement(ann);
   if (check.first) {
-    make_negative_announcement_and_blackhole(ann, *(check.second));
+    // Check if it's coming from the same ASN as the current one you're using
+    if ((*all_anns)[ann.prefix].received_from_asn == (*(check.second)).received_from_asn) {
+      make_negative_announcement_and_blackhole((*all_anns)[ann.prefix], *(check.second), true);
+    }
   }
 }
 
@@ -69,7 +72,7 @@ void ROVppAS::incoming_valid_announcement(Announcement &ann) {
 void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
   // Drop the announcement (i.e. don't add it to incoming_announcements)
   // Add announcement to dropped list
-  std::cout << "Dropping announcement for prefix "<< ann.prefix.to_cidr() << " from AS " << ann.received_from_asn <<  std::endl;
+  std::cout << "Dropping announcement for prefix "<< ann.prefix.to_cidr() << " from AS " << ann.received_from_asn << std::endl;
   dropped_ann_map[ann.prefix] = ann;
   // Check if should make negative announcement
   // Check if you have received the Valid announcement in the past
@@ -84,7 +87,7 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
       if (alternate_route.first) {
         (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
       } else {
-        make_negative_announcement_and_blackhole(*(check.second), ann);
+        make_negative_announcement_and_blackhole(*(check.second), ann, true);
       }
     }
   }
@@ -92,7 +95,7 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
 
 /** Processes hazards from freinds
 */
-void ROVppAS::incoming_hazard_announcement(Announcement ann) {
+void ROVppAS::incoming_hazard_announcement(Announcement ann, uint32_t publishing_asn) {
   // Check if it's in all_anns (i.e. RIB in)
   if (!all_anns->empty()) {
     for (auto& prefix_ann_pair : *all_anns) {
@@ -102,12 +105,16 @@ void ROVppAS::incoming_hazard_announcement(Announcement ann) {
         if (alternate_route.first) {
           (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
         } else {
-          make_blackhole_announcement(ann);
+          // Blackhole the prefix
+          make_negative_announcement_and_blackhole(alternate_route.second, ann, false);
         }
       }
     }
   } else {
-    make_blackhole_announcement(ann);
+    // Make Blackhole for hijacked prefix
+    std::cout << "Adding to Blackhole list Hazard for prefix "<< ann.prefix.to_cidr() << " from Publishing AS " << publishing_asn << std::endl;
+    // Add Announcement to blocked list (i.e. blackhole list)
+    blackhole_map[ann.prefix] = ann;
   }
 }
 
@@ -190,7 +197,7 @@ void ROVppAS::receive_announcement(Announcement &ann) {
 
 /** Make negative announcement AND Blackhole's that announcement
 */
-void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijack_ann) {
+void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijack_ann, bool publish) {
   // Create Negative Announcement
   std::cout << "Making Blackhole at AS" << asn << " for prefix: " << hijack_ann.prefix.to_cidr() << std::endl;
   Announcement neg_ann = Announcement(legit_ann.origin,
@@ -208,8 +215,8 @@ void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, 
   blackhole_map[hijack_ann.prefix] = hijack_ann;
 
   // Publish Hazard
-  if (friends_enabled) {
-    as_graph->publish_harzard(neg_ann, asn);
+  if (friends_enabled && publish) {
+    as_graph->publish_harzard(hijack_ann, asn);
   }
 }
 
@@ -313,6 +320,9 @@ std::vector<uint32_t> ROVppAS::get_as_path(Announcement &ann) {
     curr_as = as_graph->get_as_with_asn(current_asn);
     // Get same announcement from previous AS
     curr_announcement = curr_as->get_ann_for_prefix(curr_announcement->prefix);
+    if (curr_announcement->priority > 1) {
+      break;
+    }
     // append to end of ASN path
     as_path.push_back(current_asn);
   }

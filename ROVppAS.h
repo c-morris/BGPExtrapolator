@@ -48,7 +48,7 @@ struct ROVppAS: public ROVAS {
   bool pass_rov(Announcement &ann);
 
   // ROVpp methods
-  void make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijacked_ann);
+  void make_negative_announcement_and_blackhole(Announcement &legit_ann, Announcement &hijacked_ann, bool publish);
   void make_blackhole_announcement(Announcement &blackhole_ann);
   std::vector<uint32_t> get_as_path(Announcement &ann);
   bool paths_intersect(Announcement &legit_ann, Announcement &hijacked_ann);
@@ -58,7 +58,7 @@ struct ROVppAS: public ROVAS {
   void incoming_negative_announcement(Announcement &ann);
   void incoming_valid_announcement(Announcement &ann);
   void incoming_hijack_announcement(Announcement &ann);
-  void incoming_hazard_announcement(Announcement ann);
+  void incoming_hazard_announcement(Announcement ann, uint32_t publishing_asn);
   bool is_better(Announcement &new_ann, Announcement &curr_ann);
   std::pair<bool, Announcement> best_alternative_route(Announcement &ann);
 };
