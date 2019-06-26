@@ -52,11 +52,16 @@ void ROVppAS::incoming_valid_announcement(Announcement &ann) {
   if (search != all_anns->end()) {
     if (is_better(ann, search->second)) {
         (*all_anns)[ann.prefix] = ann;
-        dropped_ann_map.erase(ann.prefix);
-        blackhole_map.erase(ann.prefix);
+        // dropped_ann_map.erase(ann.prefix);
+        // blackhole_map.erase(ann.prefix);
     }
   } else {
     (*all_anns)[ann.prefix] = ann;
+  }
+  // Check if you should make blackhole announcement (now that you have the positive part)
+  std::pair<bool, Announcement*> check = received_hijack_announcement(ann);
+  if (check.first) {
+    make_negative_announcement_and_blackhole(ann, *(check.second));
   }
 }
 
@@ -200,7 +205,7 @@ void ROVppAS::make_negative_announcement_and_blackhole(Announcement &legit_ann, 
 
   // Publish Hazard
   if (friends_enabled) {
-    as_graph->publish_harzard(neg_ann);
+    as_graph->publish_harzard(neg_ann, asn);
   }
 }
 

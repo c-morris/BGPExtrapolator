@@ -20,12 +20,14 @@ ASGraph::ASGraph() {
     stubs_to_parents = new std::map<uint32_t, uint32_t>;
     non_stubs = new std::vector<uint32_t>;
     inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*>;
+    rovpp_asn_set_using_b = new std::set<uint32_t>;
+    rovpp_asn_set_using_bf = new std::set<uint32_t>;
+    rovpp_asn_set_using_bfp = new std::set<uint32_t>;
     hazard_bulletin = std::map<Prefix<>, std::set<Announcement>>();
     hazard_subscribers = new std::vector<uint32_t>;
     negative_anns_enabled = false;
     friends_enabled = false;
     preferences_enabled = false;
-
 }
 
 ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::string victim_prefix,
@@ -37,6 +39,9 @@ ASGraph::ASGraph(std::uint32_t attacker_asn, std::uint32_t victim_asn, std::stri
   negative_anns_enabled = enable_negative_anns;
   friends_enabled = enable_friends;
   preferences_enabled = enable_preferences;
+  rovpp_asn_set_using_b = new std::set<uint32_t>;
+  rovpp_asn_set_using_bf = new std::set<uint32_t>;
+  rovpp_asn_set_using_bfp = new std::set<uint32_t>;
   hazard_bulletin = std::map<Prefix<>, std::set<Announcement>>();
   hazard_subscribers = new std::vector<uint32_t>;
   // Regular Extrapolation paramters
@@ -76,6 +81,9 @@ ASGraph::~ASGraph() {
     delete stubs_to_parents;
     delete non_stubs;
     delete hazard_subscribers;
+    delete rovpp_asn_set_using_b;
+    delete rovpp_asn_set_using_bf;
+    delete rovpp_asn_set_using_bfp;
 }
 
 
@@ -98,18 +106,28 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
         auto rov_search = rov_asn_set->find(asn);
         auto rovpp_search = rovpp_asn_set->find(asn);
         // Create AS based on what type it is
-        // Check if it's a ROV AS
-        if (rov_search != rov_asn_set->end()) {
-          // Create a ROV AS
-          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this)));
+        if (rov_search != rov_asn_set->end()) {  // Check if it's a ROV AS
+            // Create a ROV AS
+            ases->insert(std::pair<uint32_t, AS*>(asn, new ROVAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this)));
 
         } else if (rovpp_search != rovpp_asn_set->end()) {  // Check if it's ROVpp AS
-          // Create ROVpp AS
-          ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this, negative_anns_enabled, friends_enabled, preferences_enabled)));
+            // What version of ROVpp will it use
+            auto preferences_version_search = rovpp_asn_set_using_bfp->find(asn);
+            auto friends_version_search = rovpp_asn_set_using_bf->find(asn);
 
+            // Instation the corresponding version
+            if (preferences_version_search != rovpp_asn_set_using_bfp->end()) {  // Is it the preferences version
+                ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this, true, true, true)));
+
+            } else if (friends_version_search != rovpp_asn_set_using_bf->end()) {  // Is it the friends version
+                ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this, true, true, false)));
+
+            } else {  // If must be the standard blackhole version
+                ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attacker_asn, victim_asn, victim_prefix, inverse_results, this, true, false, false)));
+            }
         } else {  // It must be a Regular BGP AS
-          // Create a BGP AS
-          ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
+            // Create a BGP AS
+            ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
         }
         search = ases->find(asn);
     }
@@ -190,9 +208,23 @@ void ASGraph::load_rov_ases(SQLQuerier *querier) {
 void ASGraph::load_rovpp_ases(SQLQuerier *querier) {
   pqxx::result rov_ases_result = querier->select_as_types(ASES_TABLE);
   for (pqxx::result::const_iterator c = rov_ases_result.begin(); c!=rov_ases_result.end(); ++c) {
-    if (c["as_type"].as<std::string>() == "rovpp" || c["as_type"].as<std::string>() == "rovppf" || c["as_type"].as<std::string>() == "rovppfp" ) {
-      std::cout << "ROVpp AS " << c["asn"].as<uint32_t>() << std::endl;
-      rovpp_asn_set->insert(c["asn"].as<uint32_t>());
+    // Check the AS type and add them to the appropriate sets
+    std::string as_type = c["as_type"].as<std::string>();
+    uint32_t asn = c["asn"].as<uint32_t>();
+    // Add the ROVpp AS set (i.e. is an AS that implements any version of ROVpp)
+    if (as_type == "rovpp" || as_type == "rovppf" || as_type == "rovppfp" ) {
+      rovpp_asn_set->insert(asn);
+    }
+    // Add to what version of ROVpp their implementing
+    if (as_type == "rovpp") {  // Just implements Blackholes
+        rovpp_asn_set_using_b->insert(asn);
+        std::cout << "ROVpp AS " << c["asn"].as<uint32_t>() << " with Blackholes Enabled"<< std::endl;
+    } else if (as_type == "rovppf") {  // Implements Blackholes and Friends
+        rovpp_asn_set_using_bf->insert(asn);
+        std::cout << "ROVpp AS " << c["asn"].as<uint32_t>() << " with Blackholes and Friends Enabled"<< std::endl;
+    } else if (as_type == "rovppfp") {  // Implements Blackholes, Friends, and Preferences
+        rovpp_asn_set_using_bfp->insert(asn);
+        std::cout << "ROVpp AS " << c["asn"].as<uint32_t>() << " with Blackholes, Friends, and Preferences Enabled"<< std::endl;
     }
   }
 }
@@ -604,15 +636,17 @@ void ASGraph::subscribe_to_hazards(uint32_t asn) {
 
 /** Publish a hazard
 */
-void ASGraph::publish_harzard(Announcement hazard_ann) {
+void ASGraph::publish_harzard(Announcement hazard_ann, uint32_t publishing_asn) {
   // Add to hazards
   hazard_bulletin[hazard_ann.prefix].insert(hazard_ann);
   // Publish hazard to all subscribers
   for (uint32_t asn : *hazard_subscribers) {
-    auto search = ases->find(asn);
-    if (search != ases->end()) {
-      ROVppAS * rovpp_as = dynamic_cast<ROVppAS*>(search->second);
-      rovpp_as->incoming_hazard_announcement(hazard_ann);
+    if (asn != publishing_asn) {
+      auto search = ases->find(asn);
+      if (search != ases->end()) {
+        ROVppAS * rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+        rovpp_as->incoming_hazard_announcement(hazard_ann);
+      }
     }
   }
 }

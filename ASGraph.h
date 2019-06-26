@@ -36,6 +36,10 @@ struct ASGraph {
     // ROV and ROVpp related properties
     std::set<uint32_t> *rov_asn_set;  // Set of ROV ASNs
     std::set<uint32_t> *rovpp_asn_set;  // Set of ROVpp ASNs
+    // Set of nodes that implement a particular version of ROVpp
+    std::set<uint32_t> *rovpp_asn_set_using_b;  // Only blackholes enabled
+    std::set<uint32_t> *rovpp_asn_set_using_bf;  // Blackholes and Friends enabled
+    std::set<uint32_t> *rovpp_asn_set_using_bfp;  // Blackholes, Friends, and Preferences enabled
     // Simulation variables
     std::uint32_t attacker_asn;
     std::uint32_t victim_asn;
@@ -76,7 +80,7 @@ struct ASGraph {
     void clear_announcements();
     // ROVpp Related methods
     void subscribe_to_hazards(uint32_t asn);  // TODO: Impelement
-    void publish_harzard(Announcement hazard_ann);  // TODO: Impelement
+    void publish_harzard(Announcement hazard_ann, uint32_t publishing_asn);  // TODO: Impelement
 
     friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
 };
