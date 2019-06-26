@@ -94,16 +94,20 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
 */
 void ROVppAS::incoming_hazard_announcement(Announcement ann) {
   // Check if it's in all_anns (i.e. RIB in)
-  for (auto& prefix_ann_pair : *all_anns) {
-    if (paths_intersect(prefix_ann_pair.second, ann)) {
-      // Okay, before we admit we're screwed, see if we have an alternative route
-      std::pair<bool, Announcement> alternate_route = best_alternative_route(prefix_ann_pair.second);
-      if (alternate_route.first) {
-        (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
-      } else {
-        make_blackhole_announcement(ann);
+  if (!all_anns->empty()) {
+    for (auto& prefix_ann_pair : *all_anns) {
+      if (paths_intersect(prefix_ann_pair.second, ann)) {
+        // Okay, before we admit we're screwed, see if we have an alternative route
+        std::pair<bool, Announcement> alternate_route = best_alternative_route(prefix_ann_pair.second);
+        if (alternate_route.first) {
+          (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
+        } else {
+          make_blackhole_announcement(ann);
+        }
       }
     }
+  } else {
+    make_blackhole_announcement(ann);
   }
 }
 
