@@ -253,8 +253,13 @@ void ROVppAS::make_blackhole_announcement(Announcement &neg_ann) {
   new_neg_ann.add_blackhole_set(neg_ann.blackholed_prefixes);
   // Add to set of negative_announcements
   negative_announcements.insert(new_neg_ann);
-  // Add to Announcements to propagate
-  (*all_anns)[new_neg_ann.prefix] = new_neg_ann;
+  // Check if we should replace currently saved negative announcement
+  if (!all_anns->empty()) {
+    // Add to Announcements to propagate
+    if (is_better(new_neg_ann, (*all_anns)[new_neg_ann.prefix])) {
+        (*all_anns)[new_neg_ann.prefix] = new_neg_ann;
+    }
+  }
   // Add Announcement to blocked list (i.e. blackhole list)
   blackhole_map[blackhole_prefix] = new_neg_ann;
 }
