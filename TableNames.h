@@ -11,7 +11,7 @@
 #define SUPERNODES_TABLE "rovpp_supernodes"
 #define ANNOUNCEMENTS_TABLE "rovpp_mrt_announcements"
 #define ASES_TABLE "rovpp_ases"
-#define ROVPP_BLACKLIST_TABLE "rovpp_blacklist"
+#define ROVPP_BLACKLIST_TABLE "rovpp_blackholes"
 
 
 #endif

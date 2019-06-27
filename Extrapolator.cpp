@@ -516,7 +516,7 @@ void Extrapolator::print_results(int iteration) {
       // Check if it's a ROVpp node
       // if (ROVppAS* rovpp_as = dynamic_cast<ROVppAS*>(as.second)) {
       //   // It is, so now output the blacklist
-      //   rovpp_as->stream_blacklist(blacklist_outfile);
+      //   rovpp_as->stream_blacklist(blacklist_hole_outfile);
       // }
   }
 }
@@ -526,11 +526,11 @@ void Extrapolator::print_results(int iteration) {
  */
 void Extrapolator::save_results(int iteration){
     std::ofstream outfile;
-    std::ofstream blacklist_outfile;
+    std::ofstream blacklist_hole_outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
-    std::string blacklist_file_name = "/dev/shm/bgp/rovpp_blacklist.csv";
+    std::string blackhole_list_file_name = "/dev/shm/bgp/rovpp_blacklist.csv";
     outfile.open(file_name);
-    blacklist_outfile.open(blacklist_file_name);
+    blacklist_hole_outfile.open(blackhole_list_file_name);
 
     if (invert) {
         std::cerr << "Saving Inverse Results From Iteration: " << iteration << std::endl;
@@ -550,12 +550,13 @@ void Extrapolator::save_results(int iteration){
             // Check if it's a ROVpp node
             if (ROVppAS* rovpp_as = dynamic_cast<ROVppAS*>(as.second)) {
               // It is, so now output the blacklist
-              rovpp_as->stream_blacklist(blacklist_outfile);
+              rovpp_as->stream_blacklist(blacklist_hole_outfile);
             }
         }
         outfile.close();
-        blacklist_outfile.close();
+        blacklist_hole_outfile.close();
         querier->copy_results_to_db(file_name);
+        querier->copy_blackhole_list_to_db(blackhole_list_file_name);
         // TODO: Copy blacklist to database
     }
     // std::remove(file_name.c_str());

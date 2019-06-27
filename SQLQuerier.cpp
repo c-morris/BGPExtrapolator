@@ -229,6 +229,12 @@ void SQLQuerier::copy_results_to_db(std::string file_name){
     execute(sql);
 }
 
+void SQLQuerier::copy_blackhole_list_to_db(std::string file_name) {
+  std::string sql = std::string("COPY " ROVPP_BLACKLIST_TABLE "(asn, prefix, origin, received_from_asn)") +
+                      "FROM '" + file_name + "' WITH (FORMAT csv)";
+  execute(sql);
+}
+
 /*
  *  Instantiates a new, empty supernodes table in the database, if it doesn't exist.
  */

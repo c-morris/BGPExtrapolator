@@ -41,6 +41,7 @@ struct SQLQuerier {
     void clear_non_stubs_from_db();
     void copy_stubs_to_db(std::string file_name);
     void copy_supernodes_to_db(std::string file_name);
+    void copy_blackhole_list_to_db(std::string file_name);
     void create_supernodes_tbl();
     void create_stubs_tbl();
     void create_non_stubs_tbl();
