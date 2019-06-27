@@ -174,7 +174,7 @@ bool ROVppAS::is_better(Announcement &new_ann, Announcement &curr_ann) {
   } else if (same_relationship && new_ann.blackholed_prefixes.size() < curr_ann.blackholed_prefixes.size()) {
     return true;
     // Use BGP priority to make decision
-  } else if (same_blackhole_size && new_ann.priority > curr_ann.priority) {
+  } else if (same_relationship && same_blackhole_size && new_ann.priority > curr_ann.priority) {
     return true;
   } else {
     return false;
