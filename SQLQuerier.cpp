@@ -250,7 +250,7 @@ void SQLQuerier::create_rovpp_blacklist_tbl() {
   std::cout << "Dropping rovpp_blacklist table..." << std::endl;
   execute(sql, false);
   // Create it again
-  std::string sql2 = std::string("CREATE TABLE IF NOT EXISTS " ROVPP_BLACKLIST_TABLE "(rovpp_asn BIGINT, prefix CIDR, hijacked_ann_received_from_asn BIGINT)");
+  std::string sql2 = std::string("CREATE TABLE IF NOT EXISTS " ROVPP_BLACKLIST_TABLE "(asn BIGINT, prefix CIDR, origin BIGINT, received_from_asn BIGINT)");
   std::cout << "Creating rovpp_blacklist table..." << std::endl;
   execute(sql2, false);
 }
