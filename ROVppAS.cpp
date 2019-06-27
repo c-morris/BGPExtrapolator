@@ -125,7 +125,7 @@ void ROVppAS::incoming_hazard_announcement(Announcement ann, uint32_t publishing
           }
         } else {
           // Blackhole the prefix
-          make_negative_announcement_and_blackhole(alternate_route.second, ann, false);
+          make_negative_announcement_and_blackhole(prefix_ann_pair.second, ann, false);
         }
       }
     }
