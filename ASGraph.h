@@ -1,6 +1,7 @@
 #ifndef ASGRAPH_H
 #define ASGRAPH_H
 
+// Define relationship macros
 #define AS_REL_PROVIDER 0
 #define AS_REL_PEER 1
 #define AS_REL_CUSTOMER 2

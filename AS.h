@@ -20,8 +20,6 @@ struct AS {
     
     // Defer processing of incoming announcements for efficiency
     std::vector<Announcement> *incoming_announcements;
-    // This vector is for something?
-    std::vector<Announcement> *anns_sent_to_peers_providers;
     // Map of all announcements stored
     std::map<Prefix<>, Announcement> *all_anns;
     std::map<Prefix<>, Announcement> *depref_anns;
@@ -48,7 +46,7 @@ struct AS {
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);
-    void receive_announcement(Announcement &ann);
+    void process_announcement(Announcement &ann);
     void clear_announcements();
     bool already_received(Announcement &ann);
     void printDebug();

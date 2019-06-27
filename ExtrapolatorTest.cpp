@@ -46,7 +46,7 @@ bool test_propagate_up() {
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     ann.from_monitor = true;
     ann.priority = 2.9;
-    e.graph->ases->find(5)->second->receive_announcement(ann);
+    e.graph->ases->find(5)->second->process_announcement(ann);
     e.propagate_up();
     e.propagate_up();
 
@@ -91,7 +91,7 @@ bool test_propagate_down() {
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     ann.from_monitor = true;
     ann.priority = 2.9;
-    e.graph->ases->find(2)->second->receive_announcement(ann);
+    e.graph->ases->find(2)->second->process_announcement(ann);
     e.propagate_down();
     e.propagate_down();
     if (e.graph->ases->find(1)->second->all_anns->size() == 0 &&
@@ -227,5 +227,3 @@ bool test_send_all_announcements() {
 
     return true;
 }
-
-

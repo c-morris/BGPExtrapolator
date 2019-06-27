@@ -6,8 +6,13 @@
 #include <chrono>
 #include "Extrapolator.h"
 
-Extrapolator::Extrapolator(bool invert_results, bool store_depref, std::string a, std::string r, 
-        std::string i, std::string d, uint32_t iteration_size) {
+Extrapolator::Extrapolator(bool invert_results,
+                           bool store_depref,
+                           std::string a, 
+                           std::string r, 
+                           std::string i,
+                           std::string d,
+                           uint32_t iteration_size) {
     invert = invert_results;                    // True to store the results inverted
     depref = store_depref;                      // True to store the second best ann for depref
     it_size = iteration_size;                   // Number of prefix to be precessed per iteration
@@ -74,18 +79,17 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     populate_blocks(cur_prefix, prefix_blocks, subnet_blocks);
     delete cur_prefix;
    
-    
     std::cout << "Beginning propagation..." << std::endl;
+    
+    // Seed the monitor announcements
     uint32_t announcement_count = 0; 
-    // For each unprocessed prefix block  
     int iteration = 0;
     double avg_it_time = 0;
     auto bloc_start = std::chrono::high_resolution_clock::now();
+    // For each unprocessed prefix block  
     for (Prefix<>* prefix : *prefix_blocks) {
-        std::cerr << "Selecting Announcements..." << std::endl;
-        
+        std::cout << "Selecting Announcements..." << std::endl;
         auto prefix_start = std::chrono::high_resolution_clock::now();
-        
         // Get the block of announcements for the subgroup
         pqxx::result ann_block = querier->select_prefix_ann(prefix); 
         // Check for empty block
@@ -137,9 +141,6 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
         std::cout << prefix->to_cidr() << " completed." << std::endl;
         auto prefix_finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> q = prefix_finish - prefix_start;
-        //std::cout << "Prefix process time: " << q.count() << std::endl;
-        avg_it_time += q.count();
-        avg_it_time /= 2;
     }
     // For each unprocessed subnet block  
     for (Prefix<>* subnet : *subnet_blocks) {
@@ -198,15 +199,10 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
         std::cout << subnet->to_cidr() << " completed." << std::endl;
         auto subnet_finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> q = subnet_finish - subnet_start;
-        //std::cout << "Subnet process time: " << q.count() << std::endl;
-        
-        avg_it_time += q.count();
-        avg_it_time /= 2;
     }
     auto bloc_finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> e = bloc_finish - bloc_start;
     std::cout << "Block elapsed time: " << e.count() << std::endl;
-    std::cout << "Avg. iteration time: " << avg_it_time << std::endl;
     delete prefix_blocks;
     delete subnet_blocks;
     
@@ -232,11 +228,7 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
                                    std::vector<Prefix<>*>* bloc_vector) { 
     // Find the number of announcements within the subnet
     pqxx::result r = querier->select_subnet_count(p);
-    
-    // DEBUG
-    //std::cout << "Prefix: " << p->to_cidr() << std::endl;
-    //std::cout << "Count: "<< r[0][0].as<uint32_t>() << std::endl;
-
+    // If the subnet count is within size constraint
     if (r[0][0].as<uint32_t>() < it_size) {
         // Add to subnet block vector
         if (r[0][0].as<uint32_t>() > 0) {
@@ -244,7 +236,7 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
             bloc_vector->push_back(p_copy);
         }
     } else {
-        // Store the prefix if there are announcements for it
+        // Store the prefix if there are announcements for it specifically
         pqxx::result r2 = querier->select_prefix_count(p);
         if (r2[0][0].as<uint32_t>() > 0) {
             Prefix<Integer>* p_copy = new Prefix<Integer>(p->addr, p->netmask);
@@ -260,7 +252,7 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
             new_mask = (p->netmask >> 1) | p->netmask;
         }
         Prefix<Integer>* p1 = new Prefix<Integer>(p->addr, new_mask);
-	
+        
         // Second half: increase the prefix length by 1 and flip previous length bit
         int8_t sz = 0;
         Integer new_addr = p->addr;
@@ -392,21 +384,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) 
             continue;
-        int sent_to = -1;
-        // If there are still AS further along the path
-        if (i < as_path->size() - 1) {
-            // Get the ASN the announcement was sent to
-            auto asn_sent_to = *(it + 1);
-            // Get the next ASes relationship to current AS
-            if (as_on_path->providers->find(asn_sent_to) != as_on_path->providers->end()) {
-                sent_to = AS_REL_PROVIDER;
-            } else if (as_on_path->peers->find(asn_sent_to) != as_on_path->peers->end()) {
-                sent_to = AS_REL_PEER;
-            } else if (as_on_path->customers->find(asn_sent_to) != as_on_path->customers->end()) {
-                sent_to = AS_REL_CUSTOMER;
-            }
-        }
-
+        
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
@@ -439,7 +417,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             // Otherwise received it from previous AS
             received_from_asn = *(it-1);
         }
-
+        // No break in path so send the announcement
         if (!broken_path) {
             Announcement ann = Announcement(*as_path->rbegin(),
                                             prefix.addr,
@@ -448,7 +426,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                             received_from_asn,
                                             true);
             // Send the announcement to the current AS
-            as_on_path->receive_announcement(ann);
+            as_on_path->process_announcement(ann);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
                         std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
@@ -459,6 +437,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             }
         } else {
             // Report the broken path
+            std::cerr << "Broken path for " << prefix.to_cidr() << std::endl; 
         }
     }
 }
@@ -469,107 +448,117 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
  * This approximates the Adj-RIBs-out. 
  *
  * @param asn AS that is sending out announces
- * @param to_peers_providers send to peers and providers
- * @param to_customers send to customers
+ * @param to_providers Send to providers
+ * @param to_peers Send to peers
+ * @param to_customers Send to customers
  */
 void Extrapolator::send_all_announcements(uint32_t asn, 
                                           bool to_providers, 
                                           bool to_peers, 
                                           bool to_customers) {
     // TODO Cleanup
+    // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
+    // If we are sending to providers
     if (to_providers) {
+        // Assemble the list of announcements to send to providers
         std::vector<Announcement> anns_to_providers;
         for (auto &ann : *source_as->all_anns) {
+            // Do not propagate any announcements from peers/providers
+            // Priority is reduced by 0.01 per path length
+            // Base priority is 2 for providers
+            // Ignore announcements not from a customer
             if (ann.second.priority < 2) {
                 continue;
             }
-            // priority is reduced by 0.01 for path length
-            // base priority is 2 for providers
-            // base priority is 1 for peers
-            // do not propagate any announcements from peers
+            // TODO Why are we changing the priority here?
             double priority = ann.second.priority;
-            if(priority - floor(priority) == 0) {
+            // Set the priority of the announcement 
+            if (priority - floor(priority) == 0) {
+                // Reset monitor priority to be received from a customer
                 priority = 2.99;
             } else {
+                // Reset priority to its length fraction from a customer
                 priority = priority - floor(priority) - 0.01 + 2;
             }
-            anns_to_providers.push_back(
-                Announcement(
-                    ann.second.origin,
-                    ann.second.prefix.addr,
-                    ann.second.prefix.netmask,
-                    priority,
-                    asn));
+            // Push announcement with new priority to ann vector
+            anns_to_providers.push_back(Announcement(ann.second.origin,
+                                                     ann.second.prefix.addr,
+                                                     ann.second.prefix.netmask,
+                                                     priority,
+                                                     asn));
         }
-        // send announcements
+        // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
+            // For each provider, give the vector of announcements
             auto *recving_as = graph->ases->find(provider_asn)->second;
             recving_as->receive_announcements(anns_to_providers);
-            //recving_as->process_announcements();
         }
     }
 
+    // If we are sending to peers
     if (to_peers) {
+        // Assemble vector of announcement to send to peers
         std::vector<Announcement> anns_to_peers;
-        
         for (auto &ann : *source_as->all_anns) {
+            // Do not propagate any announcements from peers/providers
+            // Priority is reduced by 0.01 per path length
+            // Base priority is 1 for peers
+
+            // Ignore announcements not from a customer
             if (ann.second.priority < 2) {
                 continue;
             }
-            // priority is reduced by 0.01 for path length
-            // base priority is 2 for providers
-            // base priority is 1 for peers
-            // do not propagate any announcements from peers
             double priority = ann.second.priority;
             if(priority - floor(priority) == 0) {
-                priority = 2.99;
+                // Reset monitor priority to be received from a customer
+                priority = 1.99;
             } else {
-                priority = priority - floor(priority) - 0.01 + 2;
+                // Reset priority to its length fraction from a customer
+                priority = priority - floor(priority) - 0.01 + 1;
             }
-
-            priority--; // subtract 1 for peers
-            anns_to_peers.push_back(
-                Announcement(
-                    ann.second.origin,
-                    ann.second.prefix.addr,
-                    ann.second.prefix.netmask,
-                    priority,
-                    asn));
+            anns_to_peers.push_back(Announcement(ann.second.origin,
+                                                 ann.second.prefix.addr,
+                                                 ann.second.prefix.netmask,
+                                                 priority,
+                                                 asn));
         }
-
-
+        // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
+            // For each provider, give the vector of announcements
             auto *recving_as = graph->ases->find(peer_asn)->second;
             recving_as->receive_announcements(anns_to_peers);
-            //recving_as->process_announcements();
         }
     }
 
-    // now do the same for customers
+    // If we are sending to customers
     if (to_customers) {
+        // Assemble the vector of announcement for customers
         std::vector<Announcement> anns_to_customers;
         for (auto &ann : *source_as->all_anns) {
-            // priority is reduced by 0.01 for path length
-            // base priority is 0 for customers
+            // Propagate all announcements to customers
+            // Priority is reduced by 0.01 per path length
+            // Base priority is 0 for customers
+            // Reset the priority to be from a provider
             double priority = ann.second.priority;
-            if(priority - floor(priority) == 0)
+            if (priority - floor(priority) == 0) {
+                // Reset monitor priority to be received from a provider
                 priority = 0.99;
-            else
+            } else {
+                // Reset priority to its length fraction from a provider
                 priority = priority - floor(priority) - 0.01;
-            anns_to_customers.push_back(
-                Announcement(
-                    ann.second.origin,
-                    ann.second.prefix.addr,
-                    ann.second.prefix.netmask,
-                    priority,
-                    asn));
+            }
+            anns_to_customers.push_back(Announcement(ann.second.origin,
+                                                     ann.second.prefix.addr,
+                                                     ann.second.prefix.netmask,
+                                                     priority,
+                                                     asn));
         }
-        // send announcements
+        // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {
+            // For each customer, give the vector of announcements
             auto *recving_as = graph->ases->find(customer_asn)->second;
             recving_as->receive_announcements(anns_to_customers);
-            //recving_as->process_announcements();
         }
     }
 }

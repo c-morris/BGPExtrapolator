@@ -32,7 +32,6 @@ AS::AS(uint32_t myasn,
     }
     inverse_results = inv;                      // Inverted results map
     member_ases = new std::vector<uint32_t>;    // Supernode members
-    anns_sent_to_peers_providers = new std::vector<Announcement>;
     incoming_announcements = new std::vector<Announcement>;
     all_anns = new std::map<Prefix<>, Announcement>;
     depref_anns = new std::map<Prefix<>, Announcement>;
@@ -43,7 +42,6 @@ AS::AS(uint32_t myasn,
 
 AS::~AS() {
     delete incoming_announcements;
-    delete anns_sent_to_peers_providers;
     delete all_anns;
     delete depref_anns;
     delete peers;
@@ -126,15 +124,18 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
 }
 
 
-/** 
+/** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
  *
+ * Approximates BGP best path selection based on announcement priority.
  * may need to put in incoming_announcements for speed
- * called by ASGraph.give_ann_to_as_path()
+ * called by process_announcements and Extrapolator.give_ann_to_as_path()
+ * 
+ * @param ann The announcement to be processed
  */ 
-void AS::receive_announcement(Announcement &ann) {
+void AS::process_announcement(Announcement &ann) {
     // Check for existing annoucement for prefix
     auto search = all_anns->find(ann.prefix);
-    auto search_alt = depref_anns->find(ann.prefix);
+    auto search_depref = depref_anns->find(ann.prefix);
     
     // No announcement found for incoming announcement prefix
     if (search == all_anns->end()) {
@@ -148,11 +149,11 @@ void AS::receive_announcement(Announcement &ann) {
             }
         }
 
-    // Tiebraker for equal priority
+    // Tiebraker for equal priority between old and new ann
     } else if (ann.priority == search->second.priority) {
         // Default to lower ASN
         if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
-            if (search_alt == depref_anns->end()) {
+            if (search_depref == depref_anns->end()) {
                 // Update inverse results
                 swap_inverse_result(
                     std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
@@ -164,22 +165,22 @@ void AS::receive_announcement(Announcement &ann) {
                 swap_inverse_result(
                     std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                search_alt->second = search->second;
+                search_depref->second = search->second;
                 search->second = ann;
             }
         } else {    // Old ASN is lower
-            if (search_alt == depref_anns->end()) {
+            if (search_depref == depref_anns->end()) {
                 depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
                                                                       ann));
             } else {
                 // Replace second best with the old priority announcement
-                search_alt->second = ann;
+                search_depref->second = ann;
             }
         }
 
-    // Check announcements priority for best path selection
+    // Otherwise check new announcements priority for best path selection
     } else if (ann.priority > search->second.priority) {
-        if (search_alt == depref_anns->end()) {
+        if (search_depref == depref_anns->end()) {
             // Update inverse results
             swap_inverse_result(
                 std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
@@ -195,33 +196,31 @@ void AS::receive_announcement(Announcement &ann) {
                 std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                 std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
             // Replace second best with the old priority announcement
-            search_alt->second = search->second;
+            search_depref->second = search->second;
             // Replace the old announcement with the higher priority
             search->second = ann;
         }
-    
-    // Check second best announcements priority for best path selection
+    // Old announcement was better
+    // Check depref announcements priority for best path selection
     } else {
-        if (search_alt == depref_anns->end()) {
+        if (search_depref == depref_anns->end()) {
             // Insert new second best annoucement
             depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
-        } else if (ann.priority > search_alt->second.priority) {
+        } else if (ann.priority > search_depref->second.priority) {
             // Replace the old depref announcement with the higher priority
-            search_alt->second = search->second;
+            search_depref->second = search->second;
         }
     }
 }
 
 
 /** Iterate through incoming_announcements and keep only the best. 
- * 
- * Meant to approximate BGP best path selection.
  */
 void AS::process_announcements() {
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
-            receive_announcement(ann);
+            process_announcement(ann);
         }
     }
     incoming_announcements->clear();
@@ -233,7 +232,6 @@ void AS::process_announcements() {
 void AS::clear_announcements() {
     all_anns->clear();
     incoming_announcements->clear();
-    anns_sent_to_peers_providers->clear();
     depref_anns->clear();
 }
 
