@@ -260,6 +260,8 @@ void ROVppAS::make_blackhole_announcement(Announcement &neg_ann) {
     if (is_better(new_neg_ann, (*all_anns)[new_neg_ann.prefix])) {
         (*all_anns)[new_neg_ann.prefix] = new_neg_ann;
     }
+  } else {
+    (*all_anns)[new_neg_ann.prefix] = new_neg_ann;
   }
   // Add Announcement to blocked list (i.e. blackhole list)
   blackhole_map[blackhole_prefix] = new_neg_ann;
