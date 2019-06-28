@@ -35,11 +35,11 @@ void ROVppAS::incoming_negative_announcement(Announcement &ann) {
       std::pair<bool, Announcement> alternate_route = best_alternative_route(ann);
       if (alternate_route.first) {
         (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
-        if (!alternate_route.second.has_blackholes) {
-          // Remove Blackhole
-          std::cout << "Removing Blackhole for " << ann.get_blackhole_prefix().to_cidr() << " because we have a hole free alternative." << std::endl;
-          blackhole_map.erase(ann.get_blackhole_prefix());
-        }
+        // if (!alternate_route.second.has_blackholes) {
+        //   // Remove Blackhole
+        //   std::cout << "Removing Blackhole for " << ann.get_blackhole_prefix().to_cidr() << " because we have a hole free alternative." << std::endl;
+        //   blackhole_map.erase(ann.get_blackhole_prefix());
+        // }
       } else {
         make_blackhole_announcement(ann);
       }
@@ -69,11 +69,12 @@ void ROVppAS::incoming_valid_announcement(Announcement &ann) {
     // Check if it's coming from the same ASN as the current one you're using
     if ((*all_anns)[ann.prefix].received_from_asn == (*(check.second)).received_from_asn) {
       make_negative_announcement_and_blackhole((*all_anns)[ann.prefix], *(check.second), true);
-    } else {
-      // Remove Blackhole
-      std::cout << "Removing Blackhole for " << (*(check.second)).prefix.to_cidr() << " because we have a hole free alternative." << std::endl;
-      blackhole_map.erase((*(check.second)).prefix);
     }
+    // else {
+    //   // Remove Blackhole
+    //   std::cout << "Removing Blackhole for " << (*(check.second)).prefix.to_cidr() << " because we have a hole free alternative." << std::endl;
+    //   blackhole_map.erase((*(check.second)).prefix);
+    // }
   }
 }
 
@@ -95,11 +96,11 @@ void ROVppAS::incoming_hijack_announcement(Announcement &ann) {
       std::pair<bool, Announcement> alternate_route = best_alternative_route(ann);
       if (alternate_route.first) {
         (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
-        if (!alternate_route.second.has_blackholes) {
-          // Remove Blackhole
-          std::cout << "Removing Blackhole for " << ann.prefix.to_cidr() << " because we have a hole free alternative." << std::endl;
-          blackhole_map.erase(ann.prefix);
-        }
+        // if (!alternate_route.second.has_blackholes) {
+        //   // Remove Blackhole
+        //   std::cout << "Removing Blackhole for " << ann.prefix.to_cidr() << " because we have a hole free alternative." << std::endl;
+        //   blackhole_map.erase(ann.prefix);
+        // }
       } else {
         make_negative_announcement_and_blackhole(*(check.second), ann, true);
       }
@@ -118,11 +119,11 @@ void ROVppAS::incoming_hazard_announcement(Announcement ann, uint32_t publishing
         std::pair<bool, Announcement> alternate_route = best_alternative_route(prefix_ann_pair.second);
         if (alternate_route.first) {
           (*all_anns)[alternate_route.second.prefix] = alternate_route.second;
-          if (!alternate_route.second.has_blackholes) {
-            // Remove Blackhole
-            std::cout << "Removing Blackhole for " << ann.prefix.to_cidr() << " because we have a hole free alternative." << std::endl;
-            blackhole_map.erase(ann.prefix);
-          }
+          // if (!alternate_route.second.has_blackholes) {
+          //   // Remove Blackhole
+          //   std::cout << "Removing Blackhole for " << ann.prefix.to_cidr() << " because we have a hole free alternative." << std::endl;
+          //   blackhole_map.erase(ann.prefix);
+          // }
         } else {
           // Blackhole the prefix
           make_negative_announcement_and_blackhole(prefix_ann_pair.second, ann, false);
