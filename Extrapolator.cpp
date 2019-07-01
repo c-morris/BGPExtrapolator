@@ -84,7 +84,6 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     // Seed the monitor announcements
     uint32_t announcement_count = 0; 
     int iteration = 0;
-    double avg_it_time = 0;
     auto bloc_start = std::chrono::high_resolution_clock::now();
     // For each unprocessed prefix block  
     for (Prefix<>* prefix : *prefix_blocks) {
