@@ -362,8 +362,9 @@ void Extrapolator::propagate_down() {
  */
 void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix) {
     // Handle empty as_path
-    if (as_path->empty()) 
+    if (as_path->empty()) { 
         return;
+    }
     // Announcement at origin for checking along the path
     Announcement ann_to_check_for(as_path->at(as_path->size()-1),
                                   prefix.addr,
@@ -375,15 +376,17 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
         i++;
         // If ASN not in graph, continue
-        if (graph->ases->find(*it) == graph->ases->end()) 
+        if (graph->ases->find(*it) == graph->ases->end()) {
             continue;
+        }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
         // Get the current AS on the path
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
-        if (as_on_path->already_received(ann_to_check_for)) 
+        if (as_on_path->already_received(ann_to_check_for)) {
             continue;
+        }
         
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
@@ -456,7 +459,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                                           bool to_providers, 
                                           bool to_peers, 
                                           bool to_customers) {
-    // TODO Cleanup
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
     // If we are sending to providers

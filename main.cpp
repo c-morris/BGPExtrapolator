@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
          po::value<bool>()->default_value(false), 
          "store depref results")
         ("iteration-size,s", 
-         po::value<uint32_t>()->default_value(500000), 
+         po::value<uint32_t>()->default_value(50000), 
          "number of prefixes to be used in one iteration cycle")
         ("results-table,r",
          po::value<string>()->default_value(RESULTS_TABLE),

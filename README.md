@@ -54,7 +54,7 @@ Optional arguments:
 | :--- | :---: | :--- |
 | -i --invert-results | true | record ASNs without route to a prefix-origin (smaller results)
 | -d --store-depref | false | record announcements for depreference policy (doubles normal results)
-| -s --iteration-size | 500000 | max number of announcements per iteration (higher = more memory use)
+| -s --iteration-size | 50000 | max number of announcements per iteration (higher = more memory use)
 | -a --announcements-table | mrt_w_roas | name of the announcements input table
 | -r --results-table | extrapolation-results | name of the normal results table (if -i 0)
 | -d --depref-table | depref-results | name of the depref results table (if -d 1)
