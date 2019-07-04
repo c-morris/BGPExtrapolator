@@ -227,6 +227,8 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
                                    std::vector<Prefix<>*>* bloc_vector) { 
     // Find the number of announcements within the subnet
     pqxx::result r = querier->select_subnet_count(p);
+    std::cout << "Prefix: " << p->to_cidr() << std::endl;
+    std::cout << "Count: "<< r[0][0].as<int>() << std::endl;
     // If the subnet count is within size constraint
     if (r[0][0].as<uint32_t>() < it_size) {
         // Add to subnet block vector

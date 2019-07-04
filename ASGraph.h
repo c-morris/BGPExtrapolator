@@ -9,6 +9,7 @@
 struct SQLQuerier;
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <stack>
 #include <sys/stat.h>
@@ -19,7 +20,7 @@ struct SQLQuerier;
 #include "TableNames.h"
 
 struct ASGraph {
-    std::map<uint32_t, AS*> *ases;                      // Map of ASN to AS object 
+    std::unordered_map<uint32_t, AS*> *ases;            // Map of ASN to AS object 
     std::vector<std::set<uint32_t>*> *ases_by_rank;     // Vector of ranks
     std::vector<std::vector<uint32_t>*> *components;    // Strongly connected components
     std::map<uint32_t, uint32_t> *component_translation;// Translate AS to supernode AS

@@ -17,11 +17,12 @@ distribution and does not officially support other environments.
 
 ## Building 
 
+To run unit tests, run `make test` while in the source directory. This builds
+an executable that runs unit tests to check for correct functionality with the
+current compiler. It does not perform an full extrapolation. 
+
 To build from source, run `make` while in the source directory. This produces
 an executable `bgp-extrapolator`. 
-
-To run unit tests, use `make test` instead. This builds an executable that runs
-tests only and does not perform a full extrapolation. 
 
 ## Usage
 
@@ -41,7 +42,11 @@ port = 5432
 
 ```
 
-The Extrapolator runs under the assumption that the database is already populated with the necessary data on AS Relationships and BGP announcements to propagate. The Extrapolator pulls this data from three input tables: customer_providers, peers, and mrt_w_roas. The easiest way to get all of that data in the databse in the correct format is to use jfuruness' [lib_bgp_data](https://github.com/jfuruness/lib_bgp_data). 
+The Extrapolator runs under the assumption that the database is already populated with the necessary data on AS Relationships to create the AS topology and BGP MRT announcements to propagate. The Extrapolator pulls this data from three input tables: customer_providers, peers, and mrt_w_roas. The easiest way to get all of this data into the databse with the correct schema is to use jfuruness' [lib_bgp_data](https://github.com/jfuruness/lib_bgp_data). 
+
+The table schema are laid out below:
+
+TODO
 
 When the database is set up and the config file is in place, you can run 
 ```
