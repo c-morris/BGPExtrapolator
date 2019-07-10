@@ -213,7 +213,7 @@ struct Prefix {
      * Comparing the addr first ensures the more specific address is greater
      *
      * @param b The Prefix object to which this object is compared.
-     * @return true if the operation holds, otherwise false
+     * @return true If the operation holds, otherwise false
      */
     bool operator<(const Prefix &b) const {
         uint64_t combined = 0;

@@ -9,7 +9,7 @@
 #include "AS.h"
 
 ASGraph::ASGraph() {
-    ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
+    ases = new std::map<uint32_t, AS*>;                         // Map of all ASes
     ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
     components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
     component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
@@ -299,7 +299,7 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
     }
 
     std::ofstream outfile;
-    std::cerr << "Saving Stubs..." << std::endl;
+    std::cout << "Saving Stubs..." << std::endl;
     std::string file_name = "/dev/shm/bgp/stubs.csv";
     outfile.open(file_name);
     for (auto &stub : *stubs_to_parents){
@@ -325,7 +325,7 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
     }
 
     std::ofstream outfile;
-    std::cerr << "Saving Non-Stubs..." << std::endl;
+    std::cout << "Saving Non-Stubs..." << std::endl;
     std::string file_name = "/dev/shm/bgp/non-stubs.csv";
     outfile.open(file_name);
     for (auto non_stub : *non_stubs){
@@ -350,7 +350,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     }
 
     std::ofstream outfile;
-    std::cerr << "Saving Supernodes..." << std::endl;
+    std::cout << "Saving Supernodes..." << std::endl;
     std::string file_name = "/dev/shm/bgp/supernodes.csv";
     outfile.open(file_name); 
     

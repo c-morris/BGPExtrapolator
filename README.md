@@ -63,7 +63,7 @@ Optional arguments:
 | -a --announcements-table | mrt_w_roas | name of the announcements input table
 | -r --results-table | extrapolation-results | name of the normal results table (if -i 0)
 | -d --depref-table | depref-results | name of the depref results table (if -d 1)
-| -o --inverse-results-table | extrapolation-results | name of the inverse results table
+| -o --inverse-results-table | extrapolation-inverse-results | name of the inverse results table
 
 **Parameter -i**
 

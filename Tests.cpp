@@ -30,8 +30,8 @@ BOOST_AUTO_TEST_CASE( Announcement_constructor ) {
 BOOST_AUTO_TEST_CASE( AS_add_neighbor ) {
         BOOST_CHECK( test_add_neighbor() );
 }
-BOOST_AUTO_TEST_CASE( AS_receive_announcement ) {
-        BOOST_CHECK( test_receive_announcement() );
+BOOST_AUTO_TEST_CASE( AS_process_announcement ) {
+        BOOST_CHECK( test_process_announcement() );
 }
 BOOST_AUTO_TEST_CASE( AS_receive_announcements ) {
         BOOST_CHECK( test_receive_announcements() );

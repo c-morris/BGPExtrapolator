@@ -37,7 +37,7 @@ Extrapolator::~Extrapolator(){
  * @param iteration_size number of rows to process each iteration, rounded down to the nearest full prefix
  * @param max_total maximum number of rows to process, ignored if zero
  */
-void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t max_total){
+void Extrapolator::perform_propagation(bool test, size_t max_total){
     using namespace std;
    
     // Make tmp directory if it does not exist
@@ -76,7 +76,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>; // Subnet blocks
     Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
-    populate_blocks(cur_prefix, prefix_blocks, subnet_blocks);
+    populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
    
     std::cout << "Beginning propagation..." << std::endl;
@@ -97,6 +97,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
             break;
         announcement_count += bsize;
         
+        std::cout << "Seeding announcements..." << std::endl;
         // For all announcements in this block
         for (pqxx::result::size_type i = 0; i < bsize; i++) {
             // Get row origin
@@ -125,12 +126,12 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
                     graph->inverse_results->find(prefix_origin)->second->insert(asn);
                 }
             }
-
-            // Process AS path
+            // Seed announcements along AS path
             give_ann_to_as_path(as_path, cur_prefix);
             delete as_path;
         }
         // Propagate for this subnet
+        std::cout << "Propagating..." << std::endl;
         propagate_up();
         propagate_down();
         save_results(iteration);
@@ -143,7 +144,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
     }
     // For each unprocessed subnet block  
     for (Prefix<>* subnet : *subnet_blocks) {
-        std::cerr << "Selecting Announcements..." << std::endl;
+        std::cout << "Selecting Announcements..." << std::endl;
         
         auto subnet_start = std::chrono::high_resolution_clock::now();
         
@@ -155,6 +156,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
             break;
         announcement_count += bsize;
         
+        std::cout << "Seeding announcements..." << std::endl;
         // For all announcements in this block
         for (pqxx::result::size_type i = 0; i < bsize; i++) {
             // Get row origin
@@ -189,6 +191,7 @@ void Extrapolator::perform_propagation(bool test, size_t iteration_size, size_t 
             delete as_path;
         }
         // Propagate for this subnet
+        std::cout << "Propagating..." << std::endl;
         propagate_up();
         propagate_down();
         save_results(iteration);
@@ -227,8 +230,12 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
                                    std::vector<Prefix<>*>* bloc_vector) { 
     // Find the number of announcements within the subnet
     pqxx::result r = querier->select_subnet_count(p);
+    
+    /** DEBUG
     std::cout << "Prefix: " << p->to_cidr() << std::endl;
     std::cout << "Count: "<< r[0][0].as<int>() << std::endl;
+    */
+    
     // If the subnet count is within size constraint
     if (r[0][0].as<uint32_t>() < it_size) {
         // Add to subnet block vector
@@ -474,7 +481,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 2) {
                 continue;
             }
-            // TODO Why are we changing the priority here?
             double priority = ann.second.priority;
             // Set the priority of the announcement 
             if (priority - floor(priority) == 0) {
@@ -602,7 +608,7 @@ void Extrapolator::save_results(int iteration){
     
     // Handle inverse results
     if (invert) {
-        std::cerr << "Saving Inverse Results From Iteration: " << iteration << std::endl;
+        std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
         for (auto po : *graph->inverse_results){
             for (uint32_t asn : *po.second) {
                 outfile << asn << ","
@@ -615,7 +621,7 @@ void Extrapolator::save_results(int iteration){
     
     // Handle standard results
     } else {
-        std::cerr << "Saving Results From Iteration: " << iteration << std::endl;
+        std::cout << "Saving Results From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases){
             as.second->stream_announcements(outfile);
         }
@@ -629,7 +635,7 @@ void Extrapolator::save_results(int iteration){
     if (depref) {
         std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + ".csv";
         outfile.open(depref_name);
-        std::cerr << "Saving Depref From Iteration: " << iteration << std::endl;
+        std::cout << "Saving Depref From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases) {
             as.second->stream_depref(outfile);
         }

@@ -61,8 +61,7 @@ void SQLQuerier::read_config(){
             } else if(setting.first == "port") {
                 port = setting.second;
             } else {
-                std::cerr << "Setting \"" << 
-                setting.first << "\" undefined." << std::endl;
+                std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
             }
         }
     } else {
@@ -84,10 +83,10 @@ void SQLQuerier::open_connection(){
     try {
         pqxx::connection *conn = new pqxx::connection(stream.str());
         if (conn->is_open()) {
-            std::cout << "Connected to database : " << db_name <<std::endl;
+            std::cout << "Connected to database: " << db_name <<std::endl;
             C = conn;
         } else {
-            std::cout << "Failed to connect to database : " << db_name <<std::endl;
+            std::cerr << "Failed to connect to database : " << db_name <<std::endl;
             return;
         }
     } catch (const std::exception &e) {

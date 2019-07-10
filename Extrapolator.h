@@ -36,7 +36,7 @@ struct Extrapolator {
                  uint32_t iteration_size=false);
     ~Extrapolator();
     
-    void perform_propagation(bool, size_t, size_t);
+    void perform_propagation(bool, size_t);
     template <typename Integer>
     void populate_blocks(Prefix<Integer>*, 
                          std::vector<Prefix<>*>*, 

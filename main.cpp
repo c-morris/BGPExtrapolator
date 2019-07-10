@@ -8,11 +8,19 @@
 #include "Extrapolator.h"
 #include "Tests.h"
 
+void intro() {
+    // This needs to be finished
+    std::cout << "***** Routing Extrapolator v0.1 *****" << std::endl;
+    std::cout << "Copyright (C) someone, somewhere, probably." << std::endl;
+    std::cout << "License... is probably important." << std::endl;
+    std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
+    std::cout << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
+}
 
 int main(int argc, char *argv[]) {
     using namespace std;   
     namespace po = boost::program_options;
-
+    // Handle parameters
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
@@ -38,16 +46,18 @@ int main(int argc, char *argv[]) {
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
          "name of announcements table");
     ;
-
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
     po::notify(vm);
-
     if (vm.count("help")){
         cout << desc << endl;
         exit(0);
     }
-
+    
+    // Handle intro information
+    intro();
+    
+    // Instantiate Extrapolator
     Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
         vm["store-depref"].as<bool>(),
         (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
@@ -56,10 +66,9 @@ int main(int argc, char *argv[]) {
         (vm.count("depref-table") ? vm["depref-table"].as<string>() : DEPREF_RESULTS_TABLE),
         (vm["iteration-size"].as<uint32_t>()));
     
-    extrap->perform_propagation(true, 500000, 100000000000);
-    //extrap->perform_propagation(true, 20000, 120001);
+    // Run propagation
+    extrap->perform_propagation(true, 100000000000);
     delete extrap;
-
     return 0;
 }
 #endif // RUN_TESTS
