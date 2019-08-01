@@ -44,7 +44,13 @@ int main(int argc, char *argv[]) {
          "name of the inverse results table")
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
-         "name of announcements table");
+         "name of announcements table")
+        ("verification-table,f",
+         po::value<string>()->default_value(VERIFICATION_TABLE),
+         "name of the verification control table")
+        ("verification-as,v",
+         po::value<uint32_t>()->default_value(false),
+         "a verification monitor AS that will excluded from extrapolation");
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -64,7 +70,9 @@ int main(int argc, char *argv[]) {
         (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
         (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),
         (vm.count("depref-table") ? vm["depref-table"].as<string>() : DEPREF_RESULTS_TABLE),
-        (vm["iteration-size"].as<uint32_t>()));
+        (vm.count("verification-table") ? vm["verification-table"].as<string>() : VERIFICATION_TABLE),
+        (vm["iteration-size"].as<uint32_t>()),
+        (vm["verification-as"].as<uint32_t>()));
     
     // Run propagation
     extrap->perform_propagation(true, 100000000000);

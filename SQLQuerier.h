@@ -20,7 +20,8 @@ struct SQLQuerier {
     SQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, 
                std::string r=RESULTS_TABLE,
                std::string i=INVERSE_RESULTS_TABLE,
-               std::string d=DEPREF_RESULTS_TABLE);
+               std::string d=DEPREF_RESULTS_TABLE,
+               std::string v=VERIFICATION_TABLE);
     ~SQLQuerier();
     
     // Setup
@@ -40,14 +41,17 @@ struct SQLQuerier {
     void clear_stubs_from_db();
     void clear_non_stubs_from_db();
     void clear_supernodes_from_db();
+    void clear_vf_from_db();
     
     void create_stubs_tbl();
     void create_non_stubs_tbl();
     void create_supernodes_tbl();
+    void create_vf_tbl();
     
     void copy_stubs_to_db(std::string file_name);
     void copy_non_stubs_to_db(std::string file_name);
     void copy_supernodes_to_db(std::string file_name);
+    void insert_vf_ann_to_db(uint32_t, std::string, uint32_t, std::string);
     
     // Propagation Tables
     void clear_results_from_db();
@@ -68,6 +72,7 @@ private:
     std::string results_table;
     std::string depref_table;
     std::string inverse_results_table;
+    std::string verification_table;
     std::string announcements_table;
     std::string user;
     std::string pass;

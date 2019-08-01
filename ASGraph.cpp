@@ -9,7 +9,7 @@
 #include "AS.h"
 
 ASGraph::ASGraph() {
-    ases = new std::unordered_map<uint32_t, AS*>;                         // Map of all ASes
+    ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
     ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
     components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
     component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode

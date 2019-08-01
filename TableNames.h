@@ -11,5 +11,6 @@
 #define NON_STUBS_TABLE "non_stubs"
 #define SUPERNODES_TABLE "supernodes"
 #define ANNOUNCEMENTS_TABLE "mrt_w_roas"
+#define VERIFICATION_TABLE "verify_ctrl_data"
 
 #endif

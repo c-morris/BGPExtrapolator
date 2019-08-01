@@ -1,10 +1,15 @@
 #include "SQLQuerier.h"
 
-SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string d) {
+SQLQuerier::SQLQuerier(std::string a, 
+                       std::string r, 
+                       std::string i, 
+                       std::string d,
+                       std::string v) {
     announcements_table = a;
     results_table = r;
     depref_table = d;
     inverse_results_table = i;
+    verification_table = v;
     
     // Default host and port numbers
     // Strings for connection arg
@@ -195,7 +200,7 @@ pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
 }
 
 
-/** this should use the STUBS_TABLE macro
+/** Clears all rows from the stubs table.
  */
 void SQLQuerier::clear_stubs_from_db(){
     std::string sql = std::string("DELETE FROM " STUBS_TABLE ";");
@@ -203,7 +208,7 @@ void SQLQuerier::clear_stubs_from_db(){
 }
 
 
-/** Takes a .csv filename and bulk copies all elements to the stubs table.
+/** Clears all rows from the non-stubs table.
  */
 void SQLQuerier::clear_non_stubs_from_db(){
     std::string sql = std::string("DELETE FROM " NON_STUBS_TABLE ";");
@@ -211,10 +216,18 @@ void SQLQuerier::clear_non_stubs_from_db(){
 }
 
 
-/** Takes a .csv filename and bulk copies all elements to the stubs table.
+/** Clears all rows from the supernodes table.
  */
 void SQLQuerier::clear_supernodes_from_db(){
     std::string sql = std::string("DELETE FROM " SUPERNODES_TABLE ";");
+    execute(sql);
+}
+
+
+/** Clears all rows from the verification control table. 
+ */
+void SQLQuerier::clear_vf_from_db(){
+    std::string sql = std::string("DELETE FROM " + verification_table + ";");
     execute(sql);
 }
 
@@ -246,6 +259,15 @@ void SQLQuerier::create_supernodes_tbl(){
 }
 
 
+/**  Instantiates a new, empty verification control table in the database, if it doesn't exist.
+ */
+void SQLQuerier::create_vf_tbl(){
+    std::string sql = std::string("CREATE TABLE IF NOT EXISTS " + verification_table + "(monitor_as bigint, prefix cidr, origin bigint, as_path varchar[])");
+    std::cout << "Creating verification table..." << std::endl;
+    execute(sql, false);
+}
+
+
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
 void SQLQuerier::copy_stubs_to_db(std::string file_name){
@@ -271,6 +293,19 @@ void SQLQuerier::copy_supernodes_to_db(std::string file_name){
                       file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
+
+
+/** Inserts rows into the verification table.
+ */
+void SQLQuerier::insert_vf_ann_to_db(uint32_t monitor, std::string prefix, uint32_t origin, std::string path){
+    std::string sql = "INSERT INTO " + verification_table + " (monitor_as, prefix, origin, as_path) VALUES (" 
+                      + std::to_string(monitor) + ", "
+                      + "\'" + prefix + "\', "
+                      + std::to_string(origin) + ", "
+                      + "\'" + path + "\')";
+    execute(sql, true);
+}
+
 
 
 /** Drop the Querier's results table.
@@ -300,9 +335,6 @@ void SQLQuerier::clear_inverse_from_db(){
 /** Instantiates a new, empty results table in the database, dropping the old table.
  */
 void SQLQuerier::create_results_tbl(){
-    /**
-    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (ann_id serial PRIMARY KEY,\
-    */
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");

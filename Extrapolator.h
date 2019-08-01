@@ -23,6 +23,7 @@ struct Extrapolator {
     bool invert;
     bool depref;
     uint32_t it_size;
+    uint32_t vf_as;
     ASGraph *graph;
     SQLQuerier *querier;
     std::vector<std::thread> *threads;
@@ -33,7 +34,9 @@ struct Extrapolator {
                  std::string r=RESULTS_TABLE, 
                  std::string i=INVERSE_RESULTS_TABLE, 
                  std::string d=DEPREF_RESULTS_TABLE, 
-                 uint32_t iteration_size=false);
+                 std::string v=VERIFICATION_TABLE, 
+                 uint32_t iteration_size=false,
+                 uint32_t verification_as=false);
     ~Extrapolator();
     
     void perform_propagation(bool, size_t);
@@ -41,10 +44,16 @@ struct Extrapolator {
     void populate_blocks(Prefix<Integer>*, 
                          std::vector<Prefix<>*>*, 
                          std::vector<Prefix<>*>*);
+    
+    void store_vf_ann(std::string,
+                      uint32_t,
+                      std::string);
+
     void send_all_announcements(uint32_t asn, 
                                 bool to_providers = false, 
                                 bool to_peers = false, 
                                 bool to_customers = false);
+    
     void insert_announcements(std::vector<Prefix<>> *prefixes);
     void prop_anns_sent_to_peers_providers();
     std::vector<uint32_t>* parse_path(std::string path_as_string);

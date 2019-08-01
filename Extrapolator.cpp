@@ -12,13 +12,16 @@ Extrapolator::Extrapolator(bool invert_results,
                            std::string r, 
                            std::string i,
                            std::string d,
-                           uint32_t iteration_size) {
+                           std::string v,
+                           uint32_t iteration_size,
+                           uint32_t verification_as) {
     invert = invert_results;                    // True to store the results inverted
     depref = store_depref;                      // True to store the second best ann for depref
     it_size = iteration_size;                   // Number of prefix to be precessed per iteration
+    vf_as = verification_as;
     graph = new ASGraph;
     threads = new std::vector<std::thread>;
-    querier = new SQLQuerier(a, r, i, d);
+    querier = new SQLQuerier(a, r, i, d, v);
 }
 
 Extrapolator::~Extrapolator(){
@@ -60,6 +63,10 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
         querier->clear_depref_from_db();
         querier->create_depref_tbl();
     }
+    if (vf_as != false) {
+        querier->clear_vf_from_db();
+        querier->create_vf_tbl();
+    }
     querier->create_stubs_tbl();
     querier->clear_stubs_from_db();
     querier->create_non_stubs_tbl();
@@ -83,6 +90,7 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     
     // Seed the monitor announcements
     uint32_t announcement_count = 0; 
+    uint32_t verification_count = 0;
     int iteration = 0;
     auto bloc_start = std::chrono::high_resolution_clock::now();
     // For each unprocessed prefix block  
@@ -126,8 +134,15 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
                     graph->inverse_results->find(prefix_origin)->second->insert(asn);
                 }
             }
-            // Seed announcements along AS path
-            give_ann_to_as_path(as_path, cur_prefix);
+            // Disclude the verification AS
+            if ((*as_path)[0] == vf_as) {
+                verification_count += 1;
+                
+                store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
+            } else {
+                // Seed announcements along AS path
+                give_ann_to_as_path(as_path, cur_prefix);
+            }
             delete as_path;
         }
         // Propagate for this subnet
@@ -177,17 +192,21 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
             if (graph->inverse_results->find(prefix_origin) == graph->inverse_results->end()) {
                 // This is horrifying
                 graph->inverse_results->insert(std::pair<std::pair<Prefix<>, uint32_t>, 
-                                                        std::set<uint32_t>*>
-                                                        (prefix_origin, new std::set<uint32_t>()));
+                                                         std::set<uint32_t>*>(prefix_origin, new std::set<uint32_t>()));
                 
                 // Put all non-stub ASNs in the set
                 for (uint32_t asn : *graph->non_stubs) {
                     graph->inverse_results->find(prefix_origin)->second->insert(asn);
                 }
             }
-
-            // Process AS path
-            give_ann_to_as_path(as_path, cur_prefix);
+            
+            // Disclude the verification AS
+            if ((*as_path)[0] == vf_as) {
+                verification_count += 1;
+                store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
+            } else { // Process AS path
+                give_ann_to_as_path(as_path, cur_prefix);
+            }
             delete as_path;
         }
         // Propagate for this subnet
@@ -282,6 +301,15 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
 }
 
 
+/** Stores the verification AS's announcements for later comparison.
+ *
+ */
+void Extrapolator::store_vf_ann(std::string prefix, 
+                                uint32_t origin,
+                                std::string path) {
+    querier->insert_vf_ann_to_db(vf_as, prefix, origin, path);
+}
+
 /** Parse array-like strings from db to get AS_PATH in a vector.
  *
  * libpqxx doesn't currently support returning arrays, so we need to do this. 
@@ -355,6 +383,64 @@ void Extrapolator::propagate_down() {
             if (!graph->ases->find(asn)->second->all_anns->empty()) {
                 send_all_announcements(asn, false, false, true);
             }
+        }
+    }
+}
+
+
+/** Seed just the origin AS to the ASGraph.
+ *
+ * The from_monitor attribute is set to true on these announcements so they are
+ * not replaced later during propagation. 
+ *
+ * @param as_path Vector of ASNs for this announcement.
+ * @param prefix The prefix this announcement is for.
+ */
+void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix) {
+    // Handle empty as_path
+    if (as_path->empty()) { 
+        return;
+    }
+    
+    auto origin_asn = as_path->back();
+    
+    // Announcement at origin for checking along the path
+    Announcement ann_to_check_for(origin_asn,
+                                  prefix.addr,
+                                  prefix.netmask,
+                                  0); 
+    
+    // If ASN not in graph, continue
+    if (graph->ases->find(origin_asn) == graph->ases->end()) {
+        continue;
+    }
+    // Translate ASN to it's supernode
+    origin_p_asn = graph->translate_asn(origin_asn);
+    // Get the origin AS
+    AS *origin = graph->ases->find(origin_p_asn)->second;
+    // Check if already received this prefix
+    if (origin->already_received(ann_to_check_for)) {
+        continue;
+    }
+        
+    // This is how priority is calculated
+    double priority = 3;
+    received_from_asn = origin_asn;
+    // Send the announcement
+    Announcement ann = Announcement(origin_asn,
+                                    prefix.addr,
+                                    prefix.netmask,
+                                    priority,
+                                    received_from_asn,
+                                    true);
+    // Send the announcement to the current AS
+    origin->process_announcement(ann);
+    if (graph->inverse_results != NULL) {
+        auto set = graph->inverse_results->find(
+                std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+        // Remove the AS from the prefix's inverse results
+        if (set != graph->inverse_results->end()) {
+            set->second->erase(as_on_path->asn);
         }
     }
 }
