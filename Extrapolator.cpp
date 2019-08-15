@@ -141,7 +141,7 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
                 store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
             } else {
                 // Seed announcements along AS path
-                give_ann_to_as_path(as_path, cur_prefix);
+                give_origin_to_as_path(as_path, cur_prefix);
             }
             delete as_path;
         }
@@ -205,7 +205,7 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
                 verification_count += 1;
                 store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
             } else { // Process AS path
-                give_ann_to_as_path(as_path, cur_prefix);
+                give_origin_to_as_path(as_path, cur_prefix);
             }
             delete as_path;
         }
@@ -402,7 +402,7 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
         return;
     }
     
-    auto origin_asn = as_path->back();
+    uint32_t origin_asn = as_path->back();
     
     // Announcement at origin for checking along the path
     Announcement ann_to_check_for(origin_asn,
@@ -412,20 +412,20 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
     
     // If ASN not in graph, continue
     if (graph->ases->find(origin_asn) == graph->ases->end()) {
-        continue;
+        return;
     }
     // Translate ASN to it's supernode
-    origin_p_asn = graph->translate_asn(origin_asn);
+    uint32_t origin_p_asn = graph->translate_asn(origin_asn);
     // Get the origin AS
     AS *origin = graph->ases->find(origin_p_asn)->second;
     // Check if already received this prefix
     if (origin->already_received(ann_to_check_for)) {
-        continue;
+        return;
     }
         
     // This is how priority is calculated
     double priority = 3;
-    received_from_asn = origin_asn;
+    uint32_t received_from_asn = origin_p_asn;
     // Send the announcement
     Announcement ann = Announcement(origin_asn,
                                     prefix.addr,
@@ -440,7 +440,7 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
                 std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
         // Remove the AS from the prefix's inverse results
         if (set != graph->inverse_results->end()) {
-            set->second->erase(as_on_path->asn);
+            set->second->erase(origin->asn);
         }
     }
 }
