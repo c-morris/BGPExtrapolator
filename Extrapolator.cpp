@@ -136,12 +136,11 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
             }
             // Disclude the verification AS
             if ((*as_path)[0] == vf_as) {
-                verification_count += 1;
-                
+                verification_count += 1; 
                 store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
             } else {
                 // Seed announcements along AS path
-                give_origin_to_as_path(as_path, cur_prefix);
+                give_ann_to_as_path(as_path, cur_prefix);
             }
             delete as_path;
         }
@@ -205,7 +204,7 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
                 verification_count += 1;
                 store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
             } else { // Process AS path
-                give_origin_to_as_path(as_path, cur_prefix);
+                give_ann_to_as_path(as_path, cur_prefix);
             }
             delete as_path;
         }
@@ -713,7 +712,6 @@ void Extrapolator::save_results(int iteration){
         }
         outfile.close();
         querier->copy_results_to_db(file_name);
-
     }
     std::remove(file_name.c_str());
     
