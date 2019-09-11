@@ -271,8 +271,8 @@ void SQLQuerier::create_vf_tbl(){
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
 void SQLQuerier::copy_stubs_to_db(std::string file_name){
-    std::string sql = "COPY " STUBS_TABLE "(stub_asn,parent_asn) FROM '" +
-                      file_name + "' WITH (FORMAT csv)";
+    std::string sql = "COPY " STUBS_TABLE "(stub_asn,parent_asn) FROM '" 
+                      + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
@@ -280,8 +280,8 @@ void SQLQuerier::copy_stubs_to_db(std::string file_name){
 /** Takes a .csv filename and bulk copies all elements to the non-stubs table.
  */
 void SQLQuerier::copy_non_stubs_to_db(std::string file_name){
-    std::string sql = "COPY " NON_STUBS_TABLE "(non_stub_asn) FROM '" +
-                      file_name + "' WITH (FORMAT csv)";
+    std::string sql = "COPY " NON_STUBS_TABLE "(non_stub_asn) FROM '" 
+                      + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
@@ -289,8 +289,8 @@ void SQLQuerier::copy_non_stubs_to_db(std::string file_name){
 /** Takes a .csv filename and bulk copies all elements to the supernodes table.
  */
 void SQLQuerier::copy_supernodes_to_db(std::string file_name){
-    std::string sql = "COPY " SUPERNODES_TABLE "(supernode_asn,supernode_lowest_asn) FROM '" +
-                      file_name + "' WITH (FORMAT csv)";
+    std::string sql = "COPY " SUPERNODES_TABLE "(supernode_asn,supernode_lowest_asn) FROM '" 
+                      + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
@@ -335,9 +335,9 @@ void SQLQuerier::clear_inverse_from_db(){
 /** Instantiates a new, empty results table in the database, dropping the old table.
  */
 void SQLQuerier::create_results_tbl(){
-    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
-    asn bigint,prefix cidr, origin bigint, received_from_asn \
-    bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
+    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table 
+                      + " (asn bigint,prefix cidr, origin bigint, received_from_asn \
+                      bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
     std::cout << "Creating results table..." << std::endl;
     execute(sql, false);
 }
@@ -346,9 +346,9 @@ void SQLQuerier::create_results_tbl(){
 /** Instantiates a new, empty depref table in the database, dropping the old table.
  */
 void SQLQuerier::create_depref_tbl(){
-    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table + " (\
-    asn bigint,prefix cidr, origin bigint, received_from_asn \
-    bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
+    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table 
+                      + " (asn bigint,prefix cidr, origin bigint, received_from_asn \
+                      bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
     std::cout << "Creating depref table..." << std::endl;
     execute(sql, false);
 }
@@ -358,9 +358,8 @@ void SQLQuerier::create_depref_tbl(){
  */
 void SQLQuerier::create_inverse_results_tbl(){
     std::string sql;
-    sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS ") + inverse_results_table + 
-    "(asn bigint,prefix cidr, origin bigint) ";
-    sql += ";";
+    sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS ") + inverse_results_table 
+          + "(asn bigint,prefix cidr, origin bigint);";
     sql += "GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;";
     std::cout << "Creating inverse results table..." << std::endl;
     execute(sql, false);
@@ -370,8 +369,8 @@ void SQLQuerier::create_inverse_results_tbl(){
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
 void SQLQuerier::copy_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn)") +
-                                  "FROM '" + file_name + "' WITH (FORMAT csv)";
+    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn)") 
+                      + "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
@@ -379,8 +378,8 @@ void SQLQuerier::copy_results_to_db(std::string file_name){
 /** Takes a .csv filename and bulk copies all elements to the depref table.
  */
 void SQLQuerier::copy_depref_to_db(std::string file_name){
-    std::string sql = std::string("COPY " + depref_table + "(asn, prefix, origin, received_from_asn)") +
-                                  "FROM '" + file_name + "' WITH (FORMAT csv)";
+    std::string sql = std::string("COPY " + depref_table + "(asn, prefix, origin, received_from_asn)") 
+                      + "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 
@@ -388,8 +387,8 @@ void SQLQuerier::copy_depref_to_db(std::string file_name){
 /** Takes a .csv filename and bulk copies all elements to the inverse results table.
  */
 void SQLQuerier::copy_inverse_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY " + inverse_results_table + "(asn, prefix, origin)") +
-                                  "FROM '" + file_name + "' WITH (FORMAT csv)";
+    std::string sql = std::string("COPY " + inverse_results_table + "(asn, prefix, origin)") 
+                      + "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
 

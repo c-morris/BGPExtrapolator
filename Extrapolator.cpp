@@ -227,13 +227,6 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
-
-    // Create an index on the results
-    /**
-    if (!invert) {
-        querier->create_results_index();
-    }
-    */
 }
 
 
@@ -248,11 +241,6 @@ void Extrapolator::populate_blocks(Prefix<Integer>* p,
                                    std::vector<Prefix<>*>* bloc_vector) { 
     // Find the number of announcements within the subnet
     pqxx::result r = querier->select_subnet_count(p);
-    
-    /** DEBUG
-    std::cout << "Prefix: " << p->to_cidr() << std::endl;
-    std::cout << "Count: "<< r[0][0].as<int>() << std::endl;
-    */
     
     // If the subnet count is within size constraint
     if (r[0][0].as<uint32_t>() < it_size) {
@@ -308,6 +296,7 @@ void Extrapolator::store_vf_ann(std::string prefix,
                                 std::string path) {
     querier->insert_vf_ann_to_db(vf_as, prefix, origin, path);
 }
+
 
 /** Parse array-like strings from db to get AS_PATH in a vector.
  *
