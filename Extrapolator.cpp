@@ -227,6 +227,12 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
+    
+    std::cout << "Creating results index..." << std::endl;
+    if (!invert && vf_as != false) {
+        querier->create_results_index();
+    }
+    std::cout << "Index complete." << std::endl;
 }
 
 
