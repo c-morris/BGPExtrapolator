@@ -9,7 +9,7 @@
 #include "Tests.h"
 
 void intro() {
-    // This needs to be finished
+    // TODO This needs to be finished
     std::cout << "***** Routing Extrapolator v0.1 *****" << std::endl;
     std::cout << "Copyright (C) someone, somewhere, probably." << std::endl;
     std::cout << "License... is probably important." << std::endl;
@@ -30,6 +30,9 @@ int main(int argc, char *argv[]) {
         ("store-depref,d", 
          po::value<bool>()->default_value(false), 
          "store depref results")
+        ("origin-only,l", 
+         po::value<bool>()->default_value(false), 
+         "perform propagation with origin only seeded announcements")
         ("iteration-size,s", 
          po::value<uint32_t>()->default_value(50000), 
          "number of prefixes to be used in one iteration cycle")
@@ -66,6 +69,7 @@ int main(int argc, char *argv[]) {
     // Instantiate Extrapolator
     Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
         vm["store-depref"].as<bool>(),
+        vm["origin-only"].as<bool>(),
         (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
         (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
         (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),

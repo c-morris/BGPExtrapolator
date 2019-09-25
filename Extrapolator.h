@@ -22,6 +22,7 @@
 struct Extrapolator {
     bool invert;
     bool depref;
+    bool origin_o;
     uint32_t it_size;
     uint32_t vf_as;
     ASGraph *graph;
@@ -30,6 +31,7 @@ struct Extrapolator {
 
     Extrapolator(bool invert_results=true, 
                  bool store_depref=false, 
+                 bool origin_only=false,
                  std::string a=ANNOUNCEMENTS_TABLE,
                  std::string r=RESULTS_TABLE, 
                  std::string i=INVERSE_RESULTS_TABLE, 

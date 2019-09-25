@@ -8,6 +8,7 @@
 
 Extrapolator::Extrapolator(bool invert_results,
                            bool store_depref,
+                           bool origin_only,
                            std::string a, 
                            std::string r, 
                            std::string i,
@@ -17,6 +18,7 @@ Extrapolator::Extrapolator(bool invert_results,
                            uint32_t verification_as) {
     invert = invert_results;                    // True to store the results inverted
     depref = store_depref;                      // True to store the second best ann for depref
+    origin_o = origin_only;
     it_size = iteration_size;                   // Number of prefix to be precessed per iteration
     vf_as = verification_as;
     graph = new ASGraph;
@@ -140,7 +142,11 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
                 store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
             } else {
                 // Seed announcements along AS path
-                give_ann_to_as_path(as_path, cur_prefix);
+                if (origin_o == false) {
+                    give_ann_to_as_path(as_path, cur_prefix);
+                } else {
+                    give_origin_to_as_path(as_path, cur_prefix);
+                }
             }
             delete as_path;
         }
@@ -204,7 +210,11 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
                 verification_count += 1;
                 store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
             } else { // Process AS path
-                give_ann_to_as_path(as_path, cur_prefix);
+                if (origin_o == false) {
+                    give_ann_to_as_path(as_path, cur_prefix);
+                } else {
+                    give_origin_to_as_path(as_path, cur_prefix);
+                }
             }
             delete as_path;
         }
@@ -227,12 +237,13 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
-    
+    /** 
     std::cout << "Creating results index..." << std::endl;
     if (!invert && vf_as != false) {
         querier->create_results_index();
     }
     std::cout << "Index complete." << std::endl;
+    */
 }
 
 
