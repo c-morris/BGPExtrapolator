@@ -10,6 +10,7 @@ struct Announcement {
     uint32_t origin;            // origin ASN
     double priority;            // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
+    uint32_t inference_l;       // stores the path's inference length
     bool from_monitor = false;  // flag for seeded ann
 
     /** Default constructor
@@ -21,18 +22,19 @@ struct Announcement {
         origin = aorigin;
         received_from_asn = from_asn;
         priority = 0.0;
+        inference_l = 0;
         from_monitor = false;
     }
     
     /** Priority constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        double pr, uint32_t from_asn, bool a_from_monitor = false) 
+        double pr, uint32_t from_asn, uint32_t length, bool a_from_monitor = false) 
         : Announcement(aorigin, aprefix, anetmask, from_asn) { 
-        priority = pr; 
+        priority = pr;
+        inference_l = length;
         from_monitor = a_from_monitor;
     }
-
 
     /** Defines the << operator for the Announcements
      *
@@ -49,7 +51,6 @@ struct Announcement {
             << "Recv'd from:\t" << std::dec << ann.received_from_asn;
         return os;
     }
-
 
     /** Passes the announcement struct data to an output stream to csv generation.
      *
