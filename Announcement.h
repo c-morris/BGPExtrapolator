@@ -36,24 +36,26 @@ public:
     double priority;            // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
     bool from_monitor = false;  // flag for seeded ann
+    int64_t tstamp;             // timestamp from mrt file
 
     /** Default constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t from_asn) {
+        uint32_t from_asn, int64_t timestamp = 0) {
         prefix.addr = aprefix;
         prefix.netmask = anetmask;
         origin = aorigin;
         received_from_asn = from_asn;
         priority = 0.0;
         from_monitor = false;
+        tstamp = timestamp;
     }
     
     /** Priority constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        double pr, uint32_t from_asn, bool a_from_monitor = false) 
-        : Announcement(aorigin, aprefix, anetmask, from_asn) { 
+        double pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false) 
+        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) { 
         priority = pr; 
         from_monitor = a_from_monitor;
     }
@@ -82,7 +84,7 @@ public:
      * @return The output stream parameter for reuse/recursion.
      */ 
     std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << '\n';//std::endl;
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp '\n';
         return os;
     }
 };
