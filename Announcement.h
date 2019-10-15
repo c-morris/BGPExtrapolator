@@ -1,6 +1,7 @@
 #ifndef ANNOUNCEMENT_H
 #define ANNOUNCEMENT_H
 
+#include <vector>
 #include <cstdint>
 #include <iostream>
 #include "Prefix.h"
@@ -8,15 +9,18 @@
 struct Announcement {
     Prefix<> prefix;            // encoded with subnet mask
     uint32_t origin;            // origin ASN
-    double priority;            // priority assigned based upon path
+    float priority;             // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
     uint32_t inference_l;       // stores the path's inference length
     bool from_monitor = false;  // flag for seeded ann
+    std::vector<uint32_t> as_path;
 
     /** Default constructor
      */
-    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t from_asn) {
+    Announcement(uint32_t aorigin, 
+                 uint32_t aprefix, 
+                 uint32_t anetmask,
+                 uint32_t from_asn) {
         prefix.addr = aprefix;
         prefix.netmask = anetmask;
         origin = aorigin;
@@ -28,14 +32,24 @@ struct Announcement {
     
     /** Priority constructor
      */
-    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        double pr, uint32_t from_asn, uint32_t length, bool a_from_monitor = false) 
-        : Announcement(aorigin, aprefix, anetmask, from_asn) { 
+    Announcement(uint32_t aorigin, 
+                 uint32_t aprefix, 
+                 uint32_t anetmask, 
+                 uint32_t from_asn, 
+                 uint32_t length, 
+                 double pr, 
+                 const std::vector<uint32_t> &path,
+                 bool a_from_monitor = false)
+                 : Announcement(aorigin, 
+                                aprefix, 
+                                anetmask, 
+                                from_asn) { 
         priority = pr;
         inference_l = length;
         from_monitor = a_from_monitor;
+        as_path = path;
     }
-
+    
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.
@@ -62,4 +76,5 @@ struct Announcement {
         return os;
     }
 };
+
 #endif

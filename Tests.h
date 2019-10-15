@@ -27,15 +27,6 @@ bool test_prefix_lt_operator();
 bool test_prefix_gt_operator();
 bool test_prefix_eq_operator();
 
-// Prototypes for AnnouncementTest.cpp
-bool test_announcement();
-bool test_ann_lt_operator();
-bool test_ann_gt_operator();
-bool test_ann_eq_operator();
-bool test_to_sql();
-bool test_ann_os_operator();
-bool test_to_csv();
-
 // Prototypes for ASTest.cpp
 bool test_add_neighbor();
 bool test_process_announcement();
@@ -59,7 +50,4 @@ bool test_propagate_up();
 bool test_propagate_down();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
-
-// Prototypes for SQLQuerierTest.cpp
-
 #endif

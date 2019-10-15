@@ -421,12 +421,19 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
                                   prefix.netmask,
                                   0); 
     
+    // Full path pointer
+    std::vector<uint32_t> cur_path;
+
     // If ASN not in graph, continue
     if (graph->ases->find(origin_asn) == graph->ases->end()) {
         return;
     }
     // Translate ASN to it's supernode
     uint32_t origin_p_asn = graph->translate_asn(origin_asn);
+    
+    // Add origin to store the full path
+    cur_path.push_back(origin_p_asn);
+
     // Get the origin AS
     AS *origin = graph->ases->find(origin_p_asn)->second;
     // Check if already received this prefix
@@ -441,9 +448,10 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
     Announcement ann = Announcement(origin_asn,
                                     prefix.addr,
                                     prefix.netmask,
-                                    priority,
                                     received_from_asn,
                                     0,
+                                    priority,
+                                    cur_path,
                                     true);
     // Send the announcement to the current AS
     origin->process_announcement(ann);
@@ -476,7 +484,9 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                   prefix.addr,
                                   prefix.netmask,
                                   0); 
-    
+    // Full path pointer
+    std::vector<uint32_t> cur_path;
+
     uint32_t i = 0;
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
@@ -487,6 +497,10 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
+        
+        // Append ASN to current full path
+        cur_path.push_back(asn_on_path);
+        
         // Get the current AS on the path
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
@@ -497,7 +511,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
-        // It is 3 by default. It stays as 3 if it's the origin.
+        // It is 3 by default. It stays at 3 if it's the origin.
         int received_from = 3;
         // If this is not the origin AS
         if (i > 1) {
@@ -531,9 +545,10 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             Announcement ann = Announcement(*as_path->rbegin(),
                                             prefix.addr,
                                             prefix.netmask,
-                                            priority,
                                             received_from_asn,
                                             0,
+                                            priority,
+                                            cur_path,
                                             true);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann);
@@ -580,6 +595,11 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 2) {
                 continue;
             }
+
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            cur_path.push_back(asn);
+
             double priority = ann.second.priority;
             // Set the priority of the announcement 
             if (priority - floor(priority) == 0) {
@@ -595,9 +615,10 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             anns_to_providers.push_back(Announcement(ann.second.origin,
                                                      ann.second.prefix.addr,
                                                      ann.second.prefix.netmask,
-                                                     priority,
                                                      asn,
-                                                     cur_len));
+                                                     cur_len,
+                                                     priority,
+                                                     cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -620,6 +641,11 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 2) {
                 continue;
             }
+            
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            cur_path.push_back(asn);
+
             double priority = ann.second.priority;
             if(priority - floor(priority) == 0) {
                 // Reset monitor priority to be received from a customer
@@ -633,9 +659,10 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             anns_to_peers.push_back(Announcement(ann.second.origin,
                                                  ann.second.prefix.addr,
                                                  ann.second.prefix.netmask,
-                                                 priority,
                                                  asn,
-                                                 cur_len));
+                                                 cur_len,
+                                                 priority,
+                                                 cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -654,6 +681,11 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Priority is reduced by 0.01 per path length
             // Base priority is 0 for customers
             // Reset the priority to be from a provider
+             
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            cur_path.push_back(asn);
+
             double priority = ann.second.priority;
             if (priority - floor(priority) == 0) {
                 // Reset monitor priority to be received from a provider
@@ -667,9 +699,10 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             anns_to_customers.push_back(Announcement(ann.second.origin,
                                                      ann.second.prefix.addr,
                                                      ann.second.prefix.netmask,
-                                                     priority,
                                                      asn,
-                                                     cur_len));
+                                                     cur_len,
+                                                     priority,
+                                                     cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

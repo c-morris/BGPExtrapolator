@@ -46,8 +46,9 @@ bool test_process_announcement(){
 
     // Check priority
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 2.00, 222, false);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 3.00, 223, false);
+    std::vector<uint32_t> path;
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 222, 0, 2.00, path);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 223, 0, 3.00, path);
     as.process_announcement(a1);
     as.process_announcement(a2);
     if (as.all_anns->find(p)->second.received_from_asn != 223 ||
@@ -58,8 +59,8 @@ bool test_process_announcement(){
     
     // Check tiebraker default
     Prefix<> p2 = Prefix<>("1.1.1.1", "255.255.255.0");
-    Announcement a3 = Announcement(111, p2.addr, p2.netmask, 3.00, 222, false);
-    Announcement a4 = Announcement(111, p2.addr, p2.netmask, 3.00, 223, false);
+    Announcement a3 = Announcement(111, p2.addr, p2.netmask, 222, 0, 3.00, path);
+    Announcement a4 = Announcement(111, p2.addr, p2.netmask, 223, 0, 3.00, path);
     as.process_announcement(a3);
     as.process_announcement(a4);
     if (as.all_anns->find(p2)->second.received_from_asn != 222 ||

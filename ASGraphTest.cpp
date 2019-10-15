@@ -88,8 +88,6 @@ bool test_create_graph_from_db() {
     std::string fname = "graph";
     fname += ".csv";
     outfile.open(fname, std::ios::out | std::ios::trunc);
-    /** TODO print graph to csv for verification
-     */
     for (auto &as : *graph->ases) {
         AS* cur_AS = as.second;
         for (auto &provider : *cur_AS->providers) {

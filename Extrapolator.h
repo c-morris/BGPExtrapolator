@@ -64,11 +64,11 @@ struct Extrapolator {
     void propagate_up();
     void propagate_down();
     void give_origin_to_as_path(std::vector<uint32_t>* as_path, 
-                             Prefix<> prefix);
+                                Prefix<> prefix);
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
                              Prefix<> prefix);
     void save_results(int iteration);
     void invert_results(void);
-    };
+};
 
 #endif

@@ -21,11 +21,6 @@ BOOST_AUTO_TEST_CASE( Prefix_equivalence_operator ) {
         BOOST_CHECK( test_prefix_eq_operator() );
 }
 
-// Announcement.h
-BOOST_AUTO_TEST_CASE( Announcement_constructor ) {
-        BOOST_CHECK( test_announcement() );
-}
-
 // AS.cpp
 BOOST_AUTO_TEST_CASE( AS_add_neighbor ) {
         BOOST_CHECK( test_add_neighbor() );
