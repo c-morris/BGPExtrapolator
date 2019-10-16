@@ -611,9 +611,9 @@ void Extrapolator::save_results(int iteration){
         std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
         for (auto po : *graph->inverse_results){
             for (uint32_t asn : *po.second) {
-                outfile << asn << ","
-                        << po.first.first.to_cidr() << ","
-                        << po.first.second << std::endl;
+                outfile << asn << ','
+                        << po.first.first.to_cidr() << ','
+                        << po.first.second << '\n';
             }
         }
         outfile.close();
