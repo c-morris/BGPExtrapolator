@@ -19,6 +19,8 @@ void intro() {
 
 int main(int argc, char *argv[]) {
     using namespace std;   
+    // don't sync iostreams with printf
+    ios_base::sync_with_stdio(false);
     namespace po = boost::program_options;
     // Handle parameters
     po::options_description desc("Allowed options");
