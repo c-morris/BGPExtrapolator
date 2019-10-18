@@ -283,7 +283,7 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
  */
 std::ostream& AS::stream_announcements(std::ostream &os){
     for (auto &ann : *all_anns) {
-        os << asn << ",";
+        os << asn << ',';
         ann.second.to_csv(os);
     }
     return os;
@@ -297,7 +297,7 @@ std::ostream& AS::stream_announcements(std::ostream &os){
  */
 std::ostream& AS::stream_depref(std::ostream &os){
     for (auto &ann : *depref_anns) {
-        os << asn << ",";
+        os << asn << ',';
         ann.second.to_csv(os);
     }
     return os;

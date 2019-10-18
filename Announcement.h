@@ -57,7 +57,7 @@ struct Announcement {
      * @return The output stream parameter for reuse/recursion.
      */ 
     std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << "," << origin << "," << received_from_asn << std::endl;
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << '\n';//std::endl;
         return os;
     }
 };
