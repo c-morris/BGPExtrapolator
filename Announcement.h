@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <iostream>
+#include <iterator>
 #include "Prefix.h"
 
 struct Announcement {
@@ -71,10 +72,46 @@ struct Announcement {
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << "," << origin << "," << received_from_asn << std::endl;
+    virtual std::ostream& to_csv(std::ostream &os){
+        os << prefix.to_cidr() << "," << origin << ",\"{";
+        for (std::vector<uint32_t>::iterator it = as_path.begin(); it != as_path.end(); ++it) {
+            if (it != as_path.begin()) { os << ','; }
+            os << *it;
+        }   
+        os << "}\"," << inference_l << std::endl;
+        return os; 
+        /** OLD output
+        os << prefix.to_cidr() << "," << origin << "," << received_from_asn << "," << inference_l << std::endl;
         return os;
+        */
     }
+};
+
+struct FPAnnouncement : public Announcement {
+    
+    FPAnnouncement(uint32_t aorigin, 
+                   uint32_t aprefix, 
+                   uint32_t anetmask, 
+                   uint32_t from_asn, 
+                   uint32_t length, 
+                   double pr, 
+                   const std::vector<uint32_t> &path,
+                   bool a_from_monitor = false)
+    : Announcement(aorigin, aprefix, anetmask, from_asn, length, pr, path, a_from_monitor) { }
+    
+    /** Passes the announcement struct data with path to an output stream for csv generation.
+     *
+     * @param &os Specifies the output stream.
+     * @return The output stream parameter for reuse/recursion.
+     */ 
+    std::ostream& to_csv(std::ostream &os){
+        os << prefix.to_cidr() << "," << origin << ", {";
+        for (auto asn : as_path) {
+            os << asn << ",";
+        }   
+        os << "}, " << inference_l << std::endl;
+        return os; 
+    }   
 };
 
 #endif

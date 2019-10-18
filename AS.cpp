@@ -111,7 +111,9 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
 }
 
 
-/** Push the received announcements to the incoming_announcements vector. 
+/** Push the received announcements to the incoming_announcements vector for propagation. 
+ *
+ * NOTE: This function is NOT used for seeding MRT announcements.
  *
  * @param announcements The announcements to be pushed onto the incoming_announcements vector.
  */
@@ -120,6 +122,8 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
         // Do not check for duplicates here
         // push_back makes a copy of the announcement
         incoming_announcements->push_back(ann);
+        // For full path storage, append the cur ASN to propagated path
+        incoming_announcements->back().as_path.push_back(asn);
     }
 }
 

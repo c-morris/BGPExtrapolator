@@ -491,15 +491,16 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
         i++;
+        
+        // Append ASN to current full path
+        cur_path.push_back(*it);
+        
         // If ASN not in graph, continue
         if (graph->ases->find(*it) == graph->ases->end()) {
             continue;
         }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
-        
-        // Append ASN to current full path
-        cur_path.push_back(asn_on_path);
         
         // Get the current AS on the path
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
@@ -598,7 +599,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
 
             // Full path generation
             auto cur_path = ann.second.as_path;
-            cur_path.push_back(asn);
 
             double priority = ann.second.priority;
             // Set the priority of the announcement 
@@ -613,12 +613,12 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             uint32_t cur_len = ann.second.inference_l + 1;
             // Push announcement with new priority to ann vector
             anns_to_providers.push_back(Announcement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     asn,
-                                                     cur_len,
-                                                     priority,
-                                                     cur_path));
+                                                       ann.second.prefix.addr,
+                                                       ann.second.prefix.netmask,
+                                                       asn,
+                                                       cur_len,
+                                                       priority,
+                                                       cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -644,7 +644,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             
             // Full path generation
             auto cur_path = ann.second.as_path;
-            cur_path.push_back(asn);
 
             double priority = ann.second.priority;
             if(priority - floor(priority) == 0) {
@@ -657,12 +656,12 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Set inference length
             uint32_t cur_len = ann.second.inference_l + 1;
             anns_to_peers.push_back(Announcement(ann.second.origin,
-                                                 ann.second.prefix.addr,
-                                                 ann.second.prefix.netmask,
-                                                 asn,
-                                                 cur_len,
-                                                 priority,
-                                                 cur_path));
+                                                   ann.second.prefix.addr,
+                                                   ann.second.prefix.netmask,
+                                                   asn,
+                                                   cur_len,
+                                                   priority,
+                                                   cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -684,7 +683,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
              
             // Full path generation
             auto cur_path = ann.second.as_path;
-            cur_path.push_back(asn);
 
             double priority = ann.second.priority;
             if (priority - floor(priority) == 0) {
@@ -697,12 +695,12 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Set inference length
             uint32_t cur_len = ann.second.inference_l + 1;
             anns_to_customers.push_back(Announcement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     asn,
-                                                     cur_len,
-                                                     priority,
-                                                     cur_path));
+                                                       ann.second.prefix.addr,
+                                                       ann.second.prefix.netmask,
+                                                       asn,
+                                                       cur_len,
+                                                       priority,
+                                                       cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {
@@ -759,7 +757,12 @@ void Extrapolator::save_results(int iteration){
         }
         outfile.close();
         querier->copy_inverse_results_to_db(file_name);
-    
+    // Handle verification results
+    } else if (vf_as) {
+        auto ctrl_as = *graph->ases->find(vf_as);
+        ctrl_as.second->stream_announcements(outfile);
+        outfile.close();
+        querier->copy_results_to_db(file_name);
     // Handle standard results
     } else {
         std::cout << "Saving Results From Iteration: " << iteration << std::endl;
@@ -769,6 +772,7 @@ void Extrapolator::save_results(int iteration){
         outfile.close();
         querier->copy_results_to_db(file_name);
     }
+    // Cleanup
     std::remove(file_name.c_str());
     
     // Handle depref results
