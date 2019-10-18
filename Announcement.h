@@ -73,15 +73,15 @@ struct Announcement {
      * @return The output stream parameter for reuse/recursion.
      */ 
     virtual std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << "," << origin << ",\"{";
+        os << prefix.to_cidr() << ',' << origin << ",\"{";
         for (std::vector<uint32_t>::iterator it = as_path.begin(); it != as_path.end(); ++it) {
             if (it != as_path.begin()) { os << ','; }
             os << *it;
         }   
-        os << "}\"," << inference_l << std::endl;
+        os << "}\"," << inference_l << '\n';
         return os; 
         /** OLD output
-        os << prefix.to_cidr() << "," << origin << "," << received_from_asn << "," << inference_l << std::endl;
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << '\n';//std::endl;
         return os;
         */
     }
@@ -105,11 +105,11 @@ struct FPAnnouncement : public Announcement {
      * @return The output stream parameter for reuse/recursion.
      */ 
     std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << "," << origin << ", {";
+        os << prefix.to_cidr() << ',' << origin << ",\"{";
         for (auto asn : as_path) {
             os << asn << ",";
         }   
-        os << "}, " << inference_l << std::endl;
+        os << "}\"," << inference_l << std::endl;
         return os; 
     }   
 };
