@@ -1,3 +1,26 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #ifndef ASGRAPH_H
 #define ASGRAPH_H
 
@@ -6,7 +29,7 @@
 #define AS_REL_PEER 1
 #define AS_REL_CUSTOMER 2
 
-struct SQLQuerier;
+class SQLQuerier;
 
 #include <map>
 #include <unordered_map>
@@ -15,11 +38,13 @@ struct SQLQuerier;
 #include <sys/stat.h>
 #include <dirent.h>
 #include <pqxx/pqxx>
+
 #include "AS.h"
 #include "SQLQuerier.h"
 #include "TableNames.h"
 
-struct ASGraph {
+class ASGraph {
+public:
     std::unordered_map<uint32_t, AS*> *ases;            // Map of ASN to AS object 
     std::vector<std::set<uint32_t>*> *ases_by_rank;     // Vector of ranks
     std::vector<std::vector<uint32_t>*> *components;    // Strongly connected components
@@ -52,6 +77,5 @@ struct ASGraph {
     void to_graphviz(std::ostream &os);
     friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
 };
-
 #endif
 
