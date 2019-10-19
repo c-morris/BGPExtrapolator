@@ -1,11 +1,36 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #ifndef ANNOUNCEMENT_H
 #define ANNOUNCEMENT_H
 
 #include <cstdint>
 #include <iostream>
+
 #include "Prefix.h"
 
-struct Announcement {
+class Announcement {
+public:
     Prefix<> prefix;            // encoded with subnet mask
     uint32_t origin;            // origin ASN
     double priority;            // priority assigned based upon path
@@ -59,7 +84,7 @@ struct Announcement {
      * @return The output stream parameter for reuse/recursion.
      */ 
     std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << "," << origin << "," << received_from_asn << "," << tstamp << std::endl;
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';//std::endl;
         return os;
     }
 };

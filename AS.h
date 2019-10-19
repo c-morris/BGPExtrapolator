@@ -1,3 +1,26 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #ifndef AS_H
 #define AS_H
 
@@ -10,20 +33,22 @@
 #include <map>
 #include <vector>
 #include <iostream>
+
 #include "Announcement.h"
 #include "Prefix.h"
 
-struct AS {
+class AS {
+public:
     uint32_t asn;       // Autonomous System Number
     bool visited;       // Marks something
     int rank;           // Rank in ASGraph heirarchy for propagation
     
     // Defer processing of incoming announcements for efficiency
     std::vector<Announcement> *incoming_announcements;
-    // Map of all announcements stored
+    // Maps of all announcements stored
     std::map<Prefix<>, Announcement> *all_anns;
     std::map<Prefix<>, Announcement> *depref_anns;
-    // AS Relationships
+    // Stores AS Relationships
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 
     std::set<uint32_t> *customers; 
@@ -35,7 +60,8 @@ struct AS {
     int index;
     int lowlink;
     bool onStack;
-
+    
+    // Constructor
     AS(uint32_t myasn=0, 
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
         std::set<uint32_t> *prov=NULL, 
@@ -57,5 +83,4 @@ struct AS {
     std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
 };
-
 #endif

@@ -1,3 +1,26 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #ifndef RUN_TESTS
 #include <iostream>
 #include <boost/program_options.hpp>
@@ -10,7 +33,7 @@
 
 void intro() {
     // This needs to be finished
-    std::cout << "***** Routing Extrapolator v0.1 *****" << std::endl;
+    std::cout << "***** Routing Extrapolator v0.2 *****" << std::endl;
     std::cout << "Copyright (C) someone, somewhere, probably." << std::endl;
     std::cout << "License... is probably important." << std::endl;
     std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
@@ -19,6 +42,8 @@ void intro() {
 
 int main(int argc, char *argv[]) {
     using namespace std;   
+    // don't sync iostreams with printf
+    ios_base::sync_with_stdio(false);
     namespace po = boost::program_options;
     // Handle parameters
     po::options_description desc("Allowed options");
