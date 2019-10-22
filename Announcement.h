@@ -74,8 +74,9 @@ struct Announcement {
      */ 
     virtual std::ostream& to_csv(std::ostream &os){
         os << prefix.to_cidr() << ',' << origin << ",\"{";
-        for (std::vector<uint32_t>::iterator it = as_path.begin(); it != as_path.end(); ++it) {
-            if (it != as_path.begin()) { os << ','; }
+        // AS Path is stored in reverse, output starts at end of vector
+        for (auto it = as_path.rbegin(); it != as_path.rend(); ++it) {
+            if (it != as_path.rbegin()) { os << ','; }
             os << *it;
         }   
         os << "}\"," << inference_l << '\n';

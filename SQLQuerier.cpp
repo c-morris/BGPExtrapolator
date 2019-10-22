@@ -262,7 +262,7 @@ void SQLQuerier::create_supernodes_tbl(){
 /**  Instantiates a new, empty verification control table in the database, if it doesn't exist.
  */
 void SQLQuerier::create_vf_tbl(){
-    std::string sql = std::string("CREATE TABLE IF NOT EXISTS " + verification_table + "(monitor_as bigint, prefix cidr, origin bigint, as_path varchar[])");
+    std::string sql = std::string("CREATE TABLE IF NOT EXISTS " + verification_table + "(monitor_as bigint, prefix cidr, origin bigint, as_path bigint[])");
     std::cout << "Creating verification table..." << std::endl;
     execute(sql, false);
 }
