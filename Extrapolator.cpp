@@ -192,6 +192,20 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = parse_path(path_as_string);
+
+            // Check for loops in the path and drop announcement if they exist
+            uint32_t prev = 0;
+            bool loop = false;
+            int sz = as_path->size();
+            for (int i = 0; i < (sz-1) && !loop; i++) {
+                prev = as_path->at(i);
+                for (int j = i+1; j < sz && !loop; j++) {
+                    loop = as_path->at(i) == as_path->at(j) && as_path->at(j) != prev;
+                    prev = as_path->at(j);
+                }
+            }
+            if (loop)
+                continue;
             
             // Assemble pair
             auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
