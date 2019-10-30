@@ -32,6 +32,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <random>
 #include <iostream>
 
 #include "Announcement.h"
@@ -82,5 +83,7 @@ public:
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
     std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
+private:
+    // Random Number Generator
 };
 #endif

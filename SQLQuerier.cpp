@@ -67,7 +67,6 @@ void SQLQuerier::read_config(){
             config.insert(std::pair<std::string,std::string>(var_name, value));
         }
 
-        // TODO Add additional config options to this?
         for (auto const& setting : config){
             if(setting.first == "user") {
                 user = setting.second;
@@ -84,7 +83,8 @@ void SQLQuerier::read_config(){
             } else if(setting.first == "port") {
                 port = setting.second;
             } else {
-                std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
+                // This outputs extraneous setting found in the config file
+                // std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
             }
         }
     } else {
@@ -125,7 +125,7 @@ void SQLQuerier::close_connection(){
 }
 
 
-/** TODO
+/** Executes a give SQL statement
  *
  *  @param sql
  *  @param insert

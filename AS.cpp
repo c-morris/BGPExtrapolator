@@ -169,7 +169,39 @@ void AS::process_announcement(Announcement &ann) {
         }
     // Tiebraker for equal priority between old and new ann
     } else if (ann.priority == search->second.priority) {
-        // Default to lower ASN
+        // Random tiebraker
+        std::minstd_rand ran_bool(asn);
+        bool value = (ran_bool()%2 == 0);
+        if (value) {
+            // Use the new announcement
+            if (search_depref == depref_anns->end()) {
+                // Update inverse results
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                // Insert depref ann
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                      search->second));
+                search->second = ann;
+            } else {
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                search_depref->second = search->second;
+                search->second = ann;
+            }
+        } else {
+            // Use the old announcement
+            if (search_depref == depref_anns->end()) {
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                                                                      ann));
+            } else {
+                // Replace second best with the old priority announcement
+                search_depref->second = ann;
+            }
+        }
+        /**
+        // Default to lower ASN tiebraker
         if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
             if (search_depref == depref_anns->end()) {
                 // Update inverse results
@@ -195,6 +227,7 @@ void AS::process_announcement(Announcement &ann) {
                 search_depref->second = ann;
             }
         }
+        */
     // Otherwise check new announcements priority for best path selection
     } else if (ann.priority > search->second.priority) {
         if (search_depref == depref_anns->end()) {
