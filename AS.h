@@ -70,6 +70,7 @@ public:
         std::set<uint32_t> *cust=NULL);
     ~AS();
     
+    bool get_random(); 
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);

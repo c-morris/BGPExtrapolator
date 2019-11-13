@@ -74,6 +74,13 @@ AS::~AS() {
 }
 
 
+/** Generates a random boolean value.
+ */
+bool AS::get_random() {
+    bool r = (ran_bool() % 2 == 0);
+    return r;
+}
+
 /** Add neighbor AS to the appropriate set in this AS based on the relationship.
  *
  * @param asn ASN of neighbor.
@@ -171,7 +178,7 @@ void AS::process_announcement(Announcement &ann) {
     } else if (ann.priority == search->second.priority) {
         // Random tiebraker
         //std::minstd_rand ran_bool(asn);
-        bool value = (ran_bool() % 2 == 0);
+        bool value = get_random();
         if (value) {
             // Use the new announcement
             if (search_depref == depref_anns->end()) {

@@ -421,15 +421,25 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
-            // If the current timestamp is newer (worse)
             // TODO Combine find() functions
             auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
-            if (ann_to_check_for.tstamp >= search->second.tstamp) {
+            
+            // If the current timestamp is newer (worse)
+            if (ann_to_check_for.tstamp > search->second.tstamp) {
                 // Skip it
                 continue;
+            } else if (ann_to_check_for.tstamp == search->second.tstamp) {
+                // Random tie breaker for equal timestamp
+                bool value = as_on_path->get_random();
+                if (value) {
+                    continue;
+                } else {
+                    as_on_path->delete_ann(ann_to_check_for);
+                }
+            } else {
+                // Delete worse MRT announcement, proceed with seeding
+                as_on_path->delete_ann(ann_to_check_for);
             }
-            // Delete the other MRT announcement
-            as_on_path->delete_ann(ann_to_check_for);
         }
         
         // If ASes in the path aren't neighbors (data is out of sync)
