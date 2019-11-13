@@ -409,6 +409,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
     uint32_t i = 0;
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
+        // Increments path length, including prepending
         i++;
         // If ASN not in graph, continue
         if (graph->ases->find(*it) == graph->ases->end()) {
@@ -420,7 +421,15 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
-            continue;
+            // If the current timestamp is newer (worse)
+            // TODO Combine find() functions
+            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
+            if (ann_to_check_for.tstamp >= search->second.tstamp) {
+                // Skip it
+                continue;
+            }
+            // Delete the other MRT announcement
+            as_on_path->delete_ann(ann_to_check_for);
         }
         
         // If ASes in the path aren't neighbors (data is out of sync)

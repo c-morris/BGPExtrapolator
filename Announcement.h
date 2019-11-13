@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <vector>
 
 #include "Prefix.h"
 
@@ -60,7 +61,6 @@ public:
         from_monitor = a_from_monitor;
     }
 
-
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.
@@ -76,7 +76,6 @@ public:
             << "Recv'd from:\t" << std::dec << ann.received_from_asn;
         return os;
     }
-
 
     /** Passes the announcement struct data to an output stream to csv generation.
      *

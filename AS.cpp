@@ -31,7 +31,7 @@ AS::AS(uint32_t myasn,
        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
        std::set<uint32_t> *prov,
        std::set<uint32_t> *peer,
-       std::set<uint32_t> *cust) {
+       std::set<uint32_t> *cust) : ran_bool(asn) {
     // Set ASN
     asn = myasn;
     // Initialize AS to invalid rank
@@ -170,8 +170,8 @@ void AS::process_announcement(Announcement &ann) {
     // Tiebraker for equal priority between old and new ann
     } else if (ann.priority == search->second.priority) {
         // Random tiebraker
-        std::minstd_rand ran_bool(asn);
-        bool value = (ran_bool()%2 == 0);
+        //std::minstd_rand ran_bool(asn);
+        bool value = (ran_bool() % 2 == 0);
         if (value) {
             // Use the new announcement
             if (search_depref == depref_anns->end()) {
@@ -292,7 +292,14 @@ bool AS::already_received(Announcement &ann) {
     // TODO Only checks prefix, ignores origin
     // How do we decide between conflicting monitor ann?
     auto search = all_anns->find(ann.prefix);
-    return (search == all_anns->end()) ? false : true;
+    bool found = (search == all_anns->end()) ? false : true;
+    return found;
+}
+
+/** Deletes given announcement.
+ */
+void AS::delete_ann(Announcement &ann) {
+    all_anns->erase(ann.prefix);
 }
 
 /** Insertion operator for AS class.

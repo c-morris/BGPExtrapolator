@@ -76,6 +76,7 @@ public:
     void process_announcement(Announcement &ann);
     void clear_announcements();
     bool already_received(Announcement &ann);
+    void delete_ann(Announcement &ann);
     void printDebug();
     void process_announcements();
     void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
@@ -85,5 +86,6 @@ public:
     std::ostream& stream_depref(std:: ostream &os);
 private:
     // Random Number Generator
+    std::minstd_rand ran_bool;
 };
 #endif
