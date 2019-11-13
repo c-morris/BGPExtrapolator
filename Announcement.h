@@ -28,6 +28,8 @@
 #include <cstdint>
 #include <iostream>
 #include <iterator>
+#include <vector>
+
 #include "Prefix.h"
 
 struct Announcement {
@@ -79,7 +81,7 @@ struct Announcement {
         from_monitor = a_from_monitor;
         as_path = path;
     }
-    
+
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.
