@@ -1,3 +1,26 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #include <cmath>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -122,6 +145,8 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = parse_path(path_as_string);
+            int64_t timestamp;
+            ann_block[i]["time"].to(timestamp);
             
             // Assemble pair
             auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
@@ -145,9 +170,9 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
             } else {
                 // Seed announcements along AS path
                 if (origin_o == false) {
-                    give_ann_to_as_path(as_path, cur_prefix);
+                    give_ann_to_as_path(as_path, cur_prefix, timestamp);
                 } else {
-                    give_origin_to_as_path(as_path, cur_prefix);
+                    give_origin_to_as_path(as_path, cur_prefix, timestamp);
                 }
             }
             delete as_path;
@@ -193,6 +218,7 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = parse_path(path_as_string);
+            int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
             
             // Assemble pair
             auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
@@ -208,16 +234,15 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
                     graph->inverse_results->find(prefix_origin)->second->insert(asn);
                 }
             }
-            
             // Disclude the verification AS
             if ((*as_path)[0] == vf_as) {
                 verification_count += 1;
                 store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
             } else { // Process AS path
                 if (origin_o == false) {
-                    give_ann_to_as_path(as_path, cur_prefix);
+                    give_ann_to_as_path(as_path, cur_prefix, timestamp);
                 } else {
-                    give_origin_to_as_path(as_path, cur_prefix);
+                    give_origin_to_as_path(as_path, cur_prefix, timestamp);
                 }
             }
             delete as_path;
@@ -407,7 +432,7 @@ void Extrapolator::propagate_down() {
  * @param as_path Vector of ASNs for this announcement.
  * @param prefix The prefix this announcement is for.
  */
-void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix) {
+void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -474,7 +499,7 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
  * @param as_path Vector of ASNs for this announcement.
  * @param prefix The prefix this announcement is for.
  */
-void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix) {
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -483,7 +508,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
     Announcement ann_to_check_for(as_path->at(as_path->size()-1),
                                   prefix.addr,
                                   prefix.netmask,
-                                  0); 
+                                  0,
+                                  timestamp); 
     // Full path pointer
     std::vector<uint32_t> cur_path;
 
@@ -550,6 +576,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                             0,
                                             priority,
                                             cur_path,
+                                            timestamp,
                                             true);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann);
@@ -613,12 +640,13 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             uint32_t cur_len = ann.second.inference_l + 1;
             // Push announcement with new priority to ann vector
             anns_to_providers.push_back(Announcement(ann.second.origin,
-                                                       ann.second.prefix.addr,
-                                                       ann.second.prefix.netmask,
-                                                       asn,
-                                                       cur_len,
-                                                       priority,
-                                                       cur_path));
+                                                     ann.second.prefix.addr,
+                                                     ann.second.prefix.netmask,
+                                                     asn,
+                                                     cur_len,
+                                                     priority,
+                                                     ann.second.tstamp,
+                                                     cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -656,12 +684,13 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Set inference length
             uint32_t cur_len = ann.second.inference_l + 1;
             anns_to_peers.push_back(Announcement(ann.second.origin,
-                                                   ann.second.prefix.addr,
-                                                   ann.second.prefix.netmask,
-                                                   asn,
-                                                   cur_len,
-                                                   priority,
-                                                   cur_path));
+                                                 ann.second.prefix.addr,
+                                                 ann.second.prefix.netmask,
+                                                 asn,
+                                                 cur_len,
+                                                 priority,
+                                                 ann.second.tstamp,
+                                                 cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -695,12 +724,13 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Set inference length
             uint32_t cur_len = ann.second.inference_l + 1;
             anns_to_customers.push_back(Announcement(ann.second.origin,
-                                                       ann.second.prefix.addr,
-                                                       ann.second.prefix.netmask,
-                                                       asn,
-                                                       cur_len,
-                                                       priority,
-                                                       cur_path));
+                                                     ann.second.prefix.addr,
+                                                     ann.second.prefix.netmask,
+                                                     asn,
+                                                     cur_len,
+                                                     priority,
+                                                     ann.second.tstamp,
+                                                     cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

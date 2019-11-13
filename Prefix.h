@@ -1,3 +1,26 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #ifndef PREFIX_H
 #define PREFIX_H
 
@@ -8,7 +31,8 @@
 
 // Use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
-struct Prefix {
+class Prefix {
+public:
     Integer addr;
     Integer netmask;
     
@@ -31,7 +55,6 @@ struct Prefix {
      * @param mask_str The subnet mask/length as a string.
      */ 
     Prefix(std::string addr_str, std::string mask_str) {
-        // TODO IPv6 Address Parsing
         // IPv4 Address Parsing
         addr = addr_to_int(addr_str);  
         netmask = mask_to_int(mask_str);  
@@ -236,6 +259,5 @@ struct Prefix {
         return !(*this == b);
     }
 };
-
 #endif
 

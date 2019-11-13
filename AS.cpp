@@ -1,3 +1,26 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #include "AS.h"
 
 /** Constructor for AS class.
@@ -70,7 +93,6 @@ void AS::add_neighbor(uint32_t asn, int relationship) {
     }
 }
 
-
 /** Remove neighbor AS from the appropriate set in this AS based on the relationship.
  *
  * @param asn ASN of neighbor.
@@ -89,7 +111,6 @@ void AS::remove_neighbor(uint32_t asn, int relationship) {
             break;
     }
 }
-
 
 /** Swap a pair of prefix/origins for this AS in the inverse results.
  *
@@ -110,7 +131,6 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
     }
 }
 
-
 /** Push the received announcements to the incoming_announcements vector for propagation. 
  *
  * NOTE: This function is NOT used for seeding MRT announcements.
@@ -119,7 +139,6 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
-        // Do not check for duplicates here
         // push_back makes a copy of the announcement
         incoming_announcements->push_back(ann);
         // For full path storage, append the cur ASN to propagated path
@@ -127,17 +146,15 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
     }
 }
 
-
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
  *
  * Approximates BGP best path selection based on announcement priority.
- * may need to put in incoming_announcements for speed
- * called by process_announcements and Extrapolator.give_ann_to_as_path()
+ * Called by process_announcements and Extrapolator.give_ann_to_as_path()
  * 
  * @param ann The announcement to be processed
  */ 
 void AS::process_announcement(Announcement &ann) {
-    // Check for existing annoucement for prefix
+    // Check for existing announcement for prefix
     auto search = all_anns->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
@@ -152,10 +169,41 @@ void AS::process_announcement(Announcement &ann) {
                 set->second->erase(asn);
             }
         }
-
     // Tiebraker for equal priority between old and new ann
     } else if (ann.priority == search->second.priority) {
-        // Default to lower ASN
+        // Random tiebraker
+        std::minstd_rand ran_bool(asn);
+        bool value = (ran_bool()%2 == 0);
+        if (value) {
+            // Use the new announcement
+            if (search_depref == depref_anns->end()) {
+                // Update inverse results
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                // Insert depref ann
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                      search->second));
+                search->second = ann;
+            } else {
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                search_depref->second = search->second;
+                search->second = ann;
+            }
+        } else {
+            // Use the old announcement
+            if (search_depref == depref_anns->end()) {
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                                                                      ann));
+            } else {
+                // Replace second best with the old priority announcement
+                search_depref->second = ann;
+            }
+        }
+        /**
+        // Default to lower ASN tiebraker
         if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
             if (search_depref == depref_anns->end()) {
                 // Update inverse results
@@ -181,7 +229,7 @@ void AS::process_announcement(Announcement &ann) {
                 search_depref->second = ann;
             }
         }
-
+        */
     // Otherwise check new announcements priority for best path selection
     } else if (ann.priority > search->second.priority) {
         if (search_depref == depref_anns->end()) {
@@ -217,7 +265,6 @@ void AS::process_announcement(Announcement &ann) {
     }
 }
 
-
 /** Iterate through incoming_announcements and keep only the best. 
  */
 void AS::process_announcements() {
@@ -230,7 +277,6 @@ void AS::process_announcements() {
     incoming_announcements->clear();
 }
 
-
 /** Clear all announcement collections. 
  */
 void AS::clear_announcements() {
@@ -238,7 +284,6 @@ void AS::clear_announcements() {
     incoming_announcements->clear();
     depref_anns->clear();
 }
-
 
 /** Check if a monitor announcement is already recv'd by this AS. 
  *
@@ -252,7 +297,6 @@ bool AS::already_received(Announcement &ann) {
     return (search == all_anns->end()) ? false : true;
 }
 
-
 /** Insertion operator for AS class.
  *
  * @param os
@@ -263,22 +307,21 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
     os << "ASN: " << as.asn << std::endl << "Rank: " << as.rank
         << std::endl << "Providers: ";
     for (auto &provider : *as.providers) {
-        os << provider << " ";
+        os << provider << ' ';
     }
-    os << std::endl;
+    os << '\n';
     os << "Peers: ";
     for (auto &peer : *as.peers) {
-        os << peer << " ";
+        os << peer << ' ';
     }
-    os << std::endl;
+    os << '\n';
     os << "Customers: ";
     for (auto &customer : *as.customers) {
-        os << customer << " ";
+        os << customer << ' ';
     }
-    os << std::endl;
+    os << '\n';
     return os;
 }
-
 
 /** Streams announcements to an output stream in a .csv readable file format.
  *
@@ -292,7 +335,6 @@ std::ostream& AS::stream_announcements(std::ostream &os){
     }
     return os;
 }
-
 
 /** Streams depref announcements to an output stream in a .csv readable file format.
  *

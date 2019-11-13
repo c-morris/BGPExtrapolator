@@ -1,3 +1,26 @@
+/*************************************************************************
+ * This file is part of the BGP Extrapolator.
+ *
+ * Developed for the SIDR ROV Forecast.
+ * This package includes software developed by the SIDR Project
+ * (https://sidr.engr.uconn.edu/).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #include "SQLQuerier.h"
 
 SQLQuerier::SQLQuerier(std::string a, 
@@ -49,7 +72,6 @@ void SQLQuerier::read_config(){
             config.insert(std::pair<std::string,std::string>(var_name, value));
         }
 
-        // TODO Add additional config options to this?
         for (auto const& setting : config){
             if(setting.first == "user") {
                 user = setting.second;
@@ -66,7 +88,8 @@ void SQLQuerier::read_config(){
             } else if(setting.first == "port") {
                 port = setting.second;
             } else {
-                std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
+                // This outputs extraneous setting found in the config file
+                // std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
             }
         }
     } else {
@@ -107,7 +130,7 @@ void SQLQuerier::close_connection(){
 }
 
 
-/** TODO
+/** Executes a give SQL statement
  *
  *  @param sql
  *  @param insert
@@ -170,7 +193,7 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
  */
 pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + announcements_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
     sql += " WHERE prefix = \'" + cidr + "\';";
     return execute(sql);
 }
@@ -194,7 +217,7 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p){
  */
 pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + announcements_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
     return execute(sql);
 }
@@ -336,7 +359,7 @@ void SQLQuerier::clear_inverse_from_db(){
  */
 void SQLQuerier::create_results_tbl(){
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table 
-                      + " (asn bigint, prefix cidr, origin bigint, as_path bigint[],\
+                      + " (asn bigint, prefix cidr, origin bigint, as_path bigint[], time bigint,\
                       inference_l smallint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
     std::cout << "Creating results table..." << std::endl;
     execute(sql, false);
@@ -347,7 +370,7 @@ void SQLQuerier::create_results_tbl(){
  */
 void SQLQuerier::create_depref_tbl(){
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table 
-                      + " (asn bigint,prefix cidr, origin bigint, as_path bigint[],\
+                      + " (asn bigint,prefix cidr, origin bigint, as_path bigint[], time bigint,\
                       inference_l smallint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
     std::cout << "Creating depref table..." << std::endl;
     execute(sql, false);
@@ -371,7 +394,7 @@ void SQLQuerier::create_inverse_results_tbl(){
  */
 void SQLQuerier::copy_results_to_db(std::string file_name){
     std::string sql = std::string("COPY " + results_table 
-                      + "(asn, prefix, origin, as_path, inference_l)"
+                      + "(asn, prefix, origin, as_path, time, inference_l)"
                       + "FROM '" + file_name + "' WITH (FORMAT csv)");
     execute(sql);
 }
@@ -381,7 +404,7 @@ void SQLQuerier::copy_results_to_db(std::string file_name){
  */
 void SQLQuerier::copy_depref_to_db(std::string file_name){
     std::string sql = std::string("COPY " + depref_table 
-                      + "(asn, prefix, origin, as_path, inference_l)"
+                      + "(asn, prefix, origin, as_path, time, inference_l)"
                       + "FROM '" + file_name + "' WITH (FORMAT csv)");
     execute(sql);
 }
