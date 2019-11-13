@@ -46,7 +46,7 @@ struct Announcement {
     Announcement(uint32_t aorigin, 
                  uint32_t aprefix, 
                  uint32_t anetmask,
-                 uint32_t from_asn
+                 uint32_t from_asn,
                  int64_t timestamp = 0) {
         prefix.addr = aprefix;
         prefix.netmask = anetmask;
@@ -67,7 +67,7 @@ struct Announcement {
                  uint32_t length, 
                  double pr, 
                  const std::vector<uint32_t> &path,
-                 int64_t timestamp,
+                 int64_t timestamp = 0,
                  bool a_from_monitor = false)
                  : Announcement(aorigin, 
                                 aprefix, 

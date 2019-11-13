@@ -444,7 +444,8 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
     Announcement ann_to_check_for(origin_asn,
                                   prefix.addr,
                                   prefix.netmask,
-                                  0); 
+                                  0,
+                                  timestamp); 
     
     // Full path pointer
     std::vector<uint32_t> cur_path;
@@ -477,6 +478,7 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
                                     0,
                                     priority,
                                     cur_path,
+                                    timestamp,
                                     true);
     // Send the announcement to the current AS
     origin->process_announcement(ann);
@@ -645,8 +647,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                                                      asn,
                                                      cur_len,
                                                      priority,
-                                                     ann.second.tstamp,
-                                                     cur_path));
+                                                     cur_path,
+                                                     ann.second.tstamp));
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -689,8 +691,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                                                  asn,
                                                  cur_len,
                                                  priority,
-                                                 ann.second.tstamp,
-                                                 cur_path));
+                                                 cur_path,
+                                                 ann.second.tstamp));
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -729,8 +731,8 @@ void Extrapolator::send_all_announcements(uint32_t asn,
                                                      asn,
                                                      cur_len,
                                                      priority,
-                                                     ann.second.tstamp,
-                                                     cur_path));
+                                                     cur_path,
+                                                     ann.second.tstamp));
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {
