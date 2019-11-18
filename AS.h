@@ -32,6 +32,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <random>
 #include <iostream>
 
 #include "Announcement.h"
@@ -69,12 +70,14 @@ public:
         std::set<uint32_t> *cust=NULL);
     ~AS();
     
+    bool get_random(); 
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);
     void process_announcement(Announcement &ann);
     void clear_announcements();
     bool already_received(Announcement &ann);
+    void delete_ann(Announcement &ann);
     void printDebug();
     void process_announcements();
     void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
@@ -82,5 +85,8 @@ public:
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
     std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
+private:
+    // Random Number Generator
+    std::minstd_rand ran_bool;
 };
 #endif

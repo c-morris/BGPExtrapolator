@@ -67,7 +67,6 @@ void SQLQuerier::read_config(){
             config.insert(std::pair<std::string,std::string>(var_name, value));
         }
 
-        // TODO Add additional config options to this?
         for (auto const& setting : config){
             if(setting.first == "user") {
                 user = setting.second;
@@ -84,7 +83,8 @@ void SQLQuerier::read_config(){
             } else if(setting.first == "port") {
                 port = setting.second;
             } else {
-                std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
+                // This outputs extraneous setting found in the config file
+                // std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
             }
         }
     } else {
@@ -125,7 +125,7 @@ void SQLQuerier::close_connection(){
 }
 
 
-/** TODO
+/** Executes a give SQL statement
  *
  *  @param sql
  *  @param insert
@@ -188,7 +188,7 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
  */
 pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + announcements_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
     sql += " WHERE prefix = \'" + cidr + "\';";
     return execute(sql);
 }
@@ -212,7 +212,7 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p){
  */
 pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + announcements_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
     return execute(sql);
 }
@@ -328,7 +328,7 @@ void SQLQuerier::create_results_tbl(){
     */
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
-    bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
+    bigint, time bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
     std::cout << "Creating results table..." << std::endl;
     execute(sql, false);
 }
@@ -339,7 +339,7 @@ void SQLQuerier::create_results_tbl(){
 void SQLQuerier::create_depref_tbl(){
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
-    bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
+    bigint, time bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
     std::cout << "Creating depref table..." << std::endl;
     execute(sql, false);
 }
@@ -361,7 +361,7 @@ void SQLQuerier::create_inverse_results_tbl(){
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
 void SQLQuerier::copy_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn)") +
+    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn, time)") +
                                   "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
@@ -370,7 +370,7 @@ void SQLQuerier::copy_results_to_db(std::string file_name){
 /** Takes a .csv filename and bulk copies all elements to the depref table.
  */
 void SQLQuerier::copy_depref_to_db(std::string file_name){
-    std::string sql = std::string("COPY " + depref_table + "(asn, prefix, origin, received_from_asn)") +
+    std::string sql = std::string("COPY " + depref_table + "(asn, prefix, origin, received_from_asn, time)") +
                                   "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
