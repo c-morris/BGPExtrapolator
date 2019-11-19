@@ -49,7 +49,6 @@ public:
     uint32_t it_size;
     ASGraph *graph;
     SQLQuerier *querier;
-    std::vector<std::thread> *threads;
 
     Extrapolator(bool invert_results=true, 
                  bool store_depref=false, 
@@ -65,18 +64,21 @@ public:
     void populate_blocks(Prefix<Integer>*, 
                          std::vector<Prefix<>*>*, 
                          std::vector<Prefix<>*>*);
-    void send_all_announcements(uint32_t asn, 
-                                bool to_providers = false, 
-                                bool to_peers = false, 
-                                bool to_customers = false);
-    void insert_announcements(std::vector<Prefix<>> *prefixes);
-    void prop_anns_sent_to_peers_providers();
-    std::vector<uint32_t>* parse_path(std::string path_as_string);
+    std::vector<uint32_t>* parse_path(std::string path_as_string); 
+    void extrapolate_blocks(uint32_t announcement_count, 
+                            int iteration, 
+                            bool subnet, 
+                            auto const& prefix_set);
+    bool find_loop(std::vector<uint32_t>*);
     void propagate_up();
     void propagate_down();
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
                              Prefix<> prefix,
                              int64_t timestamp = 0);
+    void send_all_announcements(uint32_t asn, 
+                                bool to_providers = false, 
+                                bool to_peers = false, 
+                                bool to_customers = false);
     void save_results(int iteration);
     void invert_results(void);
 };
