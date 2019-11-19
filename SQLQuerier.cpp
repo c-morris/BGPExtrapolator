@@ -194,7 +194,7 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
 pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p){
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
-    sql += " WHERE prefix = \'" + cidr + "\';";
+    sql += " WHERE prefix = \'" + cidr + "\' ORDER BY time ASC;";
     return execute(sql);
 }
 
@@ -218,7 +218,7 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p){
 pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
-    sql += " WHERE prefix <<= \'" + cidr + "\';";
+    sql += " WHERE prefix <<= \'" + cidr + "\' ORDER BY time ASC;";
     return execute(sql);
 }
 

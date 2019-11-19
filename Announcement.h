@@ -82,6 +82,9 @@ struct Announcement {
         as_path = path;
     }
 
+    // TODO define .cpp file
+    void set_path(const std::vector<uint32_t> &path);
+
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.

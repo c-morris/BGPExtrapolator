@@ -450,10 +450,11 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
     // Full path pointer
     std::vector<uint32_t> cur_path;
 
-    // If ASN not in graph, continue
+    // If ASN not in graph, return
     if (graph->ases->find(origin_asn) == graph->ases->end()) {
         return;
     }
+
     // Translate ASN to it's supernode
     uint32_t origin_p_asn = graph->translate_asn(origin_asn);
     
@@ -462,11 +463,30 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
 
     // Get the origin AS
     AS *origin = graph->ases->find(origin_p_asn)->second;
+    
     // Check if already received this prefix
     if (origin->already_received(ann_to_check_for)) {
-        return;
-    }
+        // Find the announcement for current prefix
+        auto search = origin->all_anns->find(ann_to_check_for.prefix);
         
+        // If the current timestamp is newer (worse)
+        if (ann_to_check_for.tstamp > search->second.tstamp) {
+            // Skip it
+            return;
+        } else if (ann_to_check_for.tstamp == search->second.tstamp) {
+            // Random tie breaker for equal timestamp
+            bool value = origin->get_random();
+            if (value) {
+                return;
+            } else {
+                origin->delete_ann(ann_to_check_for);
+            }
+        } else {
+            // Delete newer (worse) MRT announcement, proceed with seeding
+            origin->delete_ann(ann_to_check_for);
+        }
+    }
+    
     // This is how priority is calculated
     double priority = 3;
     uint32_t received_from_asn = origin_p_asn;
@@ -492,6 +512,75 @@ void Extrapolator::give_origin_to_as_path(std::vector<uint32_t>* as_path, Prefix
     }
 }
 
+/** Fixes the incorrectly propagated full paths of MRT announcements.
+ *
+ * @param cur_as Pointer to the AS that sent old announcements.
+ * @param as_path New AS path with the current AS appended.
+ * @param ann_to_check_for Announcement with prefix/origin.
+ */
+void Extrapolator::fix_path(AS* cur_as, std::vector<uint32_t> const& as_path, Announcement const& ann_to_check_for) {
+    // For each relation at the current AS, fix the path recursively
+    
+    // For providers
+    for (uint32_t provider_asn : *cur_as->providers) {
+        // For each provider, fix path
+        
+        // Get the neighbor
+        AS *neighbor = graph->ases->find(provider_asn)->second;
+
+        // Get the neighbors announcement
+        auto neighbor_ann = neighbor->all_anns->find(ann_to_check_for.prefix);
+        
+        // If neighbors announcement came from cur_as
+        if (neighbor_ann->second.received_from_asn == cur_as->asn) {
+            std::vector<uint32_t> new_path = as_path;
+            new_path.push_back(provider_asn);
+            neighbor_ann->second.as_path = new_path;
+            // Recursively fix path at neighbor
+            fix_path(neighbor, new_path, ann_to_check_for);
+        }
+    }
+    
+    // For customers
+    for (uint32_t customer_asn : *cur_as->customers) {
+        // For each provider, fix path
+        
+        // Get the neighbor
+        AS *neighbor = graph->ases->find(customer_asn)->second;
+
+        // Get the neighbors announcement
+        auto neighbor_ann = neighbor->all_anns->find(ann_to_check_for.prefix);
+        
+        // If neighbors announcement came from cur_as
+        if (neighbor_ann->second.received_from_asn == cur_as->asn) {
+            std::vector<uint32_t> new_path = as_path;
+            new_path.push_back(customer_asn);
+            neighbor_ann->second.as_path = new_path;
+            // Recursively fix path at neighbor
+            fix_path(neighbor, new_path, ann_to_check_for);
+        }
+    }
+
+    // For peers
+    for (uint32_t peer_asn : *cur_as->peers) {
+        // For each provider, fix path
+        
+        // Get the neighbor
+        AS *neighbor = graph->ases->find(peer_asn)->second;
+
+        // Get the neighbors announcement
+        auto neighbor_ann = neighbor->all_anns->find(ann_to_check_for.prefix);
+        
+        // If neighbors announcement came from cur_as
+        if (neighbor_ann->second.received_from_asn == cur_as->asn) {
+            std::vector<uint32_t> new_path = as_path;
+            new_path.push_back(peer_asn);
+            neighbor_ann->second.as_path = new_path;
+            // Recursively fix path at neighbor
+            fix_path(neighbor, new_path, ann_to_check_for);
+        }
+    }
+}
 
 /** Seed announcement on all ASes on as_path. 
  *
@@ -533,6 +622,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         
         // Get the current AS on the path
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
+        
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
             // TODO Combine find() functions
@@ -549,10 +639,12 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                     continue;
                 } else {
                     as_on_path->delete_ann(ann_to_check_for);
+                    fix_path(as_on_path, cur_path, ann_to_check_for);
                 }
             } else {
                 // Delete worse MRT announcement, proceed with seeding
                 as_on_path->delete_ann(ann_to_check_for);
+                fix_path(as_on_path, cur_path, ann_to_check_for);
             }
         }
         

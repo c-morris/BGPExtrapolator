@@ -71,28 +71,26 @@ public:
     template <typename Integer>
     void populate_blocks(Prefix<Integer>*, 
                          std::vector<Prefix<>*>*, 
-                         std::vector<Prefix<>*>*);
-    
+                         std::vector<Prefix<>*>*); 
     void store_vf_ann(std::string,
                       uint32_t,
                       std::string);
-
+    std::vector<uint32_t>* parse_path(std::string path_as_string);
+    void give_origin_to_as_path(std::vector<uint32_t>* as_path, 
+                                Prefix<> prefix,
+                                int64_t timestamp = 0);
+    void fix_path(AS*, 
+                  std::vector<uint32_t> const&, 
+                  Announcement const&);
+    void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+                             Prefix<> prefix,
+                             int64_t timestamp = 0);
+    void propagate_up();
+    void propagate_down();
     void send_all_announcements(uint32_t asn, 
                                 bool to_providers = false, 
                                 bool to_peers = false, 
                                 bool to_customers = false);
-    
-    void insert_announcements(std::vector<Prefix<>> *prefixes);
-    void prop_anns_sent_to_peers_providers();
-    std::vector<uint32_t>* parse_path(std::string path_as_string);
-    void propagate_up();
-    void propagate_down();
-    void give_origin_to_as_path(std::vector<uint32_t>* as_path, 
-                                Prefix<> prefix,
-                                int64_t timestamp = 0);
-    void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
-                             Prefix<> prefix,
-                             int64_t timestamp = 0);
     void save_results(int iteration);
     void invert_results(void);
 };
