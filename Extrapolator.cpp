@@ -309,7 +309,7 @@ void Extrapolator::extrapolate_blocks(uint32_t announcement_count,
 
 /** Check for loops in the path and drop announcement if they exist
  */
-bool Extrapolator::find_loop(auto const& as_path) {
+bool Extrapolator::find_loop(std::vector<uint32_t>* as_path) {
     uint32_t prev = 0;
     bool loop = false;
     int sz = as_path->size();

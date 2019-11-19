@@ -69,7 +69,7 @@ public:
                             int iteration, 
                             bool subnet, 
                             auto const& prefix_set);
-    bool find_loop(auto const&);
+    bool find_loop(std::vector<uint32_t>*);
     void propagate_up();
     void propagate_down();
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
