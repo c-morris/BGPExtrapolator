@@ -93,14 +93,14 @@ BOOST_AUTO_TEST_CASE( ASGraph_combine_components_test ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_constructor ) {
         BOOST_CHECK( test_Extrapolator_constructor() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path ) {
+        BOOST_CHECK( test_give_ann_to_as_path() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up ) {
         BOOST_CHECK( test_propagate_up() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down ) {
         BOOST_CHECK( test_propagate_down() );
-}
-BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path ) {
-        BOOST_CHECK( test_give_ann_to_as_path() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );

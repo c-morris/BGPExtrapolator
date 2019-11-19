@@ -8,6 +8,9 @@
 *.obj
 bgp-extrapolator
 
+# Unit Test files
+graph.csv
+
 # Precompiled Headers
 *.gch
 *.pch
