@@ -41,15 +41,14 @@ bool test_process_announcement(){
     as.process_announcement(ann);
     if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
         old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
-        std::cout << "*** Weird Bug ***" << std::endl;
         return false;
     }
 
     // Check priority
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
     std::vector<uint32_t> path;
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 222, 0, 2.00, path);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 223, 0, 3.00, path);
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 222, 0, 200, path);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 223, 0, 300, path);
     as.process_announcement(a1);
     as.process_announcement(a2);
     if (as.all_anns->find(p)->second.received_from_asn != 223 ||
@@ -145,8 +144,8 @@ bool test_process_announcements(){
     AS as = AS();
     // build a vector of announcements
     std::vector<Announcement> vect = std::vector<Announcement>();
-    ann1.priority = 1.0;
-    ann2.priority = 2.0;
+    ann1.priority = 100;
+    ann2.priority = 200;
     ann2.from_monitor = true;
     vect.push_back(ann1);
     vect.push_back(ann2);
@@ -154,51 +153,51 @@ bool test_process_announcements(){
     // does it work if all_anns is empty?
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 1.0) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != 100) {
         std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;
     }
     
     // higher priority should overwrite lower priority
     vect.clear();
-    ann1.priority = 2.9;
+    ann1.priority = 290;
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 2.9) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
     }
     
     // lower priority should not overwrite higher priority
     vect.clear();
-    ann1.priority = 2.0;
+    ann1.priority = 200;
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 2.9) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
     }
 
     // one more test just to be sure
     vect.clear();
-    ann1.priority = 2.99;
+    ann1.priority = 299;
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 2.99) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != 299) {
         std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
     }
 
     // make sure ann2 doesn't get overwritten, ever, even with higher priority
     vect.clear();
-    ann2.priority = 3.0;
+    ann2.priority = 300;
     vect.push_back(ann2);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann2_prefix)->second.priority != 2.0) {
+    if (as.all_anns->find(ann2_prefix)->second.priority != 200) {
         std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
     }

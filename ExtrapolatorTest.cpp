@@ -25,6 +25,78 @@ bool test_Extrapolator_constructor() {
  *
  *  The test path vect is [3, 2, 5]. 
  */
+bool test_give_ann_to_as_path() {
+    Extrapolator e = Extrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    e.give_ann_to_as_path(as_path, p, 2);
+
+    // Test that monitor annoucements were received
+    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
+         e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
+         e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
+        return false;
+    }
+
+    // Test that only path received the announcement
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+        return false;
+    }
+
+    // Test timestamp tie breaking
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(1);
+    as_path_b->push_back(2);
+    as_path_b->push_back(4);
+    as_path_b->push_back(4);
+    e.give_ann_to_as_path(as_path_b, p, 1);
+
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.tstamp != 1) {
+        return false;
+    }
+    
+    // Test prepending calculation
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 298) {
+        std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second.priority << std::endl;
+        return false;
+    }
+
+    delete as_path;
+    delete as_path_b;
+    return true;
+}
+
+/** Test propagating up in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  The test path vect is [3, 2, 5]. 
+ */
 bool test_give_origin_to_as_path() {
     Extrapolator e = Extrapolator();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -64,56 +136,6 @@ bool test_give_origin_to_as_path() {
     return true;
 }
 
-/** Test seeding the graph with announcements from monitors. 
- *  Horizontal lines are peer relationships, vertical lines are customer-provider
- * 
- *    1
- *    |
- *    2--3
- *   /|   
- *  4 5--6 
- *
- *  The test path vect is [3, 2, 5]. 
- */
-bool test_give_ann_to_as_path() {
-    Extrapolator e = Extrapolator();
-    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
-    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
-    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
-    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
-    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
-    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
-    e.graph->add_relationship(2, 3, AS_REL_PEER);
-    e.graph->add_relationship(3, 2, AS_REL_PEER);
-    e.graph->add_relationship(5, 6, AS_REL_PEER);
-    e.graph->add_relationship(6, 5, AS_REL_PEER);
-    e.graph->decide_ranks();
-
-    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
-    as_path->push_back(3);
-    as_path->push_back(2);
-    as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p);
-
-    
-    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
-        return false;
-    }
-
-    if (e.graph->ases->find(1)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->size() == 0) {
-        return true;
-    }
-    delete as_path;
-    return false;
-}
 
 /** Test propagating up in the following test graph.
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
@@ -145,7 +167,7 @@ bool test_propagate_up() {
     
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     ann.from_monitor = true;
-    ann.priority = 2.9;
+    ann.priority = 290;
     e.graph->ases->find(5)->second->process_announcement(ann);
     e.propagate_up();
     e.propagate_up();
@@ -190,7 +212,7 @@ bool test_propagate_down() {
     
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     ann.from_monitor = true;
-    ann.priority = 2.9;
+    ann.priority = 290;
     e.graph->ases->find(2)->second->process_announcement(ann);
     e.propagate_down();
     e.propagate_down();
@@ -204,6 +226,7 @@ bool test_propagate_down() {
     }
     return false;
 }
+
 
 /** Test send_all_announcements in the following test graph.
  *  Horizontal lines are peer relationships, vertical lines are customer-provider

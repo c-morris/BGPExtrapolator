@@ -52,7 +52,6 @@ public:
     uint32_t vf_as;
     ASGraph *graph;
     SQLQuerier *querier;
-    std::vector<std::thread> *threads;
 
     Extrapolator(bool invert_results=true, 
                  bool store_depref=false, 
@@ -71,17 +70,22 @@ public:
     template <typename Integer>
     void populate_blocks(Prefix<Integer>*, 
                          std::vector<Prefix<>*>*, 
-                         std::vector<Prefix<>*>*); 
+                         std::vector<Prefix<>*>*);  
     void store_vf_ann(std::string,
                       uint32_t,
                       std::string);
-    std::vector<uint32_t>* parse_path(std::string path_as_string);
-    void give_origin_to_as_path(std::vector<uint32_t>* as_path, 
-                                Prefix<> prefix,
-                                int64_t timestamp = 0);
+    std::vector<uint32_t>* parse_path(std::string path_as_string); 
+    bool find_loop(std::vector<uint32_t>*);
+    void extrapolate_blocks(uint32_t&, 
+                            int&, 
+                            bool subnet, 
+                            auto const& prefix_set);
     void fix_path(AS*, 
                   std::vector<uint32_t> const&, 
                   Announcement const&);
+    void give_origin_to_as_path(std::vector<uint32_t>* as_path, 
+                                Prefix<> prefix,
+                                int64_t timestamp = 0);
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
                              Prefix<> prefix,
                              int64_t timestamp = 0);
@@ -92,6 +96,5 @@ public:
                                 bool to_peers = false, 
                                 bool to_customers = false);
     void save_results(int iteration);
-    void invert_results(void);
 };
 #endif

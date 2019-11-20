@@ -32,10 +32,11 @@
 
 #include "Prefix.h"
 
-struct Announcement {
+class Announcement {
+public:
     Prefix<> prefix;                // encoded with subnet mask
     uint32_t origin;                // origin ASN
-    double priority;                 // priority assigned based upon path
+    uint32_t priority;              // priority assigned based upon path
     uint32_t received_from_asn;     // ASN that sent the ann
     uint32_t inference_l;           // stores the path's inference length
     bool from_monitor = false;      // flag for seeded ann
@@ -54,7 +55,7 @@ struct Announcement {
         prefix.netmask = anetmask;
         origin = aorigin;
         received_from_asn = from_asn;
-        priority = 0.0;
+        priority = 0;
         inference_l = 0;
         from_monitor = false;
         tstamp = timestamp;
