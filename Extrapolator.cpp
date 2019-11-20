@@ -32,6 +32,7 @@
 int g_loop = 0;
 int g_ts_tb = 0;
 int g_broken_path = 0;
+int g_verification = 0; 
 
 Extrapolator::Extrapolator(bool invert_results,
                            bool store_depref,
@@ -118,7 +119,6 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     
     // Seed MRT announcements and propagate
     uint32_t announcement_count = 0; 
-    uint32_t verification_count = 0;
     int iteration = 0;
     
     auto ext_start = std::chrono::high_resolution_clock::now();
@@ -139,6 +139,7 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
+    std::cout << "Verification count: " << g_verification << std::endl;
     std::cout << "Loop count: " << g_loop << std::endl;
     std::cout << "Timestamp Tiebreak count: " << g_ts_tb << std::endl;
     std::cout << "Broken Path count: " << g_broken_path << std::endl;
@@ -332,7 +333,7 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                 
                 // Disclude the verification AS
                 if ((*as_path)[0] == vf_as) {
-                    verification_count += 1; 
+                    g_verification += 1; 
                     store_vf_ann(cur_prefix.to_cidr(), origin, path_as_string);
                 } else {
                     // Seed announcements along AS path
@@ -538,8 +539,6 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                   timestamp); 
     // Full path pointer
     std::vector<uint32_t> cur_path;
-
-    uint32_t i = 0;
     
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
