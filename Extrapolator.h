@@ -65,8 +65,8 @@ public:
                          std::vector<Prefix<>*>*, 
                          std::vector<Prefix<>*>*);
     std::vector<uint32_t>* parse_path(std::string path_as_string); 
-    void extrapolate_blocks(uint32_t announcement_count, 
-                            int iteration, 
+    void extrapolate_blocks(uint32_t&, 
+                            int&, 
                             bool subnet, 
                             auto const& prefix_set);
     bool find_loop(std::vector<uint32_t>*);

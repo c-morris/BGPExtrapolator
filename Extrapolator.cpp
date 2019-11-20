@@ -29,6 +29,10 @@
 #include <chrono>
 #include "Extrapolator.h"
 
+int g_loop = 0;
+int g_ts_tb = 0;
+int g_broken_path = 0;
+
 Extrapolator::Extrapolator(bool invert_results,
                            bool store_depref,
                            std::string a, 
@@ -47,7 +51,6 @@ Extrapolator::~Extrapolator(){
     delete graph;
     delete querier;
 }
-
 
 /** Performs all tasks necessary to propagate a set of announcements given:
  *      1) A populated mrt_announcements table
@@ -81,12 +84,12 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
         querier->clear_depref_from_db();
         querier->create_depref_tbl();
     }
-    querier->create_stubs_tbl();
     querier->clear_stubs_from_db();
-    querier->create_non_stubs_tbl();
+    querier->create_stubs_tbl();
     querier->clear_non_stubs_from_db();
-    querier->create_supernodes_tbl();
+    querier->create_non_stubs_tbl();
     querier->clear_supernodes_from_db();
+    querier->create_supernodes_tbl();
     
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
@@ -122,6 +125,9 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
+    std::cout << "Loop count: " << g_loop << std::endl;
+    std::cout << "Timestamp Tiebreak count: " << g_ts_tb << std::endl;
+    std::cout << "Broken Path count: " << g_broken_path << std::endl;
 }
 
 
@@ -224,10 +230,26 @@ std::vector<uint32_t>* Extrapolator::parse_path(std::string path_as_string) {
     return as_path;
 }
 
+/** Check for loops in the path and drop announcement if they exist
+ */
+bool Extrapolator::find_loop(std::vector<uint32_t>* as_path) {
+    uint32_t prev = 0;
+    bool loop = false;
+    int sz = as_path->size();
+    for (int i = 0; i < (sz-1) && !loop; i++) {
+        prev = as_path->at(i);
+        for (int j = i+1; j < sz && !loop; j++) {
+            loop = as_path->at(i) == as_path->at(j) && as_path->at(j) != prev;
+            prev = as_path->at(j);
+        }
+    }
+    return loop;
+}
+
 /** Process a set of prefix or subnet blocks in iterations.
  */
-void Extrapolator::extrapolate_blocks(uint32_t announcement_count, 
-                                      int iteration, 
+void Extrapolator::extrapolate_blocks(uint32_t &announcement_count, 
+                                      int &iteration, 
                                       bool subnet, 
                                       auto const& prefix_set) {
     // For each unprocessed block of announcements 
@@ -268,6 +290,7 @@ void Extrapolator::extrapolate_blocks(uint32_t announcement_count,
                 // Check for loops in the path and drop announcement if they exist
                 bool loop = find_loop(as_path);
                 if (loop) {
+                    g_loop++;
                     continue;
                 }
 
@@ -305,22 +328,6 @@ void Extrapolator::extrapolate_blocks(uint32_t announcement_count,
             auto prefix_finish = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> q = prefix_finish - prefix_start;
         }
-}
-
-/** Check for loops in the path and drop announcement if they exist
- */
-bool Extrapolator::find_loop(std::vector<uint32_t>* as_path) {
-    uint32_t prev = 0;
-    bool loop = false;
-    int sz = as_path->size();
-    for (int i = 0; i < (sz-1) && !loop; i++) {
-        prev = as_path->at(i);
-        for (int j = i+1; j < sz && !loop; j++) {
-            loop = as_path->at(i) == as_path->at(j) && as_path->at(j) != prev;
-            prev = as_path->at(j);
-        }
-    }
-    return loop;
 }
 
 /** Seed announcement on all ASes on as_path. 
@@ -374,9 +381,9 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                     continue;
                 } else {
                     // Position of previous AS on path
-                    int pos = path_l - i + 1;
+                    uint32_t pos = path_l - i + 1;
                     // Prepending check, use original priority
-                    if (as_path->at(pos) == as_on_path->asn) {
+                    if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
                         continue;
                     }
                     as_on_path->delete_ann(ann_to_check_for);
@@ -440,7 +447,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             }
         } else {
             // Report the broken path
-            std::cerr << "Broken path for " << prefix.to_cidr() << std::endl; 
+            //std::cerr << "Broken path for " << *(it - 1) << ", " << *it << std::endl;
+            g_broken_path++;
         }
     }
 }
@@ -506,21 +514,25 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         std::vector<Announcement> anns_to_providers;
         for (auto &ann : *source_as->all_anns) {
             // Do not propagate any announcements from peers/providers
-            // Priority is reduced by 0.01 per path length
-            // Base priority is 2 for providers
+            // Priority is reduced by 1 per path length
+            // Base priority is 200 for customer to provider
             // Ignore announcements not from a customer
-            if (ann.second.priority < 2) {
+            if (ann.second.priority < 200) {
                 continue;
             }
-            double priority = ann.second.priority;
-            // Set the priority of the announcement 
-            if (priority - floor(priority) == 0) {
-                // Reset monitor priority to be received from a customer
-                priority = 2.99;
+            
+            // Set the priority of the announcement at destination 
+            uint32_t old_priority = ann.second.priority;
+            uint32_t path_len_weight = old_priority % 100;
+            if (path_len_weight == 0) {
+                // For MRT ann at origin: old_priority = 400
+                path_len_weight = 99;
             } else {
-                // Reset priority to its length fraction from a customer
-                priority = priority - floor(priority) - 0.01 + 2;
+                // Sub 1 for the current hop
+                path_len_weight -= 1;
             }
+            uint32_t priority = 200 + path_len_weight;
+            
             // Push announcement with new priority to ann vector
             anns_to_providers.push_back(Announcement(ann.second.origin,
                                                      ann.second.prefix.addr,
@@ -543,21 +555,26 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         std::vector<Announcement> anns_to_peers;
         for (auto &ann : *source_as->all_anns) {
             // Do not propagate any announcements from peers/providers
-            // Priority is reduced by 0.01 per path length
-            // Base priority is 1 for peers
+            // Priority is reduced by 1 per path length
+            // Base priority is 100 for peers to peers
 
             // Ignore announcements not from a customer
-            if (ann.second.priority < 2) {
+            if (ann.second.priority < 200) {
                 continue;
             }
-            double priority = ann.second.priority;
-            if(priority - floor(priority) == 0) {
-                // Reset monitor priority to be received from a customer
-                priority = 1.99;
+
+            // Set the priority of the announcement at destination 
+            uint32_t old_priority = ann.second.priority;
+            uint32_t path_len_weight = old_priority % 100;
+            if (path_len_weight == 0) {
+                // For MRT ann at origin: old_priority = 400
+                path_len_weight = 99;
             } else {
-                // Reset priority to its length fraction from a customer
-                priority = priority - floor(priority) - 0.01 + 1;
+                // Sub 1 for the current hop
+                path_len_weight -= 1;
             }
+            uint32_t priority = 100 + path_len_weight;
+            
             anns_to_peers.push_back(Announcement(ann.second.origin,
                                                  ann.second.prefix.addr,
                                                  ann.second.prefix.netmask,
@@ -579,17 +596,22 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         std::vector<Announcement> anns_to_customers;
         for (auto &ann : *source_as->all_anns) {
             // Propagate all announcements to customers
-            // Priority is reduced by 0.01 per path length
-            // Base priority is 0 for customers
-            // Reset the priority to be from a provider
-            double priority = ann.second.priority;
-            if (priority - floor(priority) == 0) {
-                // Reset monitor priority to be received from a provider
-                priority = 0.99;
+            // Priority is reduced by 1 per path length
+            // Base priority is 0 for provider to customers
+            
+            
+            // Set the priority of the announcement at destination 
+            uint32_t old_priority = ann.second.priority;
+            uint32_t path_len_weight = old_priority % 100;
+            if (path_len_weight == 0) {
+                // For MRT ann at origin: old_priority = 400
+                path_len_weight = 99;
             } else {
-                // Reset priority to its length fraction from a provider
-                priority = priority - floor(priority) - 0.01;
+                // Sub 1 for the current hop
+                path_len_weight -= 1;
             }
+            uint32_t priority = path_len_weight;
+
             anns_to_customers.push_back(Announcement(ann.second.origin,
                                                      ann.second.prefix.addr,
                                                      ann.second.prefix.netmask,
