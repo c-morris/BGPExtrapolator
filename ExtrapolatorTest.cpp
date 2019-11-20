@@ -116,7 +116,7 @@ bool test_propagate_up() {
     
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     ann.from_monitor = true;
-    ann.priority = 2.9;
+    ann.priority = 290;
     e.graph->ases->find(5)->second->process_announcement(ann);
     e.propagate_up();
     e.propagate_up();
@@ -161,7 +161,7 @@ bool test_propagate_down() {
     
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     ann.from_monitor = true;
-    ann.priority = 2.9;
+    ann.priority = 290;
     e.graph->ases->find(2)->second->process_announcement(ann);
     e.propagate_down();
     e.propagate_down();
