@@ -226,7 +226,7 @@ pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
 /** Clears all rows from the stubs table.
  */
 void SQLQuerier::clear_stubs_from_db(){
-    std::string sql = std::string("DELETE FROM " STUBS_TABLE ";");
+    std::string sql = std::string("DROP TABLE IF EXISTS " STUBS_TABLE ";");
     execute(sql);
 }
 
@@ -234,7 +234,7 @@ void SQLQuerier::clear_stubs_from_db(){
 /** Clears all rows from the non-stubs table.
  */
 void SQLQuerier::clear_non_stubs_from_db(){
-    std::string sql = std::string("DELETE FROM " NON_STUBS_TABLE ";");
+    std::string sql = std::string("DROP TABLE IF EXISTS " NON_STUBS_TABLE ";");
     execute(sql);
 }
 
@@ -242,7 +242,7 @@ void SQLQuerier::clear_non_stubs_from_db(){
 /** Clears all rows from the supernodes table.
  */
 void SQLQuerier::clear_supernodes_from_db(){
-    std::string sql = std::string("DELETE FROM " SUPERNODES_TABLE ";");
+    std::string sql = std::string("DROP TABLE IF EXISTS " SUPERNODES_TABLE ";");
     execute(sql);
 }
 
@@ -250,7 +250,7 @@ void SQLQuerier::clear_supernodes_from_db(){
 /** Clears all rows from the verification control table. 
  */
 void SQLQuerier::clear_vf_from_db(){
-    std::string sql = std::string("DELETE FROM " + verification_table + ";");
+    std::string sql = std::string("DELETE FROM IF EXISTS " + verification_table + ";");
     execute(sql);
 }
 

@@ -41,6 +41,7 @@ bool test_process_announcement(){
     as.process_announcement(ann);
     if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
         old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
+        std::cout << "*** Weird Bug ***" << std::endl;
         return false;
     }
 
@@ -57,18 +58,6 @@ bool test_process_announcement(){
         return false;
     }
     
-    /** Check tiebraker default
-    Prefix<> p2 = Prefix<>("1.1.1.1", "255.255.255.0");
-    Announcement a3 = Announcement(111, p2.addr, p2.netmask, 222, 0, 3.00, path);
-    Announcement a4 = Announcement(111, p2.addr, p2.netmask, 223, 0, 3.00, path);
-    as.process_announcement(a3);
-    as.process_announcement(a4);
-    if (as.all_anns->find(p2)->second.received_from_asn != 222 ||
-        as.depref_anns->find(p2)->second.received_from_asn != 223) {
-        std::cerr << "Failed tiebraker priority check." << std::endl;
-        return false;
-    }
-    */
     return true;
 }
 

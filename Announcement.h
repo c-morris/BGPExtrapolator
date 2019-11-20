@@ -35,7 +35,7 @@
 struct Announcement {
     Prefix<> prefix;                // encoded with subnet mask
     uint32_t origin;                // origin ASN
-    float priority;                 // priority assigned based upon path
+    double priority;                 // priority assigned based upon path
     uint32_t received_from_asn;     // ASN that sent the ann
     uint32_t inference_l;           // stores the path's inference length
     bool from_monitor = false;      // flag for seeded ann
