@@ -207,34 +207,6 @@ void AS::process_announcement(Announcement &ann) {
                 search_depref->second = ann;
             }
         }
-        /**
-        // Default to lower ASN tiebraker
-        if (ann.received_from_asn < search->second.received_from_asn) {     // New ASN is lower
-            if (search_depref == depref_anns->end()) {
-                // Update inverse results
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
-                                                                      search->second));
-                search->second = ann;
-            } else {
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                search_depref->second = search->second;
-                search->second = ann;
-            }
-        } else {    // Old ASN is lower
-            if (search_depref == depref_anns->end()) {
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
-                                                                      ann));
-            } else {
-                // Replace second best with the old priority announcement
-                search_depref->second = ann;
-            }
-        }
-        */
     // Otherwise check new announcements priority for best path selection
     } else if (ann.priority > search->second.priority) {
         if (search_depref == depref_anns->end()) {

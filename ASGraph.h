@@ -26,8 +26,8 @@
 
 // Define relationship macros
 #define AS_REL_PROVIDER 0
-#define AS_REL_PEER 1
-#define AS_REL_CUSTOMER 2
+#define AS_REL_PEER 100
+#define AS_REL_CUSTOMER 200
 
 class SQLQuerier;
 

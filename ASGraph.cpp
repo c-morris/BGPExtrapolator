@@ -116,19 +116,6 @@ void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn,
 }
 
 
-
-/** Process without removing stubs (doesn't need querier).
- *
- *  TODO Unused?
- */
-void ASGraph::process(){
-    tarjan();
-    combine_components();
-    decide_ranks();
-    return;
-}
-
-
 /** Process with removing stubs (needs querier to save them).
  */
 void ASGraph::process(SQLQuerier *querier){

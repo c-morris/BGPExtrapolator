@@ -221,7 +221,7 @@ pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
 /** this should use the STUBS_TABLE macro
  */
 void SQLQuerier::clear_stubs_from_db(){
-    std::string sql = std::string("DELETE FROM IF EXISTS " STUBS_TABLE ";");
+    std::string sql = std::string("DROP TABLE IF EXISTS " STUBS_TABLE ";");
     execute(sql);
 }
 
@@ -229,7 +229,7 @@ void SQLQuerier::clear_stubs_from_db(){
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
 void SQLQuerier::clear_non_stubs_from_db(){
-    std::string sql = std::string("DELETE FROM IF EXISTS " NON_STUBS_TABLE ";");
+    std::string sql = std::string("DROP TABLE IF EXISTS " NON_STUBS_TABLE ";");
     execute(sql);
 }
 
@@ -237,7 +237,7 @@ void SQLQuerier::clear_non_stubs_from_db(){
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
 void SQLQuerier::clear_supernodes_from_db(){
-    std::string sql = std::string("DELETE FROM IF EXISTS " SUPERNODES_TABLE ";");
+    std::string sql = std::string("DROP TABLE IF EXISTS " SUPERNODES_TABLE ";");
     execute(sql);
 }
 

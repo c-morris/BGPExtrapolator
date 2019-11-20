@@ -65,12 +65,19 @@ bool test_give_ann_to_as_path() {
 
     // Test timestamp tie breaking
     std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
-    as_path_b->push_back(4);
-    as_path_b->push_back(2);
     as_path_b->push_back(1);
+    as_path_b->push_back(2);
+    as_path_b->push_back(4);
+    as_path_b->push_back(4);
     e.give_ann_to_as_path(as_path_b, p, 1);
 
     if (e.graph->ases->find(2)->second->all_anns->find(p)->second.tstamp != 1) {
+        return false;
+    }
+    
+    // Test prepending calculation
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 298) {
+        std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second.priority << std::endl;
         return false;
     }
 
