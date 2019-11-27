@@ -29,6 +29,7 @@
 #include <string>
 #include <iostream>
 
+
 // Use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
 class Prefix {
@@ -260,4 +261,3 @@ public:
     }
 };
 #endif
-

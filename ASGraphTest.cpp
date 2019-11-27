@@ -7,6 +7,7 @@
 /** Unit tests for ASGraph.h and ASGraph.cpp
  */
 
+
 /** Test adding a AS relationship to graph by building this test graph.
  *  AS2 is a provider to AS1, which is a peer to AS3.
  *
@@ -38,13 +39,13 @@ bool test_add_relationship(){
     return true;
 }
 
-
 /** Test translating a ASN into it's supernode Identifier
  *
  * @return true if successful, otherwise false.
  */
 bool test_translate_asn(){
     ASGraph graph = ASGraph();
+    // add_relation(Target, Neighber, Relation of neighbor to target)
     // Cycle 
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);
@@ -73,33 +74,6 @@ bool test_translate_asn(){
         return false;
     return true;
 }
-
-
-/** Test generation of ASGraph from database tables.
- *
- * @return true if successful, otherwise false.
- */
-bool test_create_graph_from_db() {
-    ASGraph* graph = new ASGraph();
-    SQLQuerier* q = new SQLQuerier("mrt_w_roas", "test_results", "test_results", "depref_results");
-    graph->create_graph_from_db(q);
-    
-    std::ofstream outfile;
-    std::string fname = "graph";
-    fname += ".csv";
-    outfile.open(fname, std::ios::out | std::ios::trunc);
-    /** TODO print graph to csv for verification
-     */
-    for (auto &as : *graph->ases) {
-        AS* cur_AS = as.second;
-        for (auto &provider : *cur_AS->providers) {
-            outfile << provider << ", "<< cur_AS->asn << std::endl;
-        }
-    }
-    outfile.close();
-    return true;
-}
-
 
 /** Test assignment of ranks to each AS in the graph. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
@@ -145,7 +119,6 @@ bool test_decide_ranks(){
     return false;
 }
 
-
 /** Test removing stub ASes from the graph. 
  * 
  *    1
@@ -158,6 +131,7 @@ bool test_decide_ranks(){
  */
 bool test_remove_stubs(){
     ASGraph graph = ASGraph();
+    SQLQuerier *querier = new SQLQuerier("mrt_announcements", "test_results", "test_results", "test_results_d");
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);
     graph.add_relationship(3, 1, AS_REL_PROVIDER);
@@ -168,9 +142,24 @@ bool test_remove_stubs(){
     graph.add_relationship(3, 6, AS_REL_CUSTOMER);
     graph.add_relationship(4, 3, AS_REL_PEER);
     graph.add_relationship(3, 4, AS_REL_PEER);
+    graph.remove_stubs(querier);
+    delete querier;
+    // Stub removal
+    if (graph.ases->find(2) != graph.ases->end() ||
+        graph.ases->find(5) != graph.ases->end() ||
+        graph.ases->find(6) != graph.ases->end()) {
+        std::cerr << "Failed stubs removal check." << std::endl;
+        return false;
+    }
+    // Stub translation
+    if (graph.translate_asn(2) != 1 ||
+        graph.translate_asn(5) != 3 ||
+        graph.translate_asn(6) != 3) {
+        std::cerr << "Failed stubs translation check." << std::endl;
+        return false;
+    }
     return true;
 }
-
 
 /** Test the Tarjan algorithm for detecting strongly connected components.
  * Horizontal lines are peer relationships, vertical lines are customer-provider
@@ -265,7 +254,6 @@ bool test_tarjan(){ // includes tarjan_helper()
     }
     return true;
 }
-
 
 /** Test the combining of strongly connected components into supernodes.
  * 

@@ -5,6 +5,31 @@
 /** Unit tests for AS.cpp
  */
 
+/** Test deterministic randomness within the AS scope.
+ *
+ * @return True if successful, otherwise false
+ */
+bool test_get_random(){
+    // Check randomness
+    AS *as_a = new AS(832);
+    AS *as_b = new AS(832);
+    bool ran_a_1 = as_a->get_random();
+    bool ran_a_2 = as_a->get_random();
+    bool ran_a_3 = as_a->get_random();
+    bool ran_b_1 = as_b->get_random();
+    bool ran_b_2 = as_b->get_random();
+    bool ran_b_3 = as_b->get_random();
+    delete as_a;
+    delete as_b;
+    if (ran_a_1 != ran_b_1 || ran_a_2 != ran_b_2 || ran_a_3 != ran_b_3) {
+        std::cerr << ran_a_1 << " != " << ran_b_1 << std::endl;
+        std::cerr << ran_a_2 << " != " << ran_b_2 << std::endl;
+        std::cerr << ran_a_3 << " != " << ran_b_3 << std::endl;
+        std::cerr << "Failed deterministic randomness check." << std::endl;
+        return false;
+    }
+    return true;
+}
 
 /** Test adding neighbor AS to the appropriate set based on the relationship.
  *
@@ -18,59 +43,32 @@ bool test_add_neighbor(){
     if (as.providers->find(1) == as.providers->end() ||
         as.peers->find(2) == as.peers->end() ||
         as.customers->find(3) == as.customers->end()) {
+        std::cerr << "Failed add neighbor check." << std::endl;
         return false;
     }
     return true;
 }
 
-
-/** Test directly adding an announcement to the all_anns map.
+/** Test removing neighbor AS from the appropriate set based on the relationship.
  *
- * @return true if successful.
+ * @return True if successful, otherwise false
  */
-bool test_process_announcement(){
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
-    // this function should make a copy of the announcement
-    // if it does not, it is incorrect
+bool test_remove_neighbor(){
     AS as = AS();
-    as.process_announcement(ann);
-    Prefix<> old_prefix = ann.prefix;
-    ann.prefix.addr = 0x321C9F00;
-    ann.prefix.netmask = 0xFFFFFF00;
-    Prefix<> new_prefix = ann.prefix;
-    as.process_announcement(ann);
-    if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
-        old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
+    as.add_neighbor(1, AS_REL_PROVIDER);
+    as.add_neighbor(2, AS_REL_PEER);
+    as.add_neighbor(3, AS_REL_CUSTOMER);
+    as.remove_neighbor(1, AS_REL_PROVIDER);
+    as.remove_neighbor(2, AS_REL_PEER);
+    as.remove_neighbor(3, AS_REL_CUSTOMER);
+    if (as.providers->find(1) != as.providers->end() ||
+        as.peers->find(2) != as.peers->end() ||
+        as.customers->find(3) != as.customers->end()) {
+        std::cerr << "Failed remove neighbor check." << std::endl;
         return false;
     }
-
-    // Check priority
-    Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 200, 222, false);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 300, 223, false);
-    as.process_announcement(a1);
-    as.process_announcement(a2);
-    if (as.all_anns->find(p)->second.received_from_asn != 223 ||
-        as.depref_anns->find(p)->second.received_from_asn != 222) {
-        std::cerr << "Failed best path inference priority check." << std::endl;
-        return false;
-    }
-    
-    /** Check tiebraker default
-    Prefix<> p2 = Prefix<>("1.1.1.1", "255.255.255.0");
-    Announcement a3 = Announcement(111, p2.addr, p2.netmask, 3.00, 222, false);
-    Announcement a4 = Announcement(111, p2.addr, p2.netmask, 3.00, 223, false);
-    as.process_announcement(a3);
-    as.process_announcement(a4);
-    if (as.all_anns->find(p2)->second.received_from_asn != 222 ||
-        as.depref_anns->find(p2)->second.received_from_asn != 223) {
-        std::cerr << "Failed tiebraker priority check." << std::endl;
-        return false;
-    }
-    */
     return true;
 }
-
 
 /** Test pushing the received announcement to the incoming_announcements vector. 
  *
@@ -99,43 +97,48 @@ bool test_receive_announcements(){
     return true;
 }
 
-
-/** Test checking if announcement is already received by an AS
+/** Test directly adding an announcement to the all_anns map.
  *
  * @return true if successful.
  */
-bool test_already_received(){
-    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
-    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
-    AS as = AS();
-    // if receive_announcement is broken, this test will also be broken
-    as.process_announcement(ann1);
-    if (as.already_received(ann1) && !as.already_received(ann2)) {
-        return true;
-    }
-    return false;
-}
-
-
-/** Test clearing all announcements.
- *
- * @return true if successful.
- */
-bool test_clear_announcements(){
+bool test_process_announcement(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    // this function should make a copy of the announcement
+    // if it does not, it is incorrect
     AS as = AS();
-    // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann);
-    if (as.all_anns->size() != 1) {
+    Prefix<> old_prefix = ann.prefix;
+    ann.prefix.addr = 0x321C9F00;
+    ann.prefix.netmask = 0xFFFFFF00;
+    Prefix<> new_prefix = ann.prefix;
+    as.process_announcement(ann);
+    if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
+        old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
         return false;
     }
-    as.clear_announcements();
-    if (as.all_anns->size() != 0) {
+
+    // Check priority
+    Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, false);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, false);
+    as.process_announcement(a1);
+    as.process_announcement(a2);
+    if (as.all_anns->find(p)->second.received_from_asn != 223 ||
+        as.depref_anns->find(p)->second.received_from_asn != 222) {
+        std::cerr << "Failed best path inference priority check." << std::endl;
         return false;
-    }
+    }    
+
+    // Check new best announcement
+    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, false);
+    as.process_announcement(a3);
+    if (as.all_anns->find(p)->second.received_from_asn != 224 ||
+        as.depref_anns->find(p)->second.received_from_asn != 223) {
+        std::cerr << "Failed best path priority correction check." << std::endl;
+        return false;
+    } 
     return true;
 }
-
 
 /** Test the following properties of the best path selection algorithm.
  *
@@ -214,4 +217,38 @@ bool test_process_announcements(){
     }
 
     return true;
+}
+/** Test clearing all announcements.
+ *
+ * @return true if successful.
+ */
+bool test_clear_announcements(){
+    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    AS as = AS();
+    // if receive_announcement is broken, this test will also be broken
+    as.process_announcement(ann);
+    if (as.all_anns->size() != 1) {
+        return false;
+    }
+    as.clear_announcements();
+    if (as.all_anns->size() != 0) {
+        return false;
+    }
+    return true;
+}
+
+/** Test checking if announcement is already received by an AS.
+ *
+ * @return true if successful.
+ */
+bool test_already_received(){
+    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
+    AS as = AS();
+    // if receive_announcement is broken, this test will also be broken
+    as.process_announcement(ann1);
+    if (as.already_received(ann1) && !as.already_received(ann2)) {
+        return true;
+    }
+    return false;
 }

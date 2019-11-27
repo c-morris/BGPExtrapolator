@@ -81,6 +81,25 @@ void ASGraph::clear_announcements(){
     inverse_results->clear();
 }
 
+/** Adds an AS relationship to the graph.
+ *
+ * If the AS does not exist in the graph, it will be created.
+ *
+ * @param asn ASN of AS to add the relationship to
+ * @param neighbor_asn ASN of neighbor.
+ * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
+ */
+void ASGraph::add_relationship(uint32_t asn, 
+                               uint32_t neighbor_asn, 
+                               int relation) {
+    auto search = ases->find(asn);
+    if (search == ases->end()) {
+        // if AS not yet in graph, create it
+        ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
+        search = ases->find(asn);
+    }
+    search->second->add_neighbor(neighbor_asn, relation);
+}
 
 /** Translates asn to asn of component it belongs to in graph.
  *
@@ -94,122 +113,16 @@ uint32_t ASGraph::translate_asn(uint32_t asn){
     return search->second;
 }
 
-
-/** Adds an AS relationship to the graph.
- *
- * If the AS does not exist in the graph, it will be created.
- *
- * @param asn ASN of AS to add the relationship to
- * @param neighbor_asn ASN of neighbor.
- * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
- */
-//TODO bi-directional assignment instead of calling this twice for each pair
-void ASGraph::add_relationship(uint32_t asn, uint32_t neighbor_asn, 
-    int relation) {
-    auto search = ases->find(asn);
-    if (search == ases->end()) {
-        // if AS not yet in graph, create it
-        ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
-        search = ases->find(asn);
-    }
-    search->second->add_neighbor(neighbor_asn, relation);
-}
-
-
 /** Process with removing stubs (needs querier to save them).
  */
 void ASGraph::process(SQLQuerier *querier){
     remove_stubs(querier);
     tarjan();
-
-    /** DEBUG
-     *  This prints supernodes for graphing.
-    for (auto const& component : *components){
-        if (component->size() <= 1) {
-            continue;
-        }
-
-        for (auto &cur_asn : *component) {
-            auto asn_search = ases->find(cur_asn);
-            AS *cur_AS = asn_search->second;
-            std::cout << "dot.node('" << cur_AS->asn << "', '" << cur_AS->asn << "')" << std::endl;
-            
-            for (auto customer : *cur_AS->customers) {
-                std::cout << "dot.edge('" << cur_AS->asn << "', '" << customer << "')" << std::endl;
-            }
-            
-        }
-    }
-    */
-    
     combine_components();
-   
-    /** DEBUG
-     * This prints ASes for graphing
-    std::vector<uint32_t> test{206942, 366, 307, 360, 55073, 4151, 369, 1554, 368, 55181, 210288,
-	339, 209462, 137369, 317, 328, 64302, 3474, 670, 16235, 52216, 264137, 39466, 492, 356,
-	58825, 62931, 1538, 332, 358, 353, 345, 1536, 319, 5237, 355, 58961, 394490, 133696, 41659,
-	3473, 37366, 1555, 57366, 136874, 207027, 306, 205488, 3472, 325, 334, 336, 45715, 27139,
-	136823, 340, 30440, 335, 24731, 393907, 154, 209497, 673, 337, 326, 371, 357, 329, 312,
-	44691, 316, 1541, 348, 1913, 324, 2680, 134613, 564, 310, 671, 267388, 342, 386, 364, 311,
-	352, 362, 350, 132, 359, 133140, 33205, 327, 615, 209309, 745, 320, 59442, 38765, 14756,
-	338, 6037, 1539, 331, 6034, 1602, 5819, 7950, 494, 361, 343, 349, 62250, 672, 57143, 5306,
-	323, 3471, 64355, 16473, 138140, 495, 531, 138432, 6039, 27138, 51835, 575, 493, 203363,
-	346, 24575, 5800, 136888, 322, 27137, 48555, 351, 200530, 370, 365, 313, 309, 341, 1591}; 
-
-    std::ofstream outfile;
-    std::string file_name = "edge_cases.py";
-    outfile.open(file_name, std::ios::out | std::ios::trunc);
-    outfile << "import graphviz\ndot = graphviz.Digraph()\n";
-    for (auto asn : test) {
-        auto as = ases->find(asn);
-        if (as != ases->end()) {
-            AS *cur_AS = as->second;
-
-            outfile << "dot.node('" << cur_AS->asn << "', '" << cur_AS->asn << "', color='red')" << std::endl;
-            for (auto provider : *cur_AS->providers) {
-                auto in_vector = std::find(test.begin(), test.end(), provider);
-                if (in_vector == test.end()) {
-                    outfile << "dot.edge('" << provider << "', '" << cur_AS->asn << "')" << std::endl;
-                }
-            }
-            for (auto customer : *cur_AS->customers) {
-                outfile << "dot.edge('" << cur_AS->asn << "', '" << customer << "')" << std::endl;
-            }
-            for (auto peer : *cur_AS->peers) {
-                auto asn_it = std::find(test.begin(), test.end(), asn);
-                auto peer_it = std::find(test.begin(), test.end(), peer);
-                if (peer_it == test.end()) {
-                    outfile << "dot.edge('" << cur_AS->asn << "', '" << peer << "', dir='none')" << std::endl;
-                } else {
-                    auto asn_i = std::distance(test.begin(), asn_it);
-                    auto peer_i = std::distance(test.begin(), peer_it);
-                    if (asn_i < peer_i) {
-                        outfile << "dot.edge('" << cur_AS->asn << "', '" << peer << "', dir='none')" << std::endl;
-                    }
-                }
-            }
-        }
-    }
-    outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
-    */
-
-    // DEBUG
-    //std::ofstream outfile;
-    //std::string fname = "graph";
-    //fname += std::to_string(0);
-    //fname += ".py";
-    //outfile.open(fname, std::ios::out | std::ios::trunc);
-    //outfile << "import graphviz\ndot = graphviz.Digraph()\n";
-    //this->to_graphviz(outfile);
-    //outfile << "dot.render('test-output/extrapolator.gv', view=True) \n";
-    //outfile.close();
-    
     save_supernodes_to_db(querier);
     decide_ranks();
     return;
 }
-
 
 /** Generates an ASGraph from relationship data in an SQL database based upon:
  *      1) A populated peers table
@@ -237,7 +150,6 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
     process(querier);
     return;
 }
-
 
 /** Remove the stub ASes from the graph.
  *
@@ -267,21 +179,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
             }
             stubs_to_parents->insert(std::pair<uint32_t, uint32_t>(as->asn,provider_asn));
         }
-        // TODO Is this necessary?
-        for(uint32_t peer_asn : *as->peers){
-            auto iter = ases->find(peer_asn);
-            if (iter != ases->end()) {
-                AS * peer = iter->second;
-                peer->peers->erase(as->asn);
-            }
-        }
-        for(uint32_t customer_asn : *as->customers){
-            auto iter = ases->find(customer_asn);
-            if (iter != ases->end()) {
-                AS * customer = iter->second;
-                customer->providers->erase(as->asn);
-            }
-        }
+        
         // Remove from graph if it has not been already removed
         auto iter = ases->find(as->asn);
         if (iter != ases->end()) { 
