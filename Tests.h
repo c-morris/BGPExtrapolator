@@ -18,6 +18,7 @@
 #include "ASGraph.h"
 #include "Announcement.h"
 #include "Extrapolator.h"
+#include "ROVppExtrapolator.h"
 #include "Prefix.h"
 
 // Prototypes for PrefixTest.cpp
@@ -60,6 +61,14 @@ bool test_propagate_up();
 bool test_propagate_down();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
+
+// Prototypes for ROVppTest.cpp
+bool test_ROVppExtrapolator_constructor();
+bool test_rovpp_propagate_up();
+bool test_rovpp_propagate_down();
+bool test_rovpp_give_ann_to_as_path();
+bool test_rovpp_send_all_announcements();
+
 
 // Prototypes for SQLQuerierTest.cpp
 

@@ -109,6 +109,24 @@ BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );
 }
 
+// ROVpp
+
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_constructor ) {
+        BOOST_CHECK( test_ROVppExtrapolator_constructor() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path ) {
+        BOOST_CHECK( test_rovpp_give_ann_to_as_path() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_up ) {
+        BOOST_CHECK( test_rovpp_propagate_up() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_down ) {
+        BOOST_CHECK( test_rovpp_propagate_down() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_send_all_announcements ) {
+        BOOST_CHECK( test_rovpp_send_all_announcements() );
+}
+
 #endif // RUN_TESTS
 
 
