@@ -29,6 +29,8 @@
 #include "ROVppAnnouncement.h"
 
 struct ROVppExtrapolator: public Extrapolator {
+    ROVppASGraph *rovpp_graph;
+
     ROVppExtrapolator(bool invert_results=true, 
                  bool store_depref=false, 
                  std::string a=ANNOUNCEMENTS_TABLE,
