@@ -81,6 +81,7 @@ bool test_rovpp_process_announcement();
 bool test_rovpp_process_announcements();
 bool test_rovpp_already_received();
 bool test_rovpp_clear_announcements();
+bool test_rovpp_announcement();
 
 // Prototypes for SQLQuerierTest.cpp
 

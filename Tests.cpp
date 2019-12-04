@@ -159,7 +159,9 @@ BOOST_AUTO_TEST_CASE( ROVppAS_already_received ) {
 BOOST_AUTO_TEST_CASE( ROVppAS_clear_announcements ) {
         BOOST_CHECK( test_rovpp_clear_announcements() );
 }
-
+BOOST_AUTO_TEST_CASE( ROVppAnnouncement_constructor ) {
+        BOOST_CHECK( test_rovpp_announcement() );
+}
 #endif // RUN_TESTS
 
 
