@@ -6,11 +6,43 @@
 /** Unit tests for Extrapolator.h and Extrapolator.cpp
  */
 
+
 /** It is worth having this test since the constructor is changed so often.
  */
 bool test_Extrapolator_constructor() {
     Extrapolator e = Extrapolator();
     if (e.graph == NULL) { return false; }
+    return true;
+}
+
+/** Test the loop detection in input MRT AS paths.
+ */
+bool test_find_loop() {
+    Extrapolator e = Extrapolator();
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(1);
+    as_path->push_back(2);
+    as_path->push_back(3);
+    as_path->push_back(1);
+    as_path->push_back(4);
+    bool loop = e.find_loop(as_path);
+    if (!loop) {
+        std::cerr << "Loop detection failed." << std::endl;
+        return false;
+    }
+    
+    // Prepending handling check
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(1);
+    as_path_b->push_back(2);
+    as_path_b->push_back(2);
+    as_path_b->push_back(3);
+    as_path_b->push_back(4);
+    loop = e.find_loop(as_path_b);
+    if (loop) {
+        std::cerr << "Loop prepending correctness failed." << std::endl;
+        return false;
+    }
     return true;
 }
 
@@ -50,6 +82,15 @@ bool test_give_ann_to_as_path() {
     if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
          e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
          e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
+        std::cerr << "Monitor flag failed." << std::endl;
+        return false;
+    }
+    
+    // Test announcement priority calculation
+    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 &&
+        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
+        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400) {
+        std::cerr << "Priority calculation failed." << std::endl;
         return false;
     }
 
@@ -60,6 +101,7 @@ bool test_give_ann_to_as_path() {
         e.graph->ases->find(4)->second->all_anns->size() == 0 &&
         e.graph->ases->find(5)->second->all_anns->size() == 1 &&
         e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+        std::cerr << "MRT overseeding check failed." << std::endl;
         return false;
     }
 
@@ -164,24 +206,36 @@ bool test_propagate_up() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
     e.graph->decide_ranks();
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(5)->second->process_announcement(ann);
     e.propagate_up();
-    e.propagate_up();
-
-    if (e.graph->ases->find(1)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(7)->second->all_anns->size() == 0) {
-        return true;
+    
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Loop detection failed." << std::endl;
+        return false;
     }
-    return false;
+    
+    // Check propagation priority calculation
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 290 &&
+        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 289 &&
+        e.graph->ases->find(6)->second->all_anns->find(p)->second.priority != 189 &&
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 288 &&
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 188) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
 }
 
 /** Test propagating down in the following test graph.
@@ -210,21 +264,30 @@ bool test_propagate_down() {
 
     e.graph->decide_ranks();
     
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(2)->second->process_announcement(ann);
     e.propagate_down();
-    e.propagate_down();
-    if (e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+    
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
         e.graph->ases->find(2)->second->all_anns->size() == 1 &&
         e.graph->ases->find(3)->second->all_anns->size() == 0 &&
         e.graph->ases->find(4)->second->all_anns->size() == 1 &&
         e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->size() == 0) {
-        return true;
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+        return false;
     }
-    return false;
+    
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
+        e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
+        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
 }
 
 
@@ -261,7 +324,10 @@ bool test_send_all_announcements() {
     as_path->push_back(4);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     e.give_ann_to_as_path(as_path, p);
-    e.send_all_announcements(2, true, false, false); // to providers
+    delete as_path;
+
+    // Check to providers
+    e.send_all_announcements(2, true, false, false);
     if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->all_anns->size() == 0 &&
@@ -272,8 +338,9 @@ bool test_send_all_announcements() {
         std::cerr << "Err sending to providers" << std::endl;
         return false;
     }
-
-    e.send_all_announcements(2, false, true, false); // to peers
+    
+    // Check to peers
+    e.send_all_announcements(2, false, true, false);
     if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
@@ -285,7 +352,8 @@ bool test_send_all_announcements() {
         return false;
     }
 
-    e.send_all_announcements(2, false, false, true); // to customers
+    // Check to customers
+    e.send_all_announcements(2, false, false, true);
     if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
@@ -294,6 +362,15 @@ bool test_send_all_announcements() {
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+    
+    // Check priority calculation
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 289 &&
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 189 &&
+        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+        std::cerr << "Send all announcement priority calculation failed." << std::endl;
         return false;
     }
 

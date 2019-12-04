@@ -270,8 +270,6 @@ void AS::clear_announcements() {
  * @return True if recv'd, false otherwise.
  */
 bool AS::already_received(Announcement &ann) {
-    // TODO Only checks prefix, ignores origin
-    // How do we decide between conflicting monitor ann?
     auto search = all_anns->find(ann.prefix);
     bool found = (search == all_anns->end()) ? false : true;
     return found;

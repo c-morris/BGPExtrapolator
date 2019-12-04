@@ -45,23 +45,29 @@ BOOST_AUTO_TEST_CASE( Prefix_equivalence_operator ) {
 }
 
 // AS.cpp
+BOOST_AUTO_TEST_CASE( AS_get_random ) {
+        BOOST_CHECK( test_get_random() );
+}
 BOOST_AUTO_TEST_CASE( AS_add_neighbor ) {
         BOOST_CHECK( test_add_neighbor() );
+}
+BOOST_AUTO_TEST_CASE( AS_remove_neighbor ) {
+        BOOST_CHECK( test_remove_neighbor() );
+}
+BOOST_AUTO_TEST_CASE( AS_receive_announcements ) {
+        BOOST_CHECK( test_receive_announcements() );
 }
 BOOST_AUTO_TEST_CASE( AS_process_announcement ) {
         BOOST_CHECK( test_process_announcement() );
 }
-BOOST_AUTO_TEST_CASE( AS_receive_announcements ) {
-        BOOST_CHECK( test_receive_announcements() );
+BOOST_AUTO_TEST_CASE( AS_process_announcements ) {
+        BOOST_CHECK( test_process_announcements() );
 }
 BOOST_AUTO_TEST_CASE( AS_already_received ) {
         BOOST_CHECK( test_already_received() );
 }
 BOOST_AUTO_TEST_CASE( AS_clear_announcements ) {
         BOOST_CHECK( test_clear_announcements() );
-}
-BOOST_AUTO_TEST_CASE( AS_process_announcements ) {
-        BOOST_CHECK( test_process_announcements() );
 }
 
 // ASGraph.cpp
@@ -70,9 +76,6 @@ BOOST_AUTO_TEST_CASE( ASGraph_add_relationship ) {
 }
 BOOST_AUTO_TEST_CASE( ASGraph_translate_asn ) {
         BOOST_CHECK( test_translate_asn() );
-}
-BOOST_AUTO_TEST_CASE( ASGraph_create_graph) {
-        BOOST_CHECK( test_create_graph_from_db() );
 }
 BOOST_AUTO_TEST_CASE( ASGraph_decide_ranks ) {
         BOOST_CHECK( test_decide_ranks() );
