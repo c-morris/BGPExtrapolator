@@ -101,7 +101,7 @@ void ASGraph::add_relationship(uint32_t asn,
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
-/** Translates asn to asn of component it belongs to in graph.
+/** Translates ASN to the supernode ASN to which it belongs.
  *
  * @return 0 if asn isn't found, otherwise return identifying ASN
  */
@@ -116,7 +116,9 @@ uint32_t ASGraph::translate_asn(uint32_t asn){
 /** Process with removing stubs (needs querier to save them).
  */
 void ASGraph::process(SQLQuerier *querier){
-    remove_stubs(querier);
+    // Either use multihome flag or just remove stubs
+    process_multihome(querier);
+    //remove_stubs(querier);
     tarjan();
     combine_components();
     save_supernodes_to_db(querier);
@@ -192,6 +194,52 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     save_non_stubs_to_db(querier);
 }
 
+/** Remove the stub ASes and flag multihome AS in the graph.
+ *
+ * @param querier
+ */
+void ASGraph::process_multihome(SQLQuerier *querier){
+    std::vector<AS*> to_remove;
+    // For all ASes in the graphi, remove stub & flag multihome
+    for (auto &as : *ases){
+        // If this AS is a leaf with no peers
+        if(as.second->peers->size() == 0 &&
+           as.second->providers->size() >= 1 && 
+           as.second->customers->size() == 0) {
+            // If AS is a stub
+            if (as.second->providers->size() == 1) {
+                to_remove.push_back(as.second);
+            } else {
+                // Otherwise its a multihome
+                as.second->multihome = true;
+            }
+        } else {
+            non_stubs->push_back(as.first);
+        }
+    }
+    // Handle stub removal
+    for (auto *as : to_remove) {
+        // Remove any edges to this stub from graph
+        for(uint32_t provider_asn : *as->providers){
+            auto iter = ases->find(provider_asn);
+            if (iter != ases->end()) {
+                AS* provider = iter->second;
+                provider->customers->erase(as->asn);
+            }
+            stubs_to_parents->insert(std::pair<uint32_t, uint32_t>(as->asn,provider_asn));
+        }
+        
+        // Remove from graph if it has not been already removed
+        auto iter = ases->find(as->asn);
+        if (iter != ases->end()) { 
+            ases->erase(as->asn);
+        }
+    }
+    querier->clear_stubs_from_db();
+    save_stubs_to_db(querier);
+    querier->clear_non_stubs_from_db();
+    save_non_stubs_to_db(querier);
+}
 
 /** Saves the stub ASes to be removed to a table on the database.
  *

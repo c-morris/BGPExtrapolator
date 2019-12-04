@@ -34,6 +34,8 @@ AS::AS(uint32_t myasn,
        std::set<uint32_t> *cust) : ran_bool(asn) {
     // Set ASN
     asn = myasn;
+    // Set multihome
+    multihome = false;
     // Initialize AS to invalid rank
     rank = -1;     
     

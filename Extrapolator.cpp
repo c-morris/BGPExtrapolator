@@ -130,7 +130,6 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     std::cout << "Broken Path count: " << g_broken_path << std::endl;
 }
 
-
 /** Recursive function to break the input mrt_announcements into manageable blocks.
  *
  * @param p The current subnet for checking announcement block size
@@ -460,8 +459,11 @@ void Extrapolator::propagate_up() {
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_mh = search->second->multihome;
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_mh && !is_empty) {
                 send_all_announcements(asn, true, false, false);
             }
         }
@@ -469,14 +471,16 @@ void Extrapolator::propagate_up() {
     // Propagate to peers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_mh = search->second->multihome;
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_mh && !is_empty) {
                 send_all_announcements(asn, false, true, false);
             }
         }
     }
 }
-
 
 /** Send "best" announces from providers to customer ASes. 
  */
@@ -484,14 +488,16 @@ void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_mh = search->second->multihome;
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_mh && !is_empty) {
                 send_all_announcements(asn, false, false, true);
             }
         }
     }
 }
-
 
 /** Send all announcements kept by an AS to its neighbors. 
  *
@@ -627,31 +633,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         }
     }
 }
-
-
-// TODO Remove unused function? 
-/** Invert the extrapolation results for more compact storage. 
- *
- * Since a prefix is most often reachable from every AS in the internet, it
- * makes sense to store only the instances where an AS cannot reach a
- * particular prefix. In order to detect hijacks, we map distinct prefix-origin
- * pairs to sets of Autonomous Systems that have not selected a route to them.
- *
- * NO LONGER USED, inversion is now done during propagation
- */
-void Extrapolator::invert_results(void) {
-    for (auto &as : *graph->ases) {
-        for (auto ann : *as.second->all_anns) {
-            // error checking?
-            auto set = graph->inverse_results->find(
-                std::pair<Prefix<>,uint32_t>(ann.second.prefix, ann.second.origin));
-            if (set != graph->inverse_results->end()) {
-                set->second->erase(as.second->asn);
-            }
-        }
-    }
-}
-
 
 /** Save the results of a single iteration to a in-memory
  *
