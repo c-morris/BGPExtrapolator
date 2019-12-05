@@ -183,12 +183,11 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
         // Remove from graph if it has not been already removed
         auto iter = ases->find(as->asn);
         if (iter != ases->end()) { 
-            ases->erase(as->asn);
+            delete iter->second;
+            ases->erase(iter);
         }
     }
-    querier->clear_stubs_from_db();
     save_stubs_to_db(querier);
-    querier->clear_non_stubs_from_db();
     save_non_stubs_to_db(querier);
 }
 
