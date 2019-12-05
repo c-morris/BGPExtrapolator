@@ -52,8 +52,8 @@ bool cyclic_util(ASGraph* graph, int asn, std::map<uint32_t, bool>* visited, std
 
 
 bool is_cyclic(ASGraph* graph) {
-    auto visited = new std::map<uint32_t, bool>;
-    auto recStack = new std::map<uint32_t, bool>;
+    std::map<uint32_t, bool>* visited = new std::map<uint32_t, bool>;
+    std::map<uint32_t, bool>* recStack = new std::map<uint32_t, bool>;
     
     for (auto const& as : *graph->ases) {
         visited->insert(std::pair<uint32_t, bool>(as.first, false));
@@ -65,6 +65,5 @@ bool is_cyclic(ASGraph* graph) {
         if (cyclic_util(graph, as.first, visited, recStack)) 
             return true;
     }
-  
     return false; 
 }

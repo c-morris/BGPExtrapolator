@@ -12,6 +12,9 @@
 bool test_Extrapolator_constructor() {
     Extrapolator e = Extrapolator();
     if (e.graph == NULL) { return false; }
+    
+    // Test ASGraph destructor
+    //delete e.graph;
     return true;
 }
 

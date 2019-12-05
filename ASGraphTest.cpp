@@ -230,13 +230,16 @@ bool test_tarjan(){ // includes tarjan_helper()
     graph.add_relationship(3, 4, AS_REL_PEER);
     graph.tarjan();
     if (graph.components->size() != 4) {
+        std::cerr << "Failed supernode size check." << std::endl;
         return false;
     }
     // Verify the cycle was detected
     for (auto const& c : *graph.components) {
-        if (c->size() > 1 && c->size() != 3)
+        if (c->size() > 1 && c->size() != 3) {
+            std::cerr << "Failed cycle detection check." << std::endl;
             return false;
-    }   
+        }
+    } 
      
     // Multi supernode test
     ASGraph graph2 = ASGraph();
@@ -260,12 +263,15 @@ bool test_tarjan(){ // includes tarjan_helper()
     graph2.tarjan();
     
     if (graph2.components->size() != 2) {
+        std::cerr << "Failed supernode size check." << std::endl;
         return false;
     }
     // Verify the cycle was detected
     for (auto const& c : *graph2.components) {
-        if (c->size() > 1 && c->size() != 3)
+        if (c->size() > 1 && c->size() != 3) {
+            std::cerr << "Failed supernode size check." << std::endl;
             return false;
+        }
     }
    
     srand(time(NULL));
@@ -283,12 +289,11 @@ bool test_tarjan(){ // includes tarjan_helper()
                }
             }
             if (tarjan_cyclic != cyclic) {
+                std::cerr << "Failed a random graph supernode check." << std::endl;
+                delete graph3;
                 return false;
             }
         } 
-        //graph3->combine_components();
-        // if this terminates, there are no cycles in the graph
-        //graph3->decide_ranks();
         delete graph3;
     }
     return true;
@@ -308,7 +313,7 @@ bool test_tarjan(){ // includes tarjan_helper()
  * @return true if successful, otherwise false.
  */
 bool test_combine_components(){
-     ASGraph graph = ASGraph();
+    ASGraph graph = ASGraph();
     // Cycle 1->2->3->1
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);

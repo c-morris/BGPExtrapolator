@@ -32,7 +32,7 @@
 #include "AS.h"
 
 ASGraph::ASGraph() {
-    ases = new std::unordered_map<uint32_t, AS*>;                         // Map of all ASes
+    ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
     ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
     components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
     component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
@@ -185,12 +185,11 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
         // Remove from graph if it has not been already removed
         auto iter = ases->find(as->asn);
         if (iter != ases->end()) { 
-            ases->erase(as->asn);
+            delete iter->second;
+            ases->erase(iter);
         }
     }
-    querier->clear_stubs_from_db();
     save_stubs_to_db(querier);
-    querier->clear_non_stubs_from_db();
     save_non_stubs_to_db(querier);
 }
 
@@ -232,7 +231,8 @@ void ASGraph::process_multihome(SQLQuerier *querier){
         // Remove from graph if it has not been already removed
         auto iter = ases->find(as->asn);
         if (iter != ases->end()) { 
-            ases->erase(as->asn);
+            delete iter->second;
+            ases->erase(iter);
         }
     }
     querier->clear_stubs_from_db();

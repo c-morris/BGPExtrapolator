@@ -31,7 +31,7 @@ AS::AS(uint32_t myasn,
        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
        std::set<uint32_t> *prov,
        std::set<uint32_t> *peer,
-       std::set<uint32_t> *cust) : ran_bool(asn) {
+       std::set<uint32_t> *cust) : ran_bool(myasn) {
     // Set ASN
     asn = myasn;
     // Set multihome
