@@ -109,6 +109,59 @@ BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );
 }
 
+// ROVpp
+
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_constructor ) {
+        BOOST_CHECK( test_ROVppExtrapolator_constructor() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path ) {
+        BOOST_CHECK( test_rovpp_give_ann_to_as_path() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_up ) {
+        BOOST_CHECK( test_rovpp_propagate_up() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_down ) {
+        BOOST_CHECK( test_rovpp_propagate_down() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_send_all_announcements ) {
+        BOOST_CHECK( test_rovpp_send_all_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppASGraph_add_relationship ) {
+        BOOST_CHECK( test_rovpp_add_relationship() );
+}
+BOOST_AUTO_TEST_CASE( ROVppASGraph_translate_asn ) {
+        BOOST_CHECK( test_rovpp_translate_asn() );
+}
+BOOST_AUTO_TEST_CASE( ROVppASGraph_decide_ranks ) {
+        BOOST_CHECK( test_rovpp_decide_ranks() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_get_random ) {
+        BOOST_CHECK( test_rovpp_get_random() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_add_neighbor ) {
+        BOOST_CHECK( test_rovpp_add_neighbor() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_remove_neighbor ) {
+        BOOST_CHECK( test_rovpp_remove_neighbor() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_receive_announcements ) {
+        BOOST_CHECK( test_rovpp_receive_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_process_announcement ) {
+        BOOST_CHECK( test_rovpp_process_announcement() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_process_announcements ) {
+        BOOST_CHECK( test_rovpp_process_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_already_received ) {
+        BOOST_CHECK( test_rovpp_already_received() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_clear_announcements ) {
+        BOOST_CHECK( test_rovpp_clear_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAnnouncement_constructor ) {
+        BOOST_CHECK( test_rovpp_announcement() );
+}
 #endif // RUN_TESTS
 
 

@@ -29,6 +29,7 @@
 #include "ASGraph.h"
 #include "Announcement.h"
 #include "Extrapolator.h"
+#include "ROVppExtrapolator.h"
 #include "Tests.h"
 
 void intro() {
