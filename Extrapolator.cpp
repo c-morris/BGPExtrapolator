@@ -460,8 +460,10 @@ void Extrapolator::propagate_up() {
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_empty) {
                 send_all_announcements(asn, true, false, false);
             }
         }
@@ -469,8 +471,10 @@ void Extrapolator::propagate_up() {
     // Propagate to peers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_empty) {
                 send_all_announcements(asn, false, true, false);
             }
         }
@@ -484,8 +488,10 @@ void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_empty) {
                 send_all_announcements(asn, false, false, true);
             }
         }
