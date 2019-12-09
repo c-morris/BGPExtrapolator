@@ -38,3 +38,7 @@ graph.csv
 # Swap Files
 *.swp
 *.swo
+
+# Miscellaneous
+simresults/*
+analysis/*
