@@ -50,36 +50,36 @@ public:
     ASGraph *graph;
     SQLQuerier *querier;
 
-    Extrapolator(bool invert_results=true, 
-                 bool store_depref=false, 
+    Extrapolator(bool invert_results=true,
+                 bool store_depref=false,
                  std::string a=ANNOUNCEMENTS_TABLE,
-                 std::string r=RESULTS_TABLE, 
-                 std::string i=INVERSE_RESULTS_TABLE, 
-                 std::string d=DEPREF_RESULTS_TABLE, 
+                 std::string r=RESULTS_TABLE,
+                 std::string i=INVERSE_RESULTS_TABLE,
+                 std::string d=DEPREF_RESULTS_TABLE,
                  uint32_t iteration_size=false);
-    ~Extrapolator();
-    
-    void perform_propagation(bool, size_t);
+    virtual ~Extrapolator();
+
+    virtual void perform_propagation(bool, size_t);
     template <typename Integer>
-    void populate_blocks(Prefix<Integer>*, 
-                         std::vector<Prefix<>*>*, 
+    void populate_blocks(Prefix<Integer>*,
+                         std::vector<Prefix<>*>*,
                          std::vector<Prefix<>*>*);
-    std::vector<uint32_t>* parse_path(std::string path_as_string); 
-    void extrapolate_blocks(uint32_t&, 
-                            int&, 
-                            bool subnet, 
+    std::vector<uint32_t>* parse_path(std::string path_as_string);
+    void extrapolate_blocks(uint32_t&,
+                            int&,
+                            bool subnet,
                             auto const& prefix_set);
     bool find_loop(std::vector<uint32_t>*);
     void propagate_up();
     void propagate_down();
-    void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+    void give_ann_to_as_path(std::vector<uint32_t>* as_path,
                              Prefix<> prefix,
                              int64_t timestamp = 0);
-    void send_all_announcements(uint32_t asn, 
-                                bool to_providers = false, 
-                                bool to_peers = false, 
+    void send_all_announcements(uint32_t asn,
+                                bool to_providers = false,
+                                bool to_peers = false,
                                 bool to_customers = false);
-    void save_results(int iteration);
+    virtual void save_results(int iteration);
     void invert_results(void);
 };
 #endif
