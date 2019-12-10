@@ -25,16 +25,30 @@
 #define ROVPPAS_H
 
 #include "AS.h"
+#include "ROVppASGraph.h"
+#include "ROVppAnnouncement.h"
 
 struct ROVppAS : public AS {
-    ROVppAS(uint32_t myasn=0, 
+
+    std::map<Prefix<>, Announcement> dropped_ann_map;  // Save dropped ann
+    ROVppASGraph *rovpp_as_graph;
+    bool rov_enabled = false;
+
+    ROVppAS(uint32_t myasn=0,
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
-        std::set<uint32_t> *prov=NULL, 
+        std::set<uint32_t> *prov=NULL,
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
 
+    // Overrided AS Methods
+    // TODO: Uncomment once implemented, otherwise it causes tests to fail
+    // void receive_announcement(Announcement &ann);
+    // void receive_announcements(std::vector<Announcement> &announcements);
+
+    // ROV Methods
+    bool pass_rov(Announcement &ann);
+    void enable_rov();
 };
 
 #endif
-
