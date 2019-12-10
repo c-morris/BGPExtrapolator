@@ -116,7 +116,7 @@ uint32_t ASGraph::translate_asn(uint32_t asn){
 /** Process with removing stubs (needs querier to save them).
  */
 void ASGraph::process(SQLQuerier *querier){
-    // remove_stubs(querier);
+    remove_stubs(querier);
     tarjan();
     combine_components();
     save_supernodes_to_db(querier);

@@ -29,6 +29,8 @@
 struct ROVppASGraph: public ASGraph {
     ROVppASGraph();
     ~ROVppASGraph();
+
+    // Overrided Methods
+    void process(SQLQuerier *querier);
 };
 #endif
-
