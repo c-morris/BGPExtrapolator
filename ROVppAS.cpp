@@ -32,6 +32,6 @@ ROVppAS::ROVppAS(uint32_t myasn,
 
 ROVppAS::~ROVppAS() { }
 
-void ROVppAS::enable_rov() {
-    rov_enabled = true;
+void ROVppAS::set_rovpp_as_type(int type_flag) {
+    rovpp_as_type = type_flag;
 }
