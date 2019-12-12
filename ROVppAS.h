@@ -25,16 +25,48 @@
 #define ROVPPAS_H
 
 #include "AS.h"
+#include "ROVppASGraph.h"
+#include "ROVppAnnouncement.h"
+
+//////////////////////////////////////////////////////////
+// Constants
+//////////////////////////////////////////////////////////
+
+// These are the ROVppAS type flags
+// They can be used to identify the type of ROVppAS
+// and the in the set_rovpp_as_type function to set the type.
+#define ROVPPAS_TYPE_BGP 0;        // Regular BGP
+#define ROVPPAS_TYPE_ROV 1;        // Just standard ROV
+#define ROVPPAS_TYPE_ROVPP 2;      // ROVpp 0.1 (Just Blackholing)
+#define ROVPPAS_TYPE_ROVPPB 3;     // ROVpp 0.2 (Blackhole Announcements)
+#define ROVPPAS_TYPE_ROVPPBP 4;    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
+
+
+//////////////////////////////////////////////////////////
+// Class Definition
+//////////////////////////////////////////////////////////
 
 struct ROVppAS : public AS {
-    ROVppAS(uint32_t myasn=0, 
+
+    std::map<Prefix<>, Announcement> dropped_ann_map;  // Save dropped ann
+    ROVppASGraph *rovpp_as_graph;
+    int rovpp_as_type = ROVPPAS_TYPE_BGP;  // Default type is BGP
+
+    ROVppAS(uint32_t myasn=0,
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
-        std::set<uint32_t> *prov=NULL, 
+        std::set<uint32_t> *prov=NULL,
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
 
+    // Overrided AS Methods
+    // TODO: Uncomment once implemented, otherwise it causes tests to fail
+    // void receive_announcement(Announcement &ann);
+    // void receive_announcements(std::vector<Announcement> &announcements);
+
+    // ROV Methods
+    bool pass_rov(Announcement &ann);
+    void set_rovpp_as_type(int type_flag);
 };
 
 #endif
-

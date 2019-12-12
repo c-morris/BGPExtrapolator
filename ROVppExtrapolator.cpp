@@ -26,8 +26,8 @@
 
 ROVppExtrapolator::ROVppExtrapolator(bool invert_results,
                            bool store_depref,
-                           std::string a, 
-                           std::string r, 
+                           std::string a,
+                           std::string r,
                            std::string i,
                            std::string d,
                            uint32_t iteration_size)
@@ -42,4 +42,11 @@ ROVppExtrapolator::ROVppExtrapolator(bool invert_results,
 }
 
 ROVppExtrapolator::~ROVppExtrapolator() {
+}
+
+
+void ROVppExtrapolator::perform_propagation(bool, size_t) {
+}
+
+void ROVppExtrapolator::save_results(int iteration) {
 }

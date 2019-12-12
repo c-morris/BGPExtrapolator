@@ -31,14 +31,21 @@
 struct ROVppExtrapolator: public Extrapolator {
     ROVppASGraph *rovpp_graph;
 
-    ROVppExtrapolator(bool invert_results=true, 
-                 bool store_depref=false, 
+    ROVppExtrapolator(bool invert_results=true,
+                 bool store_depref=false,
                  std::string a=ANNOUNCEMENTS_TABLE,
-                 std::string r=RESULTS_TABLE, 
-                 std::string i=INVERSE_RESULTS_TABLE, 
-                 std::string d=DEPREF_RESULTS_TABLE, 
+                 std::string r=RESULTS_TABLE,
+                 std::string i=INVERSE_RESULTS_TABLE,
+                 std::string d=DEPREF_RESULTS_TABLE,
                  uint32_t iteration_size=false);
     ~ROVppExtrapolator();
+
+    ////////////////////////////////////////////////////////////////////
+    // Overidded Methods
+    ////////////////////////////////////////////////////////////////////
+
+    void perform_propagation(bool, size_t);
+    void save_results(int iteration);
 };
 
 #endif

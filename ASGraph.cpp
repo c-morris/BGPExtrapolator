@@ -36,7 +36,7 @@ ASGraph::ASGraph() {
     ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
     components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
     component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
-    stubs_to_parents = new std::map<uint32_t, uint32_t>; 
+    stubs_to_parents = new std::map<uint32_t, uint32_t>;
     non_stubs = new std::vector<uint32_t>;
     inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,
                                              std::set<uint32_t>*>;
@@ -47,7 +47,7 @@ ASGraph::~ASGraph() {
         delete as.second;
     }
     delete ases;
-    
+
     for (auto const& as : *ases_by_rank) {
         delete as;
     }
@@ -89,8 +89,8 @@ void ASGraph::clear_announcements(){
  * @param neighbor_asn ASN of neighbor.
  * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
-void ASGraph::add_relationship(uint32_t asn, 
-                               uint32_t neighbor_asn, 
+void ASGraph::add_relationship(uint32_t asn,
+                               uint32_t neighbor_asn,
                                int relation) {
     auto search = ases->find(asn);
     if (search == ases->end()) {
@@ -108,7 +108,7 @@ void ASGraph::add_relationship(uint32_t asn,
 uint32_t ASGraph::translate_asn(uint32_t asn){
     auto search = component_translation->find(asn);
     if(search == component_translation->end()){
-       return asn; 
+       return asn;
     }
     return search->second;
 }
@@ -127,7 +127,7 @@ void ASGraph::process(SQLQuerier *querier){
 /** Generates an ASGraph from relationship data in an SQL database based upon:
  *      1) A populated peers table
  *      2) A populated customer_providers table
- * 
+ *
  * @param querier
  */
 void ASGraph::create_graph_from_db(SQLQuerier *querier){
@@ -161,9 +161,9 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     for (auto &as : *ases){
         // If this AS is a stub
         if(as.second->peers->size() == 0 &&
-           as.second->providers->size() == 1 && 
+           as.second->providers->size() == 1 &&
            as.second->customers->size() == 0) {
-            to_remove.push_back(as.second);    
+            to_remove.push_back(as.second);
         } else {
             non_stubs->push_back(as.first);
         }
@@ -179,10 +179,10 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
             }
             stubs_to_parents->insert(std::pair<uint32_t, uint32_t>(as->asn,provider_asn));
         }
-        
+
         // Remove from graph if it has not been already removed
         auto iter = ases->find(as->asn);
-        if (iter != ases->end()) { 
+        if (iter != ases->end()) {
             ases->erase(as->asn);
         }
     }
@@ -260,8 +260,8 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     std::ofstream outfile;
     std::cout << "Saving Supernodes..." << std::endl;
     std::string file_name = "/dev/shm/bgp/supernodes.csv";
-    outfile.open(file_name); 
-    
+    outfile.open(file_name);
+
     // Iterate over each strongly connected components
     for (auto &cur_node : *components) {
         // For each supernode
@@ -269,7 +269,7 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
             // Find the lowest ASN in supernode
             uint32_t low = UINT_MAX;
             for (auto &cur_asn : *cur_node) {
-                if (cur_asn < low) 
+                if (cur_asn < low)
                     low = cur_asn;
             }
             // Assemble rows as pairs; ASN in supernode, lowest ASN in that supernode
@@ -284,13 +284,13 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
 }
 
 
-/** Decide and assign ranks to all the AS's in the graph. 
+/** Decide and assign ranks to all the AS's in the graph.
  *
  *  The rank of an AS is the maximum number of nodes it has below it. This means
  *  it is possible to have an AS of rank 0 directly below an AS of rank 4, but
- *  not possible to have an AS of rank 3 below one of rank 2. 
+ *  not possible to have an AS of rank 3 below one of rank 2.
  *
- *  The bottom of the DAG is rank 0. 
+ *  The bottom of the DAG is rank 0.
  */
 void ASGraph::decide_ranks() {
     // Initial set of customer ASes at the bottom of the DAG
@@ -303,7 +303,7 @@ void ASGraph::decide_ranks() {
             as.second->rank = 0;
         }
     }
-    
+
     int i = 0;
     // While there are elements to process current rank
     while (!(*ases_by_rank)[i]->empty()) {
@@ -324,12 +324,12 @@ void ASGraph::decide_ranks() {
             }
         }
         i++;
-    } 
+    }
     return;
 }
 
 /** Tarjan driver to detect strongly connected components in the ASGraph.
- * 
+ *
  * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
  */
 void ASGraph::tarjan() {
@@ -352,7 +352,7 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     index++;
     s.push(as);
     as->onStack = true;
-    
+
     for (auto &neighbor : *(as->providers)) {
         AS *n = ases->find(neighbor)->second;
         if (n->index == -1){
@@ -384,15 +384,15 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
  *  Also append to component_translation for future reference.
  */
 void ASGraph::combine_components(){
-    
+
     // For each strongly connected component
     for (auto const& component : *components){
         // Ignore single AS nodes
         if (component->size() <= 1) {
             continue;
         }
-        
-        // Find indentifying ASN for supernode 
+
+        // Find indentifying ASN for supernode
         uint32_t combined_asn = component->at(0);
         for (auto &cur_asn : *component) {
             if (cur_asn < combined_asn) {
@@ -402,7 +402,7 @@ void ASGraph::combine_components(){
 
         // Combined Component will id as lowest ASN
         AS *combined_AS = new AS(combined_asn, inverse_results);
-        
+
         // For all members of a component, gather neighbors
         for (auto &cur_asn : *component) {
             combined_AS->member_ases->push_back(cur_asn);
@@ -413,8 +413,8 @@ void ASGraph::combine_components(){
             // Handle providers
             for (auto &provider_asn : *cur_AS->providers) {
                 // Check if provider is in component
-                bool external = (std::find(component->begin(), 
-                                           component->end(), 
+                bool external = (std::find(component->begin(),
+                                           component->end(),
                                            provider_asn) == component->end());
                 if (external) {
                     AS *provider_AS = ases->find(provider_asn)->second;
@@ -433,8 +433,8 @@ void ASGraph::combine_components(){
             // Handle customers
             for (auto &customer_asn : *cur_AS->customers) {
                 // Check if customer is in component
-                bool external = (std::find(component->begin(), 
-                                           component->end(), 
+                bool external = (std::find(component->begin(),
+                                           component->end(),
                                            customer_asn) == component->end());
                 if (external) {
                     AS *customer_AS = ases->find(customer_asn)->second;
@@ -448,13 +448,13 @@ void ASGraph::combine_components(){
                     // Remove redundant subnode peer relationship from external provider if it exists
                     customer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
                 }
-            }   
+            }
 
             // Handle peers
             for (auto &peer_asn: *cur_AS->peers){
                 // Check if peer is in component
-                bool external = (std::find(component->begin(), 
-                                      component->end(), 
+                bool external = (std::find(component->begin(),
+                                      component->end(),
                                       peer_asn) == component->end());
                 // Check if peer is already a provider in the combined AS
                 bool no_provider_rel = (combined_AS->providers->find(peer_asn) ==
@@ -462,7 +462,7 @@ void ASGraph::combine_components(){
                 // Check if peer is already a customer in the combined AS
                 bool no_customer_rel = (combined_AS->customers->find(peer_asn) ==
                                         combined_AS->customers->end());
-                
+
                 // Peer is safe to add to combined AS
                 if (external && no_provider_rel && no_customer_rel) {
                     AS *peer_AS = ases->find(peer_asn)->second;
@@ -496,7 +496,7 @@ void ASGraph::printDebug() {
     for (auto const& as : *ases) {
         std::cout << as.first << ':' << as.second->asn << std::endl;
     }
-    return; 
+    return;
 }
 
 

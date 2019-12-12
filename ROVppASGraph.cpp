@@ -27,3 +27,11 @@ ROVppASGraph::ROVppASGraph() : ASGraph() { }
 
 ROVppASGraph::~ROVppASGraph() { }
 
+void ROVppASGraph::process(SQLQuerier *querier) {
+    // Main difference is remove_stubs isn't being called
+    tarjan();
+    combine_components();
+    save_supernodes_to_db(querier);
+    decide_ranks();
+    return;
+}
