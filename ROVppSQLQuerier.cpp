@@ -44,7 +44,7 @@ ROVppSQLQuerier::~ROVppSQLQuerier() {
  * @param flag_table The table name holding the list of ASN to flag
  */
 pqxx::result ROVppSQLQuerier::select_AS_flag(std::string const& flag_table){
-    std::string sql = "SELECT asn FROM " + flag_table + ";";
+    std::string sql = "SELECT asn FROM " + flag_table + " WHERE impliments = t;";
     return execute(sql);
 }
 
@@ -54,7 +54,7 @@ pqxx::result ROVppSQLQuerier::select_AS_flag(std::string const& flag_table){
  */
 pqxx::result ROVppSQLQuerier::select_prefix_pairs(Prefix<>* p, std::string const& cur_table){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), origin FROM " + cur_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + cur_table;
     sql += " WHERE prefix = \'" + cidr + "\';";
     return execute(sql);
 }
@@ -65,7 +65,7 @@ pqxx::result ROVppSQLQuerier::select_prefix_pairs(Prefix<>* p, std::string const
  */
 pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const& cur_table){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), origin FROM " + cur_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + cur_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
     return execute(sql);
 }
