@@ -24,11 +24,6 @@
 
 #include "ROVppSQLQuerier.h"
 
-// need function to read in sql table(s) of attacker-victim pairs
-// should get justin's input on how to do the tables
-
-// also need to read in rov validity (or a list/set of attackers)
-
 /** Constructor
  */
 ROVppSQLQuerier::ROVppSQLQuerier(std::string a, std::string r, std::string i, std::string d)
@@ -41,31 +36,33 @@ ROVppSQLQuerier::~ROVppSQLQuerier() {
 
 /** Pulls all announcements for the prefixes contained within the passed subnet.
  *
+ * Default flag table name is 'rovpp_ases'.
+ *
  * @param flag_table The table name holding the list of ASN to flag
  */
-pqxx::result ROVppSQLQuerier::select_AS_flag(std::string const& flag_table){
-    std::string sql = "SELECT asn FROM " + flag_table + ";";
+pqxx::result ROVppSQLQuerier::select_AS_flags(std::string const& flag_table){
+    std::string sql = "SELECT asn, as_type, implement FROM " + flag_table + ";";
     return execute(sql);
 }
 
 /** Pulls all victim or attacker pairs for the announcements for the given prefix.
  *
- * @param p The prefix for which we SELECT
+ * @param p The prefix for which we specifically select.
  */
 pqxx::result ROVppSQLQuerier::select_prefix_pairs(Prefix<>* p, std::string const& cur_table){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), origin FROM " + cur_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, policy_index FROM " + cur_table;
     sql += " WHERE prefix = \'" + cidr + "\';";
     return execute(sql);
 }
 
 /** Pulls all victim or attacker pairs for the prefixes contained within the passed subnet.
  *
- * @param p The prefix defining the subnet
+ * @param p The prefix defining a whole subnet for which we select
  */
 pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const& cur_table){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), origin FROM " + cur_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, policy_index FROM " + cur_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
     return execute(sql);
 }

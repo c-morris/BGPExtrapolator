@@ -28,6 +28,6 @@ ROVppAS::ROVppAS(uint32_t myasn,
        std::set<uint32_t> *prov,
        std::set<uint32_t> *peer,
        std::set<uint32_t> *cust) 
-    : AS(myasn, inv, prov, peer, cust)  { }
+    : AS(myasn, inv, prov, peer, cust)  {}
 
 ROVppAS::~ROVppAS() { }

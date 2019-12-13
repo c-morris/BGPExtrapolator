@@ -56,9 +56,9 @@ public:
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);
     pqxx::result select_prefix_count(Prefix<>*);
-    pqxx::result select_prefix_ann(Prefix<>*);
+    virtual pqxx::result select_prefix_ann(Prefix<>*);
     pqxx::result select_subnet_count(Prefix<>*);
-    pqxx::result select_subnet_ann(Prefix<>*);
+    virtual pqxx::result select_subnet_ann(Prefix<>*);
     
     // Preprocessing Tables
     void clear_stubs_from_db();

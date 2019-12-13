@@ -33,7 +33,7 @@ public:
                std::string i=INVERSE_RESULTS_TABLE,
                std::string d=DEPREF_RESULTS_TABLE);
     ~ROVppSQLQuerier();
-    pqxx::result select_AS_flag(std::string const& flag_table);
+    pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));
     pqxx::result select_prefix_pairs(Prefix<>* p, std::string const& cur_table);
     pqxx::result select_subnet_pairs(Prefix<>* p, std::string const& cur_table);
 };

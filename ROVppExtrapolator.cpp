@@ -26,8 +26,8 @@
 
 ROVppExtrapolator::ROVppExtrapolator(bool invert_results,
                            bool store_depref,
-                           std::string a, 
-                           std::string r, 
+                           std::string a,
+                           std::string r,
                            std::string i,
                            std::string d,
                            uint32_t iteration_size)
@@ -41,5 +41,4 @@ ROVppExtrapolator::ROVppExtrapolator(bool invert_results,
     graph = rovpp_graph;
 }
 
-ROVppExtrapolator::~ROVppExtrapolator() {
-}
+ROVppExtrapolator::~ROVppExtrapolator() {}

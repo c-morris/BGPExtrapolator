@@ -25,8 +25,11 @@
 #define ROVPPAS_H
 
 #include "AS.h"
+#include "ROVppAnnouncement.h"
 
 struct ROVppAS : public AS {
+    std::vector<uint32_t> policy_array;
+    
     ROVppAS(uint32_t myasn=0, 
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
         std::set<uint32_t> *prov=NULL, 

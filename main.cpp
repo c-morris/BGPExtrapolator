@@ -50,9 +50,12 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("rovpp,v", 
+         po::value<bool>()->default_value(false), 
+         "flag for rovpp run")
         ("invert-results,i", 
          po::value<bool>()->default_value(true), 
-         "record ASNs which do *not* have a route to a prefix-origin (smaller results size)")
+         "record ASNs which do *not* have a route to a prefix-origin")
         ("store-depref,d", 
          po::value<bool>()->default_value(false), 
          "store depref results")
@@ -83,18 +86,47 @@ int main(int argc, char *argv[]) {
     // Handle intro information
     intro();
     
-    // Instantiate Extrapolator
-    Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
-        vm["store-depref"].as<bool>(),
-        (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
-        (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
-        (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),
-        (vm.count("depref-table") ? vm["depref-table"].as<string>() : DEPREF_RESULTS_TABLE),
-        (vm["iteration-size"].as<uint32_t>()));
-    
+    Extrapolator *extrap;
+    // Check for ROV++ mode
+    if (vm["rovpp"].as<bool>()) {
+         extrap = new ROVppExtrapolator(vm["invert-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+    } else {
+        // Instantiate Extrapolator
+        extrap = new Extrapolator(vm["invert-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+    }
+        
     // Run propagation
     extrap->perform_propagation(true, 100000000000);
     delete extrap;
+
     return 0;
 }
 #endif // RUN_TESTS
