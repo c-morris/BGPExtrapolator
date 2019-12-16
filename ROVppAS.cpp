@@ -31,3 +31,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
     : AS(myasn, inv, prov, peer, cust)  {}
 
 ROVppAS::~ROVppAS() { }
+
+void ROVppAS::add_policy(uint32_t p) {
+    policy_array.push_back(p);
+}

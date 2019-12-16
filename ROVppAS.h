@@ -37,6 +37,7 @@ struct ROVppAS : public AS {
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
 
+    void add_policy(uint32_t);
 };
 
 #endif

@@ -75,7 +75,7 @@ public:
     // Misc
     void printDebug();
     void to_graphviz(std::ostream &os);
-    friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
+    friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);    
 };
 #endif
 
