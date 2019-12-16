@@ -26,8 +26,14 @@
 
 /** Constructor
  */
-ROVppSQLQuerier::ROVppSQLQuerier(std::string a, std::string r, std::string i, std::string d)
-    : SQLQuerier(a, r, i, d) {
+ROVppSQLQuerier::ROVppSQLQuerier(std::string e, 
+                                 std::string f, 
+                                 std::string g) 
+                                 : SQLQuerier() {
+    // TODO allow output table name specification
+    victim_table = e;
+    attack_table = f;
+    policy_table = g;
 }
 
 ROVppSQLQuerier::~ROVppSQLQuerier() {

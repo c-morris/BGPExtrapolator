@@ -41,6 +41,17 @@ class ASGraph;
 
 class SQLQuerier {
 public:
+    std::string results_table;
+    std::string depref_table;
+    std::string inverse_results_table;
+    std::string announcements_table;
+    std::string user;
+    std::string pass;
+    std::string db_name;
+    std::string host;
+    std::string port;
+    pqxx::connection *C;
+
     SQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, 
                std::string r=RESULTS_TABLE,
                std::string i=INVERSE_RESULTS_TABLE,
@@ -87,17 +98,5 @@ public:
     void copy_inverse_results_to_db(std::string file_name);
     
     void create_results_index();
-    
-private:
-    std::string results_table;
-    std::string depref_table;
-    std::string inverse_results_table;
-    std::string announcements_table;
-    std::string user;
-    std::string pass;
-    std::string db_name;
-    std::string host;
-    std::string port;
-    pqxx::connection *C;
 };
 #endif

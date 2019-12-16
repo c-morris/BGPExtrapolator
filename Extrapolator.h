@@ -49,7 +49,11 @@ public:
     uint32_t it_size;
     ASGraph *graph;
     SQLQuerier *querier;
-
+    
+    Extrapolator(ASGraph*, 
+                 SQLQuerier*, 
+                 uint32_t=false);
+ 
     Extrapolator(bool invert_results=true, 
                  bool store_depref=false, 
                  std::string a=ANNOUNCEMENTS_TABLE,
