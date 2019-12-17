@@ -96,7 +96,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path->push_back(2);
     as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p, 2);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
 
     // Test that monitor annoucements were received
     if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
@@ -131,7 +131,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path_b->push_back(2);
     as_path_b->push_back(4);
     as_path_b->push_back(4);
-    e.give_ann_to_as_path(as_path_b, p, 1);
+    e.give_ann_to_as_path(as_path_b, p, 1, 0);
 
     if (e.graph->ases->find(2)->second->all_anns->find(p)->second.tstamp != 1) {
         return false;
@@ -291,7 +291,7 @@ bool test_rovpp_send_all_announcements() {
     as_path->push_back(2);
     as_path->push_back(4);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p);
+    e.give_ann_to_as_path(as_path, p, 0, 0);
     delete as_path;
 
     // Check to providers
