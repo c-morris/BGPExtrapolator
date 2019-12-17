@@ -28,12 +28,16 @@
  */
 ROVppSQLQuerier::ROVppSQLQuerier(std::string e, 
                                  std::string f, 
-                                 std::string g) 
+                                 std::string g, 
+                                 std::string h, 
+                                 std::string j) 
                                  : SQLQuerier() {
     // TODO allow output table name specification
     victim_table = e;
     attack_table = f;
-    policy_table = g;
+    top_table = g;
+    etc_table = h;
+    edge_table = j;
 }
 
 ROVppSQLQuerier::~ROVppSQLQuerier() {

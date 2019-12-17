@@ -31,7 +31,9 @@ struct ROVppExtrapolator: public Extrapolator {
     ROVppExtrapolator(std::string r=RESULTS_TABLE,
                       std::string e=VICTIM_TABLE,
                       std::string f=ATTACKER_TABLE,
-                      std::string g=POLICY_TABLE,
+                      std::string g=TOP_TABLE,
+                      std::string h=ETC_TABLE,
+                      std::string j=EDGE_TABLE,
                       uint32_t iteration_size=false);
 
     ~ROVppExtrapolator();

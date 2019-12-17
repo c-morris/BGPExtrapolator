@@ -80,9 +80,15 @@ int main(int argc, char *argv[]) {
         ("attacker-table,f",
          po::value<string>()->default_value(ATTACKER_TABLE),
          "name of attacker table")
-        ("policy-table,g",
-         po::value<string>()->default_value(POLICY_TABLE),
-         "name of policy table");
+        ("top-table,g",
+         po::value<string>()->default_value(TOP_TABLE),
+         "name of top 100 policy table")
+        ("etc-table,h",
+         po::value<string>()->default_value(ETC_TABLE),
+         "name of etc policy table")
+        ("edge-table,j",
+         po::value<string>()->default_value(EDGE_TABLE),
+         "name of edge policy table");
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -108,9 +114,15 @@ int main(int argc, char *argv[]) {
             (vm.count("attacker-table") ?
                 vm["attacker-table"].as<string>() : 
                 ATTACKER_TABLE),
-            (vm.count("policy-table") ?
-                vm["policy-table"].as<string>() : 
-                POLICY_TABLE),
+            (vm.count("top-table") ?
+                vm["top-table"].as<string>() : 
+                TOP_TABLE),
+            (vm.count("etc-table") ?
+                vm["etc-table"].as<string>() : 
+                ETC_TABLE),
+            (vm.count("edge-table") ?
+                vm["edge-table"].as<string>() : 
+                EDGE_TABLE),
             (vm["iteration-size"].as<uint32_t>()));
     } else {
         // Instantiate Extrapolator
