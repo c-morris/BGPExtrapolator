@@ -58,9 +58,7 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
     for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
         auto search = ases->find(c["asn"].as<uint32_t>());
         if (search != ases->end()) {
-            // TODO Fix polymorphism here
-            //search->second->policy_array.insert(c["as_type"].as<uint32_t>());
-            //Polymorphic function?
+            //Polymorphic function
             search->second->add_policy(c["as_type"].as<uint32_t>());
         }
     }

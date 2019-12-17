@@ -33,5 +33,5 @@ ROVppAS::ROVppAS(uint32_t myasn,
 ROVppAS::~ROVppAS() { }
 
 void ROVppAS::add_policy(uint32_t p) {
-    policy_array.push_back(p);
+    policy_vector.push_back(p);
 }
