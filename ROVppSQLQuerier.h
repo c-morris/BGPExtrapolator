@@ -40,5 +40,7 @@ public:
     pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));
     pqxx::result select_prefix_pairs(Prefix<>* p, std::string const& cur_table);
     pqxx::result select_subnet_pairs(Prefix<>* p, std::string const& cur_table);
+    
+    void copy_results_to_db(std::string);
 };
 #endif

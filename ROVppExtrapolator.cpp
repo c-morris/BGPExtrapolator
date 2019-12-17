@@ -167,4 +167,18 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Pref
 }
 
 void ROVppExtrapolator::save_results(int iteration) {
+    std::ofstream outfile;
+    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
+    outfile.open(file_name);
+    
+    // Handle standard results
+    std::cout << "Saving Results From Iteration: " << iteration << std::endl;
+    for (auto &as : *graph->ases){
+        as.second->stream_announcements(outfile);
+    }
+    outfile.close();
+    querier->copy_results_to_db(file_name);
+    
+    std::remove(file_name.c_str());
+ 
 }
