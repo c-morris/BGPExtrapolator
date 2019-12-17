@@ -39,8 +39,11 @@ struct ROVppExtrapolator: public Extrapolator {
     ////////////////////////////////////////////////////////////////////
     // Overidded Methods
     ////////////////////////////////////////////////////////////////////
-
     void perform_propagation(bool, size_t);
+    void give_ann_to_as_path(std::vector<uint32_t>*, 
+                             Prefix<> prefix, 
+                             int64_t timestamp, 
+                             bool hijack);
     void save_results(int iteration);
 };
 

@@ -76,7 +76,7 @@ public:
     bool find_loop(std::vector<uint32_t>*);
     void propagate_up();
     void propagate_down();
-    void give_ann_to_as_path(std::vector<uint32_t>* as_path,
+    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path,
                              Prefix<> prefix,
                              int64_t timestamp = 0);
     void send_all_announcements(uint32_t asn,
