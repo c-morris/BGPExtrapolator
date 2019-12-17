@@ -50,9 +50,12 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("rovpp,v", 
+         po::value<bool>()->default_value(false), 
+         "flag for rovpp run")
         ("invert-results,i", 
          po::value<bool>()->default_value(true), 
-         "record ASNs which do *not* have a route to a prefix-origin (smaller results size)")
+         "record ASNs which do *not* have a route to a prefix-origin")
         ("store-depref,d", 
          po::value<bool>()->default_value(false), 
          "store depref results")
@@ -70,7 +73,16 @@ int main(int argc, char *argv[]) {
          "name of the inverse results table")
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
-         "name of announcements table");
+         "name of announcements table")
+        ("victim-table,e",
+         po::value<string>()->default_value(VICTIM_TABLE),
+         "name of victim table")
+        ("attacker-table,f",
+         po::value<string>()->default_value(ATTACKER_TABLE),
+         "name of attacker table")
+        ("policy-table,g",
+         po::value<string>()->default_value(POLICY_TABLE),
+         "name of policy table");
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -83,18 +95,46 @@ int main(int argc, char *argv[]) {
     // Handle intro information
     intro();
     
-    // Instantiate Extrapolator
-    Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
-        vm["store-depref"].as<bool>(),
-        (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
-        (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
-        (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),
-        (vm.count("depref-table") ? vm["depref-table"].as<string>() : DEPREF_RESULTS_TABLE),
-        (vm["iteration-size"].as<uint32_t>()));
-    
+    Extrapolator *extrap;
+    // Check for ROV++ mode
+    if (vm["rovpp"].as<bool>()) {
+         extrap = new ROVppExtrapolator(
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("victim-table") ?
+                vm["victim-table"].as<string>() : 
+                VICTIM_TABLE),
+            (vm.count("attacker-table") ?
+                vm["attacker-table"].as<string>() : 
+                ATTACKER_TABLE),
+            (vm.count("policy-table") ?
+                vm["policy-table"].as<string>() : 
+                POLICY_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+    } else {
+        // Instantiate Extrapolator
+        extrap = new Extrapolator(vm["invert-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+    }
+        
     // Run propagation
     extrap->perform_propagation(true, 100000000000);
     delete extrap;
+
     return 0;
 }
 #endif // RUN_TESTS

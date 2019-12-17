@@ -26,18 +26,14 @@
 
 #include "Extrapolator.h"
 #include "ROVppASGraph.h"
-#include "ROVppAnnouncement.h"
 
 struct ROVppExtrapolator: public Extrapolator {
-    ROVppASGraph *rovpp_graph;
+    ROVppExtrapolator(std::string r=RESULTS_TABLE,
+                      std::string e=VICTIM_TABLE,
+                      std::string f=ATTACKER_TABLE,
+                      std::string g=POLICY_TABLE,
+                      uint32_t iteration_size=false);
 
-    ROVppExtrapolator(bool invert_results=true,
-                 bool store_depref=false,
-                 std::string a=ANNOUNCEMENTS_TABLE,
-                 std::string r=RESULTS_TABLE,
-                 std::string i=INVERSE_RESULTS_TABLE,
-                 std::string d=DEPREF_RESULTS_TABLE,
-                 uint32_t iteration_size=false);
     ~ROVppExtrapolator();
 
     ////////////////////////////////////////////////////////////////////

@@ -62,7 +62,7 @@ public:
     void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
     void process(); // Remove?
     virtual void process(SQLQuerier *querier);
-    void create_graph_from_db(SQLQuerier *querier);
+    virtual void create_graph_from_db(SQLQuerier *querier);
     void remove_stubs(SQLQuerier *querier);
     void save_stubs_to_db(SQLQuerier *querier);
     void save_non_stubs_to_db(SQLQuerier *querier);
@@ -75,6 +75,6 @@ public:
     // Misc
     void printDebug();
     void to_graphviz(std::ostream &os);
-    friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
+    friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);    
 };
 #endif

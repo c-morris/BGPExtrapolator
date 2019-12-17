@@ -40,9 +40,10 @@
 
 class AS {
 public:
-    uint32_t asn;       // Autonomous System Number
-    bool visited;       // Marks something
-    int rank;           // Rank in ASGraph heirarchy for propagation
+    uint32_t asn;               // Autonomous System Number
+    bool visited;               // Marks something
+    int rank;                   // Rank in ASGraph heirarchy for propagation
+    std::minstd_rand ran_bool;  // Random Number Generator
     
     // Defer processing of incoming announcements for efficiency
     std::vector<Announcement> *incoming_announcements;
@@ -85,8 +86,8 @@ public:
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
     std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
-private:
-    // Random Number Generator
-    std::minstd_rand ran_bool;
+    
+    // ROVpp Polymorphism
+    virtual void add_policy(uint32_t);
 };
 #endif

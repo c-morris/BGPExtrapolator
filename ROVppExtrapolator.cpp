@@ -24,26 +24,18 @@
 #include "ROVppExtrapolator.h"
 #include "ROVppASGraph.h"
 
-ROVppExtrapolator::ROVppExtrapolator(bool invert_results,
-                           bool store_depref,
-                           std::string a,
-                           std::string r,
-                           std::string i,
-                           std::string d,
+ROVppExtrapolator::ROVppExtrapolator(std::string r,
+                           std::string e,
+                           std::string f,
+                           std::string g,
                            uint32_t iteration_size)
-    : Extrapolator(invert_results, store_depref, a, r, i, d, iteration_size) {
-    // Replace the ASGraph with an ROVppASGraph
+    : Extrapolator(new ROVppASGraph(), new ROVppSQLQuerier(e, f, g), iteration_size) {
+    // Replace the ASGraph and SQLQuerier
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
-    // TODO fix this destructor so it doesn't error...
-    //delete graph;
-    rovpp_graph = new ROVppASGraph();
-    graph = rovpp_graph;
 }
 
-ROVppExtrapolator::~ROVppExtrapolator() {
-}
-
+ROVppExtrapolator::~ROVppExtrapolator() {}
 
 void ROVppExtrapolator::perform_propagation(bool, size_t) {
 }

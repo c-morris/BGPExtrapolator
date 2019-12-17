@@ -27,11 +27,11 @@ ROVppAS::ROVppAS(uint32_t myasn,
        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv,
        std::set<uint32_t> *prov,
        std::set<uint32_t> *peer,
-       std::set<uint32_t> *cust)
-    : AS(myasn, inv, prov, peer, cust)  { }
+       std::set<uint32_t> *cust) 
+    : AS(myasn, inv, prov, peer, cust)  {}
 
 ROVppAS::~ROVppAS() { }
 
-void ROVppAS::set_rovpp_as_type(int type_flag) {
-    rovpp_as_type = type_flag;
+void ROVppAS::add_policy(uint32_t p) {
+    policy_vector.push_back(p);
 }
