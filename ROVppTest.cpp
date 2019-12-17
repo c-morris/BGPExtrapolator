@@ -765,7 +765,18 @@ bool test_rovpp_announcement(){
         return false;
     }
     
-    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1);
+    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1, true);
+    if (ann.origin != 111 
+        || ann.prefix.addr != 0x01010101 
+        || ann.prefix.netmask != 0xffffff00 
+        || ann.received_from_asn != 222 
+        || ann.priority != 262 
+        || ann.from_monitor != true 
+        || ann.tstamp != 100
+        || ann.policy_index != 1) {
+        return false;
+    }
+
     return true;
 }
 
