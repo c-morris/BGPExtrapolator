@@ -84,7 +84,7 @@ public:
     void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
                              std::pair<Prefix<>,uint32_t> current);
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
-    std::ostream& stream_announcements(std:: ostream &os);
+    virtual std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
     
     // ROVpp Polymorphism

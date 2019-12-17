@@ -72,3 +72,12 @@ pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const
     sql += " WHERE prefix <<= \'" + cidr + "\';";
     return execute(sql);
 }
+
+/** Takes a .csv filename and bulk copies all elements to the results table.
+ */
+void ROVppSQLQuerier::copy_results_to_db(std::string file_name){
+    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn, opt_flag)") +
+                                  "FROM '" + file_name + "' WITH (FORMAT csv)";
+    execute(sql);
+}
+
