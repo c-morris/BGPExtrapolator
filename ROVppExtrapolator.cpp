@@ -36,3 +36,9 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
 }
 
 ROVppExtrapolator::~ROVppExtrapolator() {}
+
+void ROVppExtrapolator::perform_propagation(bool, size_t) {
+}
+
+void ROVppExtrapolator::save_results(int iteration) {
+}

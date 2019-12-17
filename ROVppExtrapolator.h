@@ -33,7 +33,15 @@ struct ROVppExtrapolator: public Extrapolator {
                       std::string f=ATTACKER_TABLE,
                       std::string g=POLICY_TABLE,
                       uint32_t iteration_size=false);
+
     ~ROVppExtrapolator();
+
+    ////////////////////////////////////////////////////////////////////
+    // Overidded Methods
+    ////////////////////////////////////////////////////////////////////
+
+    void perform_propagation(bool, size_t);
+    void save_results(int iteration);
 };
 
 #endif

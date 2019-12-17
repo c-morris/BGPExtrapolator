@@ -27,6 +27,15 @@ ROVppASGraph::ROVppASGraph() : ASGraph() {}
 
 ROVppASGraph::~ROVppASGraph() { }
 
+void ROVppASGraph::process(SQLQuerier *querier) {
+    // Main difference is remove_stubs isn't being called
+    tarjan();
+    combine_components();
+    save_supernodes_to_db(querier);
+    decide_ranks();
+    return;
+}
+
 /** Generates an ASGraph from relationship data in an SQL database based upon:
  *      1) A populated peers table
  *      2) A populated customer_providers table
@@ -65,4 +74,3 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
     process(querier);
     return;
 }
-
