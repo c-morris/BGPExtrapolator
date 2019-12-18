@@ -23,6 +23,8 @@
 
 #include "ROVppExtrapolator.h"
 #include "ROVppASGraph.h"
+#include "TableNames.h"
+
 
 ROVppExtrapolator::ROVppExtrapolator(std::string r,
                            std::string e,
@@ -39,7 +41,85 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
 
 ROVppExtrapolator::~ROVppExtrapolator() {}
 
-void ROVppExtrapolator::perform_propagation(bool, size_t) {
+/** Performs propogation up and down twice. First once with the Victim prefix pairs,
+ * then a second time once with the Attacker prefix pairs.
+ *
+ * Peforms propogation of the victim and attacker prefix pairs one at a time.
+ * First victims, and then attackers. The function doesn't use subnet blocks to 
+ * iterate over. Instead it does the victims table all at once, then the attackers
+ * table all at once.
+ *
+ * If iteration block sizes need to be considered, then we need to override and use the
+ * perform_propagation(bool, size_t) method instead. 
+ */
+void ROVppExtrapolator::perform_propagation() {
+    // Main Differences:
+    //   No longer need to consider prefix and subnet blocks
+    //   No longer printing out ann count, loop counts, tiebreak information, broken path count
+    using namespace std;
+   
+    // Make tmp directory if it does not exist
+    DIR* dir = opendir("/dev/shm/bgp");
+    if(!dir){
+        mkdir("/dev/shm/bgp", 0777); 
+    } else {
+        closedir(dir);
+    }
+
+    // Generate required tables
+    if (invert) {
+        querier->clear_inverse_from_db();
+        querier->create_inverse_results_tbl();
+    } else {
+        querier->clear_results_from_db();
+        querier->create_results_tbl();
+    }
+    if (depref) {
+        querier->clear_depref_from_db();
+        querier->create_depref_tbl();
+    }
+    querier->clear_stubs_from_db();
+    querier->create_stubs_tbl();
+    querier->clear_non_stubs_from_db();
+    querier->create_non_stubs_tbl();
+    querier->clear_supernodes_from_db();
+    querier->create_supernodes_tbl();
+    
+    // Generate the graph and populate the stubs & supernode tables
+    graph->create_graph_from_db(querier);
+    
+    // Main differences start here
+    std::cout << "Beginning propagation..." << std::endl;
+    
+    // Seed MRT announcements and propagate    
+    // Iterate over Victim table (first), then Attacker table (second)
+    int iter = 0;
+    for (const string table_name: {VICTIM_TABLE, ATTACKER_TABLE}) {
+        // Get the prefix-origin pairs from the database
+        pqxx::result prefix_origin_pairs = querier->select_all_pairs_from(table_name);
+        // Seed each of the prefix-origin pairs
+        for (pqxx::result::const_iterator c = prefix_origin_pairs.begin(); c!=prefix_origin_pairs.end(); ++c) {
+            // Extract Arguments needed for give_ann_to_as_path
+            std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
+            Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
+            int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
+            bool is_hijack = table_name == ATTACKER_TABLE;
+            
+            // Seed the announcement
+            give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
+    
+            // Clean up
+            delete parsed_path;
+        }
+        
+        // Propogate the seeded announcements
+        propagate_up();
+        propagate_down();
+        save_results(iter);
+        iter++;
+    }
+    
+    std::cout << "completed: ";
 }
 
 void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp, bool hijack) {

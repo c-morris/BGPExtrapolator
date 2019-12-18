@@ -77,6 +77,17 @@ pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const
     return execute(sql);
 }
 
+
+/** Pulls in victim or attacker pairs.
+ * 
+ * @param cur_table This is a constant value you can find in TableNames.h (either ATTACKER_TABLE or VICTIM_TABLE) 
+ * @return         Database results as [prefix, netmask, as_path, origin, policy_index]
+ */
+pqxx::result ROVppSQLQuerier::select_all_pairs_from(std::string const& cur_table){
+    std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin, policy_index FROM " + cur_table;
+    return execute(sql);
+}
+
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
 void ROVppSQLQuerier::copy_results_to_db(std::string file_name){
