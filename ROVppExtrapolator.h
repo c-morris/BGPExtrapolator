@@ -29,8 +29,8 @@
 
 struct ROVppExtrapolator: public Extrapolator {
     // Overrided variables
-    ROVppSQLQuerier *querier;
     ROVppASGraph *graph;
+    ROVppSQLQuerier *querier;
     
     ROVppExtrapolator(std::string r=RESULTS_TABLE,
                       std::string e=VICTIM_TABLE,

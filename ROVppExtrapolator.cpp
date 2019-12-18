@@ -33,10 +33,13 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
                            std::string h,
                            std::string j,
                            uint32_t iteration_size)
-    : Extrapolator(new ROVppASGraph(), new ROVppSQLQuerier(e, f, g, h, j), iteration_size) {
-    // Replace the ASGraph and SQLQuerier
+    : Extrapolator() {
+    // TODO: Replace the ASGraph and SQLQuerier
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
+    it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
+    graph = new ROVppASGraph();
+    querier = new ROVppSQLQuerier(e, f, g, h, j);
 }
 
 ROVppExtrapolator::~ROVppExtrapolator() {}
