@@ -67,21 +67,8 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     }
 
     // Generate required tables
-    if (invert) {
-        querier->clear_inverse_from_db();
-        querier->create_inverse_results_tbl();
-    } else {
-        querier->clear_results_from_db();
-        querier->create_results_tbl();
-    }
-    if (depref) {
-        querier->clear_depref_from_db();
-        querier->create_depref_tbl();
-    }
-    querier->clear_stubs_from_db();
-    querier->create_stubs_tbl();
-    querier->clear_non_stubs_from_db();
-    querier->create_non_stubs_tbl();
+    querier->clear_results_from_db();
+    querier->create_results_tbl();
     querier->clear_supernodes_from_db();
     querier->create_supernodes_tbl();
     
