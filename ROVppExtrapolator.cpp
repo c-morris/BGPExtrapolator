@@ -52,7 +52,7 @@ ROVppExtrapolator::~ROVppExtrapolator() {}
  * If iteration block sizes need to be considered, then we need to override and use the
  * perform_propagation(bool, size_t) method instead. 
  */
-void ROVppExtrapolator::perform_propagation() {
+void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     // Main Differences:
     //   No longer need to consider prefix and subnet blocks
     //   No longer printing out ann count, loop counts, tiebreak information, broken path count
@@ -112,11 +112,24 @@ void ROVppExtrapolator::perform_propagation() {
             delete parsed_path;
         }
         
+        // This block runs only if we want to propogate up and down twice
+        // The code block starting at line 127 is mutually exclusive with this code block 
+        if (propogate_twice) {
+            // Propogate the seeded announcements
+            propagate_up();
+            propagate_down();
+            save_results(iter);
+            iter++;
+        }
+    }
+    
+    // This code block runs if we want to propogate up and down only once
+    // This is code block is mutually exclusive with code block at line 117
+    if (!propogate_twice) {
         // Propogate the seeded announcements
         propagate_up();
         propagate_down();
         save_results(iter);
-        iter++;
     }
     
     std::cout << "completed: ";

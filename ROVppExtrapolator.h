@@ -57,7 +57,7 @@ struct ROVppExtrapolator: public Extrapolator {
     // Overloaded Methods
     ////////////////////////////////////////////////////////////////////
     
-    void perform_propagation();
+    void perform_propagation(bool propogate_twice);
 };
 
 #endif

@@ -88,7 +88,10 @@ int main(int argc, char *argv[]) {
          "name of etc policy table")
         ("edge-table,j",
          po::value<string>()->default_value(EDGE_TABLE),
-         "name of edge policy table");
+         "name of edge policy table")
+       ("prop-twice,k",
+        po::value<bool>()->default_value(true),
+        "flag whether or not to propogate twice");
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -101,10 +104,9 @@ int main(int argc, char *argv[]) {
     // Handle intro information
     intro();
     
-    Extrapolator *extrap;
     // Check for ROV++ mode
     if (vm["rovpp"].as<bool>()) {
-         extrap = new ROVppExtrapolator(
+         ROVppExtrapolator *extrap = new ROVppExtrapolator(
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 RESULTS_TABLE),
@@ -124,9 +126,15 @@ int main(int argc, char *argv[]) {
                 vm["edge-table"].as<string>() : 
                 EDGE_TABLE),
             (vm["iteration-size"].as<uint32_t>()));
+            
+        // Run propagation
+        bool prop_twice = vm["prop-twice"].as<bool>();
+        extrap->perform_propagation(prop_twice);
+        // Clean up
+        delete extrap;
     } else {
         // Instantiate Extrapolator
-        extrap = new Extrapolator(vm["invert-results"].as<bool>(),
+        Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
             (vm.count("announcements-table") ? 
                 vm["announcements-table"].as<string>() : 
@@ -141,12 +149,13 @@ int main(int argc, char *argv[]) {
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
             (vm["iteration-size"].as<uint32_t>()));
+            
+        // Run propagation
+        extrap->perform_propagation(true, 100000000000);
+        // Clean up
+        delete extrap;
     }
-        
-    // Run propagation
-    extrap->perform_propagation(true, 100000000000);
-    delete extrap;
-
+    
     return 0;
 }
 #endif // RUN_TESTS
