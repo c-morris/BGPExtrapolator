@@ -28,8 +28,10 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
                            std::string e,
                            std::string f,
                            std::string g,
+                           std::string h,
+                           std::string j,
                            uint32_t iteration_size)
-    : Extrapolator(new ROVppASGraph(), new ROVppSQLQuerier(e, f, g), iteration_size) {
+    : Extrapolator(new ROVppASGraph(), new ROVppSQLQuerier(e, f, g, h, j), iteration_size) {
     // Replace the ASGraph and SQLQuerier
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility

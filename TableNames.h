@@ -14,6 +14,9 @@
 
 // ROV++ Tables
 #define POLICY_TABLE "rovpp_ases"
+#define TOP_TABLE "rovpp_top_100_ases"
+#define ETC_TABLE "rovpp_etc_ases"
+#define EDGE_TABLE "rovpp_edge_ases"
 #define VICTIM_TABLE "victims"
 #define ATTACKER_TABLE "attackers"
 
