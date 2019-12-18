@@ -23,6 +23,7 @@
 
 
 #include "ROVppSQLQuerier.h"
+#include "TableNames.h"
 
 /** Constructor
  */
