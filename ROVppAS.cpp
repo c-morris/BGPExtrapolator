@@ -22,13 +22,21 @@
  ************************************************************************/
 
 #include "ROVppAS.h"
+#include "ROVppAnnouncement.h"
 
 ROVppAS::ROVppAS(uint32_t myasn,
        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv,
        std::set<uint32_t> *prov,
        std::set<uint32_t> *peer,
        std::set<uint32_t> *cust) 
-    : AS(myasn, inv, prov, peer, cust)  {}
+    : AS(myasn, inv, prov, peer, cust)  {
+    // replace the incoming announcements vector with one of ROVppAnnouncements
+
+    rovpp_incoming_announcements = new std::vector<ROVppAnnouncement>;
+    incoming_announcements = rovpp_incoming_announcements;
+    rovpp_all_anns = new std::map<Prefix<>, ROVppAnnouncement>;
+    all_anns = rovpp_all_anns;
+}
 
 ROVppAS::~ROVppAS() { }
 
