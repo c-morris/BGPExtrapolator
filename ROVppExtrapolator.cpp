@@ -108,8 +108,6 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
             // Propogate the seeded announcements
             propagate_up();
             propagate_down();
-            save_results(iter);
-            iter++;
         }
     }
     
@@ -119,9 +117,9 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
         // Propogate the seeded announcements
         propagate_up();
         propagate_down();
-        save_results(iter);
     }
     
+    save_results(iter);
     std::cout << "completed: ";
 }
 
