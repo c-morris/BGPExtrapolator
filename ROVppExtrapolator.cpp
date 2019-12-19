@@ -68,15 +68,17 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     } else {
         closedir(dir);
     }
-
-    // Generate required tables
-    querier->clear_results_from_db();
-    querier->create_results_tbl();
-    querier->clear_supernodes_from_db();
-    querier->create_supernodes_tbl();
+    // reinterpret pointer
+    ROVppSQLQuerier *rovpp_querier = reinterpret_cast<ROVppSQLQuerier*>(querier);
+    ROVppASGraph *rovpp_graph = reinterpret_cast<ROVppASGraph*>(graph);
+    // Generate required tables 
+    rovpp_querier->clear_results_from_db();
+    rovpp_querier->create_results_tbl();
+    rovpp_querier->clear_supernodes_from_db();
+    rovpp_querier->create_supernodes_tbl();
     
     // Generate the graph and populate the stubs & supernode tables
-    graph->create_graph_from_db(querier);
+    rovpp_graph->create_graph_from_db(rovpp_querier);
     
     // Main differences start here
     std::cout << "Beginning propagation..." << std::endl;
@@ -86,7 +88,7 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     int iter = 0;
     for (const string table_name: {VICTIM_TABLE, ATTACKER_TABLE}) {
         // Get the prefix-origin pairs from the database
-        pqxx::result prefix_origin_pairs = querier->select_all_pairs_from(table_name);
+        pqxx::result prefix_origin_pairs = rovpp_querier->select_all_pairs_from(table_name);
         // Seed each of the prefix-origin pairs
         for (pqxx::result::const_iterator c = prefix_origin_pairs.begin(); c!=prefix_origin_pairs.end(); ++c) {
             // Extract Arguments needed for give_ann_to_as_path
@@ -103,7 +105,7 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
         }
         
         // This block runs only if we want to propogate up and down twice
-        // The code block starting at line 127 is mutually exclusive with this code block 
+        // The similar code block below is mutually exclusive with this code block 
         if (propogate_twice) {
             // Propogate the seeded announcements
             propagate_up();
@@ -112,7 +114,7 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     }
     
     // This code block runs if we want to propogate up and down only once
-    // This is code block is mutually exclusive with code block at line 117
+    // The similar code block above is mutually exclusive with this code block
     if (!propogate_twice) {
         // Propogate the seeded announcements
         propagate_up();
