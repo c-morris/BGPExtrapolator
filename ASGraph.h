@@ -52,6 +52,10 @@ public:
     std::map<uint32_t, uint32_t> *stubs_to_parents;
     std::vector<uint32_t> *non_stubs;
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results;
+    // TODO: Delete the following place holders after merge of official implementation
+    // These are being used to check who are the attackers and victims in the ROV and ROVpp functions.
+    std::set<uint32_t> *attackers;
+    std::set<uint32_t> *victims;
 
     ASGraph();
     virtual ~ASGraph();

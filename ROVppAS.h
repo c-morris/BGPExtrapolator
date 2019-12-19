@@ -53,6 +53,7 @@ struct ROVppAS : public AS {
     int rovpp_as_type = ROVPPAS_TYPE_BGP;  // Default type is BGP
 
     ROVppAS(uint32_t myasn=0,
+        ROVppASGraph *as_graph=NULL,
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
         std::set<uint32_t> *prov=NULL,
         std::set<uint32_t> *peer=NULL,
@@ -62,7 +63,7 @@ struct ROVppAS : public AS {
     // Overrided AS Methods
     // TODO: Uncomment once implemented, otherwise it causes tests to fail
     // void receive_announcement(Announcement &ann);
-    // void receive_announcements(std::vector<Announcement> &announcements);
+    void receive_announcements(std::vector<Announcement> &announcements);
 
     // ROV Methods
     bool pass_rov(Announcement &ann);

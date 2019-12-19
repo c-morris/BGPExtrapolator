@@ -40,6 +40,10 @@ ASGraph::ASGraph() {
     non_stubs = new std::vector<uint32_t>;
     inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,
                                              std::set<uint32_t>*>;
+    // TODO: Delete the following place holders after merge of official implementation
+    // These are being used to check who are the attackers and victims in the ROV and ROVpp functions.                                         
+    attackers = new std::set<uint32_t>;
+    victims = new std::set<uint32_t>;
 }
 
 ASGraph::~ASGraph() {
