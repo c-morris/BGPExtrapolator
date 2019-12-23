@@ -37,7 +37,6 @@ ROVppAS::ROVppAS(uint32_t myasn,
 
 ROVppAS::~ROVppAS() { }
 
-
 /** Adds a policy to the policy_vector
  *
  * This function allows you to specify the policies
@@ -58,12 +57,7 @@ void ROVppAS::add_policy(uint32_t p) {
  * @return bool  true if from attacker, false otherwise
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
-    auto result = rovpp_as_graph->attackers->find(ann.origin);
-    if (result == rovpp_as_graph->attackers->end()) {
-        return false;
-    } else {
-        return true;
-    }
+    return (rovpp_as_graph->attackers->find(ann.origin) != rovpp_as_graph->attackers->end())
 }
 
 /** Push the received announcements to the incoming_announcements vector.
@@ -75,12 +69,8 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  */
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
-        // Check if ROV is in policy_vector
         if (policy_vector[0] == ROVPPAS_TYPE_ROV) {
-        // Check if the Announcement is from attacker
             if (pass_rov(ann)) {
-                // Do not check for duplicates here
-                // push_back makes a copy of the announcement
                 incoming_announcements->push_back(ann);
             }
         }

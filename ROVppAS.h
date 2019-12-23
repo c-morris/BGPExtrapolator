@@ -1,4 +1,4 @@
-    /*************************************************************************
+/*************************************************************************
  * This file is part of the BGP Extrapolator.
  *
  * Developed for the SIDR ROV Forecast.
@@ -20,23 +20,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
-
- // #############################################
- // Forward Declaration
- // #############################################
-
- class ROVppASGraph;
-
 #ifndef ROVPPAS_H
 #define ROVPPAS_H
 
 #include "AS.h"
 #include "ROVppAnnouncement.h"
 #include "ROVppASGraph.h"
-
-//////////////////////////////////////////////////////////
-// Constants
-//////////////////////////////////////////////////////////
 
 // These are the ROVppAS type flags
 // They can be used to identify the type of ROVppAS
@@ -60,7 +49,7 @@ struct ROVppAS : public AS {
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
 
-    // Overrided AS Methods
+    // Overriden AS Methods
     // TODO: Uncomment once implemented, otherwise it causes tests to fail
     // void receive_announcement(Announcement &ann);
     void receive_announcements(std::vector<Announcement> &announcements);
