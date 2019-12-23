@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
          "name of edge policy table")
        ("prop-twice,k",
         po::value<bool>()->default_value(true),
-        "flag whether or not to propogate twice");
+        "flag whether or not to propagate twice");
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
