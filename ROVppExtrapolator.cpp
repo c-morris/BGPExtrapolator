@@ -69,8 +69,8 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
         closedir(dir);
     }
     // reinterpret pointer
-    ROVppSQLQuerier *rovpp_querier = reinterpret_cast<ROVppSQLQuerier*>(querier);
-    ROVppASGraph *rovpp_graph = reinterpret_cast<ROVppASGraph*>(graph);
+    ROVppSQLQuerier *rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
+    ROVppASGraph *rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
     // Generate required tables 
     rovpp_querier->clear_results_from_db();
     rovpp_querier->create_results_tbl();
