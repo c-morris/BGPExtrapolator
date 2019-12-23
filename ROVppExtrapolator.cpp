@@ -34,12 +34,19 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
                            std::string j,
                            uint32_t iteration_size)
     : Extrapolator() {
-    // TODO: Replace the ASGraph and SQLQuerier
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
     it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
+    // TODO fix this memory leak
     graph = new ROVppASGraph();
     querier = new ROVppSQLQuerier(e, f, g, h, j);
+    rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
+    rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
+    // Manually set results table to match command line arg here.
+    // Doing this with the constructor would mean setting
+    // the Announcements table as well, which doesn't make sense
+    // for ROVpp. 
+    rovpp_querier->results_table = r;
 }
 
 ROVppExtrapolator::~ROVppExtrapolator() {}
@@ -68,9 +75,6 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     } else {
         closedir(dir);
     }
-    // reinterpret pointer
-    ROVppSQLQuerier *rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
-    ROVppASGraph *rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
     // Generate required tables 
     rovpp_querier->clear_results_from_db();
     rovpp_querier->create_results_tbl();
