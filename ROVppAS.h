@@ -1,4 +1,4 @@
-/*************************************************************************
+    /*************************************************************************
  * This file is part of the BGP Extrapolator.
  *
  * Developed for the SIDR ROV Forecast.
@@ -21,12 +21,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
+ // #############################################
+ // Forward Declaration
+ // #############################################
+
+ class ROVppASGraph;
+
 #ifndef ROVPPAS_H
 #define ROVPPAS_H
 
 #include "AS.h"
-#include "ROVppASGraph.h"
 #include "ROVppAnnouncement.h"
+#include "ROVppASGraph.h"
 
 //////////////////////////////////////////////////////////
 // Constants
@@ -35,22 +41,16 @@
 // These are the ROVppAS type flags
 // They can be used to identify the type of ROVppAS
 // and the in the set_rovpp_as_type function to set the type.
-#define ROVPPAS_TYPE_BGP 0;        // Regular BGP
-#define ROVPPAS_TYPE_ROV 1;        // Just standard ROV
-#define ROVPPAS_TYPE_ROVPP 2;      // ROVpp 0.1 (Just Blackholing)
-#define ROVPPAS_TYPE_ROVPPB 3;     // ROVpp 0.2 (Blackhole Announcements)
-#define ROVPPAS_TYPE_ROVPPBP 4;    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
-
-
-//////////////////////////////////////////////////////////
-// Class Definition
-//////////////////////////////////////////////////////////
+#define ROVPPAS_TYPE_BGP 0        // Regular BGP
+#define ROVPPAS_TYPE_ROV 1        // Just standard ROV
+#define ROVPPAS_TYPE_ROVPP 2      // ROVpp 0.1 (Just Blackholing)
+#define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
+#define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
 
 struct ROVppAS : public AS {
-
+    std::vector<uint32_t> policy_vector;
+    ROVppASGraph *rovpp_as_graph;  // reference to graph used to check attackers set
     std::map<Prefix<>, Announcement> dropped_ann_map;  // Save dropped ann
-    ROVppASGraph *rovpp_as_graph;
-    int rovpp_as_type = ROVPPAS_TYPE_BGP;  // Default type is BGP
 
     ROVppAS(uint32_t myasn=0,
         ROVppASGraph *as_graph=NULL,
@@ -67,7 +67,7 @@ struct ROVppAS : public AS {
 
     // ROV Methods
     bool pass_rov(Announcement &ann);
-    void set_rovpp_as_type(int type_flag);
+    void add_policy(uint32_t);
 };
 
 #endif

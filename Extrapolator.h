@@ -49,9 +49,13 @@ public:
     uint32_t it_size;
     ASGraph *graph;
     SQLQuerier *querier;
-
-    Extrapolator(bool invert_results=true,
-                 bool store_depref=false,
+    
+    Extrapolator(ASGraph*, 
+                 SQLQuerier*, 
+                 uint32_t=false);
+ 
+    Extrapolator(bool invert_results=true, 
+                 bool store_depref=false, 
                  std::string a=ANNOUNCEMENTS_TABLE,
                  std::string r=RESULTS_TABLE,
                  std::string i=INVERSE_RESULTS_TABLE,
@@ -72,7 +76,7 @@ public:
     bool find_loop(std::vector<uint32_t>*);
     void propagate_up();
     void propagate_down();
-    void give_ann_to_as_path(std::vector<uint32_t>* as_path,
+    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path,
                              Prefix<> prefix,
                              int64_t timestamp = 0);
     void send_all_announcements(uint32_t asn,

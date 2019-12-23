@@ -26,26 +26,36 @@
 
 #include "Extrapolator.h"
 #include "ROVppASGraph.h"
-#include "ROVppAnnouncement.h"
 
 struct ROVppExtrapolator: public Extrapolator {
-    ROVppASGraph *rovpp_graph;
 
-    ROVppExtrapolator(bool invert_results=true,
-                 bool store_depref=false,
-                 std::string a=ANNOUNCEMENTS_TABLE,
-                 std::string r=RESULTS_TABLE,
-                 std::string i=INVERSE_RESULTS_TABLE,
-                 std::string d=DEPREF_RESULTS_TABLE,
-                 uint32_t iteration_size=false);
+    ROVppExtrapolator(std::string r=RESULTS_TABLE,
+                      std::string e=VICTIM_TABLE,
+                      std::string f=ATTACKER_TABLE,
+                      std::string g=TOP_TABLE,
+                      std::string h=ETC_TABLE,
+                      std::string j=EDGE_TABLE,
+                      uint32_t iteration_size=false);
+
     ~ROVppExtrapolator();
 
     ////////////////////////////////////////////////////////////////////
     // Overidded Methods
     ////////////////////////////////////////////////////////////////////
-
-    void perform_propagation(bool, size_t);
+    
+    // void perform_propagation(bool, size_t);  // At this moment we don't need the arguments this function provides
+                                                // So instead I overloaded the function
+    void give_ann_to_as_path(std::vector<uint32_t>*, 
+                             Prefix<> prefix, 
+                             int64_t timestamp, 
+                             bool hijack);
     void save_results(int iteration);
+    
+    ////////////////////////////////////////////////////////////////////
+    // Overloaded Methods
+    ////////////////////////////////////////////////////////////////////
+    
+    void perform_propagation(bool propogate_twice);
 };
 
 #endif

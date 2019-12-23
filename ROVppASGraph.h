@@ -25,12 +25,19 @@
 #define ROVPPASGRAPH_H
 
 #include "ASGraph.h"
+#include "ROVppAS.h"
+#include "ROVppSQLQuerier.h"
 
 struct ROVppASGraph: public ASGraph {
+    // Sets of ASNs to keep track of attackers and victims
+    std::set<uint32_t> *attackers;
+    std::set<uint32_t> *victims;
+    
     ROVppASGraph();
     ~ROVppASGraph();
 
     // Overrided Methods
     void process(SQLQuerier *querier);
+    void create_graph_from_db(ROVppSQLQuerier*);
 };
 #endif

@@ -37,21 +37,21 @@
  * Provided the two ASNs their corresponding types, they're added to the graph
  * with the given relationship and vice-versa relationship.
  */
-void add_two_way_relationship(ASGraph * as_graph, uint32_t asn, uint32_t neighbor_asn,
-    int relation, int as_type_1, int as_type_2) {
-    // Add First Relationship (asn to neighbor_asn)
-    as_graph->add_relationship_with_as_type(asn, neighbor_asn, relation, as_type_1);
-
-    // Add Corresponding Relationship (neighbor_asn to asn)
-    if (relation == AS_REL_PROVIDER) {
-        as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_CUSTOMER, as_type_2);
-    } else if (relation == AS_REL_CUSTOMER) {
-        as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_PROVIDER, as_type_2);
-    } else {
-        // Add Peer Relationship
-        as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_PEER, as_type_2);
-    }
-}
+// void add_two_way_relationship(ASGraph * as_graph, uint32_t asn, uint32_t neighbor_asn,
+//     int relation, int as_type_1, int as_type_2) {
+//     // Add First Relationship (asn to neighbor_asn)
+//     as_graph->add_relationship_with_as_type(asn, neighbor_asn, relation, as_type_1);
+// 
+//     // Add Corresponding Relationship (neighbor_asn to asn)
+//     if (relation == AS_REL_PROVIDER) {
+//         as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_CUSTOMER, as_type_2);
+//     } else if (relation == AS_REL_CUSTOMER) {
+//         as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_PROVIDER, as_type_2);
+//     } else {
+//         // Add Peer Relationship
+//         as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_PEER, as_type_2);
+//     }
+// }
 
 /** Tells you whether or not the given ASN has the given prefix in its RIB-OUT
  *
@@ -156,7 +156,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path->push_back(2);
     as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p, 2);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
 
     // Test that monitor annoucements were received
     if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
@@ -191,7 +191,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path_b->push_back(2);
     as_path_b->push_back(4);
     as_path_b->push_back(4);
-    e.give_ann_to_as_path(as_path_b, p, 1);
+    e.give_ann_to_as_path(as_path_b, p, 1, 0);
 
     if (e.graph->ases->find(2)->second->all_anns->find(p)->second.tstamp != 1) {
         return false;
@@ -351,7 +351,7 @@ bool test_rovpp_send_all_announcements() {
     as_path->push_back(2);
     as_path->push_back(4);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p);
+    e.give_ann_to_as_path(as_path, p, 0, 0);
     delete as_path;
 
     // Check to providers
@@ -814,9 +814,30 @@ bool test_rovpp_already_received(){
  * @ return True for success
  */
 bool test_rovpp_announcement(){
-    ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, false);
-    if (ann.origin != 111 || ann.prefix.addr != 0x01010101 || ann.prefix.netmask != 0xffffff00 || ann.received_from_asn != 222 || ann.priority != 262 || ann.from_monitor != false)
+    ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 222, 100, 1);
+    if (ann.origin != 111 
+        || ann.prefix.addr != 0x01010101 
+        || ann.prefix.netmask != 0xffffff00 
+        || ann.received_from_asn != 222 
+        || ann.priority != 0 
+        || ann.from_monitor != false 
+        || ann.tstamp != 100
+        || ann.policy_index != 1) {
         return false;
+    }
+    
+    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1, true);
+    if (ann.origin != 111 
+        || ann.prefix.addr != 0x01010101 
+        || ann.prefix.netmask != 0xffffff00 
+        || ann.received_from_asn != 222 
+        || ann.priority != 262 
+        || ann.from_monitor != true 
+        || ann.tstamp != 100
+        || ann.policy_index != 1) {
+        return false;
+    }
+
     return true;
 }
 
@@ -834,54 +855,54 @@ bool test_rovpp_announcement(){
  *
  * @return true if successful, otherwise false.
  */
-bool test_rovpp_blackholing() {
-    // Constants
-    uint32_t attacker_asn = 666;
-    uint32_t victim_asn = 99;
-    Prefix<> attacker_prefix = Prefix<>("1.2.3.0", "255.255.255.0");
-    Prefix<> victim_prefix = Prefix<>("1.2.0.0", "255.255.0.0");
-
-    // Create Graph
-    Extrapolator e = Extrapolator();
-    // AS44
-    add_two_way_relationship(e.graph, 44, 77, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_ROVPP);
-    add_two_way_relationship(e.graph, 44, 78, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
-    add_two_way_relationship(e.graph, 44, 99, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
-    add_two_way_relationship(e.graph, 44, 666, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
-    // AS77
-    add_two_way_relationship(e.graph, 77, 11, AS_REL_PROVIDER, AS_TYPE_ROVPP, AS_TYPE_BGP);
-    // AS78
-    add_two_way_relationship(e.graph, 78, 12, AS_REL_PROVIDER, AS_TYPE_ROVPP, AS_TYPE_BGP);
-    // AS88
-    add_two_way_relationship(e.graph, 88, 78, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_ROVPP);
-    add_two_way_relationship(e.graph, 88, 86, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
-    // AS86
-    add_two_way_relationship(e.graph, 86, 99, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
-    // Prepare Graph
-    e.graph->decide_ranks();
-
-    // Create and Propogate Announcements
-    // Attacker Announcement
-    Announcement attacker_ann = Announcement(attacker_asn, attacker_prefix.addr, attacker_prefix.netmask, 0);
-    attacker_ann.from_monitor = true;
-    attacker_ann.priority = 299;
-    // Propogate Attacker Announcement
-    e.graph->ases->find(attacker_asn)->second->receive_announcement(attacker_ann);
-    e.propagate_up();
-    e.propagate_down();
-
-    // Victim Announcement
-    Announcement victim_ann = Announcement(victim_asn, victim_prefix.addr, victim_prefix.netmask, 0);
-    victim_ann.from_monitor = true;
-    victim_ann.priority = 299;
-    // Propogate Victim Announcement
-    e.graph->ases->find(victim_asn)->second->receive_announcement(victim_ann);
-    e.propagate_up();
-    e.propagate_down();
-
-    // Check the results
-    // Check if attacker succeeded where it shouldn't have
-    std::vector<uint32_t> saved_ones = {77, 11, 78, 12};
-    return !(check_infected_vector(e.graph, saved_ones, attacker_prefix));
-}
+// bool test_rovpp_blackholing() {
+//     // Constants
+//     uint32_t attacker_asn = 666;
+//     uint32_t victim_asn = 99;
+//     Prefix<> attacker_prefix = Prefix<>("1.2.3.0", "255.255.255.0");
+//     Prefix<> victim_prefix = Prefix<>("1.2.0.0", "255.255.0.0");
+// 
+//     // Create Graph
+//     Extrapolator e = Extrapolator();
+//     // AS44
+//     add_two_way_relationship(e.graph, 44, 77, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_ROVPP);
+//     add_two_way_relationship(e.graph, 44, 78, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
+//     add_two_way_relationship(e.graph, 44, 99, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
+//     add_two_way_relationship(e.graph, 44, 666, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
+//     // AS77
+//     add_two_way_relationship(e.graph, 77, 11, AS_REL_PROVIDER, AS_TYPE_ROVPP, AS_TYPE_BGP);
+//     // AS78
+//     add_two_way_relationship(e.graph, 78, 12, AS_REL_PROVIDER, AS_TYPE_ROVPP, AS_TYPE_BGP);
+//     // AS88
+//     add_two_way_relationship(e.graph, 88, 78, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_ROVPP);
+//     add_two_way_relationship(e.graph, 88, 86, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
+//     // AS86
+//     add_two_way_relationship(e.graph, 86, 99, AS_REL_PROVIDER, AS_TYPE_BGP, AS_TYPE_BGP);
+//     // Prepare Graph
+//     e.graph->decide_ranks();
+// 
+//     // Create and Propogate Announcements
+//     // Attacker Announcement
+//     Announcement attacker_ann = Announcement(attacker_asn, attacker_prefix.addr, attacker_prefix.netmask, 0);
+//     attacker_ann.from_monitor = true;
+//     attacker_ann.priority = 299;
+//     // Propogate Attacker Announcement
+//     e.graph->ases->find(attacker_asn)->second->receive_announcement(attacker_ann);
+//     e.propagate_up();
+//     e.propagate_down();
+// 
+//     // Victim Announcement
+//     Announcement victim_ann = Announcement(victim_asn, victim_prefix.addr, victim_prefix.netmask, 0);
+//     victim_ann.from_monitor = true;
+//     victim_ann.priority = 299;
+//     // Propogate Victim Announcement
+//     e.graph->ases->find(victim_asn)->second->receive_announcement(victim_ann);
+//     e.propagate_up();
+//     e.propagate_down();
+// 
+//     // Check the results
+//     // Check if attacker succeeded where it shouldn't have
+//     std::vector<uint32_t> saved_ones = {77, 11, 78, 12};
+//     return !(check_infected_vector(e.graph, saved_ones, attacker_prefix));
+// }
 

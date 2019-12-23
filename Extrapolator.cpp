@@ -33,6 +33,18 @@ int g_loop = 0;
 int g_ts_tb = 0;
 int g_broken_path = 0;
 
+// ROV++ constructor
+Extrapolator::Extrapolator(ASGraph *g, 
+                           SQLQuerier *q, 
+                           uint32_t iteration_size) {
+    invert = false;
+    depref = false;
+    it_size = iteration_size;
+    graph = g;
+    querier = q;
+}
+
+// Primary Constructor
 Extrapolator::Extrapolator(bool invert_results,
                            bool store_depref,
                            std::string a, 
