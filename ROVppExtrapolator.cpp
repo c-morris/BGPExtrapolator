@@ -39,14 +39,9 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
     it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
     // TODO fix this memory leak
     graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(e, f, g, h, j);
-    rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
+    querier = new ROVppSQLQuerier(r, e, f, g, h, j);
     rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
-    // Manually set results table to match command line arg here.
-    // Doing this with the constructor would mean setting
-    // the Announcements table as well, which doesn't make sense
-    // for ROVpp. 
-    rovpp_querier->results_table = r;
+    rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
 }
 
 ROVppExtrapolator::~ROVppExtrapolator() {}

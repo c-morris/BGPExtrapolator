@@ -34,11 +34,12 @@ public:
     std::string etc_table;
     std::string edge_table;
     
-    ROVppSQLQuerier(std::string e=VICTIM_TABLE,
-               std::string f=ATTACKER_TABLE,
-               std::string g=TOP_TABLE,
-               std::string h=ETC_TABLE,
-               std::string j=EDGE_TABLE);
+    ROVppSQLQuerier(std::string r=RESULTS_TABLE,
+                    std::string e=VICTIM_TABLE,
+                    std::string f=ATTACKER_TABLE,
+                    std::string g=TOP_TABLE,
+                    std::string h=ETC_TABLE,
+                    std::string j=EDGE_TABLE);
     ~ROVppSQLQuerier();
 
     pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));
