@@ -69,7 +69,7 @@ public:
         std::set<uint32_t> *prov=NULL, 
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
-    ~AS();
+    virtual ~AS();
     
     bool get_random(); 
     void add_neighbor(uint32_t asn, int relationship);

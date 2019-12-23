@@ -23,6 +23,7 @@
 
 
 #include "ROVppSQLQuerier.h"
+#include "TableNames.h"
 
 /** Constructor
  */
@@ -51,7 +52,7 @@ ROVppSQLQuerier::~ROVppSQLQuerier() {
  * @param flag_table The table name holding the list of ASN to flag
  */
 pqxx::result ROVppSQLQuerier::select_AS_flags(std::string const& flag_table){
-    std::string sql = "SELECT asn, as_type, implement FROM " + flag_table + ";";
+    std::string sql = "SELECT asn, as_type, impliment FROM " + flag_table + ";";
     return execute(sql);
 }
 
@@ -61,7 +62,7 @@ pqxx::result ROVppSQLQuerier::select_AS_flags(std::string const& flag_table){
  */
 pqxx::result ROVppSQLQuerier::select_prefix_pairs(Prefix<>* p, std::string const& cur_table){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, policy_index FROM " + cur_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + cur_table;
     sql += " WHERE prefix = \'" + cidr + "\';";
     return execute(sql);
 }
@@ -72,8 +73,19 @@ pqxx::result ROVppSQLQuerier::select_prefix_pairs(Prefix<>* p, std::string const
  */
 pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const& cur_table){
     std::string cidr = p->to_cidr();
-    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, policy_index FROM " + cur_table;
+    std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin FROM " + cur_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
+    return execute(sql);
+}
+
+
+/** Pulls in victim or attacker pairs.
+ * 
+ * @param cur_table This is a constant value you can find in TableNames.h (either ATTACKER_TABLE or VICTIM_TABLE) 
+ * @return         Database results as [prefix, netmask, as_path, origin, policy_index]
+ */
+pqxx::result ROVppSQLQuerier::select_all_pairs_from(std::string const& cur_table){
+    std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin FROM " + cur_table;
     return execute(sql);
 }
 
