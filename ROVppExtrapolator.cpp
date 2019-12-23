@@ -86,7 +86,7 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
     int iter = 0;
-    for (const string table_name: {VICTIM_TABLE, ATTACKER_TABLE}) {
+    for (const string table_name: {rovpp_querier->victim_table, rovpp_querier->attack_table}) {
         // Get the prefix-origin pairs from the database
         pqxx::result prefix_origin_pairs = rovpp_querier->select_all_pairs_from(table_name);
         // Seed each of the prefix-origin pairs
