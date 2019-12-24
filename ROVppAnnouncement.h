@@ -38,6 +38,7 @@ struct ROVppAnnouncement : public Announcement {
                                      timestamp,
                                      a_from_monitor) {
         policy_index = policy;
+        opt_flag = 0;
     }
 
     ~ROVppAnnouncement() { }

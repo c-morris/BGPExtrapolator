@@ -51,6 +51,10 @@ struct ROVppExtrapolator: public Extrapolator {
                              Prefix<> prefix, 
                              int64_t timestamp, 
                              bool hijack);
+    void send_all_announcements(uint32_t asn,
+                                bool to_providers = false,
+                                bool to_peers = false,
+                                bool to_customers = false);
     void save_results(int iteration);
     
     ////////////////////////////////////////////////////////////////////

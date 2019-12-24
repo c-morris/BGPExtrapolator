@@ -55,7 +55,11 @@ void ROVppAS::add_policy(uint32_t p) {
  * @return bool  true if from attacker, false otherwise
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
-    return (attackers->find(ann.origin) == attackers->end());
+    if (attackers != NULL) {
+        return (attackers->find(ann.origin) == attackers->end());
+    } else {
+        return true;
+    }
 }
 
 /** Push the received announcements to the incoming_announcements vector.
@@ -67,11 +71,15 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  */
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
-        if (policy_vector[0] == ROVPPAS_TYPE_ROV) {
-            if (pass_rov(ann)) {
+        if (policy_vector.size() > 0) { // if we have a policy
+            if (policy_vector.at(0) == ROVPPAS_TYPE_BGP) {
                 incoming_announcements->push_back(ann);
+            } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
+                if (pass_rov(ann)) {
+                    incoming_announcements->push_back(ann);
+                }
             }
-        } else {
+        } else { // if there is no policy
             incoming_announcements->push_back(ann);
         }
     }
