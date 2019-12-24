@@ -74,7 +74,7 @@ public:
     bool get_random(); 
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
-    void receive_announcements(std::vector<Announcement> &announcements);
+    virtual void receive_announcements(std::vector<Announcement> &announcements);
     void process_announcement(Announcement &ann);
     void clear_announcements();
     bool already_received(Announcement &ann);
@@ -84,10 +84,7 @@ public:
     void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
                              std::pair<Prefix<>,uint32_t> current);
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
-    virtual std::ostream& stream_announcements(std:: ostream &os);
+    std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
-    
-    // ROVpp Polymorphism
-    virtual void add_policy(uint32_t);
 };
 #endif

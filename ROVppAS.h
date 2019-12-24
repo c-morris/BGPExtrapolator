@@ -20,45 +20,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
-
 #ifndef ROVPPAS_H
 #define ROVPPAS_H
 
 #include "AS.h"
 #include "ROVppAnnouncement.h"
 
-//////////////////////////////////////////////////////////
-// Constants
-//////////////////////////////////////////////////////////
-
 // These are the ROVppAS type flags
 // They can be used to identify the type of ROVppAS
 // and the in the set_rovpp_as_type function to set the type.
-#define ROVPPAS_TYPE_BGP 0;        // Regular BGP
-#define ROVPPAS_TYPE_ROV 1;        // Just standard ROV
-#define ROVPPAS_TYPE_ROVPP 2;      // ROVpp 0.1 (Just Blackholing)
-#define ROVPPAS_TYPE_ROVPPB 3;     // ROVpp 0.2 (Blackhole Announcements)
-#define ROVPPAS_TYPE_ROVPPBP 4;    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
+#define ROVPPAS_TYPE_BGP 0        // Regular BGP
+#define ROVPPAS_TYPE_ROV 1        // Just standard ROV
+#define ROVPPAS_TYPE_ROVPP 2      // ROVpp 0.1 (Just Blackholing)
+#define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
+#define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
 
 struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;
+    std::set<uint32_t> *attackers;
     std::map<Prefix<>, Announcement> dropped_ann_map;  // Save dropped ann
 
     ROVppAS(uint32_t myasn=0,
+        std::set<uint32_t> *attackers=NULL,
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
         std::set<uint32_t> *prov=NULL,
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
 
-    void add_policy(uint32_t);
-    // Overrided AS Methods
     // TODO: Uncomment once implemented, otherwise it causes tests to fail
     // void receive_announcement(Announcement &ann);
-    // void receive_announcements(std::vector<Announcement> &announcements);
+    void receive_announcements(std::vector<Announcement> &announcements);
 
     // ROV Methods
     bool pass_rov(Announcement &ann);
+    void add_policy(uint32_t);
 };
 
 #endif

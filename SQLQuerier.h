@@ -89,11 +89,11 @@ public:
     void clear_depref_from_db();
     void clear_inverse_from_db();
 
-    void create_results_tbl();
+    virtual void create_results_tbl();
     void create_depref_tbl();
     void create_inverse_results_tbl();
  
-    void copy_results_to_db(std::string file_name);
+    virtual void copy_results_to_db(std::string file_name);
     void copy_depref_to_db(std::string file_name);
     void copy_inverse_results_to_db(std::string file_name);
     

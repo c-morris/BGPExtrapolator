@@ -28,22 +28,19 @@
 #include "ROVppASGraph.h"
 
 struct ROVppExtrapolator: public Extrapolator {
-
     ROVppSQLQuerier *rovpp_querier;
     ROVppASGraph *rovpp_graph;
 
-    ROVppExtrapolator(std::string r=RESULTS_TABLE,
+    ROVppExtrapolator(std::vector<std::string> g=std::vector<std::string>(),
+                      std::string r=RESULTS_TABLE,
                       std::string e=VICTIM_TABLE,
                       std::string f=ATTACKER_TABLE,
-                      std::string g=TOP_TABLE,
-                      std::string h=ETC_TABLE,
-                      std::string j=EDGE_TABLE,
                       uint32_t iteration_size=false);
 
     ~ROVppExtrapolator();
 
     ////////////////////////////////////////////////////////////////////
-    // Overidded Methods
+    // Overidden Methods
     ////////////////////////////////////////////////////////////////////
     
     // void perform_propagation(bool, size_t);  // At this moment we don't need the arguments this function provides
@@ -52,6 +49,10 @@ struct ROVppExtrapolator: public Extrapolator {
                              Prefix<> prefix, 
                              int64_t timestamp, 
                              bool hijack);
+    void send_all_announcements(uint32_t asn,
+                                bool to_providers = false,
+                                bool to_peers = false,
+                                bool to_customers = false);
     void save_results(int iteration);
     
     ////////////////////////////////////////////////////////////////////

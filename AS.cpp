@@ -331,5 +331,3 @@ std::ostream& AS::stream_depref(std::ostream &os){
     return os;
 }
 
-// For ROVpp polymorphism
-void AS::add_policy(uint32_t p) {}

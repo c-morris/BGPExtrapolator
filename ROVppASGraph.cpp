@@ -23,9 +23,15 @@
 
 #include "ROVppASGraph.h"
 
-ROVppASGraph::ROVppASGraph() : ASGraph() {}
+ROVppASGraph::ROVppASGraph() : ASGraph() {
+  attackers = new std::set<uint32_t>();
+  victims = new std::set<uint32_t>();
+}
 
-ROVppASGraph::~ROVppASGraph() { }
+ROVppASGraph::~ROVppASGraph() { 
+    delete attackers;
+    delete victims;
+}
 
 void ROVppASGraph::process(SQLQuerier *querier) {
     // Main difference is remove_stubs isn't being called
@@ -60,34 +66,37 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
         add_relationship(c["provider_as"].as<uint32_t>(),
                          c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
     }
-    // Assemble policy arrays
-    // TODO should take a parameter table name
-    // TODO currently takes only a single policy
-    R = querier->select_AS_flags("rovpp_top_100_ases");
-    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
-        auto search = ases->find(c["asn"].as<uint32_t>());
-        if (search != ases->end()) {
-            //Polymorphic function
-            search->second->add_policy(c["as_type"].as<uint32_t>());
+
+    // Assign policies to ASes
+    for (auto policy_table : querier->policy_tables) {
+        R = querier->select_AS_flags(policy_table);
+        for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
+            auto search = ases->find(c["asn"].as<uint32_t>());
+            if (search != ases->end()) {
+                dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
+            }
         }
     }
-    R = querier->select_AS_flags("rovpp_etc_ases");
-    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
-        auto search = ases->find(c["asn"].as<uint32_t>());
-        if (search != ases->end()) {
-            //Polymorphic function
-            search->second->add_policy(c["as_type"].as<uint32_t>());
-        }
-    }
-    R = querier->select_AS_flags("rovpp_edge_ases");
-    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
-        auto search = ases->find(c["asn"].as<uint32_t>());
-        if (search != ases->end()) {
-            //Polymorphic function
-            search->second->add_policy(c["as_type"].as<uint32_t>());
-        }
-    }
-    
     process(querier);
     return;
+}
+
+/** Adds an AS relationship to the graph.
+ *
+ * If the AS does not exist in the graph, it will be created.
+ *
+ * @param asn ASN of AS to add the relationship to
+ * @param neighbor_asn ASN of neighbor.
+ * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
+ */
+void ROVppASGraph::add_relationship(uint32_t asn,
+                               uint32_t neighbor_asn,
+                               int relation) {
+    auto search = ases->find(asn);
+    if (search == ases->end()) {
+        // if AS not yet in graph, create it
+        ases->insert(std::pair<uint32_t, AS*>(asn, new ROVppAS(asn, attackers)));
+        search = ases->find(asn);
+    }
+    search->second->add_neighbor(neighbor_asn, relation);
 }

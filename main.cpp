@@ -80,19 +80,12 @@ int main(int argc, char *argv[]) {
         ("attacker-table,f",
          po::value<string>()->default_value(ATTACKER_TABLE),
          "name of attacker table")
-        ("top-table,g",
-         po::value<string>()->default_value(TOP_TABLE),
-         "name of top 100 policy table")
-        ("etc-table,h",
-         po::value<string>()->default_value(ETC_TABLE),
-         "name of etc policy table")
-        ("edge-table,j",
-         po::value<string>()->default_value(EDGE_TABLE),
-         "name of edge policy table")
+        ("policy-tables,t",
+         po::value< vector<string> >(),
+         "space-separated names of ROVpp policy tables")
        ("prop-twice,k",
         po::value<bool>()->default_value(true),
         "flag whether or not to propagate twice");
-    ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
     po::notify(vm);
@@ -107,6 +100,9 @@ int main(int argc, char *argv[]) {
     // Check for ROV++ mode
     if (vm["rovpp"].as<bool>()) {
          ROVppExtrapolator *extrap = new ROVppExtrapolator(
+            (vm.count("policy-tables") ?
+                vm["policy-tables"].as< vector<string> >() : 
+                vector<string>()),
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 RESULTS_TABLE),
@@ -116,15 +112,6 @@ int main(int argc, char *argv[]) {
             (vm.count("attacker-table") ?
                 vm["attacker-table"].as<string>() : 
                 ATTACKER_TABLE),
-            (vm.count("top-table") ?
-                vm["top-table"].as<string>() : 
-                TOP_TABLE),
-            (vm.count("etc-table") ?
-                vm["etc-table"].as<string>() : 
-                ETC_TABLE),
-            (vm.count("edge-table") ?
-                vm["edge-table"].as<string>() : 
-                EDGE_TABLE),
             (vm["iteration-size"].as<uint32_t>()));
             
         // Run propagation

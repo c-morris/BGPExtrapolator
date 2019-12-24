@@ -26,12 +26,11 @@
 #include "TableNames.h"
 
 
-ROVppExtrapolator::ROVppExtrapolator(std::string r,
+ROVppExtrapolator::ROVppExtrapolator(
+                           std::vector<std::string> g,
+                           std::string r,
                            std::string e,
                            std::string f,
-                           std::string g,
-                           std::string h,
-                           std::string j,
                            uint32_t iteration_size)
     : Extrapolator() {
     // ROVpp specific functions should use the rovpp_graph variable
@@ -39,7 +38,7 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
     it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
     // TODO fix this memory leak
     graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(r, e, f, g, h, j);
+    querier = new ROVppSQLQuerier(g, r, e, f);
     rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
     rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
 }
@@ -94,7 +93,11 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
             Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
-            bool is_hijack = table_name == ATTACKER_TABLE;
+            bool is_hijack = table_name == rovpp_querier->attack_table;
+            if (is_hijack) {
+                // Add origin to attackers
+                rovpp_graph->attackers->insert(parsed_path->at(0));
+            }
             
             // Seed the announcement
             give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
@@ -226,12 +229,13 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Pref
         }
         // No break in path so send the announcement
         if (!broken_path) {
-            Announcement ann = Announcement(*as_path->rbegin(),
+            ROVppAnnouncement ann = ROVppAnnouncement(*as_path->rbegin(),
                                             prefix.addr,
                                             prefix.netmask,
                                             priority,
                                             received_from_asn,
                                             timestamp,
+                                            0, // policy defaults to BGP
                                             true);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann);
@@ -250,6 +254,146 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Pref
     }
 }
 
+/** Send all announcements kept by an AS to its neighbors. 
+ *
+ * This approximates the Adj-RIBs-out. 
+ *
+ * @param asn AS that is sending out announces
+ * @param to_providers Send to providers
+ * @param to_peers Send to peers
+ * @param to_customers Send to customers
+ */
+void ROVppExtrapolator::send_all_announcements(uint32_t asn, 
+                                          bool to_providers, 
+                                          bool to_peers, 
+                                          bool to_customers) {
+    // Get the AS that is sending it's announcements
+    auto *source_as = graph->ases->find(asn)->second; 
+    // If we are sending to providers
+    if (to_providers) {
+        // Assemble the list of announcements to send to providers
+        std::vector<Announcement> anns_to_providers;
+        for (auto &ann : *source_as->all_anns) {
+            // Do not propagate any announcements from peers/providers
+            // Priority is reduced by 1 per path length
+            // Base priority is 200 for customer to provider
+            // Ignore announcements not from a customer
+            if (ann.second.priority < 200) {
+                continue;
+            }
+            
+            // Set the priority of the announcement at destination 
+            uint32_t old_priority = ann.second.priority;
+            uint32_t path_len_weight = old_priority % 100;
+            if (path_len_weight == 0) {
+                // For MRT ann at origin: old_priority = 400
+                path_len_weight = 99;
+            } else {
+                // Sub 1 for the current hop
+                path_len_weight -= 1;
+            }
+            uint32_t priority = 200 + path_len_weight;
+            
+            // Push announcement with new priority to ann vector
+            anns_to_providers.push_back(ROVppAnnouncement(ann.second.origin,
+                                                     ann.second.prefix.addr,
+                                                     ann.second.prefix.netmask,
+                                                     priority,
+                                                     asn,
+                                                     ann.second.tstamp,
+                                                     0)); // policy defaults to BGP
+        }
+        // Send the vector of assembled announcements
+        for (uint32_t provider_asn : *source_as->providers) {
+            // For each provider, give the vector of announcements
+            auto *recving_as = graph->ases->find(provider_asn)->second;
+            recving_as->receive_announcements(anns_to_providers);
+        }
+    }
+
+    // If we are sending to peers
+    if (to_peers) {
+        // Assemble vector of announcement to send to peers
+        std::vector<Announcement> anns_to_peers;
+        for (auto &ann : *source_as->all_anns) {
+            // Do not propagate any announcements from peers/providers
+            // Priority is reduced by 1 per path length
+            // Base priority is 100 for peers to peers
+
+            // Ignore announcements not from a customer
+            if (ann.second.priority < 200) {
+                continue;
+            }
+
+            // Set the priority of the announcement at destination 
+            uint32_t old_priority = ann.second.priority;
+            uint32_t path_len_weight = old_priority % 100;
+            if (path_len_weight == 0) {
+                // For MRT ann at origin: old_priority = 400
+                path_len_weight = 99;
+            } else {
+                // Sub 1 for the current hop
+                path_len_weight -= 1;
+            }
+            uint32_t priority = 100 + path_len_weight;
+            
+            anns_to_peers.push_back(ROVppAnnouncement(ann.second.origin,
+                                                 ann.second.prefix.addr,
+                                                 ann.second.prefix.netmask,
+                                                 priority,
+                                                 asn,
+                                                 ann.second.tstamp,
+                                                 0)); // policy defaults to BGP
+        }
+        // Send the vector of assembled announcements
+        for (uint32_t peer_asn : *source_as->peers) {
+            // For each provider, give the vector of announcements
+            auto *recving_as = graph->ases->find(peer_asn)->second;
+            recving_as->receive_announcements(anns_to_peers);
+        }
+    }
+
+    // If we are sending to customers
+    if (to_customers) {
+        // Assemble the vector of announcement for customers
+        std::vector<Announcement> anns_to_customers;
+        for (auto &ann : *source_as->all_anns) {
+            // Propagate all announcements to customers
+            // Priority is reduced by 1 per path length
+            // Base priority is 0 for provider to customers
+            
+            
+            // Set the priority of the announcement at destination 
+            uint32_t old_priority = ann.second.priority;
+            uint32_t path_len_weight = old_priority % 100;
+            if (path_len_weight == 0) {
+                // For MRT ann at origin: old_priority = 400
+                path_len_weight = 99;
+            } else {
+                // Sub 1 for the current hop
+                path_len_weight -= 1;
+            }
+            uint32_t priority = path_len_weight;
+
+            anns_to_customers.push_back(ROVppAnnouncement(ann.second.origin,
+                                                     ann.second.prefix.addr,
+                                                     ann.second.prefix.netmask,
+                                                     priority,
+                                                     asn,
+                                                     ann.second.tstamp,
+                                                     0)); // policy defaults to BGP
+        }
+        // Send the vector of assembled announcements
+        for (uint32_t customer_asn : *source_as->customers) {
+            // For each customer, give the vector of announcements
+            auto *recving_as = graph->ases->find(customer_asn)->second;
+            recving_as->receive_announcements(anns_to_customers);
+        }
+    }
+}
+
+
+
 void ROVppExtrapolator::save_results(int iteration) {
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
@@ -257,11 +401,11 @@ void ROVppExtrapolator::save_results(int iteration) {
     
     // Handle standard results
     std::cout << "Saving Results From Iteration: " << iteration << std::endl;
-    for (auto &as : *graph->ases){
+    for (auto &as : *rovpp_graph->ases){
         as.second->stream_announcements(outfile);
     }
     outfile.close();
-    querier->copy_results_to_db(file_name);
+    rovpp_querier->copy_results_to_db(file_name);
     
     std::remove(file_name.c_str());
  
