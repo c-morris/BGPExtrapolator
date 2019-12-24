@@ -72,12 +72,12 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
         if (policy_vector.size() > 0) { // if we have a policy
-            if (policy_vector.at(0) == ROVPPAS_TYPE_BGP) {
-                incoming_announcements->push_back(ann);
-            } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
+            if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                 if (pass_rov(ann)) {
                     incoming_announcements->push_back(ann);
                 }
+            } else {
+                incoming_announcements->push_back(ann);
             }
         } else { // if there is no policy
             incoming_announcements->push_back(ann);
