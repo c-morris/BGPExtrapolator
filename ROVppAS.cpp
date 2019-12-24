@@ -1,4 +1,5 @@
-/************************************************************************* * This file is part of the BGP Extrapolator.
+/************************************************************************* 
+ * This file is part of the BGP Extrapolator.
  *
  * Developed for the SIDR ROV Forecast.
  * This package includes software developed by the SIDR Project
@@ -67,7 +68,6 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
         if (policy_vector[0] == ROVPPAS_TYPE_ROV) {
-            std::cout << "pass rov is " << pass_rov(ann) << '\n' << ann << std::endl;
             if (pass_rov(ann)) {
                 incoming_announcements->push_back(ann);
             }
