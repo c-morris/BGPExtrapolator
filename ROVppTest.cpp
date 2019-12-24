@@ -567,8 +567,8 @@ bool test_rovpp_remove_stubs(){
 bool test_rovpp_get_random(){
     // Check randomness
     ROVppASGraph *as_graph = new ROVppASGraph();
-    ROVppAS *as_a = new ROVppAS(832, as_graph);
-    ROVppAS *as_b = new ROVppAS(832, as_graph);
+    ROVppAS *as_a = new ROVppAS(832, as_graph->attackers);
+    ROVppAS *as_b = new ROVppAS(832, as_graph->attackers);
     bool ran_a_1 = as_a->get_random();
     bool ran_a_2 = as_a->get_random();
     bool ran_a_3 = as_a->get_random();

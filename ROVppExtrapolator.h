@@ -28,6 +28,8 @@
 #include "ROVppASGraph.h"
 
 struct ROVppExtrapolator: public Extrapolator {
+    ROVppSQLQuerier *rovpp_querier;
+    ROVppASGraph *rovpp_graph;
 
     ROVppExtrapolator(std::string r=RESULTS_TABLE,
                       std::string e=VICTIM_TABLE,
@@ -40,7 +42,7 @@ struct ROVppExtrapolator: public Extrapolator {
     ~ROVppExtrapolator();
 
     ////////////////////////////////////////////////////////////////////
-    // Overidded Methods
+    // Overidden Methods
     ////////////////////////////////////////////////////////////////////
     
     // void perform_propagation(bool, size_t);  // At this moment we don't need the arguments this function provides

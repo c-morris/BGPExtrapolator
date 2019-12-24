@@ -27,13 +27,14 @@
 
 /** Constructor
  */
-ROVppSQLQuerier::ROVppSQLQuerier(std::string e, 
+ROVppSQLQuerier::ROVppSQLQuerier(std::string r,
+                                 std::string e, 
                                  std::string f, 
                                  std::string g, 
                                  std::string h, 
                                  std::string j) 
                                  : SQLQuerier() {
-    // TODO allow output table name specification
+    results_table = r;
     victim_table = e;
     attack_table = f;
     top_table = g;
@@ -96,4 +97,15 @@ void ROVppSQLQuerier::copy_results_to_db(std::string file_name){
                                   "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
+
+/** Instantiates a new, empty results table in the database, dropping the old table.
+ */
+void ROVppSQLQuerier::create_results_tbl(){
+    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
+    asn bigint,prefix cidr, origin bigint, received_from_asn \
+    bigint, time bigint, opt_flag int); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
+    std::cout << "Creating results table..." << std::endl;
+    execute(sql, false);
+}
+
 

@@ -25,7 +25,6 @@
 
 #include "AS.h"
 #include "ROVppAnnouncement.h"
-#include "ROVppASGraph.h"
 
 // These are the ROVppAS type flags
 // They can be used to identify the type of ROVppAS
@@ -38,18 +37,17 @@
 
 struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;
-    ROVppASGraph *rovpp_as_graph;  // reference to graph used to check attackers set
+    std::set<uint32_t> *attackers;
     std::map<Prefix<>, Announcement> dropped_ann_map;  // Save dropped ann
 
     ROVppAS(uint32_t myasn=0,
-        ROVppASGraph *as_graph=NULL,
+        std::set<uint32_t> *attackers=NULL,
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
         std::set<uint32_t> *prov=NULL,
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
 
-    // Overriden AS Methods
     // TODO: Uncomment once implemented, otherwise it causes tests to fail
     // void receive_announcement(Announcement &ann);
     void receive_announcements(std::vector<Announcement> &announcements);

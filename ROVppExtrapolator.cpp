@@ -34,12 +34,14 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
                            std::string j,
                            uint32_t iteration_size)
     : Extrapolator() {
-    // TODO: Replace the ASGraph and SQLQuerier
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
     it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
+    // TODO fix this memory leak
     graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(e, f, g, h, j);
+    querier = new ROVppSQLQuerier(r, e, f, g, h, j);
+    rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
+    rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
 }
 
 ROVppExtrapolator::~ROVppExtrapolator() {}
@@ -55,7 +57,7 @@ ROVppExtrapolator::~ROVppExtrapolator() {}
  * If iteration block sizes need to be considered, then we need to override and use the
  * perform_propagation(bool, size_t) method instead. 
  */
-void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
+void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     // Main Differences:
     //   No longer need to consider prefix and subnet blocks
     //   No longer printing out ann count, loop counts, tiebreak information, broken path count
@@ -68,9 +70,6 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     } else {
         closedir(dir);
     }
-    // reinterpret pointer
-    ROVppSQLQuerier *rovpp_querier = reinterpret_cast<ROVppSQLQuerier*>(querier);
-    ROVppASGraph *rovpp_graph = reinterpret_cast<ROVppASGraph*>(graph);
     // Generate required tables 
     rovpp_querier->clear_results_from_db();
     rovpp_querier->create_results_tbl();
@@ -86,7 +85,7 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
     int iter = 0;
-    for (const string table_name: {VICTIM_TABLE, ATTACKER_TABLE}) {
+    for (const string table_name: {rovpp_querier->victim_table, rovpp_querier->attack_table}) {
         // Get the prefix-origin pairs from the database
         pqxx::result prefix_origin_pairs = rovpp_querier->select_all_pairs_from(table_name);
         // Seed each of the prefix-origin pairs
@@ -95,7 +94,11 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
             std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
             Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
-            bool is_hijack = table_name == ATTACKER_TABLE;
+            bool is_hijack = table_name == rovpp_querier->attack_table;
+            if (is_hijack) {
+                // Add origin to attackers
+                rovpp_graph->attackers->insert(parsed_path->at(0));
+            }
             
             // Seed the announcement
             give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
@@ -106,7 +109,7 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
         
         // This block runs only if we want to propogate up and down twice
         // The similar code block below is mutually exclusive with this code block 
-        if (propogate_twice) {
+        if (propagate_twice) {
             // Propogate the seeded announcements
             propagate_up();
             propagate_down();
@@ -115,7 +118,7 @@ void ROVppExtrapolator::perform_propagation(bool propogate_twice=true) {
     
     // This code block runs if we want to propogate up and down only once
     // The similar code block above is mutually exclusive with this code block
-    if (!propogate_twice) {
+    if (!propagate_twice) {
         // Propogate the seeded announcements
         propagate_up();
         propagate_down();
@@ -258,11 +261,11 @@ void ROVppExtrapolator::save_results(int iteration) {
     
     // Handle standard results
     std::cout << "Saving Results From Iteration: " << iteration << std::endl;
-    for (auto &as : *graph->ases){
+    for (auto &as : *rovpp_graph->ases){
         as.second->stream_announcements(outfile);
     }
     outfile.close();
-    querier->copy_results_to_db(file_name);
+    rovpp_querier->copy_results_to_db(file_name);
     
     std::remove(file_name.c_str());
  

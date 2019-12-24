@@ -59,7 +59,7 @@ public:
     void clear_announcements();
     uint32_t translate_asn(uint32_t asn);
     // Graph setup
-    void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
+    virtual void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
     void process(); // Remove?
     virtual void process(SQLQuerier *querier);
     virtual void create_graph_from_db(SQLQuerier *querier);

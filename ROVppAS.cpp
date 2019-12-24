@@ -1,5 +1,4 @@
-/*************************************************************************
- * This file is part of the BGP Extrapolator.
+/************************************************************************* * This file is part of the BGP Extrapolator.
  *
  * Developed for the SIDR ROV Forecast.
  * This package includes software developed by the SIDR Project
@@ -24,15 +23,14 @@
 #include "ROVppAS.h"
 
 ROVppAS::ROVppAS(uint32_t myasn,
-                 ROVppASGraph *as_graph,
+                 std::set<uint32_t> *rovpp_attackers,
                  std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv,
                  std::set<uint32_t> *prov,
                  std::set<uint32_t> *peer,
                  std::set<uint32_t> *cust): 
                  AS(myasn, inv, prov, peer, cust)  {
-                    // Save reference to as_graph
-                    // Will be used to check who the attackers are
-                    rovpp_as_graph = as_graph;
+                    // Save reference to attackers
+                    attackers = rovpp_attackers;
                  }
 
 ROVppAS::~ROVppAS() { }
@@ -44,7 +42,6 @@ ROVppAS::~ROVppAS() { }
  * the header of this class. 
  * 
  * @param p The policy to add. For example, ROVPPAS_TYPE_BGP (defualt), and
- * ROVPPAS_TYPE_ROV. Check header for other policies.
  */
 void ROVppAS::add_policy(uint32_t p) {
     policy_vector.push_back(p);
@@ -57,7 +54,7 @@ void ROVppAS::add_policy(uint32_t p) {
  * @return bool  true if from attacker, false otherwise
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
-    return (rovpp_as_graph->attackers->find(ann.origin) != rovpp_as_graph->attackers->end())
+    return (attackers->find(ann.origin) == attackers->end());
 }
 
 /** Push the received announcements to the incoming_announcements vector.
@@ -70,9 +67,14 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
         if (policy_vector[0] == ROVPPAS_TYPE_ROV) {
+            std::cout << "pass rov is " << pass_rov(ann) << '\n' << ann << std::endl;
             if (pass_rov(ann)) {
                 incoming_announcements->push_back(ann);
             }
+        } else {
+            incoming_announcements->push_back(ann);
         }
     }
 }
+
+

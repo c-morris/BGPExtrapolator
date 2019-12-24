@@ -5,6 +5,7 @@
 
 struct ROVppAnnouncement : public Announcement {
     uint32_t policy_index;
+    int32_t opt_flag;
 
     ROVppAnnouncement(uint32_t aorigin,
                       uint32_t aprefix, 
@@ -18,6 +19,7 @@ struct ROVppAnnouncement : public Announcement {
                                      from_asn, 
                                      timestamp) {
         policy_index = policy;
+        opt_flag = 0;
     }
 
     ROVppAnnouncement(uint32_t aorigin, 
@@ -39,6 +41,16 @@ struct ROVppAnnouncement : public Announcement {
     }
 
     ~ROVppAnnouncement() { }
+
+    /** Passes the announcement struct data to an output stream to csv generation.
+     *
+     * @param &os Specifies the output stream.
+     * @return The output stream parameter for reuse/recursion.
+     */ 
+    std::ostream& to_csv(std::ostream &os){
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << opt_flag << '\n';
+        return os;
+    }
 };
 
 #endif
