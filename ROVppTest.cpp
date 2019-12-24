@@ -126,6 +126,37 @@ bool test_rovpp_find_loop() {
     return true;
 }
 
+/** Test pass_rov which should fail if the origin of the announcement is an
+ *  attacker. 
+ *
+ * @return True if successful, otherwise false
+ */
+bool test_rovpp_pass_rov() {
+    ROVppASGraph graph = ROVppASGraph();
+    graph.add_relationship(1, 2, AS_REL_PROVIDER);
+    graph.add_relationship(2, 1, AS_REL_CUSTOMER);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+
+    // no attackers should pass all announcements
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rov(ann) != true) {
+        return false;
+    }
+
+    // not an attacker, should pass
+    graph.attackers->insert(666);
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rov(ann) != true) {
+        return false;
+    }
+
+    // 13796 is attacker, should fail
+    graph.attackers->insert(13796);
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rov(ann) != false) {
+        return false;
+    }
+    return true;
+}
+
 /** Test seeding the graph with announcements from monitors. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
@@ -652,6 +683,30 @@ bool test_rovpp_receive_announcements(){
     }
     return true;
 }
+
+/** Test receive_announcements if the AS is running ROV. 
+ *
+ * @return true if successful.
+ */
+bool test_rovpp_rov_receive_announcements(){
+    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    std::vector<Announcement> vect = std::vector<Announcement>();
+    vect.push_back(ann);
+    ann.prefix.addr = 0x321C9F00;
+    ann.prefix.netmask = 0xFFFFFF00;
+    ann.origin = 666;
+    vect.push_back(ann);
+    ROVppAS as = ROVppAS();
+    // add the attacker and set the policy to ROV
+    as.attackers = new std::set<uint32_t>();
+    as.attackers->insert(666);
+    as.add_policy(ROVPPAS_TYPE_ROV);
+    as.receive_announcements(vect);
+    delete as.attackers;
+    if (as.incoming_announcements->size() != 1) { return false; }
+    return true;
+}
+
 
 /** Test directly adding an announcement to the all_anns map.
  *
