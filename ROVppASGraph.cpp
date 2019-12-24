@@ -66,31 +66,17 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
         add_relationship(c["provider_as"].as<uint32_t>(),
                          c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
     }
-    // Assemble policy arrays
-    // TODO should take a parameter table name
-    // TODO currently takes only a single policy
-    R = querier->select_AS_flags("rovpp_top_100_ases");
-    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
-        auto search = ases->find(c["asn"].as<uint32_t>());
-        if (search != ases->end()) {
-            dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
+
+    // Assign policies to ASes
+    for (auto policy_table : querier->policy_tables) {
+        R = querier->select_AS_flags(policy_table);
+        for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
+            auto search = ases->find(c["asn"].as<uint32_t>());
+            if (search != ases->end()) {
+                dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
+            }
         }
     }
-    R = querier->select_AS_flags("rovpp_etc_ases");
-    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
-        auto search = ases->find(c["asn"].as<uint32_t>());
-        if (search != ases->end()) {
-            dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
-        }
-    }
-    R = querier->select_AS_flags("rovpp_edge_ases");
-    for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
-        auto search = ases->find(c["asn"].as<uint32_t>());
-        if (search != ases->end()) {
-            dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
-        }
-    }
-    
     process(querier);
     return;
 }

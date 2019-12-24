@@ -30,16 +30,12 @@ class ROVppSQLQuerier: public SQLQuerier {
 public:
     std::string victim_table;
     std::string attack_table;
-    std::string top_table;
-    std::string etc_table;
-    std::string edge_table;
+    std::vector<std::string> policy_tables;
     
-    ROVppSQLQuerier(std::string r=RESULTS_TABLE,
+    ROVppSQLQuerier(std::vector<std::string> g,
+                    std::string r=RESULTS_TABLE,
                     std::string e=VICTIM_TABLE,
-                    std::string f=ATTACKER_TABLE,
-                    std::string g=TOP_TABLE,
-                    std::string h=ETC_TABLE,
-                    std::string j=EDGE_TABLE);
+                    std::string f=ATTACKER_TABLE);
     ~ROVppSQLQuerier();
 
     pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));

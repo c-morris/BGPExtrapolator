@@ -31,12 +31,10 @@ struct ROVppExtrapolator: public Extrapolator {
     ROVppSQLQuerier *rovpp_querier;
     ROVppASGraph *rovpp_graph;
 
-    ROVppExtrapolator(std::string r=RESULTS_TABLE,
+    ROVppExtrapolator(std::vector<std::string> g=std::vector<std::string>(),
+                      std::string r=RESULTS_TABLE,
                       std::string e=VICTIM_TABLE,
                       std::string f=ATTACKER_TABLE,
-                      std::string g=TOP_TABLE,
-                      std::string h=ETC_TABLE,
-                      std::string j=EDGE_TABLE,
                       uint32_t iteration_size=false);
 
     ~ROVppExtrapolator();

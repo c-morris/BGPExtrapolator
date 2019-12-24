@@ -27,19 +27,15 @@
 
 /** Constructor
  */
-ROVppSQLQuerier::ROVppSQLQuerier(std::string r,
+ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> g,
+                                 std::string r,
                                  std::string e, 
-                                 std::string f, 
-                                 std::string g, 
-                                 std::string h, 
-                                 std::string j) 
+                                 std::string f) 
                                  : SQLQuerier() {
     results_table = r;
     victim_table = e;
     attack_table = f;
-    top_table = g;
-    etc_table = h;
-    edge_table = j;
+    policy_tables = g;
 }
 
 ROVppSQLQuerier::~ROVppSQLQuerier() {

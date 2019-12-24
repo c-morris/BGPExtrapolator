@@ -26,12 +26,11 @@
 #include "TableNames.h"
 
 
-ROVppExtrapolator::ROVppExtrapolator(std::string r,
+ROVppExtrapolator::ROVppExtrapolator(
+                           std::vector<std::string> g,
+                           std::string r,
                            std::string e,
                            std::string f,
-                           std::string g,
-                           std::string h,
-                           std::string j,
                            uint32_t iteration_size)
     : Extrapolator() {
     // ROVpp specific functions should use the rovpp_graph variable
@@ -39,7 +38,7 @@ ROVppExtrapolator::ROVppExtrapolator(std::string r,
     it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
     // TODO fix this memory leak
     graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(r, e, f, g, h, j);
+    querier = new ROVppSQLQuerier(g, r, e, f);
     rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
     rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
 }
