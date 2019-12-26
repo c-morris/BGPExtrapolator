@@ -76,6 +76,12 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
                 if (pass_rov(ann)) {
                     incoming_announcements->push_back(ann);
                 }
+            } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+                // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
+                // Only in the data plane changes
+                if (pass_rov(ann)) {
+                    incoming_announcements->push_back(ann);
+                }
             } else {
                 incoming_announcements->push_back(ann);
             }
