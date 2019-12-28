@@ -82,7 +82,26 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
                 if (pass_rov(ann)) {
                     incoming_announcements->push_back(ann);
                 }
-            } else {
+            } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
+                // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
+                if (pass_rov(ann)) {
+                    incoming_announcements->push_back(ann);
+                } else {
+                    // Check for an alternative route
+                    bool alt_route = false;
+                    for (auto &rib_ann : *all_anns) {
+                        if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix)) {
+                            alt_route = true;
+                            break;
+                        }
+                    }
+                    if (!alt_route) {
+                        // mark as blackholed and accept this announcement
+                        dynamic_cast<ROVppAnnouncement*>(&ann)->opt_flag = 64512;
+                        incoming_announcements->push_back(ann);
+                    }
+                }
+            } else { // unrecognized policy defaults to bgp
                 incoming_announcements->push_back(ann);
             }
         } else { // if there is no policy

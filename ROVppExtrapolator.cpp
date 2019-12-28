@@ -109,16 +109,15 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         // This block runs only if we want to propogate up and down twice
         // The similar code block below is mutually exclusive with this code block 
         if (propagate_twice) {
-            // Propogate the seeded announcements
             propagate_up();
             propagate_down();
         }
+
     }
     
     // This code block runs if we want to propogate up and down only once
     // The similar code block above is mutually exclusive with this code block
     if (!propagate_twice) {
-        // Propogate the seeded announcements
         propagate_up();
         propagate_down();
     }
@@ -301,7 +300,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                      priority,
                                                      asn,
                                                      ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+                                                     0, // policy defaults to BGP
+                                                     dynamic_cast<ROVppAnnouncement*>(&ann.second)->opt_flag));
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -343,7 +343,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                  priority,
                                                  asn,
                                                  ann.second.tstamp,
-                                                 0)); // policy defaults to BGP
+                                                 0, // policy defaults to BGP
+                                                 dynamic_cast<ROVppAnnouncement*>(&ann.second)->opt_flag));
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -381,7 +382,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                      priority,
                                                      asn,
                                                      ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+                                                     0, // policy defaults to BGP
+                                                     dynamic_cast<ROVppAnnouncement*>(&ann.second)->opt_flag)); 
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

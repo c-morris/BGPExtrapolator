@@ -12,14 +12,15 @@ struct ROVppAnnouncement : public Announcement {
                       uint32_t anetmask,
                       uint32_t from_asn,
                       int64_t timestamp = 0, 
-                      uint32_t policy = 0)
+                      uint32_t policy = 0,
+                      int32_t  opt = 0)
                       : Announcement(aorigin, 
                                      aprefix, 
                                      anetmask, 
                                      from_asn, 
                                      timestamp) {
         policy_index = policy;
-        opt_flag = 0;
+        opt_flag = opt;
     }
 
     ROVppAnnouncement(uint32_t aorigin, 
@@ -29,7 +30,8 @@ struct ROVppAnnouncement : public Announcement {
                       uint32_t from_asn, 
                       int64_t timestamp,
                       uint32_t policy,
-                      bool a_from_monitor = false)
+                      bool a_from_monitor = false,
+                      int32_t  opt = 0)
                       : Announcement(aorigin,
                                      aprefix,
                                      anetmask,
@@ -38,7 +40,7 @@ struct ROVppAnnouncement : public Announcement {
                                      timestamp,
                                      a_from_monitor) {
         policy_index = policy;
-        opt_flag = 0;
+        opt_flag = opt;
     }
 
     ~ROVppAnnouncement() { }
