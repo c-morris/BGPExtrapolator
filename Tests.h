@@ -27,6 +27,7 @@ bool test_string_to_cidr();
 bool test_prefix_lt_operator();
 bool test_prefix_gt_operator();
 bool test_prefix_eq_operator();
+bool test_prefix_contained_in_or_equal_to_operator();
 
 // Prototypes for AnnouncementTest.cpp
 bool test_announcement();

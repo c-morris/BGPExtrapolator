@@ -43,6 +43,10 @@ BOOST_AUTO_TEST_CASE( Prefix_greater_than_operator ) {
 BOOST_AUTO_TEST_CASE( Prefix_equivalence_operator ) {
         BOOST_CHECK( test_prefix_eq_operator() );
 }
+BOOST_AUTO_TEST_CASE( Prefix_contained_in_or_equal_to_operator ) {
+        BOOST_CHECK( test_prefix_contained_in_or_equal_to_operator() );
+}
+
 
 // Announcement.h
 BOOST_AUTO_TEST_CASE( Announcement_constructor ) {

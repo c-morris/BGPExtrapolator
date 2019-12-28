@@ -91,3 +91,24 @@ bool test_prefix_eq_operator(){
         return false;
     return true;
 }
+
+/** Tests the contained_in_or_equal_to function.
+ *
+ * @return true if successful, otherwise false.
+ */
+bool test_prefix_contained_in_or_equal_to_operator(){
+    Prefix<> a = Prefix<>("1.1.1.0", "255.255.255.0");
+    Prefix<> b = Prefix<>("1.1.2.0", "255.255.254.0");
+    Prefix<> c = Prefix<>("1.1.0.0", "255.255.0.0");
+    if (!a.contained_in_or_equal_to(c))
+        return false;
+    if (c.contained_in_or_equal_to(a))
+        return false;
+    if (!a.contained_in_or_equal_to(a))
+        return false;
+    if (b.contained_in_or_equal_to(a))
+        return false;
+    if (a.contained_in_or_equal_to(b))
+        return false;
+    return true;
+}
