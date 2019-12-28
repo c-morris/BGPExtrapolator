@@ -97,7 +97,8 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
                     }
                     if (!alt_route) {
                         // mark as blackholed and accept this announcement
-                        dynamic_cast<ROVppAnnouncement*>(&ann)->opt_flag = 64512;
+                        ann.origin = 64512;
+                        ann.received_from_asn = 64512;
                         incoming_announcements->push_back(ann);
                     }
                 }
