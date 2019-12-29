@@ -69,6 +69,7 @@ struct ROVppAS : public AS {
                                                        // This will be used to determine:
                                                        // * Replace currently used ann for a better one
                                                        // * Help make decisions on an alternative routes
+    std::ostream& stream_blackholes(std:: ostream &os);
 };
 
 #endif

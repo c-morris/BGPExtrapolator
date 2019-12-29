@@ -45,5 +45,7 @@ public:
     
     void copy_results_to_db(std::string);
     void create_results_tbl();
+    void copy_blackhole_list_to_db(std::string file_name);
+    void create_rovpp_blacklist_tbl();
 };
 #endif

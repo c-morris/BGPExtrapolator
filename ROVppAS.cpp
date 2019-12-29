@@ -163,3 +163,17 @@ bool ROVppAS::is_better(Announcement &a, Announcement &b) {
     return  a.priority > b.priority;
 }
 
+/**
+ * [ROVppAS::stream_blacklist description]
+ * @param  os [description]
+ * @return    [description]
+ */
+std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
+  for(std::size_t i=0; i<blackholes->size(); ++i) {
+      Announcement ann = blackholes->at(i);
+      os << asn << ",";
+      ann.to_csv(os);
+  }
+  return os;
+}
+
