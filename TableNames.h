@@ -19,5 +19,6 @@
 #define EDGE_TABLE "rovpp_edge_ases"
 #define VICTIM_TABLE "victims"
 #define ATTACKER_TABLE "attackers"
+#define ROVPP_BLACKHOLES_TABLE "rovpp_blackholes"
 
 #endif
