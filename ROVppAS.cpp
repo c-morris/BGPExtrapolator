@@ -32,10 +32,14 @@ ROVppAS::ROVppAS(uint32_t myasn,
                  AS(myasn, inv, prov, peer, cust)  {
                     // Save reference to attackers
                     attackers = rovpp_attackers;
-                    blackholes = new std::map<Prefix<>, std::set<Announcement>>;
+                    failed_rov = new std::vector<Announcement>;
+                    passed_rov = new std::vector<Announcement>;
+                    blackholes = new std::vector<Announcement>;
                  }
 
 ROVppAS::~ROVppAS() { 
+    delete failed_rov;
+    delete passed_rov;
     delete blackholes;
 }
 
@@ -83,10 +87,10 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
                 // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
                 // Only in the data plane changes
                 if (pass_rov(ann)) {
-                    pass_rov->push_back(ann);
+                    passed_rov->push_back(ann);
                     incoming_announcements->push_back(ann);
                 } else {
-                    fail_rov->push_back(ann);
+                    failed_rov->push_back(ann);
                     if (best_alternative_route(ann) == ann) { // if no alternative
                         blackholes->push_back(ann);
                     }
@@ -94,10 +98,10 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
             } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                 // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                 if (pass_rov(ann)) {
-                    pass_rov->push_back(ann);
+                    passed_rov->push_back(ann);
                     incoming_announcements->push_back(ann);
                 } else {
-                    fail_rov->push_back(ann);
+                    failed_rov->push_back(ann);
                     if (best_alternative_route(ann) == ann) { // if no alternative
                         // mark as blackholed and accept this announcement
                         blackholes->push_back(ann);
@@ -114,5 +118,48 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
         }
     }
 }
+
+/**
+ * Will return the best alternative announcemnt if it exists. If it doesn't exist, it will return the
+ * the announcement it was given.
+ * 
+ * @param  ann An announcemnt you want to find an alternative for.
+ * @return     The best alternative announcement (i.e. an announcement which came from a neighbor who hadn't shared
+ *             an attacker announcemnt with us).
+ */
+Announcement ROVppAS::best_alternative_route(Announcement &ann) {
+    // Initialize the default answer of (No best alternative with the current given ann)
+    // This variable will update with the best ann if it exists
+    Announcement best_alternative_ann = ann;
+    // Check if the prefix is in our history
+    for(std::size_t i=0; i<passed_rov->size(); ++i) {
+        Announcement curr_good_ann = passed_rov->at(i);
+        for(std::size_t j=0; j<failed_rov->size(); ++j) {
+            Announcement curr_bad_ann = failed_rov->at(i);
+            // Check if the prefixes overlap or match
+            // and if they DO NOT come from the same neighbor
+            if ((curr_bad_ann.prefix.contained_in_or_equal_to(curr_good_ann.prefix)) && 
+                (curr_bad_ann.received_from_asn != curr_good_ann.received_from_asn)) {
+                // Update the best_alternative_ann if it's better than the current one
+                if (is_better(curr_good_ann, best_alternative_ann)) {
+                    best_alternative_ann = curr_good_ann;
+                }
+            }
+        }
+    }
+    return best_alternative_ann;
+}
+
+/**
+ * Computes "Is a better than b?".
+ * @param  a Announcement 1
+ * @param  b Announcement 2
+ * @return   Will return a bool of whether or not a is better than b
+ */
+bool ROVppAS::is_better(Announcement &a, Announcement &b) {
+    // TODO: Need to implement. This is a place holder
+    return true;
+}
+
 
 

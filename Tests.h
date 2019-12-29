@@ -31,13 +31,10 @@ bool test_prefix_contained_in_or_equal_to_operator();
 
 // Prototypes for AnnouncementTest.cpp
 bool test_announcement();
-bool test_ann_lt_operator();
-bool test_ann_gt_operator();
 bool test_ann_eq_operator();
 bool test_to_sql();
 bool test_ann_os_operator();
 bool test_to_csv();
-bool test_ann_eq_operator();
 
 // Prototypes for ASTest.cpp
 bool test_get_random();
