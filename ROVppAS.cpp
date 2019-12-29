@@ -157,24 +157,8 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
  * @return   Will return a bool of whether or not a is better than b
  */
 bool ROVppAS::is_better(Announcement &a, Announcement &b) {    
-    // Check if BGP Relationship is greater
-    // Customers = 3, Peers = 2, Providers = 1
-    double a_rel = std::ceil(a.priority);
-    double b_rel = std::ceil(b.priority);
-
-    // Precompute some conditions
-    // Check if relationship is the same
-    bool same_relationship = a_rel == b_rel;
-
-    // Check if BGP Relationship is greater
-    if (a_rel > b_rel) {
-        return true;
     // Use BGP priority to make decision
-    } else if (same_relationship && a.priority > b.priority) {
-        return true;
-    } else {
-        return false;
-    }
+    return  a.priority > b.priority;
 }
 
 
