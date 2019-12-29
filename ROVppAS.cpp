@@ -32,9 +32,12 @@ ROVppAS::ROVppAS(uint32_t myasn,
                  AS(myasn, inv, prov, peer, cust)  {
                     // Save reference to attackers
                     attackers = rovpp_attackers;
+                    blackholes = new std::map<Prefix<>, std::set<Announcement>>;
                  }
 
-ROVppAS::~ROVppAS() { }
+ROVppAS::~ROVppAS() { 
+    delete blackholes;
+}
 
 /** Adds a policy to the policy_vector
  *

@@ -86,5 +86,7 @@ public:
         os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
         return os;
     }
+    
+    // TODO: Create equality operator 
 };
 #endif

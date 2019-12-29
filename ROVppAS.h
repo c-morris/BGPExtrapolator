@@ -41,9 +41,9 @@ struct ROVppAS : public AS {
     // Announcement Tracking Member Variables
     // These variables should not be modified directly
     // They must be updated using functions which will help reduce the complexity of management details
-    std::map<Prefix<>, std::set<Announcement>> dropped_anns; // Save dropped announcements (i.e. attacker announcements)
-    std::map<Prefix<>, std::set<Announcement>> *ann_history; // History of all announcements that have passed ROV
-    std::map<Prefix<>, std::set<Announcement>> *blackholes;  // Keep track of blackholes created
+    std::vector<Announcement> *fail_rov; // Save dropped announcements (i.e. attacker announcements)
+    std::vector<Announcement> *pass_rov; // History of all announcements that have passed ROV
+    std::vector<Announcement> *blackholes;  // Keep track of blackholes created
     
 
     ROVppAS(uint32_t myasn=0,
@@ -61,13 +61,12 @@ struct ROVppAS : public AS {
     // ROV Methods
     bool pass_rov(Announcement &ann);
     void add_policy(uint32_t);
-    void drop_ann(Announcement &ann);   // Adds ann to dropped_anns
-    void use(Announcement &ann);        // This will be used to update the RIB (i.e. all_anns)
-    void blackhole(Announcement &ann);  // Adds ann to blackholes 
     // Helper functions
-    Announcement alternative_route(Announcement &ann);  // help find a good alternative route 
+    Announcement best_alternative_route(Announcement &ann);  // help find a good alternative route 
                                                         // (i.e. an ann from a neighbor which 
-                                                        // didn't give you the attacker's announcement) 
+                                                        // didn't give you the attacker's announcement)
+                                                        // Will return the same given ann if there is
+                                                        // no better alternative
     bool is_better(Announcement &a, Announcement &b);  // Computes "is a better than b"
                                                        // This will be used to determine:
                                                        // * Replace currently used ann for a better one
