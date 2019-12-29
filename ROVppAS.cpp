@@ -135,7 +135,7 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
     for(std::size_t i=0; i<passed_rov->size(); ++i) {
         Announcement curr_good_ann = passed_rov->at(i);
         for(std::size_t j=0; j<failed_rov->size(); ++j) {
-            Announcement curr_bad_ann = failed_rov->at(i);
+            Announcement curr_bad_ann = failed_rov->at(j);
             // Check if the prefixes overlap or match
             // and if they DO NOT come from the same neighbor
             if ((curr_bad_ann.prefix.contained_in_or_equal_to(curr_good_ann.prefix)) && 
