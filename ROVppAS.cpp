@@ -62,6 +62,7 @@ void ROVppAS::add_policy(uint32_t p) {
  * @return bool  true if from attacker, false otherwise
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
+    if (ann.origin == 64512) { return false; }
     if (attackers != NULL) {
         return (attackers->find(ann.origin) == attackers->end());
     } else {
