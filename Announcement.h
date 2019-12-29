@@ -87,6 +87,15 @@ public:
         return os;
     }
     
-    // TODO: Create equality operator 
+    // TODO: Create equality operator (currently just a placeholder)
+    bool operator==(const Announcement &b) const {
+        // return (prefix == b.prefix &&
+        //         origin == b.origin &&
+        //         priority == b.priority &&
+        //         received_from_asn == b.received_from_asn &&
+        //         from_monitor == b.from_monitor &&
+        //         tstamp == b.tstamp) 
+        return true;
+    } 
 };
 #endif
