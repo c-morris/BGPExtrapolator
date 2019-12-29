@@ -37,6 +37,7 @@ bool test_ann_eq_operator();
 bool test_to_sql();
 bool test_ann_os_operator();
 bool test_to_csv();
+bool test_ann_eq_operator();
 
 // Prototypes for ASTest.cpp
 bool test_get_random();

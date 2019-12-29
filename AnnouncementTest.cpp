@@ -15,6 +15,24 @@ bool test_announcement(){
     return true;
 }
 
+/** Tests the == operator for the Announcements
+ *
+ * @ return True for success 
+ */
+bool test_ann_eq_operator(){
+    Announcement a = Announcement(111, 0x01010101, 0xffffff00, 262, 222, false);
+    Announcement b = Announcement(112, 0x01010101, 0xffffff00, 262, 222, false);
+    Announcement c = Announcement(111, 0x01010102, 0xffffff00, 262, 222, false);
+    Announcement d = Announcement(111, 0x01010101, 0xfffffff0, 262, 222, false);
+    Announcement e = Announcement(111, 0x01010101, 0xffffff00, 261, 222, false);
+    Announcement f = Announcement(111, 0x01010101, 0xffffff00, 262, 221, false);
+    return !((!(a == a)) ||
+        (a == b) ||
+        (a == c) ||
+        (a == d) ||
+        (a == e) ||
+        (a == f));
+}
 
 /** Tests the << operator for the Announcements
  *

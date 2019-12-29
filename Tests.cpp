@@ -52,6 +52,9 @@ BOOST_AUTO_TEST_CASE( Prefix_contained_in_or_equal_to_operator ) {
 BOOST_AUTO_TEST_CASE( Announcement_constructor ) {
         BOOST_CHECK( test_announcement() );
 }
+BOOST_AUTO_TEST_CASE( Announcement_constructor ) {
+        BOOST_CHECK( test_ann_eq_operator() );
+}
 
 // AS.cpp
 BOOST_AUTO_TEST_CASE( AS_get_random ) {

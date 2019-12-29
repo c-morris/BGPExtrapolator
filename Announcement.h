@@ -87,6 +87,11 @@ public:
         return os;
     }
     
-    // TODO: Create equality operator 
+    bool operator==(const Announcement &b) const {
+        return (origin == b.origin) &&
+               (prefix == b.prefix) &&
+               (priority == b.priority) &&
+               (received_from_asn == b.received_from_asn);
+    }
 };
 #endif
