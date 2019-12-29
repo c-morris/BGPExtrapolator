@@ -39,8 +39,6 @@ struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;
     std::set<uint32_t> *attackers;
     // Announcement Tracking Member Variables
-    // These variables should not be modified directly
-    // They must be updated using functions which will help reduce the complexity of management details
     std::vector<Announcement> *failed_rov; // Save dropped announcements (i.e. attacker announcements)
     std::vector<Announcement> *passed_rov; // History of all announcements that have passed ROV
     std::vector<Announcement> *blackholes;  // Keep track of blackholes created

@@ -112,7 +112,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             propagate_up();
             propagate_down();
         }
-
     }
     
     // This code block runs if we want to propogate up and down only once

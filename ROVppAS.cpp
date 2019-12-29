@@ -161,5 +161,3 @@ bool ROVppAS::is_better(Announcement &a, Announcement &b) {
     return  a.priority > b.priority;
 }
 
-
-
