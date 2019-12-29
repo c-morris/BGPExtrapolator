@@ -86,7 +86,6 @@ bool check_infected_vector(ASGraph * as_graph, std::vector<uint32_t> asns, Prefi
 // Topologies
 //-----------------------------------------------
 
-// TODO: Function is incomplete, Do not use
 /** Creates a ROVppASGraph object that is the same as figure 1 in the paper.
  * 
  * Distinct ASes: 11, 77, 12, 44, 88, 86, 666, 99
@@ -129,6 +128,57 @@ ROVppASGraph figure_1_graph(uint32_t policy_type) {
     // Set policies
     dynamic_cast<ROVppAS *>(graph.ases->find(77)->second)->add_policy(policy_type);
     dynamic_cast<ROVppAS *>(graph.ases->find(78)->second)->add_policy(policy_type);
+
+    return graph;
+}
+
+
+// TODO: Function is incomplete, Do not use
+/** Creates a ROVppASGraph object that is the same as figure 1 in the paper.
+ * 
+ * Distinct ASes: 32, 77, 11, 55, 54, 44, 33, 56, 99, 666
+ * Victim: 99
+ * Attacker: 666
+ *
+ * Expected outcomes:
+ *  Hijacked:
+ *  NotHijacked:
+ *  Disconnected:
+ *
+ * @return ROVppASGraph object setup like figure 1
+ */
+ROVppASGraph figure_2_graph(uint32_t policy_type) {
+    // TODO: function is incomplete needs
+    ROVppASGraph graph = ROVppASGraph();
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Set Relationships
+    // AS 44
+    add_two_way_relationship(&graph, 44, 77, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 54, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 56, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 666, AS_REL_PROVIDER);
+    // AS 77
+    add_two_way_relationship(&graph, 77, 11, AS_REL_PROVIDER);
+    // AS 11
+    add_two_way_relationship(&graph, 11, 32, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 11, 33, AS_REL_PROVIDER);
+    // AS 54
+    add_two_way_relationship(&graph, 54, 55, AS_REL_PROVIDER);
+    // AS 55
+    add_two_way_relationship(&graph, 55, 11, AS_REL_PROVIDER);
+    // AS 56
+    add_two_way_relationship(&graph, 56, 99, AS_REL_PROVIDER);
+    
+    // Set Attacker and Victim
+    graph.attackers->insert(attacker_asn);
+    graph.victims->insert(victim_asn);
+    
+    // Set policies
+    dynamic_cast<ROVppAS *>(graph.ases->find(77)->second)->add_policy(policy_type);
+    dynamic_cast<ROVppAS *>(graph.ases->find(33)->second)->add_policy(policy_type);
+    dynamic_cast<ROVppAS *>(graph.ases->find(32)->second)->add_policy(ROVPPAS_TYPE_ROV);
 
     return graph;
 }
