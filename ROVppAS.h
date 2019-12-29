@@ -38,7 +38,13 @@
 struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;
     std::set<uint32_t> *attackers;
-    std::map<Prefix<>, Announcement> dropped_ann_map;  // Save dropped ann
+    // Announcement Tracking Member Variables
+    // These variables should not be modified directly
+    // They must be updated using functions which will help reduce the complexity of management details
+    std::map<Prefix<>, std::set<Announcement>> dropped_anns; // Save dropped announcements (i.e. attacker announcements)
+    std::map<Prefix<>, std::set<Announcement>> *ann_history; // History of all announcements that have passed ROV
+    std::map<Prefix<>, std::set<Announcement>> *blackholes;  // Keep track of blackholes created
+    
 
     ROVppAS(uint32_t myasn=0,
         std::set<uint32_t> *attackers=NULL,
@@ -55,6 +61,17 @@ struct ROVppAS : public AS {
     // ROV Methods
     bool pass_rov(Announcement &ann);
     void add_policy(uint32_t);
+    void drop_ann(Announcement &ann);   // Adds ann to dropped_anns
+    void use(Announcement &ann);        // This will be used to update the RIB (i.e. all_anns)
+    void blackhole(Announcement &ann);  // Adds ann to blackholes 
+    // Helper functions
+    Announcement alternative_route(Announcement &ann);  // help find a good alternative route 
+                                                        // (i.e. an ann from a neighbor which 
+                                                        // didn't give you the attacker's announcement) 
+    bool is_better(Announcement &a, Announcement &b);  // Computes "is a better than b"
+                                                       // This will be used to determine:
+                                                       // * Replace currently used ann for a better one
+                                                       // * Help make decisions on an alternative routes
 };
 
 #endif
