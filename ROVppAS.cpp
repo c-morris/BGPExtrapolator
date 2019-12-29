@@ -132,7 +132,11 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
     std::vector<Announcement> candidates;
     candidates.reserve(passed_rov->size() + incoming_announcements->size());  // preallocate memory
     candidates.insert(candidates.end(), passed_rov->begin(), passed_rov->end());
-    candidates.insert(candidates.end(), incoming_announcements->begin(), incoming_announcements->end());
+    for (auto candidate_ann : *incoming_announcements) {
+        if (pass_rov(candidate_ann)) {
+            candidates.push_back(candidate_ann);
+        }
+    }
     // Check if the prefix is in our history
     for(std::size_t i=0; i<candidates.size(); ++i) {
         Announcement curr_good_ann = candidates.at(i);
