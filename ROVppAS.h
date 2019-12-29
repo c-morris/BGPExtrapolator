@@ -51,11 +51,11 @@ struct ROVppAS : public AS {
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
-
-    // TODO: Uncomment once implemented, otherwise it causes tests to fail
-    // void receive_announcement(Announcement &ann);
-    void receive_announcements(std::vector<Announcement> &announcements);
-
+    
+    // Overrided Methods
+    void process_announcements();
+    
+    
     // ROV Methods
     bool pass_rov(Announcement &ann);
     void add_policy(uint32_t);

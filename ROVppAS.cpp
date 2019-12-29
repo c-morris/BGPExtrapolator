@@ -69,26 +69,21 @@ bool ROVppAS::pass_rov(Announcement &ann) {
     }
 }
 
-/** Push the received announcements to the incoming_announcements vector.
- *
- * Note that this differs from the Python version in that it does not store
- * a dict of (prefix -> list of announcements for that prefix).
- *
- * @param announcements to be pushed onto the incoming_announcements vector.
+/** Iterate through incoming_announcements and keep only the best. 
  */
-void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
-    for (Announcement &ann : announcements) {
+void ROVppAS::process_announcements() {
+    for (auto &ann : *incoming_announcements) {
         if (policy_vector.size() > 0) { // if we have a policy
             if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                 if (pass_rov(ann)) {
-                    incoming_announcements->push_back(ann);
+                    process_announcement(ann);
                 }
             } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                 // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
                 // Only in the data plane changes
                 if (pass_rov(ann)) {
                     passed_rov->push_back(ann);
-                    incoming_announcements->push_back(ann);
+                    process_announcement(ann);
                 } else {
                     failed_rov->push_back(ann);
                     if (best_alternative_route(ann) == ann) { // if no alternative
@@ -99,7 +94,7 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
                 // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                 if (pass_rov(ann)) {
                     passed_rov->push_back(ann);
-                    incoming_announcements->push_back(ann);
+                    process_announcement(ann);
                 } else {
                     failed_rov->push_back(ann);
                     if (best_alternative_route(ann) == ann) { // if no alternative
@@ -107,16 +102,17 @@ void ROVppAS::receive_announcements(std::vector<Announcement> &announcements) {
                         blackholes->push_back(ann);
                         ann.origin = 64512;
                         ann.received_from_asn = 64512;
-                        incoming_announcements->push_back(ann);
+                        process_announcement(ann);
                     } // else drop it
                 }
             } else { // unrecognized policy defaults to bgp
-                incoming_announcements->push_back(ann);
+                process_announcement(ann);
             }
         } else { // if there is no policy
-            incoming_announcements->push_back(ann);
+            process_announcement(ann);
         }
     }
+    incoming_announcements->clear();
 }
 
 /**
@@ -131,9 +127,14 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
     // Initialize the default answer of (No best alternative with the current given ann)
     // This variable will update with the best ann if it exists
     Announcement best_alternative_ann = ann;
+    // Create an ultimate list of good candidate announcemnts (passed_rov + incoming_announcements)
+    std::vector<Announcement> candidates;
+    candidates.reserve(passed_rov->size() + incoming_announcements->size());  // preallocate memory
+    candidates.insert(candidates.end(), passed_rov->begin(), passed_rov->end());
+    candidates.insert(candidates.end(), failed_rov->begin(), failed_rov->end());
     // Check if the prefix is in our history
-    for(std::size_t i=0; i<passed_rov->size(); ++i) {
-        Announcement curr_good_ann = passed_rov->at(i);
+    for(std::size_t i=0; i<candidates.size(); ++i) {
+        Announcement curr_good_ann = candidates.at(i);
         for(std::size_t j=0; j<failed_rov->size(); ++j) {
             Announcement curr_bad_ann = failed_rov->at(j);
             // Check if the prefixes overlap or match
