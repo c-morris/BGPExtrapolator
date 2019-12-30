@@ -89,6 +89,9 @@ void ROVppAS::process_announcements() {
                     failed_rov->push_back(ann);
                     if (best_alternative_route(ann) == ann) { // if no alternative
                         blackholes->push_back(ann);
+                        ann.origin = 64512;
+                        ann.received_from_asn = 64512;
+                        process_announcement(ann);
                     }
                 }
             } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
