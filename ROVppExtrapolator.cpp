@@ -74,6 +74,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     rovpp_querier->create_results_tbl();
     rovpp_querier->clear_supernodes_from_db();
     rovpp_querier->create_supernodes_tbl();
+    rovpp_querier->create_rovpp_blacklist_tbl();
     
     // Generate the graph and populate the stubs & supernode tables
     rovpp_graph->create_graph_from_db(rovpp_querier);
@@ -399,18 +400,29 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 
 
 void ROVppExtrapolator::save_results(int iteration) {
+    // Setup output file stream
     std::ofstream outfile;
+    std::ofstream blackhole_outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
+    std::string blackhole_file_name = "/dev/shm/bgp/blackholes_table_" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
+    blackhole_outfile.open(blackhole_file_name);
     
-    // Handle standard results
+    // Iterate over all nodes in graph
     std::cout << "Saving Results From Iteration: " << iteration << std::endl;
     for (auto &as : *rovpp_graph->ases){
         as.second->stream_announcements(outfile);
+        // Check if it's a ROVpp node
+        if (ROVppAS* rovpp_as = dynamic_cast<ROVppAS*>(as.second)) {
+          // It is, so now output the blacklist
+          rovpp_as->stream_blackholes(blackhole_outfile);
+        }
     }
+      
     outfile.close();
+    blackhole_outfile.close();
     rovpp_querier->copy_results_to_db(file_name);
-    
+    rovpp_querier->copy_blackhole_list_to_db(blackhole_file_name);
     std::remove(file_name.c_str());
- 
+    std::remove(blackhole_file_name.c_str());
 }
