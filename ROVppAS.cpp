@@ -62,7 +62,7 @@ void ROVppAS::add_policy(uint32_t p) {
  * @return bool  true if from attacker, false otherwise
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
-    if (ann.origin == 64512) { return false; }
+    if (ann.origin == UNUSED_ASN_FLAG_FOR_ATTACKERS) { return false; }
     if (attackers != NULL) {
         return (attackers->find(ann.origin) == attackers->end());
     } else {
@@ -87,8 +87,11 @@ void ROVppAS::process_announcements() {
                     process_announcement(ann);
                 } else {
                     failed_rov->push_back(ann);
-                    if (best_alternative_route(ann) == ann) { // if no alternative
+                    Announcement best_alternative_ann = best_alternative_route(ann); 
+                    if (best_alternative_ann == ann) { // if no alternative
                         blackholes->push_back(ann);
+                    } else {
+                        process_announcement(best_alternative_ann);
                     }
                 }
             } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
@@ -101,8 +104,8 @@ void ROVppAS::process_announcements() {
                     if (best_alternative_route(ann) == ann) { // if no alternative
                         // mark as blackholed and accept this announcement
                         blackholes->push_back(ann);
-                        ann.origin = 64512;
-                        ann.received_from_asn = 64512;
+                        ann.origin = UNUSED_ASN_FLAG_FOR_ATTACKERS;
+                        ann.received_from_asn = UNUSED_ASN_FLAG_FOR_ATTACKERS;
                         process_announcement(ann);
                     } // else drop it
                 }
@@ -124,37 +127,37 @@ void ROVppAS::process_announcements() {
  * @return     The best alternative announcement (i.e. an announcement which came from a neighbor who hadn't shared
  *             an attacker announcemnt with us).
  */
-Announcement ROVppAS::best_alternative_route(Announcement &ann) {
-    // Initialize the default answer of (No best alternative with the current given ann)
-    // This variable will update with the best ann if it exists
-    Announcement best_alternative_ann = ann;
-    // Create an ultimate list of good candidate announcemnts (passed_rov + incoming_announcements)
-    std::vector<Announcement> candidates;
-    candidates.reserve(passed_rov->size() + incoming_announcements->size());  // preallocate memory
-    candidates.insert(candidates.end(), passed_rov->begin(), passed_rov->end());
-    for (auto candidate_ann : *incoming_announcements) {
-        if (pass_rov(candidate_ann)) {
-            candidates.push_back(candidate_ann);
-        }
-    }
-    // Check if the prefix is in our history
-    for(std::size_t i=0; i<candidates.size(); ++i) {
-        Announcement curr_good_ann = candidates.at(i);
-        for(std::size_t j=0; j<failed_rov->size(); ++j) {
-            Announcement curr_bad_ann = failed_rov->at(j);
-            // Check if the prefixes overlap or match
-            // and if they DO NOT come from the same neighbor
-            if ((curr_bad_ann.prefix.contained_in_or_equal_to(curr_good_ann.prefix)) && 
-                (curr_bad_ann.received_from_asn != curr_good_ann.received_from_asn)) {
-                // Update the best_alternative_ann if it's better than the current one
-                if (is_better(curr_good_ann, best_alternative_ann)) {
-                    best_alternative_ann = curr_good_ann;
-                }
-            }
-        }
-    }
-    return best_alternative_ann;
-}
+ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
+     // Initialize the default answer of (No best alternative with the current given ann)
+     // This variable will update with the best ann if it exists
+     Announcement best_alternative_ann = ann;
+     // Create an ultimate list of good candidate announcemnts (passed_rov + incoming_announcements)
+     std::vector<Announcement> candidates;
+     candidates.reserve(passed_rov->size() + incoming_announcements->size());  // preallocate memory
+     candidates.insert(candidates.end(), passed_rov->begin(), passed_rov->end());
+     for (auto candidate_ann : *incoming_announcements) {
+         if (pass_rov(candidate_ann)) {
+             candidates.push_back(candidate_ann);
+         }
+     }
+     // Check if the prefix is in our history
+     for(std::size_t i=0; i<candidates.size(); ++i) {
+         Announcement curr_good_ann = candidates.at(i);
+         for(std::size_t j=0; j<failed_rov->size(); ++j) {
+             Announcement curr_bad_ann = failed_rov->at(j);
+             // Check if the prefixes overlap or match
+             // and if they DO NOT come from the same neighbor
+             if ((curr_bad_ann.prefix.contained_in_or_equal_to(curr_good_ann.prefix)) && 
+                 (curr_bad_ann.received_from_asn != curr_good_ann.received_from_asn)) {
+                 // Update the best_alternative_ann if it's better than the current one
+                 if (is_better(curr_good_ann, best_alternative_ann)) {
+                     best_alternative_ann = curr_good_ann;
+                 }
+             }
+         }
+     }
+     return best_alternative_ann;
+ }
 
 /**
  * Computes "Is a better than b?".
@@ -163,6 +166,9 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
  * @return   Will return a bool of whether or not a is better than b
  */
 bool ROVppAS::is_better(Announcement &a, Announcement &b) {    
+    // TODO: We will return to this to consider blackhole size
+    // We opted to use this for simplicity, but the case of considering
+    // whether or not a blackhole exists in one of these two ann is significant
     // Use BGP priority to make decision
     return  a.priority > b.priority;
 }
