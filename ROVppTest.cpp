@@ -1002,6 +1002,52 @@ bool test_rovpp_announcement(){
 // ROV Test
 ////////////////////////////////////////////////////////////
 
+/**
+ * [test_best_alternative_route description]
+ * The Store:
+ * 
+ * @return [description]
+ */
+bool test_best_alternative_route() {
+    ROVppAS as = ROVppAS();
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Initialize Attacker set
+    as.attackers->insert(attacker_asn); 
+    // Set the policy
+    as.add_policy(ROVPPAS_TYPE_ROVPP);  // ROVpp0.1
+    
+    // Announcements from victim
+    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0");
+    // The difference between the following three is the received_from_asn
+    // Notice the priorities
+    // The Announcements will be handled in this order
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 11, 222, false);  // If done incorrectly it will end up with this one
+    a1.priority = 293;
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 22, 222, false);  // or this one
+    a2.priority = 292;
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 33, 222, false);  // It should end up with this one if done correctly
+    a3.priority = 291;
+    
+    // Subprefix Hijack
+    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
+    // The difference between the following is the received_from_asn
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 11, 222, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    a4.priority = 294;
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 22, 222, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    a5.priority = 295;
+    
+    // Notice the victim's ann come first, then the attackers
+    for (Announcement a : {a1, a2, a3, a4, a5}) {
+        as.incoming_announcements->push_back(a);
+    }
+    
+    // See if it ended up with the correct one
+    Announcement selected_ann = as.all_anns->find(p1)->second;
+    return selected_ann == a3;
+}
+
 /** Testing Blackholing (i.e. when only a blackhole is produced)
  *
  * Blackholing produces a blackhole if it has no other safe

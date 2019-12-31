@@ -175,6 +175,9 @@ BOOST_AUTO_TEST_CASE( ROVppAS_clear_announcements ) {
 BOOST_AUTO_TEST_CASE( ROVppAnnouncement_constructor ) {
         BOOST_CHECK( test_rovpp_announcement() );
 }
+BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route ) {
+        BOOST_CHECK( test_best_alternative_route() );
+}
 #endif // RUN_TESTS
 
 
