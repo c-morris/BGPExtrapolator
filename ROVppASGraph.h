@@ -30,6 +30,7 @@
 
 struct ROVppASGraph: public ASGraph {
     // Sets of ASNs to keep track of attackers and victims
+    // TODO need set of vectors for policy index
     std::set<uint32_t> *attackers;
     std::set<uint32_t> *victims;
     

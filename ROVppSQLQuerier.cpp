@@ -31,7 +31,7 @@ ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> g,
                                  std::string r,
                                  std::string e, 
                                  std::string f) 
-                                 : SQLQuerier() {
+    : SQLQuerier() {
     results_table = r;
     victim_table = e;
     attack_table = f;
@@ -75,7 +75,6 @@ pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const
     return execute(sql);
 }
 
-
 /** Pulls in victim or attacker pairs.
  * 
  * @param cur_table This is a constant value you can find in TableNames.h (either ATTACKER_TABLE or VICTIM_TABLE) 
@@ -103,5 +102,3 @@ void ROVppSQLQuerier::create_results_tbl(){
     std::cout << "Creating results table..." << std::endl;
     execute(sql, false);
 }
-
-
