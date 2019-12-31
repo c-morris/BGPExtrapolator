@@ -74,49 +74,52 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  */
 void ROVppAS::process_announcements() {
     for (auto &ann : *incoming_announcements) {
-        if (policy_vector.size() > 0) { // if we have a policy
-            if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
-                if (pass_rov(ann)) {
-                    process_announcement(ann);
-                }
-            } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
-                // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
-                // Only in the data plane changes
-                if (pass_rov(ann)) {
-                    passed_rov->push_back(ann);
-                    process_announcement(ann);
-                } else {
-                    failed_rov->push_back(ann);
-                    Announcement best_alternative_ann = best_alternative_route(ann); 
-                    if (best_alternative_ann == ann) { // if no alternative
-                        blackholes->push_back(ann);
-                        ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                        ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+        auto search = all_anns->find(ann.prefix);
+        if (search == all_anns->end() || !search->second.from_monitor) {
+            if (policy_vector.size() > 0) { // if we have a policy
+                if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
+                    if (pass_rov(ann)) {
+                        process_announcement(ann);
+                    }
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+                    // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
+                    // Only in the data plane changes
+                    if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
                         process_announcement(ann);
                     } else {
-                        process_announcement(best_alternative_ann);
+                        failed_rov->push_back(ann);
+                        Announcement best_alternative_ann = best_alternative_route(ann); 
+                        if (best_alternative_ann == ann) { // if no alternative
+                            blackholes->push_back(ann);
+                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            process_announcement(ann);
+                        } else {
+                            process_announcement(best_alternative_ann);
+                        }
                     }
-                }
-            } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
-                // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
-                if (pass_rov(ann)) {
-                    passed_rov->push_back(ann);
-                    process_announcement(ann);
-                } else {
-                    failed_rov->push_back(ann);
-                    if (best_alternative_route(ann) == ann) { // if no alternative
-                        // mark as blackholed and accept this announcement
-                        blackholes->push_back(ann);
-                        ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                        ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
+                    // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
+                    if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
                         process_announcement(ann);
-                    } // else drop it
+                    } else {
+                        failed_rov->push_back(ann);
+                        if (best_alternative_route(ann) == ann) { // if no alternative
+                            // mark as blackholed and accept this announcement
+                            blackholes->push_back(ann);
+                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            process_announcement(ann);
+                        } // else drop it
+                    }
+                } else { // unrecognized policy defaults to bgp
+                    process_announcement(ann);
                 }
-            } else { // unrecognized policy defaults to bgp
+            } else { // if there is no policy
                 process_announcement(ann);
             }
-        } else { // if there is no policy
-            process_announcement(ann);
         }
     }
     incoming_announcements->clear();
@@ -135,26 +138,36 @@ void ROVppAS::process_announcements() {
      // This variable will update with the best ann if it exists
      Announcement best_alternative_ann = ann;
      // Create an ultimate list of good candidate announcemnts (passed_rov + incoming_announcements)
-     std::vector<Announcement> candidates;
-     candidates.reserve(passed_rov->size() + incoming_announcements->size());  // preallocate memory
-     candidates.insert(candidates.end(), passed_rov->begin(), passed_rov->end());
+     std::vector<Announcement> candidates = *passed_rov;
+     std::vector<Announcement> baddies = *failed_rov;
      for (auto candidate_ann : *incoming_announcements) {
          if (pass_rov(candidate_ann)) {
              candidates.push_back(candidate_ann);
+         } else {
+             baddies.push_back(candidate_ann);
          }
      }
-     // Check if the prefix is in our history
-     for(std::size_t i=0; i<candidates.size(); ++i) {
-         Announcement curr_good_ann = candidates.at(i);
-         for(std::size_t j=0; j<failed_rov->size(); ++j) {
-             Announcement curr_bad_ann = failed_rov->at(j);
-             // Check if the prefixes overlap or match
-             // and if they DO NOT come from the same neighbor
-             if ((curr_bad_ann.prefix.contained_in_or_equal_to(curr_good_ann.prefix)) && 
-                 (curr_bad_ann.received_from_asn != curr_good_ann.received_from_asn)) {
-                 // Update the best_alternative_ann if it's better than the current one
-                 if (is_better(curr_good_ann, best_alternative_ann)) {
-                     best_alternative_ann = curr_good_ann;
+     // Find the best alternative to ann
+     for (auto &candidate : candidates) {
+         // Is there a valid alternative?
+         if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
+             // Is the candidate safe?
+             bool safe = true;
+             for (auto &curr_bad_ann : baddies) {
+                 if (curr_bad_ann.prefix.contained_in_or_equal_to(candidate.prefix) &&
+                     curr_bad_ann.received_from_asn == candidate.received_from_asn) {
+                     // Well yes, but actually no
+                     safe = false;
+                     break;
+                 }
+             }
+             if (safe) {
+                 // Always replace the initial bad ann if we have an alternative
+                 // Else check for one with a higher priority
+                 if (best_alternative_ann == ann) {
+                     best_alternative_ann = candidate;
+                 } else if (best_alternative_ann.priority < candidate.priority) {
+                     best_alternative_ann = candidate;
                  }
              }
          }

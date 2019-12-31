@@ -805,7 +805,7 @@ bool test_rovpp_rov_receive_announcements(){
     as.add_policy(ROVPPAS_TYPE_ROV);
     as.receive_announcements(vect);
     delete as.attackers;
-    if (as.incoming_announcements->size() != 1) { return false; }
+    if (as.incoming_announcements->size() != 2) { return false; }
     return true;
 }
 
@@ -998,20 +998,16 @@ bool test_rovpp_announcement(){
     return true;
 }
 
-////////////////////////////////////////////////////////////
-// ROV Test
-////////////////////////////////////////////////////////////
-
 /**
  * [test_best_alternative_route description]
  * The Store:
  * 
  * @return [description]
  */
-bool test_best_alternative_route() {
+bool test_best_alternative_route_chosen() {
     // Initialize AS
     ROVppAS as = ROVppAS();
-    as.attackers = new std::set<uint32_t>;
+    as.attackers = new std::set<uint32_t>();
     
     uint32_t attacker_asn = 666;
     uint32_t victim_asn = 99;
@@ -1026,19 +1022,19 @@ bool test_best_alternative_route() {
     // The difference between the following three is the received_from_asn
     // Notice the priorities
     // The Announcements will be handled in this order
-    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 11, 222, false);  // If done incorrectly it will end up with this one
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, false);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 22, 222, false);  // or this one
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, false);  // or this one
     a2.priority = 292;
-    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 33, 222, false);  // It should end up with this one if done correctly
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, false);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
     Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
     // The difference between the following is the received_from_asn
-    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 11, 222, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 22, 222, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
@@ -1052,6 +1048,58 @@ bool test_best_alternative_route() {
     Announcement selected_ann = as.all_anns->find(p1)->second;
     return selected_ann == a3;
 }
+
+/**
+ * [test_best_alternative_route description]
+ * The Store:
+ * 
+ * @return [description]
+ */
+bool test_best_alternative_route() {
+    // Initialize AS
+    ROVppAS as = ROVppAS();
+    as.attackers = new std::set<uint32_t>();
+    
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Initialize Attacker set
+    as.attackers->insert(attacker_asn); 
+    // Set the policy
+    as.add_policy(ROVPPAS_TYPE_ROVPP);  // ROVpp0.1
+    
+    // Announcements from victim
+    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0");
+    // The difference between the following three is the received_from_asn
+    // Notice the priorities
+    // The Announcements will be handled in this order
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, false);  // If done incorrectly it will end up with this one
+    a1.priority = 293;
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, false);  // or this one
+    a2.priority = 292;
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, false);  // It should end up with this one if done correctly
+    a3.priority = 291;
+    
+    // Subprefix Hijack
+    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
+    // The difference between the following is the received_from_asn
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    a4.priority = 294;
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    a5.priority = 295;
+    
+    // Notice the victim's ann come first, then the attackers
+    for (Announcement a : {a1, a2, a3, a4, a5}) {
+        as.incoming_announcements->push_back(a);
+    }
+    
+    if (!(as.best_alternative_route(a4) == a3) ||
+        !(as.best_alternative_route(a5) == a3)) {
+        return false;
+    }
+    return true; 
+}
+
 
 /** Testing Blackholing (i.e. when only a blackhole is produced)
  *
