@@ -36,7 +36,7 @@
 #define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
 
 // Special Constants
-#define UNUSED_ASN_FLAG_FOR_ATTACKERS 64512  // This is used for ROVpp 0.1+ to 
+#define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  // This is used for ROVpp 0.1+ to 
                                              // identify blackhole announcements in the dataplane.
                                              // We're also using this in contrl plane in pass_rov
                                              // Constant was agreed upon with Simulation code.

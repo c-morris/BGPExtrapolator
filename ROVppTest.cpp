@@ -1009,7 +1009,10 @@ bool test_rovpp_announcement(){
  * @return [description]
  */
 bool test_best_alternative_route() {
+    // Initialize AS
     ROVppAS as = ROVppAS();
+    as.attackers = new std::set<uint32_t>;
+    
     uint32_t attacker_asn = 666;
     uint32_t victim_asn = 99;
     
@@ -1042,6 +1045,8 @@ bool test_best_alternative_route() {
     for (Announcement a : {a1, a2, a3, a4, a5}) {
         as.incoming_announcements->push_back(a);
     }
+    
+    as.process_announcements();
     
     // See if it ended up with the correct one
     Announcement selected_ann = as.all_anns->find(p1)->second;
