@@ -268,6 +268,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                           bool to_customers) {
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
+    ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(source_as);
     // If we are sending to providers
     if (to_providers) {
         // Assemble the list of announcements to send to providers
@@ -278,6 +279,11 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Base priority is 200 for customer to provider
             // Ignore announcements not from a customer
             if (ann.second.priority < 200) {
+                continue;
+            }
+            if (rovpp_as != NULL &&
+                ann.second.origin == 64512 && 
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                 continue;
             }
             

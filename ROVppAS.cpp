@@ -90,6 +90,9 @@ void ROVppAS::process_announcements() {
                     Announcement best_alternative_ann = best_alternative_route(ann); 
                     if (best_alternative_ann == ann) { // if no alternative
                         blackholes->push_back(ann);
+                        ann.origin = UNUSED_ASN_FLAG_FOR_ATTACKERS;
+                        ann.received_from_asn = UNUSED_ASN_FLAG_FOR_ATTACKERS;
+                        process_announcement(ann);
                     } else {
                         process_announcement(best_alternative_ann);
                     }
