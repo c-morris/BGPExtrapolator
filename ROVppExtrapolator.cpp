@@ -112,6 +112,8 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         if (propagate_twice) {
             propagate_up();
             propagate_down();
+            //propagate_up();
+            //propagate_down();
         }
     }
     
@@ -281,8 +283,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 200) {
                 continue;
             }
+            // ROV++ 0.1 do not forward blackhole announcements
             if (rovpp_as != NULL &&
                 ann.second.origin == 64512 && 
+                rovpp_as->policy_vector.size() > 0 &&
                 rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                 continue;
             }
@@ -310,6 +314,19 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
+            // ROV++ 0.3 do not send preventive announcements whence the best alternative came
+            bool going_backwards = false;
+            if (rovpp_as != NULL &&
+                rovpp_as->policy_vector.size() > 0 &&
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                for (auto ann_pair : *rovpp_as->preventive_anns) {
+                    if (std::find(anns_to_providers.begin(), anns_to_providers.end(), ann_pair.first) != anns_to_providers.end() && 
+                        ann_pair.second.received_from_asn == provider_asn) {
+                        going_backwards = true;
+                    }
+                }
+                if (going_backwards) { continue; }
+            }
             // For each provider, give the vector of announcements
             auto *recving_as = graph->ases->find(provider_asn)->second;
             recving_as->receive_announcements(anns_to_providers);
@@ -352,6 +369,19 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
+            // ROV++ 0.3 do not send preventive announcements whence the best alternative came
+            bool going_backwards = false;
+            if (rovpp_as != NULL &&
+                rovpp_as->policy_vector.size() > 0 &&
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                for (auto ann_pair : *rovpp_as->preventive_anns) {
+                    if (std::find(anns_to_peers.begin(), anns_to_peers.end(), ann_pair.first) != anns_to_peers.end() && 
+                        ann_pair.second.received_from_asn == peer_asn) {
+                        going_backwards = true;
+                    }
+                }
+                if (going_backwards) { continue; }
+            }
             // For each provider, give the vector of announcements
             auto *recving_as = graph->ases->find(peer_asn)->second;
             recving_as->receive_announcements(anns_to_peers);
@@ -390,6 +420,19 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {
+            // ROV++ 0.3 do not send preventive announcements whence the best alternative came
+            bool going_backwards = false;
+            if (rovpp_as != NULL &&
+                rovpp_as->policy_vector.size() > 0 &&
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                for (auto ann_pair : *rovpp_as->preventive_anns) {
+                    if (std::find(anns_to_customers.begin(), anns_to_customers.end(), ann_pair.first) != anns_to_customers.end() && 
+                        ann_pair.second.received_from_asn == customer_asn) {
+                        going_backwards = true;
+                    }
+                }
+                if (going_backwards) { continue; }
+            }
             // For each customer, give the vector of announcements
             auto *recving_as = graph->ases->find(customer_asn)->second;
             recving_as->receive_announcements(anns_to_customers);

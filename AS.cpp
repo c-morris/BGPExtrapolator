@@ -159,6 +159,8 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
  * @param ann The announcement to be processed
  */ 
 void AS::process_announcement(Announcement &ann) {
+    // Reject if the origin is equal to this ASN
+    if (ann.origin == asn && ann.from_monitor == false) { return; }
     // Check for existing announcement for prefix
     auto search = all_anns->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);

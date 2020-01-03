@@ -35,6 +35,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
                     failed_rov = new std::vector<Announcement>;
                     passed_rov = new std::vector<Announcement>;
                     blackholes = new std::vector<Announcement>;
+                    preventive_anns = new std::vector<std::pair<Announcement,Announcement>>;  
                  }
 
 ROVppAS::~ROVppAS() { 
@@ -73,6 +74,12 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 /** Iterate through incoming_announcements and keep only the best. 
  */
 void ROVppAS::process_announcements() {
+    // clear this out to avoid loops in rovpp 0.3
+    if (policy_vector.size() > 0) { // if we have a policy
+        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+            //all_anns->clear();
+        }
+    }
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
@@ -114,12 +121,42 @@ void ROVppAS::process_announcements() {
                             process_announcement(ann);
                         } // else drop it
                     }
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                    // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
+                    // Also make a preventive announcement if there is an alt route.
+                    if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
+                        process_announcement(ann);
+                    } else {
+                        Announcement best_alternative_ann = best_alternative_route(ann); 
+                        failed_rov->push_back(ann);
+                        if (best_alternative_route(ann) == ann) { // if no alternative
+                            // mark as blackholed and accept this announcement
+                            blackholes->push_back(ann);
+                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.priority-=10;
+                            //process_announcement(ann);
+                        } else {
+                            // Make preventive announcement
+                            Announcement preventive_ann = best_alternative_ann;
+                            preventive_ann.prefix = ann.prefix;
+                            preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
+                            process_announcement(preventive_ann);
+                        }
+                    }
                 } else { // unrecognized policy defaults to bgp
                     process_announcement(ann);
                 }
             } else { // if there is no policy
                 process_announcement(ann);
             }
+        }
+    }
+    if (policy_vector.size() > 0) { // if we have a policy
+        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+            // return before clearing this in rovpp 0.3
+            //return;
         }
     }
     incoming_announcements->clear();

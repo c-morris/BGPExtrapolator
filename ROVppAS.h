@@ -48,7 +48,7 @@ struct ROVppAS : public AS {
     std::vector<Announcement> *failed_rov; // Save dropped announcements (i.e. attacker announcements)
     std::vector<Announcement> *passed_rov; // History of all announcements that have passed ROV
     std::vector<Announcement> *blackholes;  // Keep track of blackholes created
-    
+    std::vector<std::pair<Announcement,Announcement>> *preventive_anns;  // Keep track of preventive announcements and their alternatives
 
     ROVppAS(uint32_t myasn=0,
         std::set<uint32_t> *attackers=NULL,
@@ -60,7 +60,6 @@ struct ROVppAS : public AS {
     
     // Overrided Methods
     void process_announcements();
-    
     
     // ROV Methods
     bool pass_rov(Announcement &ann);
