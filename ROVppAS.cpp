@@ -74,12 +74,6 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 /** Iterate through incoming_announcements and keep only the best. 
  */
 void ROVppAS::process_announcements() {
-    // clear this out to avoid loops in rovpp 0.3
-    if (policy_vector.size() > 0) { // if we have a policy
-        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
-            //all_anns->clear();
-        }
-    }
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
@@ -151,12 +145,6 @@ void ROVppAS::process_announcements() {
             } else { // if there is no policy
                 process_announcement(ann);
             }
-        }
-    }
-    if (policy_vector.size() > 0) { // if we have a policy
-        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
-            // return before clearing this in rovpp 0.3
-            //return;
         }
     }
     incoming_announcements->clear();

@@ -112,8 +112,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         if (propagate_twice) {
             propagate_up();
             propagate_down();
-            //propagate_up();
-            //propagate_down();
         }
     }
     
