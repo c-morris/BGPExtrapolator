@@ -124,7 +124,7 @@ void ROVppSQLQuerier::create_rovpp_blacklist_tbl() {
   std::cout << "Dropping " ROVPP_BLACKHOLES_TABLE " table..." << std::endl;
   execute(sql, false);
   // Create it again
-  std::string sql2 = std::string("CREATE TABLE IF NOT EXISTS " ROVPP_BLACKHOLES_TABLE "(asn BIGINT, prefix CIDR, origin BIGINT, received_from_asn BIGINT)");
+  std::string sql2 = std::string("CREATE TABLE IF NOT EXISTS " ROVPP_BLACKHOLES_TABLE "(asn BIGINT, prefix CIDR, origin BIGINT, received_from_asn BIGINT, tstamp BIGINT)");
   std::cout << "Creating " ROVPP_BLACKHOLES_TABLE " table..." << std::endl;
   execute(sql2, false);
 }
