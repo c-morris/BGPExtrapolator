@@ -4,8 +4,8 @@
 #include "Announcement.h"
 
 struct ROVppAnnouncement : public Announcement {
-    uint32_t policy_index;
-    int32_t opt_flag;
+    uint32_t policy_index;      // Stores policy instance the ann belongs to
+    int32_t opt_flag;           // TODO Remove after automation script is corrected
 
     ROVppAnnouncement(uint32_t aorigin,
                       uint32_t aprefix, 

@@ -31,7 +31,7 @@ ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> g,
                                  std::string r,
                                  std::string e, 
                                  std::string f) 
-                                 : SQLQuerier() {
+    : SQLQuerier() {
     results_table = r;
     victim_table = e;
     attack_table = f;
@@ -74,7 +74,6 @@ pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const
     sql += " WHERE prefix <<= \'" + cidr + "\';";
     return execute(sql);
 }
-
 
 /** Pulls in victim or attacker pairs.
  * 
@@ -128,5 +127,4 @@ void ROVppSQLQuerier::create_rovpp_blacklist_tbl() {
   std::cout << "Creating " ROVPP_BLACKHOLES_TABLE " table..." << std::endl;
   execute(sql2, false);
 }
-
 

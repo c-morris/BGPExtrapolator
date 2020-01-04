@@ -24,8 +24,8 @@
 #include "ROVppASGraph.h"
 
 ROVppASGraph::ROVppASGraph() : ASGraph() {
-  attackers = new std::set<uint32_t>();
-  victims = new std::set<uint32_t>();
+    attackers = new std::set<uint32_t>();
+    victims = new std::set<uint32_t>();
 }
 
 ROVppASGraph::~ROVppASGraph() { 
@@ -33,6 +33,8 @@ ROVppASGraph::~ROVppASGraph() {
     delete victims;
 }
 
+/** Process the graph without removing stubs (needs querier to save them).
+ */
 void ROVppASGraph::process(SQLQuerier *querier) {
     // Main difference is remove_stubs isn't being called
     tarjan();
@@ -47,6 +49,8 @@ void ROVppASGraph::process(SQLQuerier *querier) {
  *      2) A populated customer_providers table
  *      3) A populated rovpp_ases table
  * 
+ *
+ *
  * @param querier
  */
 void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
@@ -70,9 +74,13 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
     // Assign policies to ASes
     for (auto policy_table : querier->policy_tables) {
         R = querier->select_AS_flags(policy_table);
+        // For each AS in the policy Table
         for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
+            // Get the ASN for current AS
             auto search = ases->find(c["asn"].as<uint32_t>());
             if (search != ases->end()) {
+                // Add the policy to AS
+                // TODO Handle "as_type" policy as an array
                 dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
             }
         }
@@ -81,17 +89,17 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
     return;
 }
 
-/** Adds an AS relationship to the graph.
+/** Adds an ROVppAS relationship to the graph.
  *
- * If the AS does not exist in the graph, it will be created.
+ * If the ROVppAS does not exist in the graph, it will be created.
  *
  * @param asn ASN of AS to add the relationship to
  * @param neighbor_asn ASN of neighbor.
  * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
 void ROVppASGraph::add_relationship(uint32_t asn,
-                               uint32_t neighbor_asn,
-                               int relation) {
+                                    uint32_t neighbor_asn,
+                                    int relation) {
     auto search = ases->find(asn);
     if (search == ases->end()) {
         // if AS not yet in graph, create it
