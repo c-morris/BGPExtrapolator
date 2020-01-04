@@ -73,6 +73,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     rovpp_querier->create_results_tbl();
     rovpp_querier->clear_supernodes_from_db();
     rovpp_querier->create_supernodes_tbl();
+    rovpp_querier->create_rovpp_blacklist_tbl();
     
     // Generate the graph and populate the stubs & supernode tables
     rovpp_graph->create_graph_from_db(rovpp_querier);
@@ -108,7 +109,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         // This block runs only if we want to propogate up and down twice
         // The similar code block below is mutually exclusive with this code block 
         if (propagate_twice) {
-            // Propogate the seeded announcements
             propagate_up();
             propagate_down();
         }
@@ -117,7 +117,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     // This code block runs if we want to propogate up and down only once
     // The similar code block above is mutually exclusive with this code block
     if (!propagate_twice) {
-        // Propogate the seeded announcements
         propagate_up();
         propagate_down();
     }
@@ -282,6 +281,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                bool to_customers) {
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
+    ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(source_as);
     // If we are sending to providers
     if (to_providers) {
         // Assemble the list of announcements to send to providers
@@ -292,6 +292,11 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Base priority is 200 for customer to provider
             // Ignore announcements not from a customer
             if (ann.second.priority < 200) {
+                continue;
+            }
+            if (rovpp_as != NULL &&
+                ann.second.origin == 64512 && 
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                 continue;
             }
             
@@ -408,18 +413,29 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 /** Saves the results of the extrapolation. ROVpp version uses the ROVppQuerier.
  */
 void ROVppExtrapolator::save_results(int iteration) {
+    // Setup output file stream
     std::ofstream outfile;
+    std::ofstream blackhole_outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
+    std::string blackhole_file_name = "/dev/shm/bgp/blackholes_table_" + std::to_string(iteration) + ".csv";
     outfile.open(file_name);
+    blackhole_outfile.open(blackhole_file_name);
     
-    // Handle standard results
+    // Iterate over all nodes in graph
     std::cout << "Saving Results From Iteration: " << iteration << std::endl;
     for (auto &as : *rovpp_graph->ases){
         as.second->stream_announcements(outfile);
+        // Check if it's a ROVpp node
+        if (ROVppAS* rovpp_as = dynamic_cast<ROVppAS*>(as.second)) {
+          // It is, so now output the blacklist
+          rovpp_as->stream_blackholes(blackhole_outfile);
+        }
     }
+      
     outfile.close();
+    blackhole_outfile.close();
     rovpp_querier->copy_results_to_db(file_name);
-    
+    rovpp_querier->copy_blackhole_list_to_db(blackhole_file_name);
     std::remove(file_name.c_str());
- 
+    std::remove(blackhole_file_name.c_str());
 }

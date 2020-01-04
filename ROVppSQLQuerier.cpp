@@ -102,3 +102,29 @@ void ROVppSQLQuerier::create_results_tbl(){
     std::cout << "Creating results table..." << std::endl;
     execute(sql, false);
 }
+
+/**
+ * Copies the blackholes from each AS into DB table
+ * @param file_name the name of the file csv that contains the blackholes information
+ */
+void ROVppSQLQuerier::copy_blackhole_list_to_db(std::string file_name) {
+  std::string sql = std::string("COPY " ROVPP_BLACKHOLES_TABLE "(asn, prefix, origin, received_from_asn)") +
+                      "FROM '" + file_name + "' WITH (FORMAT csv)";
+  execute(sql);
+}
+
+
+/**
+ * Creates an empty ROVPP_BLACKHOLES_TABLE.
+ */
+void ROVppSQLQuerier::create_rovpp_blacklist_tbl() {
+  // Drop the results table
+  std::string sql = std::string("DROP TABLE IF EXISTS " ROVPP_BLACKHOLES_TABLE " ;");
+  std::cout << "Dropping " ROVPP_BLACKHOLES_TABLE " table..." << std::endl;
+  execute(sql, false);
+  // Create it again
+  std::string sql2 = std::string("CREATE TABLE IF NOT EXISTS " ROVPP_BLACKHOLES_TABLE "(asn BIGINT, prefix CIDR, origin BIGINT, received_from_asn BIGINT, tstamp BIGINT)");
+  std::cout << "Creating " ROVPP_BLACKHOLES_TABLE " table..." << std::endl;
+  execute(sql2, false);
+}
+

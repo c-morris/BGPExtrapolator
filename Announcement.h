@@ -86,5 +86,12 @@ public:
         os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
         return os;
     }
+    
+    bool operator==(const Announcement &b) const {
+        return (origin == b.origin) &&
+               (prefix == b.prefix) &&
+               (priority == b.priority) &&
+               (received_from_asn == b.received_from_asn);
+    }
 };
 #endif

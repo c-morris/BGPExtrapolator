@@ -37,21 +37,20 @@
  * Provided the two ASNs their corresponding types, they're added to the graph
  * with the given relationship and vice-versa relationship.
  */
-// void add_two_way_relationship(ASGraph * as_graph, uint32_t asn, uint32_t neighbor_asn,
-//     int relation, int as_type_1, int as_type_2) {
-//     // Add First Relationship (asn to neighbor_asn)
-//     as_graph->add_relationship_with_as_type(asn, neighbor_asn, relation, as_type_1);
-// 
-//     // Add Corresponding Relationship (neighbor_asn to asn)
-//     if (relation == AS_REL_PROVIDER) {
-//         as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_CUSTOMER, as_type_2);
-//     } else if (relation == AS_REL_CUSTOMER) {
-//         as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_PROVIDER, as_type_2);
-//     } else {
-//         // Add Peer Relationship
-//         as_graph->add_relationship_with_as_type(neighbor_asn, asn, AS_REL_PEER, as_type_2);
-//     }
-// }
+void add_two_way_relationship(ASGraph * as_graph, uint32_t asn, uint32_t neighbor_asn, int relation) {
+    // Add First Relationship (asn to neighbor_asn)
+    as_graph->add_relationship(asn, neighbor_asn, relation);
+
+    // Add Corresponding Relationship (neighbor_asn to asn)
+    if (relation == AS_REL_PROVIDER) {
+        as_graph->add_relationship(neighbor_asn, asn, AS_REL_CUSTOMER);
+    } else if (relation == AS_REL_CUSTOMER) {
+        as_graph->add_relationship(neighbor_asn, asn, AS_REL_PROVIDER);
+    } else {
+        // Add Peer Relationship
+        as_graph->add_relationship(neighbor_asn, asn, AS_REL_PEER);
+    }
+}
 
 /** Tells you whether or not the given ASN has the given prefix in its RIB-OUT
  *
@@ -81,6 +80,109 @@ bool check_infected_vector(ASGraph * as_graph, std::vector<uint32_t> asns, Prefi
     }
     return false;
 }
+
+
+//-----------------------------------------------
+// Topologies
+//-----------------------------------------------
+
+/** Creates a ROVppASGraph object that is the same as figure 1 in the paper.
+ * 
+ * Distinct ASes: 11, 77, 12, 44, 88, 86, 666, 99
+ * Victim: 99
+ * Attacker: 666
+ *
+ * Expected outcomes:
+ *  Hijacked:
+ *  NotHijacked:
+ *  Disconnected:
+ *
+ * @return ROVppASGraph object setup like figure 1
+ */
+ROVppASGraph figure_1_graph(uint32_t policy_type) {
+    // TODO: function is incomplete needs
+    ROVppASGraph graph = ROVppASGraph();
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Set Relationships
+    // AS 44
+    add_two_way_relationship(&graph, 44, 77, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 78, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 99, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 666, AS_REL_PROVIDER);
+    // AS 77
+    add_two_way_relationship(&graph, 77, 11, AS_REL_PROVIDER);
+    // AS 88
+    add_two_way_relationship(&graph, 88, 78, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 88, 86, AS_REL_PROVIDER);
+    // AS 78
+    add_two_way_relationship(&graph, 78, 12, AS_REL_PROVIDER);
+    // AS 86
+    add_two_way_relationship(&graph, 86, 99, AS_REL_PROVIDER);
+    
+    // Set Attacker and Victim
+    graph.attackers->insert(attacker_asn);
+    graph.victims->insert(victim_asn);
+    
+    // Set policies
+    dynamic_cast<ROVppAS *>(graph.ases->find(77)->second)->add_policy(policy_type);
+    dynamic_cast<ROVppAS *>(graph.ases->find(78)->second)->add_policy(policy_type);
+
+    return graph;
+}
+
+
+// TODO: Function is incomplete, Do not use
+/** Creates a ROVppASGraph object that is the same as figure 1 in the paper.
+ * 
+ * Distinct ASes: 32, 77, 11, 55, 54, 44, 33, 56, 99, 666
+ * Victim: 99
+ * Attacker: 666
+ *
+ * Expected outcomes:
+ *  Hijacked:
+ *  NotHijacked:
+ *  Disconnected:
+ *
+ * @return ROVppASGraph object setup like figure 1
+ */
+ROVppASGraph figure_2_graph(uint32_t policy_type) {
+    // TODO: function is incomplete needs
+    ROVppASGraph graph = ROVppASGraph();
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Set Relationships
+    // AS 44
+    add_two_way_relationship(&graph, 44, 77, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 54, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 56, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 44, 666, AS_REL_PROVIDER);
+    // AS 77
+    add_two_way_relationship(&graph, 77, 11, AS_REL_PROVIDER);
+    // AS 11
+    add_two_way_relationship(&graph, 11, 32, AS_REL_PROVIDER);
+    add_two_way_relationship(&graph, 11, 33, AS_REL_PROVIDER);
+    // AS 54
+    add_two_way_relationship(&graph, 54, 55, AS_REL_PROVIDER);
+    // AS 55
+    add_two_way_relationship(&graph, 55, 11, AS_REL_PROVIDER);
+    // AS 56
+    add_two_way_relationship(&graph, 56, 99, AS_REL_PROVIDER);
+    
+    // Set Attacker and Victim
+    graph.attackers->insert(attacker_asn);
+    graph.victims->insert(victim_asn);
+    
+    // Set policies
+    dynamic_cast<ROVppAS *>(graph.ases->find(77)->second)->add_policy(policy_type);
+    dynamic_cast<ROVppAS *>(graph.ases->find(33)->second)->add_policy(policy_type);
+    dynamic_cast<ROVppAS *>(graph.ases->find(32)->second)->add_policy(ROVPPAS_TYPE_ROV);
+
+    return graph;
+}
+
 
 /////////////////////////////////////////////////
 // Tests
@@ -703,7 +805,7 @@ bool test_rovpp_rov_receive_announcements(){
     as.add_policy(ROVPPAS_TYPE_ROV);
     as.receive_announcements(vect);
     delete as.attackers;
-    if (as.incoming_announcements->size() != 1) { return false; }
+    if (as.incoming_announcements->size() != 2) { return false; }
     return true;
 }
 
@@ -896,9 +998,108 @@ bool test_rovpp_announcement(){
     return true;
 }
 
-////////////////////////////////////////////////////////////
-// ROV Test
-////////////////////////////////////////////////////////////
+/**
+ * [test_best_alternative_route description]
+ * The Store:
+ * 
+ * @return [description]
+ */
+bool test_best_alternative_route_chosen() {
+    // Initialize AS
+    ROVppAS as = ROVppAS();
+    as.attackers = new std::set<uint32_t>();
+    
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Initialize Attacker set
+    as.attackers->insert(attacker_asn); 
+    // Set the policy
+    as.add_policy(ROVPPAS_TYPE_ROVPP);  // ROVpp0.1
+    
+    // Announcements from victim
+    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0");
+    // The difference between the following three is the received_from_asn
+    // Notice the priorities
+    // The Announcements will be handled in this order
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, false);  // If done incorrectly it will end up with this one
+    a1.priority = 293;
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, false);  // or this one
+    a2.priority = 292;
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, false);  // It should end up with this one if done correctly
+    a3.priority = 291;
+    
+    // Subprefix Hijack
+    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
+    // The difference between the following is the received_from_asn
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    a4.priority = 294;
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    a5.priority = 295;
+    
+    // Notice the victim's ann come first, then the attackers
+    for (Announcement a : {a1, a2, a3, a4, a5}) {
+        as.incoming_announcements->push_back(a);
+    }
+    
+    as.process_announcements();
+    
+    // See if it ended up with the correct one
+    Announcement selected_ann = as.all_anns->find(p1)->second;
+    return selected_ann == a3;
+}
+
+/**
+ * [test_best_alternative_route description]
+ * The Store:
+ * 
+ * @return [description]
+ */
+bool test_best_alternative_route() {
+    // Initialize AS
+    ROVppAS as = ROVppAS();
+    as.attackers = new std::set<uint32_t>();
+    
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Initialize Attacker set
+    as.attackers->insert(attacker_asn); 
+    // Set the policy
+    as.add_policy(ROVPPAS_TYPE_ROVPP);  // ROVpp0.1
+    
+    // Announcements from victim
+    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0");
+    // The difference between the following three is the received_from_asn
+    // Notice the priorities
+    // The Announcements will be handled in this order
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, false);  // If done incorrectly it will end up with this one
+    a1.priority = 293;
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, false);  // or this one
+    a2.priority = 292;
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, false);  // It should end up with this one if done correctly
+    a3.priority = 291;
+    
+    // Subprefix Hijack
+    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
+    // The difference between the following is the received_from_asn
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    a4.priority = 294;
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    a5.priority = 295;
+    
+    // Notice the victim's ann come first, then the attackers
+    for (Announcement a : {a1, a2, a3, a4, a5}) {
+        as.incoming_announcements->push_back(a);
+    }
+    
+    if (!(as.best_alternative_route(a4) == a3) ||
+        !(as.best_alternative_route(a5) == a3)) {
+        return false;
+    }
+    return true; 
+}
+
 
 /** Testing Blackholing (i.e. when only a blackhole is produced)
  *

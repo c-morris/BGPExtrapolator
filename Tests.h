@@ -27,11 +27,10 @@ bool test_string_to_cidr();
 bool test_prefix_lt_operator();
 bool test_prefix_gt_operator();
 bool test_prefix_eq_operator();
+bool test_prefix_contained_in_or_equal_to_operator();
 
 // Prototypes for AnnouncementTest.cpp
 bool test_announcement();
-bool test_ann_lt_operator();
-bool test_ann_gt_operator();
 bool test_ann_eq_operator();
 bool test_to_sql();
 bool test_ann_os_operator();
@@ -84,6 +83,8 @@ bool test_rovpp_clear_announcements();
 bool test_rovpp_announcement();
 bool test_rovpp_pass_rov();
 bool test_rovpp_rov_receive_announcements();
+bool test_best_alternative_route();
+bool test_best_alternative_route_chosen();
 
 // Prototypes for SQLQuerierTest.cpp
 

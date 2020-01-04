@@ -43,10 +43,17 @@ BOOST_AUTO_TEST_CASE( Prefix_greater_than_operator ) {
 BOOST_AUTO_TEST_CASE( Prefix_equivalence_operator ) {
         BOOST_CHECK( test_prefix_eq_operator() );
 }
+BOOST_AUTO_TEST_CASE( Prefix_contained_in_or_equal_to_operator ) {
+        BOOST_CHECK( test_prefix_contained_in_or_equal_to_operator() );
+}
+
 
 // Announcement.h
 BOOST_AUTO_TEST_CASE( Announcement_constructor ) {
         BOOST_CHECK( test_announcement() );
+}
+BOOST_AUTO_TEST_CASE( Announcement_eqality_operator ) {
+        BOOST_CHECK( test_ann_eq_operator() );
 }
 
 // AS.cpp
@@ -167,6 +174,12 @@ BOOST_AUTO_TEST_CASE( ROVppAS_clear_announcements ) {
 }
 BOOST_AUTO_TEST_CASE( ROVppAnnouncement_constructor ) {
         BOOST_CHECK( test_rovpp_announcement() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route ) {
+        BOOST_CHECK( test_best_alternative_route() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route_chosen ) {
+        BOOST_CHECK( test_best_alternative_route_chosen() );
 }
 #endif // RUN_TESTS
 

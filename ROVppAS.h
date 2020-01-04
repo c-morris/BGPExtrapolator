@@ -35,10 +35,20 @@
 #define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
 #define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
 
+// Special Constants
+#define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  // This is used for ROVpp 0.1+ to 
+                                             // identify blackhole announcements in the dataplane.
+                                             // We're also using this in contrl plane in pass_rov
+                                             // Constant was agreed upon with Simulation code.
+
 struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;
     std::set<uint32_t> *attackers;
-    std::map<Prefix<>, Announcement> dropped_ann_map;  // Save dropped ann
+    // Announcement Tracking Member Variables
+    std::vector<Announcement> *failed_rov; // Save dropped announcements (i.e. attacker announcements)
+    std::vector<Announcement> *passed_rov; // History of all announcements that have passed ROV
+    std::vector<Announcement> *blackholes;  // Keep track of blackholes created
+    
 
     ROVppAS(uint32_t myasn=0,
         std::set<uint32_t> *attackers=NULL,
@@ -47,14 +57,25 @@ struct ROVppAS : public AS {
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
     ~ROVppAS();
-
-    // TODO: Uncomment once implemented, otherwise it causes tests to fail
-    // void receive_announcement(Announcement &ann);
-    void receive_announcements(std::vector<Announcement> &announcements);
-
+    
+    // Overrided Methods
+    void process_announcements();
+    
+    
     // ROV Methods
     bool pass_rov(Announcement &ann);
     void add_policy(uint32_t);
+    // Helper functions
+    Announcement best_alternative_route(Announcement &ann);  // help find a good alternative route 
+                                                        // (i.e. an ann from a neighbor which 
+                                                        // didn't give you the attacker's announcement)
+                                                        // Will return the same given ann if there is
+                                                        // no better alternative
+    bool is_better(Announcement &a, Announcement &b);  // Computes "is a better than b"
+                                                       // This will be used to determine:
+                                                       // * Replace currently used ann for a better one
+                                                       // * Help make decisions on an alternative routes
+    std::ostream& stream_blackholes(std:: ostream &os);
 };
 
 #endif

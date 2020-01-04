@@ -259,5 +259,14 @@ public:
     bool operator!=(const Prefix &b) const {
         return !(*this == b);
     }
+
+    /** Check if this prefix is a subprefix of another, or is equal to it.
+     *
+     * @param b The other Prefix.
+     * @return true if this prefix is contained in or equal to the other, else false.
+     */
+    bool contained_in_or_equal_to(const Prefix &b) const {
+        return b.netmask <= netmask && (addr & b.netmask) == (b.addr & b.netmask);
+    }
 };
 #endif
