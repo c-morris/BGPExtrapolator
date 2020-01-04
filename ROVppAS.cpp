@@ -106,13 +106,16 @@ void ROVppAS::process_announcements() {
                         process_announcement(ann);
                     } else {
                         failed_rov->push_back(ann);
-                        if (best_alternative_route(ann) == ann) { // if no alternative
+                        Announcement best_alternative_ann = best_alternative_route(ann); 
+                        if (best_alternative_ann == ann) { // if no alternative
                             // mark as blackholed and accept this announcement
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann);
-                        } // else drop it
+                        } else {
+                          process_announcement(best_alternative_ann);
+                        }
                     }
                 } else { // unrecognized policy defaults to bgp
                     process_announcement(ann);
