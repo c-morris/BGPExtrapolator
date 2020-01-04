@@ -129,8 +129,7 @@ void ROVppAS::process_announcements() {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.priority-=10;
-                            //process_announcement(ann);
+                            process_announcement(ann);
                         } else {
                             // Make preventive announcement
                             Announcement preventive_ann = best_alternative_ann;
