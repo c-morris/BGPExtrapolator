@@ -325,6 +325,14 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                         }
                     }
                 }
+                for (auto blackhole_ann : *rovpp_as->blackholes) {
+                    for (auto ann : anns_to_providers) {
+                        if (blackhole_ann.prefix == ann.prefix &&
+                            blackhole_ann.origin == ann.origin) {
+                            found = true;
+                        }
+                    }
+                }
                 if (found) { continue; }
             }
             // For each provider, give the vector of announcements
@@ -378,6 +386,14 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     for (auto ann : anns_to_peers) {
                         if (ann_pair.first.prefix == ann.prefix &&
                             ann_pair.first.origin == ann.origin) {
+                            found = true;
+                        }
+                    }
+                }
+                for (auto blackhole_ann : *rovpp_as->blackholes) {
+                    for (auto ann : anns_to_peers) {
+                        if (blackhole_ann.prefix == ann.prefix &&
+                            blackhole_ann.origin == ann.origin) {
                             found = true;
                         }
                     }
