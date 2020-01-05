@@ -312,32 +312,38 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
+            auto *recving_as = graph->ases->find(provider_asn)->second;
             // ROV++ 0.3 do not send preventive announcements to peers or providers
-            bool found = false;
             if (rovpp_as != NULL &&
                 rovpp_as->policy_vector.size() > 0 &&
                 rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                auto anns_to_providers_trimmed = anns_to_providers;
                 for (auto ann_pair : *rovpp_as->preventive_anns) {
-                    for (auto ann : anns_to_providers) {
-                        if (ann_pair.first.prefix == ann.prefix &&
-                            ann_pair.first.origin == ann.origin) {
-                            found = true;
+                    for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
+                        if (ann_pair.first.prefix == it->prefix &&
+                            ann_pair.first.origin == it->origin) {
+                            it = anns_to_providers_trimmed.erase(it);
+                        } else {
+                            ++it;
                         }
                     }
                 }
                 for (auto blackhole_ann : *rovpp_as->blackholes) {
-                    for (auto ann : anns_to_providers) {
-                        if (blackhole_ann.prefix == ann.prefix &&
-                            blackhole_ann.origin == ann.origin) {
-                            found = true;
+                    for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
+                        if (blackhole_ann.prefix == it->prefix &&
+                            blackhole_ann.origin == it->origin) {
+                            // remove the blackhole ann
+                            it = anns_to_providers_trimmed.erase(it);
+                        } else {
+                            ++it;
                         }
                     }
                 }
-                if (found) { continue; }
+                recving_as->receive_announcements(anns_to_providers_trimmed);
+            } else {
+                // For each provider, give the vector of announcements
+                recving_as->receive_announcements(anns_to_providers);
             }
-            // For each provider, give the vector of announcements
-            auto *recving_as = graph->ases->find(provider_asn)->second;
-            recving_as->receive_announcements(anns_to_providers);
         }
     }
 
@@ -378,30 +384,34 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
             // ROV++ 0.3 do not send preventive announcements whence the best alternative came
-            bool found = false;
+            auto *recving_as = graph->ases->find(peer_asn)->second;
+            auto anns_to_peers_trimmed = anns_to_peers;
             if (rovpp_as != NULL &&
                 rovpp_as->policy_vector.size() > 0 &&
                 rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
                 for (auto ann_pair : *rovpp_as->preventive_anns) {
-                    for (auto ann : anns_to_peers) {
-                        if (ann_pair.first.prefix == ann.prefix &&
-                            ann_pair.first.origin == ann.origin) {
-                            found = true;
+                    for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
+                        if (ann_pair.first.prefix == it->prefix &&
+                            ann_pair.first.origin == it->origin) {
+                            it = anns_to_peers_trimmed.erase(it);
+                        } else {
+                            ++it;
                         }
                     }
                 }
                 for (auto blackhole_ann : *rovpp_as->blackholes) {
-                    for (auto ann : anns_to_peers) {
-                        if (blackhole_ann.prefix == ann.prefix &&
-                            blackhole_ann.origin == ann.origin) {
-                            found = true;
+                    for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
+                        if (blackhole_ann.prefix == it->prefix &&
+                            blackhole_ann.origin == it->origin) {
+                            it = anns_to_peers_trimmed.erase(it);
+                        } else {
+                            ++it;
                         }
                     }
                 }
-                if (found) { continue; }
+                recving_as->receive_announcements(anns_to_peers_trimmed);
             }
             // For each provider, give the vector of announcements
-            auto *recving_as = graph->ases->find(peer_asn)->second;
             recving_as->receive_announcements(anns_to_peers);
         }
     }
