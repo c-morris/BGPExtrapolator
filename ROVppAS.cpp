@@ -35,7 +35,6 @@ ROVppAS::ROVppAS(uint32_t myasn,
                     failed_rov = new std::vector<Announcement>;
                     passed_rov = new std::vector<Announcement>;
                     blackholes = new std::vector<Announcement>;
-                 }
 }
 
 ROVppAS::~ROVppAS() { 
