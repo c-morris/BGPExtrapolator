@@ -28,8 +28,8 @@ ROVppAS::ROVppAS(uint32_t myasn,
                  std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv,
                  std::set<uint32_t> *prov,
                  std::set<uint32_t> *peer,
-                 std::set<uint32_t> *cust): 
-                 AS(myasn, inv, prov, peer, cust)  {
+                 std::set<uint32_t> *cust)
+                 : AS(myasn, inv, prov, peer, cust)  {
                     // Save reference to attackers
                     attackers = rovpp_attackers;
                     failed_rov = new std::vector<Announcement>;
@@ -37,6 +37,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
                     blackholes = new std::vector<Announcement>;
                     preventive_anns = new std::vector<std::pair<Announcement,Announcement>>;  
                  }
+}
 
 ROVppAS::~ROVppAS() { 
     delete failed_rov;
@@ -56,11 +57,10 @@ void ROVppAS::add_policy(uint32_t p) {
     policy_vector.push_back(p);
 }
 
-/**
- * Checks whether or not an announcement is from an attacker
+/** Checks whether or not an announcement is from an attacker
  * 
- * @param  ann [description]
- * @return bool  true if from attacker, false otherwise
+ * @param  ann  announcement to check if it passes ROV
+ * @return bool  return false if from attacker, true otherwise
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
     if (ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) { return false; }

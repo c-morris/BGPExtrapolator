@@ -26,12 +26,11 @@
 #include "TableNames.h"
 
 
-ROVppExtrapolator::ROVppExtrapolator(
-                           std::vector<std::string> g,
-                           std::string r,
-                           std::string e,
-                           std::string f,
-                           uint32_t iteration_size)
+ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
+                                     std::string r,
+                                     std::string e,
+                                     std::string f,
+                                     uint32_t iteration_size)
     : Extrapolator() {
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
@@ -45,10 +44,10 @@ ROVppExtrapolator::ROVppExtrapolator(
 
 ROVppExtrapolator::~ROVppExtrapolator() {}
 
-/** Performs propogation up and down twice. First once with the Victim prefix pairs,
+/** Performs propagation up and down twice. First once with the Victim prefix pairs,
  * then a second time once with the Attacker prefix pairs.
  *
- * Peforms propogation of the victim and attacker prefix pairs one at a time.
+ * Peforms propagation of the victim and attacker prefix pairs one at a time.
  * First victims, and then attackers. The function doesn't use subnet blocks to 
  * iterate over. Instead it does the victims table all at once, then the attackers
  * table all at once.
@@ -126,7 +125,19 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     std::cout << "completed: ";
 }
 
-void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp, bool hijack) {
+/** Seed announcement to all ASes on as_path.
+ *
+ * The from_monitor attribute is set to true on these announcements so they are
+ * not replaced later during propagation. The ROVpp version overrides the origin
+ * ASN variable at the origin AS with a flagged value for analysis.
+ *
+ * @param as_path Vector of ASNs for this announcement.
+ * @param prefix The prefix this announcement is for.
+ */
+void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
+                                            Prefix<> prefix, 
+                                            int64_t timestamp, 
+                                            bool hijack) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -207,6 +218,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Pref
        
         uint32_t received_from_asn = 0;
         
+        // TODO Implimentation for rovpp
         // ROV++ Handle origin received_from here
         // BHOLED = 64512
         // HIJACKED = 64513
@@ -247,7 +259,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Pref
                 }
             }
         } else {
-            // Report the broken path
+            // Report the broken path if desired
             //std::cerr << "Broken path for " << *(it - 1) << ", " << *it << std::endl;
         }
     }
@@ -255,7 +267,8 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Pref
 
 /** Send all announcements kept by an AS to its neighbors. 
  *
- * This approximates the Adj-RIBs-out. 
+ * This approximates the Adj-RIBs-out. ROVpp version simply replaces Announcement 
+ * objects with ROVppAnnouncements.
  *
  * @param asn AS that is sending out announces
  * @param to_providers Send to providers
@@ -263,9 +276,9 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Pref
  * @param to_customers Send to customers
  */
 void ROVppExtrapolator::send_all_announcements(uint32_t asn, 
-                                          bool to_providers, 
-                                          bool to_peers, 
-                                          bool to_customers) {
+                                               bool to_providers, 
+                                               bool to_peers, 
+                                               bool to_customers) {
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
     ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(source_as);
@@ -471,8 +484,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     }
 }
 
-
-
+/** Saves the results of the extrapolation. ROVpp version uses the ROVppQuerier.
+ */
 void ROVppExtrapolator::save_results(int iteration) {
     // Setup output file stream
     std::ofstream outfile;
