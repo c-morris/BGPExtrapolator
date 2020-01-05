@@ -41,5 +41,9 @@ struct ROVppASGraph: public ASGraph {
     void process(SQLQuerier *querier);
     void create_graph_from_db(ROVppSQLQuerier*);
     void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
+
+    // Overloaded 
+    void to_graphviz(std::ostream &os, std::vector<uint32_t> asns);
+    void to_graphviz_traceback(std::ostream &os, uint32_t asn, int depth);
 };
 #endif

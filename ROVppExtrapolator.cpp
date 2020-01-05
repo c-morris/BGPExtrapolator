@@ -121,6 +121,11 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         propagate_down();
     }
     
+    std::ofstream gvpythonfile;
+    gvpythonfile.open("asgraph.py");
+    std::vector<uint32_t> to_graph = { };
+    rovpp_graph->to_graphviz(gvpythonfile, to_graph);
+    gvpythonfile.close();
     save_results(iter);
     std::cout << "completed: ";
 }

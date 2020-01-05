@@ -108,3 +108,89 @@ void ROVppASGraph::add_relationship(uint32_t asn,
     }
     search->second->add_neighbor(neighbor_asn, relation);
 }
+
+void ROVppASGraph::to_graphviz(std::ostream &os, std::vector<uint32_t> asns) {
+    os << "import graphviz" << std::endl;
+    os << "dot = graphviz.Digraph()" << std::endl;
+    os << "dot.attr('edge',arrowsize='0.5')" << std::endl;
+    for (auto asn : asns) {
+        ROVppAS &as = *dynamic_cast<ROVppAS*>(ases->find(asn)->second);
+        // create node
+        os << "dot.node('" << as.asn << "', '" << as.asn << "'";
+        // green if implementing
+        os << ((as.policy_vector.size() > 0 && as.policy_vector.at(0) != 0) ? ", color='green'" : " ");
+        os << ")" << std::endl;
+        // neighbors
+        for (uint32_t other_asn : *as.customers) {
+            ROVppAS &other_as = *dynamic_cast<ROVppAS*>(ases->find(other_asn)->second);
+            os << "dot.node('" << other_as.asn << "', '" << other_as.asn << "'";
+            // green if implementing
+            os << ((other_as.policy_vector.size() > 0 && other_as.policy_vector.at(0) != 0) ? ", color='green'" : " ");
+            os << ")" << std::endl;
+        }
+
+        for (uint32_t other_asn : *as.peers) {
+            ROVppAS &other_as = *dynamic_cast<ROVppAS*>(ases->find(other_asn)->second);
+            os << "dot.node('" << other_as.asn << "', '" << other_as.asn << "'";
+            os << ((other_as.policy_vector.size() > 0 && other_as.policy_vector.at(0) != 0) ? ", color='green'" : " ");
+            os << ")" << std::endl;
+        }
+        for (uint32_t other_asn : *as.providers) {
+            ROVppAS &other_as = *dynamic_cast<ROVppAS*>(ases->find(other_asn)->second);
+            os << "dot.node('" << other_as.asn << "', '" << other_as.asn << "'";
+            os << ((other_as.policy_vector.size() > 0 && other_as.policy_vector.at(0) != 0) ? ", color='green'" : " ");
+            os << ")" << std::endl;
+        }
+        // relationships
+        for (auto other : *as.customers) {
+            os << "dot.edge('" << as.asn << "', '" << other << "')" << std::endl;
+        }
+        for (auto other : *as.peers) {
+            os << "dot.edge('" << as.asn << "', '" << other << "', dir='none')" << std::endl;
+        }
+        for (auto other : *as.providers) {
+            os << "dot.edge('" << other << "', '" << as.asn << "')" << std::endl;
+        }
+        // announcements
+        for (auto ann : *as.all_anns) {
+            os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
+            (as.pass_rov(ann.second) ? "color='blue'" : "color='red'")
+            << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;
+            if (ann.second.received_from_asn != asn && ann.second.received_from_asn != 64514 && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512) {
+                to_graphviz_traceback(os, ann.second.received_from_asn, 0);
+            }
+        }
+    }
+    os << "dot.render('test-output/rovppextrapolator2.gv')";
+}
+
+void ROVppASGraph::to_graphviz_traceback(std::ostream &os, uint32_t asn, int depth) {
+    auto search = ases->find(asn);
+    if (search == ases->end()) { return; }
+    ROVppAS *tmp_ptr = dynamic_cast<ROVppAS*>(search->second);
+    if (tmp_ptr == NULL) { return; }
+    ROVppAS &as = *tmp_ptr;
+    // create node
+    os << "dot.node('" << as.asn << "', '" << as.asn << "'";
+    // green if implementing
+    os << ((as.policy_vector.size() > 0 && as.policy_vector.at(0) != 0) ? ", color='green'" : " ");
+    os << ")" << std::endl;
+    
+    for (auto ann : *as.all_anns) {
+        os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
+        (as.pass_rov(ann.second) ? (ann.second.origin == 64512 ? "color='grey'": "color='blue'") : "color='red'")
+        << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;
+        if (ann.second.received_from_asn != asn && ann.second.received_from_asn != 64514 && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512 && depth < 2) {
+            if (as.customers->find(ann.second.received_from_asn) != as.customers->end()) {
+                os << "dot.edge('" << as.asn << "', '" << ann.second.received_from_asn << "')" << std::endl;
+            }
+            if (as.peers->find(ann.second.received_from_asn) != as.peers->end()) {
+                os << "dot.edge('" << as.asn << "', '" << ann.second.received_from_asn << "', dir='none')" << std::endl;
+            }
+            if (as.providers->find(ann.second.received_from_asn) != as.providers->end()) {
+                os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "')" << std::endl;
+            }
+            to_graphviz_traceback(os, ann.second.received_from_asn, depth+1);
+        }
+    }
+}
