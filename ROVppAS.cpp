@@ -124,6 +124,8 @@ void ROVppAS::process_announcements() {
                         passed_rov->push_back(ann);
                         process_announcement(ann);
                     } else {
+                        // if it is from a customer, silently drop it
+                        if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         failed_rov->push_back(ann);
                         if (best_alternative_route(ann) == ann) { // if no alternative
@@ -131,6 +133,7 @@ void ROVppAS::process_announcements() {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.priority -= 10;
                             process_announcement(ann);
                         } else {
                             // Make preventive announcement
