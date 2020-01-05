@@ -423,9 +423,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     }
                 }
                 recving_as->receive_announcements(anns_to_peers_trimmed);
+            } else {
+                // For each provider, give the vector of announcements
+                recving_as->receive_announcements(anns_to_peers);
             }
-            // For each provider, give the vector of announcements
-            recving_as->receive_announcements(anns_to_peers);
         }
     }
 
@@ -479,9 +480,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     }
                 }
                 recving_as->receive_announcements(anns_to_customers_trimmed);
+            } else {
+                // For each customer, give the vector of announcements
+                recving_as->receive_announcements(anns_to_customers);
             }
-            // For each customer, give the vector of announcements
-            recving_as->receive_announcements(anns_to_customers);
         }
     }
 }
