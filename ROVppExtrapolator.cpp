@@ -73,7 +73,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     rovpp_querier->create_results_tbl();
     rovpp_querier->clear_supernodes_from_db();
     rovpp_querier->create_supernodes_tbl();
-    rovpp_querier->create_rovpp_blacklist_tbl();
+    //rovpp_querier->create_rovpp_blacklist_tbl();
     
     // Generate the graph and populate the stubs & supernode tables
     rovpp_graph->create_graph_from_db(rovpp_querier);
