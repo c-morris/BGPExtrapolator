@@ -463,7 +463,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         for (uint32_t customer_asn : *source_as->customers) {
             // ROV++ 0.3 do not send preventive announcements whence the best alternative came
             auto *recving_as = graph->ases->find(customer_asn)->second;
-            auto anns_to_peers_trimmed = anns_to_peers;
+            auto anns_to_customers_trimmed = anns_to_customers;
             if (rovpp_as != NULL &&
                 rovpp_as->policy_vector.size() > 0 &&
                 rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
