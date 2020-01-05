@@ -462,23 +462,25 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {
             // ROV++ 0.3 do not send preventive announcements whence the best alternative came
-            bool going_backwards = false;
+            auto *recving_as = graph->ases->find(customer_asn)->second;
+            auto anns_to_peers_trimmed = anns_to_peers;
             if (rovpp_as != NULL &&
                 rovpp_as->policy_vector.size() > 0 &&
                 rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
                 for (auto ann_pair : *rovpp_as->preventive_anns) {
-                    for (auto ann : anns_to_customers) {
-                        if (ann_pair.first.prefix == ann.prefix && 
-                            ann_pair.first.origin == ann.origin &&
+                    for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
+                        if (ann_pair.first.prefix == it->prefix && 
+                            ann_pair.first.origin == it->origin &&
                             ann_pair.second.received_from_asn == customer_asn) {
-                            going_backwards = true;
+                            it = anns_to_customers_trimmed.erase(it);
+                        } else {
+                            ++it;
                         }
                     }
                 }
-                if (going_backwards) { continue; }
+                recving_as->receive_announcements(anns_to_customers_trimmed);
             }
             // For each customer, give the vector of announcements
-            auto *recving_as = graph->ases->find(customer_asn)->second;
             recving_as->receive_announcements(anns_to_customers);
         }
     }
