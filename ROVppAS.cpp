@@ -77,8 +77,15 @@ void ROVppAS::process_announcements() {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
             // Regardless of policy, if the announcement originates from this AS
+            // *or is a subprefix of our own prefix*
             // the received_from_asn set to 64514 (if we are not an attacker)
             if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
+            for (auto rib_ann : *all_anns) {
+                if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
+                    rib_ann.second.origin == asn) {
+                    ann.received_from_asn=64514;
+                }
+            }
             if (policy_vector.size() > 0) { // if we have a policy
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
