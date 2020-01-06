@@ -77,12 +77,13 @@ void ROVppAS::process_announcements() {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
             // Regardless of policy, if the announcement originates from this AS
-            // *or is a subprefix of our own prefix*
+            // *or is a subprefix of its own prefix*
             // the received_from_asn set to 64514 (if we are not an attacker)
             if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
             for (auto rib_ann : *all_anns) {
                 if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
-                    rib_ann.second.origin == asn) {
+                    rib_ann.second.origin == asn &&
+                    attackers->find(asn) == attackers->end()) {
                     ann.received_from_asn=64514;
                 }
             }
@@ -148,6 +149,7 @@ void ROVppAS::process_announcements() {
                             // Make preventive announcement
                             Announcement preventive_ann = best_alternative_ann;
                             preventive_ann.prefix = ann.prefix;
+                            if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
                             preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
                             process_announcement(preventive_ann);
                         }
