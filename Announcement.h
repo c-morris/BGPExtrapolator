@@ -52,6 +52,7 @@ public:
         priority = 0;
         from_monitor = false;
         tstamp = timestamp;
+        policy_index = 0;
     }
     
     /** Priority constructor
