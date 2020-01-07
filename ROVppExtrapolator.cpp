@@ -27,6 +27,7 @@
 
 
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
+                                     bool random_b,
                                      std::string r,
                                      std::string e,
                                      std::string f,
@@ -34,7 +35,8 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
     : Extrapolator() {
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
-    it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
+    it_size = iteration_size;   // Number of prefix to be precessed per iteration (currently not being used)
+    random = random_b;          // Flag for using random tiebreaks
     // TODO fix this memory leak
     graph = new ROVppASGraph();
     querier = new ROVppSQLQuerier(g, r, e, f);
@@ -174,8 +176,11 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                 // Skip it
                 continue;
             } else if (ann_to_check_for.tstamp == search->second.tstamp) {
-                // Random tie breaker for equal timestamp
-                bool value = as_on_path->get_random();
+                // Tie breaker for equal timestamp
+                bool value = true;
+                if (random) {
+                    value = as_on_path->get_random();
+                }
                 if (value) {
                     continue;
                 } else {
@@ -249,7 +254,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             0, // policy defaults to BGP
                                             true);
             // Send the announcement to the current AS
-            as_on_path->process_announcement(ann);
+            as_on_path->process_announcement(ann, random);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
                         std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));

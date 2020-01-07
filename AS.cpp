@@ -158,7 +158,7 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
  * 
  * @param ann The announcement to be processed
  */ 
-void AS::process_announcement(Announcement &ann) {
+void AS::process_announcement(Announcement &ann, bool ran) {
     // Check for existing announcement for prefix
     auto search = all_anns->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
@@ -176,9 +176,13 @@ void AS::process_announcement(Announcement &ann) {
         }
     // Tiebraker for equal priority between old and new ann
     } else if (ann.priority == search->second.priority) {
-        // Random tiebraker
-        //std::minstd_rand ran_bool(asn);
-        bool value = get_random();
+        // Tiebreaker
+        bool value = true;
+        // Random tiebreaker if enabled
+        if (ran) {
+            value = get_random();
+        }
+        // Defaults to first come, first kept if not random
         if (value) {
             // Use the new announcement
             if (search_depref == depref_anns->end()) {
@@ -244,11 +248,11 @@ void AS::process_announcement(Announcement &ann) {
 
 /** Iterate through incoming_announcements and keep only the best. 
  */
-void AS::process_announcements() {
+void AS::process_announcements(bool ran) {
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
-            process_announcement(ann);
+            process_announcement(ann, ran);
         }
     }
     incoming_announcements->clear();

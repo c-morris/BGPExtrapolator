@@ -32,6 +32,7 @@ struct ROVppExtrapolator: public Extrapolator {
     ROVppASGraph *rovpp_graph;          // Cast from Extrapolator graph
 
     ROVppExtrapolator(std::vector<std::string> g=std::vector<std::string>(),
+                      bool random_b=true,
                       std::string r=RESULTS_TABLE,
                       std::string e=VICTIM_TABLE,
                       std::string f=ATTACKER_TABLE,
