@@ -100,7 +100,6 @@ int main(int argc, char *argv[]) {
     // Handle intro information
     intro();
     
-<<<<<<< HEAD
     // Check for ROV++ mode
     if (vm["rovpp"].as<bool>()) {
          ROVppExtrapolator *extrap = new ROVppExtrapolator(
