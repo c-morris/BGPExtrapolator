@@ -49,6 +49,9 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("random,b", 
+         po::value<bool>()->default_value(true), 
+         "disables random tiebraking for testing")
         ("invert-results,i", 
          po::value<bool>()->default_value(true), 
          "record ASNs which do *not* have a route to a prefix-origin (smaller results size)")
@@ -83,7 +86,8 @@ int main(int argc, char *argv[]) {
     intro();
     
     // Instantiate Extrapolator
-    Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
+    Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
+        vm["invert-results"].as<bool>(),
         vm["store-depref"].as<bool>(),
         (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
         (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
@@ -92,7 +96,7 @@ int main(int argc, char *argv[]) {
         (vm["iteration-size"].as<uint32_t>()));
     
     // Run propagation
-    extrap->perform_propagation(true, 100000000000);
+    extrap->perform_propagation();
     delete extrap;
     return 0;
 }

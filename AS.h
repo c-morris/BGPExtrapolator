@@ -42,8 +42,9 @@ class AS {
 public:
     uint32_t asn;       // Autonomous System Number
     bool visited;       // Marks something
-    int rank;           // Rank in ASGraph heirarchy for propagation
-    
+    int rank;           // Rank in ASGraph heirarchy for propagation 
+    // Random Number Generator
+    std::minstd_rand ran_bool;
     // Defer processing of incoming announcements for efficiency
     std::vector<Announcement> *incoming_announcements;
     // Maps of all announcements stored
@@ -74,19 +75,16 @@ public:
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);
-    void process_announcement(Announcement &ann);
+    void process_announcement(Announcement &ann, bool ran=true);
+    void process_announcements(bool ran=true);
     void clear_announcements();
     bool already_received(Announcement &ann);
     void delete_ann(Announcement &ann);
     void printDebug();
-    void process_announcements();
     void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
                              std::pair<Prefix<>,uint32_t> current);
     friend std::ostream& operator<<(std::ostream &os, const AS& as);
     std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
-private:
-    // Random Number Generator
-    std::minstd_rand ran_bool;
 };
 #endif

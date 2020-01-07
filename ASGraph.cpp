@@ -32,12 +32,12 @@
 #include "AS.h"
 
 ASGraph::ASGraph() {
-    ases = new std::unordered_map<uint32_t, AS*>;                         // Map of all ASes
+    ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
     ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
     components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
     component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
-    stubs_to_parents = new std::map<uint32_t, uint32_t>; 
-    non_stubs = new std::vector<uint32_t>;
+    stubs_to_parents = new std::map<uint32_t, uint32_t>;        // Translace stub to parent
+    non_stubs = new std::vector<uint32_t>;                      // All non-stubs in the graph
     inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,
                                              std::set<uint32_t>*>;
 }
@@ -191,7 +191,6 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     save_non_stubs_to_db(querier);
 }
 
-
 /** Saves the stub ASes to be removed to a table on the database.
  *
  * @param querier
@@ -217,7 +216,6 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
     std::remove(file_name.c_str());
 }
 
-
 /** Saves the non_stub ASes to a table on the database.
  *
  * @param querier
@@ -242,7 +240,6 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
     querier->copy_non_stubs_to_db(file_name);
     std::remove(file_name.c_str());
 }
-
 
 /** Generate a csv with all supernodes, then dump them to database.
  *
@@ -282,12 +279,11 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
-
 /** Decide and assign ranks to all the AS's in the graph. 
  *
- *  The rank of an AS is the maximum number of nodes it has below it. This means
- *  it is possible to have an AS of rank 0 directly below an AS of rank 4, but
- *  not possible to have an AS of rank 3 below one of rank 2. 
+ *  The rank of an AS one plus is the maximum level of the nodes it has below it. 
+ *  This means it is possible to have an AS of rank 0 directly below an AS of 
+ *  rank 4, but not possible to have an AS of rank 3 below one of rank 2. 
  *
  *  The bottom of the DAG is rank 0. 
  */
@@ -370,14 +366,13 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
             as_from_stack->onStack = false;
             component->push_back(as_from_stack->asn);
         } while (as_from_stack != as);
-        /** DEBUG
+        /** TODO Add logging here
         if (component->size() > 1)
             std::cout << "Supernode found of size " << component->size() << std::endl;
         */
         components->push_back(component);
     }
 }
-
 
 /** Combine providers, peers, and customers of ASes in a strongly connected component.
  *  Also append to component_translation for future reference.

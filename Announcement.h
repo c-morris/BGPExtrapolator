@@ -34,10 +34,12 @@ class Announcement {
 public:
     Prefix<> prefix;            // encoded with subnet mask
     uint32_t origin;            // origin ASN
-    uint32_t priority;            // priority assigned based upon path
+    uint32_t priority;          // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
     bool from_monitor = false;  // flag for seeded ann
     int64_t tstamp;             // timestamp from mrt file
+    // TODO replace with proper templating
+    uint32_t policy_index;      // stores the policy index the ann applies
 
     /** Default constructor
      */
