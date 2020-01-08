@@ -520,7 +520,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int d) {
     if (d > 100) { std::cerr << "Maximum depth exceeded during traceback.\n"; return true; }
     auto ann_pair = cur_as.all_anns->find(p);
-    if (ann_pair == cur_as.all_anns->end()) { std::cerr << "AS_PATH not continuous during traceback.\n" << a << p.to_cidr(); return false; }
     const Announcement &ann = ann_pair->second;
     // i wonder if a cabinet holding a subwoofer counts as a bass case 
     if (ann.received_from_asn == a) { return true; }
@@ -528,6 +527,10 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int
         ann.received_from_asn == 64513 ||
         ann.received_from_asn == 64514) {
         return false;
+    }
+    if (ann_pair == cur_as.all_anns->end()) { 
+        //std::cerr << "AS_PATH not continuous during traceback.\n" << a << p.to_cidr(); 
+        return false; 
     }
     auto next_as_pair = rovpp_graph->ases->find(ann.received_from_asn);
     if (next_as_pair == rovpp_graph->ases->end()) { std::cerr << "Traced back announcement to nonexistent AS.\n"; return true; }
