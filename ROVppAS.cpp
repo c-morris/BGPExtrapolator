@@ -29,13 +29,13 @@ ROVppAS::ROVppAS(uint32_t myasn,
                  std::set<uint32_t> *prov,
                  std::set<uint32_t> *peer,
                  std::set<uint32_t> *cust)
-                 : AS(myasn, inv, prov, peer, cust)  {
-                    // Save reference to attackers
-                    attackers = rovpp_attackers;
-                    failed_rov = new std::vector<Announcement>;
-                    passed_rov = new std::vector<Announcement>;
-                    blackholes = new std::vector<Announcement>;
-                    preventive_anns = new std::vector<std::pair<Announcement,Announcement>>;  
+    : AS(myasn, inv, prov, peer, cust)  {
+    // Save reference to attackers
+    attackers = rovpp_attackers;
+    failed_rov = new std::vector<Announcement>;
+    passed_rov = new std::vector<Announcement>;
+    blackholes = new std::vector<Announcement>;
+    preventive_anns = new std::vector<std::pair<Announcement,Announcement>>;  
 }
 
 ROVppAS::~ROVppAS() { 
@@ -67,6 +67,104 @@ bool ROVppAS::pass_rov(Announcement &ann) {
         return (attackers->find(ann.origin) == attackers->end());
     } else {
         return true;
+    }
+}
+
+/** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
+ *
+ * Approximates BGP best path selection based on announcement priority.
+ * Called by process_announcements and Extrapolator.give_ann_to_as_path()
+ * 
+ * @param ann The announcement to be processed
+ */ 
+void ROVppAS::process_announcement(Announcement &ann) {
+    // Check for existing announcement for prefix
+    auto search = all_anns->find(ann.prefix);
+    auto search_depref = depref_anns->find(ann.prefix);
+    
+    // ROV++ 
+    // Check preventive announcement alt
+    if (ann.alt == asn) {
+        // Ignore the preventive announcement
+        return;
+    }
+
+    // No announcement found for incoming announcement prefix
+    if (search == all_anns->end()) {
+        all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+        // Inverse results need to be computed also with announcements from monitors
+        if (inverse_results != NULL) {
+            auto set = inverse_results->find(
+                std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+            if (set != inverse_results->end()) {
+                set->second->erase(asn);
+            }
+        }
+    // Tiebraker for equal priority between old and new ann
+    } else if (ann.priority == search->second.priority) {
+        // Random tiebraker
+        //std::minstd_rand ran_bool(asn);
+        bool value = get_random();
+        if (value) {
+            // Use the new announcement
+            if (search_depref == depref_anns->end()) {
+                // Update inverse results
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                // Insert depref ann
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                      search->second));
+                search->second = ann;
+            } else {
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                search_depref->second = search->second;
+                search->second = ann;
+            }
+        } else {
+            // Use the old announcement
+            if (search_depref == depref_anns->end()) {
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                                                                      ann));
+            } else {
+                // Replace second best with the old priority announcement
+                search_depref->second = ann;
+            }
+        }
+    // Otherwise check new announcements priority for best path selection
+    } else if (ann.priority > search->second.priority) {
+        if (search_depref == depref_anns->end()) {
+            // Update inverse results
+            swap_inverse_result(
+                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+            // Insert new second best announcement
+            depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                  search->second));
+            // Replace the old announcement with the higher priority
+            search->second = ann;
+        } else {
+            // Update inverse results
+            swap_inverse_result(
+                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+            // Replace second best with the old priority announcement
+            search_depref->second = search->second;
+            // Replace the old announcement with the higher priority
+            search->second = ann;
+        }
+    // Old announcement was better
+    // Check depref announcements priority for best path selection
+    } else {
+        if (search_depref == depref_anns->end()) {
+            // Insert new second best annoucement
+            depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+        } else if (ann.priority > search_depref->second.priority) {
+            // Replace the old depref announcement with the higher priority
+            search_depref->second = search->second;
+        }
     }
 }
 
@@ -149,6 +247,7 @@ void ROVppAS::process_announcements() {
                             // Make preventive announcement
                             Announcement preventive_ann = best_alternative_ann;
                             preventive_ann.prefix = ann.prefix;
+                            preventive_ann.alt = best_alternative_ann.received_from_asn;
                             if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
                             preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
                             process_announcement(preventive_ann);

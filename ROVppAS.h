@@ -59,6 +59,7 @@ struct ROVppAS : public AS {
     ~ROVppAS();
     
     // Overrided Methods
+    void process_announcement(Announcement &ann);
     void process_announcements();
     
     // ROV Methods
