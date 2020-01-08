@@ -331,11 +331,11 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
             auto *recving_as = graph->ases->find(provider_asn)->second;
+            auto anns_to_providers_trimmed = anns_to_providers;
             // ROV++ 0.3 do not send preventive announcements to peers or providers
             if (rovpp_as != NULL &&
                 rovpp_as->policy_vector.size() > 0 &&
                 rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
-                auto anns_to_providers_trimmed = anns_to_providers;
                 for (auto ann_pair : *rovpp_as->preventive_anns) {
                     for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
                         if (ann_pair.first.prefix == it->prefix &&
@@ -357,11 +357,16 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                         }
                     }
                 }
-                recving_as->receive_announcements(anns_to_providers_trimmed);
-            } else {
-                // For each provider, give the vector of announcements
-                recving_as->receive_announcements(anns_to_providers);
             }
+            // Check for loops
+            for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
+                if (loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                    it = anns_to_providers_trimmed.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            recving_as->receive_announcements(anns_to_providers_trimmed);
         }
     }
 
@@ -427,11 +432,16 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                         }
                     }
                 }
-                recving_as->receive_announcements(anns_to_peers_trimmed);
-            } else {
-                // For each provider, give the vector of announcements
-                recving_as->receive_announcements(anns_to_peers);
             }
+            // Check for loops
+            for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
+                if (loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                    it = anns_to_peers_trimmed.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            recving_as->receive_announcements(anns_to_peers_trimmed);
         }
     }
 
@@ -484,13 +494,45 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                         }
                     }
                 }
-                recving_as->receive_announcements(anns_to_customers_trimmed);
-            } else {
-                // For each customer, give the vector of announcements
-                recving_as->receive_announcements(anns_to_customers);
             }
+            // Check for loops
+            for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
+                if (loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                    it = anns_to_customers_trimmed.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            // For each customer, give the vector of announcements
+            recving_as->receive_announcements(anns_to_customers_trimmed);
         }
     }
+}
+
+/**
+ * Check for a loop in the AS path using traceback.
+ * @param  p Prefix to check for
+ * @param  a The ASN that, if seen, will mean we have a loop
+ * @param  cur_as The current AS we are at in the traceback
+ * @param  d The current depth of the search
+ * @return true if a loop is detected, else false
+ */
+bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int d) {
+    if (d > 100) { std::cerr << "Maximum depth exceeded during traceback.\n"; return true; }
+    auto ann_pair = cur_as.all_anns->find(p);
+    if (ann_pair == cur_as.all_anns->end()) { std::cerr << "AS_PATH not continuous during traceback.\n" << a << p.to_cidr(); return true; }
+    const Announcement &ann = ann_pair->second;
+    // i wonder if a cabinet holding a subwoofer counts as a bass case 
+    if (ann.received_from_asn == a) { return true; }
+    if (ann.received_from_asn == 64512 ||
+        ann.received_from_asn == 64513 ||
+        ann.received_from_asn == 64514) {
+        return false;
+    }
+    auto next_as_pair = rovpp_graph->ases->find(ann.received_from_asn);
+    if (next_as_pair == rovpp_graph->ases->end()) { std::cerr << "Traced back announcement to nonexistent AS.\n"; return true; }
+    const AS& next_as = *next_as_pair->second;
+    return loop_check(p, next_as, a, d+1);
 }
 
 /** Saves the results of the extrapolation. ROVpp version uses the ROVppQuerier.

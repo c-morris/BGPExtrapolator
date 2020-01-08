@@ -38,6 +38,7 @@ struct ROVppExtrapolator: public Extrapolator {
                       uint32_t iteration_size=false);
     ~ROVppExtrapolator();
 
+    bool loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int d);
     ////////////////////////////////////////////////////////////////////
     // Overidden Methods
     ////////////////////////////////////////////////////////////////////
