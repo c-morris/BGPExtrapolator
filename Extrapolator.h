@@ -24,6 +24,8 @@
 #ifndef EXTRAPOLATOR_H
 #define EXTRAPOLATOR_H
 
+#include "Logger.h"
+
 #include <vector>
 #include <bits/stdc++.h>
 #include <iostream>

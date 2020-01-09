@@ -22,6 +22,8 @@
  ************************************************************************/
 
 #ifndef RUN_TESTS
+#include "Logger.h"
+
 #include <iostream>
 #include <boost/program_options.hpp>
 
@@ -41,6 +43,8 @@ void intro() {
 }
 
 int main(int argc, char *argv[]) {
+    Logger::getInstance();
+
     using namespace std;   
     // don't sync iostreams with printf
     ios_base::sync_with_stdio(false);

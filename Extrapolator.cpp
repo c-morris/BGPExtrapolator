@@ -21,6 +21,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
+#include "Logger.h"
 #include <cmath>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -30,7 +31,7 @@
 #include "Extrapolator.h"
 
 // TODO Replace w/ logging for the
-int g_loop = 0;         // Number of loops in mrt
+// int g_loop = 0;         // Number of loops in mrt
 int g_ts_tb = 0;        // Number of timestamp tiebreaks
 int g_broken_path = 0;  // Number of broke paths in mrt
 
@@ -128,7 +129,7 @@ void Extrapolator::perform_propagation(){
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
-    std::cout << "Loop count: " << g_loop << std::endl;
+    // std::cout << "Loop count: " << g_loop << std::endl;
     std::cout << "Timestamp Tiebreak count: " << g_ts_tb << std::endl;
     std::cout << "Broken Path count: " << g_broken_path << std::endl;
 }
@@ -293,6 +294,11 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                 // Check for loops in the path and drop announcement if they exist
                 bool loop = find_loop(as_path);
                 if (loop) {
+                    static int g_loop = 1;
+
+                    Logger::getInstance().setFilename("Loops");
+                    Logger::getInstance() << "AS path loop #";// << g_loop << ", Origin: " << origin << ", Prefix: " << cur_prefix.to_cidr() << ", Path: " << path_as_string;
+
                     g_loop++;
                     continue;
                 }
