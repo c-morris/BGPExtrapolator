@@ -20,11 +20,35 @@ namespace src = boost::log::sources;
 namespace sinks = boost::log::sinks;
 namespace keywords = boost::log::keywords;
 
+//Add the channel attribute
 BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 
+/*
+*   The logger class is meant to allow easy and simple logging around the project.
+*   We would not like to pass around a Logger object across the entirety of the BGPExtrapolator.
+*   Thus, the Logger class will store a single instance object that can be accessed statically as such:
+*
+*   #include "Logger.h"
+*
+*   ....
+*
+*   Logger::getInstance().setFilename("Some Name");
+*   Logger::getInstance() << "Some Messege " << num;
+*
+*   How it works:
+*       This uses the Boost logging library in order to handle multiple named files. Specifically a multi-file sink is configured to name files based on
+*           the provided channel name (a standard string). In addition, a channel logger is used to log with channels.
+*       The use of channels is that it is a string type (good for naming) that can be filterd for files
+*
+*   Important Notes:
+*       The Logger will erase the log files stored in the log folder when the first instance is created. If 
+*           a log holds important information move or copy the file elsewhere before running again.
+*       Because of the above, make sure Logger::getInstance() is guaranteed to be called at least once.
+*           The concequence would be log files from a previous run that someone may assume is from the current run (assuming the current run generated no logs).
+*/
 class Logger {
 private:
-    boost::log::sources::channel_logger<> channel_lg{boost::log::keywords::channel = "Main"};
+    boost::log::sources::channel_logger<> channel_lg;
     std::string filename;
 
     Logger();
