@@ -358,14 +358,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     }
                 }
             }
-            // Check for loops
-            for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
-                if (loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
-                    it = anns_to_providers_trimmed.erase(it);
-                } else {
-                    ++it;
-                }
-            }
             recving_as->receive_announcements(anns_to_providers_trimmed);
         }
     }
@@ -433,14 +425,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     }
                 }
             }
-            // Check for loops
-            for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
-                if (loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
-                    it = anns_to_peers_trimmed.erase(it);
-                } else {
-                    ++it;
-                }
-            }
             recving_as->receive_announcements(anns_to_peers_trimmed);
         }
     }
@@ -493,14 +477,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                             ++it;
                         }
                     }
-                }
-            }
-            // Check for loops
-            for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
-                if (loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
-                    it = anns_to_customers_trimmed.erase(it);
-                } else {
-                    ++it;
                 }
             }
             // For each customer, give the vector of announcements
