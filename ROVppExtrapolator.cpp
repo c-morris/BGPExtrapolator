@@ -333,9 +333,11 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             auto *recving_as = graph->ases->find(provider_asn)->second;
             auto anns_to_providers_trimmed = anns_to_providers;
             // ROV++ 0.3 do not send preventive announcements to peers or providers
+            // ROV++ 0.2bis do not send blackhole announcements to peers or providers
             if (rovpp_as != NULL &&
                 rovpp_as->policy_vector.size() > 0 &&
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS)) {
                 for (auto ann_pair : *rovpp_as->preventive_anns) {
                     for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
                         if (ann_pair.first.prefix == it->prefix &&
