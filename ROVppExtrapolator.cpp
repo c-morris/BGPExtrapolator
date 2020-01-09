@@ -319,14 +319,19 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = 200 + path_len_weight;
             
-            // Push announcement with new priority to ann vector
-            anns_to_providers.push_back(ROVppAnnouncement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
+                                                      ann.second.prefix.addr,
+                                                      ann.second.prefix.netmask,
+                                                      priority,
+                                                      asn,
+                                                      ann.second.tstamp,
+                                                      0);
+            // TODO implement rovppann and copy function
+            // Set the alt variable
+            new_ann.alt = ann.second.alt;
+
+            // Push announcement with new priority and alt to ann vector
+            anns_to_providers.push_back(new_ann);
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -391,13 +396,19 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = 100 + path_len_weight;
             
-            anns_to_peers.push_back(ROVppAnnouncement(ann.second.origin,
-                                                 ann.second.prefix.addr,
-                                                 ann.second.prefix.netmask,
-                                                 priority,
-                                                 asn,
-                                                 ann.second.tstamp,
-                                                 0)); // policy defaults to BGP
+            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
+                                                          ann.second.prefix.addr,
+                                                          ann.second.prefix.netmask,
+                                                          priority,
+                                                          asn,
+                                                          ann.second.tstamp,
+                                                          0);
+            // TODO implement rovppann and copy function
+            // Set the alt variable
+            new_ann.alt = ann.second.alt;
+
+            // Push announcement with new priority to ann vector
+            anns_to_peers.push_back(new_ann);
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -456,14 +467,20 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                 path_len_weight -= 1;
             }
             uint32_t priority = path_len_weight;
+ 
+            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
+                                                          ann.second.prefix.addr,
+                                                          ann.second.prefix.netmask,
+                                                          priority,
+                                                          asn,
+                                                          ann.second.tstamp,
+                                                          0);
+            // TODO implement rovppann and copy function
+            // Set the alt variable
+            new_ann.alt = ann.second.alt;
 
-            anns_to_customers.push_back(ROVppAnnouncement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+            // Push announcement with new priority to ann vector
+            anns_to_customers.push_back(new_ann);
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {
