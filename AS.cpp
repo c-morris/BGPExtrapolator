@@ -177,7 +177,7 @@ void AS::process_announcement(Announcement &ann, bool ran) {
     // Tiebraker for equal priority between old and new ann
     } else if (ann.priority == search->second.priority) {
         // Tiebreaker
-        bool value = true;
+        bool value = (ann.received_from_asn < search->second.received_from_asn);
         // Random tiebreaker if enabled
         if (ran) {
             value = get_random();
