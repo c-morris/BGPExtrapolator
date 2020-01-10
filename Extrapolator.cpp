@@ -30,10 +30,12 @@
 #include <chrono>
 #include "Extrapolator.h"
 
+#include <iostream>
+
 // TODO Replace w/ logging for the
 // int g_loop = 0;         // Number of loops in mrt
-int g_ts_tb = 0;        // Number of timestamp tiebreaks
-int g_broken_path = 0;  // Number of broke paths in mrt
+int g_ts_tb = 0;        // Number of timestamp tiebreaks, where?
+// int g_broken_path = 0;  // Number of broke paths in mrt
 
 Extrapolator::Extrapolator(bool random_b,
                            bool invert_results,
@@ -130,8 +132,8 @@ void Extrapolator::perform_propagation(){
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
     // std::cout << "Loop count: " << g_loop << std::endl;
-    std::cout << "Timestamp Tiebreak count: " << g_ts_tb << std::endl;
-    std::cout << "Broken Path count: " << g_broken_path << std::endl;
+    // std::cout << "Timestamp Tiebreak count: " << g_ts_tb << std::endl;
+    // std::cout << "Broken Path count: " << g_broken_path << std::endl;
 }
 
 
@@ -296,8 +298,7 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                 if (loop) {
                     static int g_loop = 1;
 
-                    Logger::getInstance().setFilename("Loops");
-                    Logger::getInstance() << "AS path loop #";// << g_loop << ", Origin: " << origin << ", Prefix: " << cur_prefix.to_cidr() << ", Path: " << path_as_string;
+                    Logger::getInstance().log("Loops") << "AS path loop #" << g_loop << ", Origin: " << origin << ", Prefix: " << cur_prefix.to_cidr() << ", Path: " << path_as_string;
 
                     g_loop++;
                     continue;
@@ -462,6 +463,11 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         } else {
             // Report the broken path
             //std::cerr << "Broken path for " << *(it - 1) << ", " << *it << std::endl;
+            
+            static int g_broken_path = 0;
+
+            Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", For: " << *(it - 1) << ", " << *it;
+
             g_broken_path++;
         }
     }

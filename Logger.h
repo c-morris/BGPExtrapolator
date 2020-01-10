@@ -13,14 +13,12 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/support/date_time.hpp>
 
-#include <iostream>
-
 namespace logging = boost::log;
 namespace src = boost::log::sources;
 namespace sinks = boost::log::sinks;
 namespace keywords = boost::log::keywords;
 
-//Add the channel attribute
+//Add the channel attribute as a standard string
 BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 
 /*
@@ -32,8 +30,7 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 *
 *   ....
 *
-*   Logger::getInstance().setFilename("Some Name");
-*   Logger::getInstance() << "Some Messege " << num;
+*   Logger::getInstance().log("filename") << "Some Messege " << num;
 *
 *   How it works:
 *       This uses the Boost logging library in order to handle multiple named files. Specifically a multi-file sink is configured to name files based on
@@ -47,35 +44,71 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 *           The concequence would be log files from a previous run that someone may assume is from the current run (assuming the current run generated no logs).
 */
 class Logger {
-private:
+public:
     boost::log::sources::channel_logger<> channel_lg;
-    std::string filename;
 
     Logger();
-public:
-    static Logger& getInstance() {
+
+    /*
+    *   Returns the single instance of the Logger.
+    * 
+    *   If this function has not been called before, then this will create the instance (concequently it will delete old log files)
+    *   This should be guarenteed to be called in the start of the main. This is because if the function only gets called in an 
+    *       if statement, then there is a chance old log files will live through a run of the extrapolator where they don't apply
+    */
+    static Logger getInstance() {
         static Logger instance;
 
         return instance;
     }
 
-    void setFilename(std::string filename);
+    /*
+    *   This is an interesting solution to overloading the << operator.
+    *   The main issue is that every time the boost logger logs, it will create a new line. This is not in our favor 
+    *       because Logger::getInstance().log("file") << "Some text" << "More text"; will output on multiple lines. 
+    *       So to counter this, a temporary object will be created. That object will override <<, but instead of 
+    *       logging the text instantly, it will store the result in a string stream, to build the output.
+    *   
+    *   Moreover, with the above true, there is the matter of recognizing when the end of the line is.
+    *       The object only knows to store the partial output, it doesn't know when to log it to the file.
+    *       The counter here is to create the streaming object at the log() function call. That way, at the end of 
+    *       the line, the object will be deconstructed. It is in the deconstructor that the output will be logged
+    *       to the corresponding file.
+    */
+    class TempStreamer {
+    private:
+        boost::log::sources::channel_logger<> lg;
+        std::string filename;
+        std::stringstream stringStreamer;
+    public:
+        TempStreamer(boost::log::sources::channel_logger<> logger, const std::string file) : lg(logger), filename(file) {}
+        TempStreamer(const TempStreamer &other) : lg(other.lg), filename(other.filename) {}
 
-    template<class T>
-    friend Logger& operator<<(Logger& logger, const T& output);
+        ~TempStreamer() { 
+            std::string str = stringStreamer.str();
+            if(!str.empty())//if there is something to output, make the boost call to log to the file
+                BOOST_LOG_CHANNEL(lg, filename) << str;
+        }
+
+        template<typename T>
+        TempStreamer& operator<<(const T& output) {
+            stringStreamer << output;//add to the string stream
+            return *this;
+        }
+    };
+
+    /*
+    *   Will send the output to the default log file "General.log"
+    */
+    TempStreamer log() {
+        return log("General");
+    }
+
+    /*
+    *   This will create the temporary object to stream the output to the log file specified
+    */
+    TempStreamer log(std::string filename) {
+        return TempStreamer(getInstance().channel_lg, filename);
+    }
 };
-
-/*
-*   The idea here is to build on the stream provided by Boost logging
-*
-*   Intended use: Logging::getInstance() << "Some messege"
-*   This messege will be sent to the log file stored in 
-*/
-template<class T>
-Logger& operator<<(Logger& log, const T& output) {
-    //Specify the channel name as the filename (the sink interprets the channel name as the filename)
-    BOOST_LOG_CHANNEL(log.channel_lg, log.filename) << output;
-
-    return log;
-}
 #endif

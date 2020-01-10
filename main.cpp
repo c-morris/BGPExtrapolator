@@ -43,7 +43,7 @@ void intro() {
 }
 
 int main(int argc, char *argv[]) {
-    Logger::getInstance();
+    Logger::getInstance();//Clear the log files, and initialize the logger
 
     using namespace std;   
     // don't sync iostreams with printf

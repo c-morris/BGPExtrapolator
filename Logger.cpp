@@ -6,9 +6,6 @@ Logger::Logger() {
 
     }
 
-    //Default Log File
-    filename = "General";
-
     //Adds the time-stamp attribute
     boost::log::add_common_attributes();
 
@@ -30,25 +27,3 @@ Logger::Logger() {
 
     boost::log::core::get()->add_sink(multifile);
 }
-
-/*
-*   This method will store the filename, and output any further logs to this file.
-*   Note: all files are found in the Logs folder
-*   The default filename is General
-*
-*   @param filename -> the name of the file (not including .log or the folder Logs)
-*/
-void Logger::setFilename(std::string filename) {
-    this->filename = filename;
-}
-
-//Example:
-// int main() {
-//     Logger::getInstance() << "A general log";
-
-//     Logger::getInstance().setFilename("Loops");
-//     Logger::getInstance() << "Somehing about loops in the AS path";
-
-//     Logger::getInstance().setFilename("Breaks");
-//     Logger::getInstance() << "The AS path is broken...";
-// }
