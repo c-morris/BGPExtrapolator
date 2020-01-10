@@ -42,20 +42,6 @@ void Logger::setFilename(std::string filename) {
     this->filename = filename;
 }
 
-/*
-*   The idea here is to build on the stream provided by Boost logging
-*
-*   Intended use: Logging::getInstance() << "Some messege"
-*   This messege will be sent to the log file stored in 
-*/
-template<class T>
-Logger& operator<<(Logger& log, const T& output) {
-    //Specify the channel name as the filename (the sink interprets the channel name as the filename)
-    BOOST_LOG_CHANNEL(log.channel_lg, log.filename) << output;
-
-    return log;
-}
-
 //Example:
 // int main() {
 //     Logger::getInstance() << "A general log";
