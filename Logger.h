@@ -75,23 +75,23 @@ public:
     *       the line, the object will be deconstructed. It is in the deconstructor that the output will be logged
     *       to the corresponding file.
     */
-    class TempStreamer {
+    class StreamBuff {
     private:
         boost::log::sources::channel_logger<> lg;
         std::string filename;
         std::stringstream stringStreamer;
     public:
-        TempStreamer(boost::log::sources::channel_logger<> logger, const std::string file) : lg(logger), filename(file) {}
-        TempStreamer(const TempStreamer &other) : lg(other.lg), filename(other.filename) {}
+        StreamBuff(boost::log::sources::channel_logger<> logger, const std::string file) : lg(logger), filename(file) {}
+        StreamBuff(const StreamBuff &other) : lg(other.lg), filename(other.filename) {}
 
-        ~TempStreamer() { 
+        ~StreamBuff() { 
             std::string str = stringStreamer.str();
             if(!str.empty())//if there is something to output, make the boost call to log to the file
                 BOOST_LOG_CHANNEL(lg, filename) << str;
         }
 
         template<typename T>
-        TempStreamer& operator<<(const T& output) {
+        StreamBuff& operator<<(const T& output) {
             stringStreamer << output;//add to the string stream
             return *this;
         }
@@ -100,15 +100,15 @@ public:
     /*
     *   Will send the output to the default log file "General.log"
     */
-    TempStreamer log() {
+    StreamBuff log() {
         return log("General");
     }
 
     /*
     *   This will create the temporary object to stream the output to the log file specified
     */
-    TempStreamer log(std::string filename) {
-        return TempStreamer(getInstance().channel_lg, filename);
+    StreamBuff log(std::string filename) {
+        return StreamBuff(getInstance().channel_lg, filename);
     }
 };
 #endif
