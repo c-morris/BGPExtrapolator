@@ -21,7 +21,7 @@ namespace keywords = boost::log::keywords;
 //Add the channel attribute as a standard string
 BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 
-/*
+/**
 *   The logger class is meant to allow easy and simple logging around the project.
 *   We would not like to pass around a Logger object across the entirety of the BGPExtrapolator.
 *   Thus, the Logger class will store a single instance object that can be accessed statically as such:
@@ -49,7 +49,7 @@ public:
 
     Logger();
 
-    /*
+    /**
     *   Returns the single instance of the Logger.
     * 
     *   If this function has not been called before, then this will create the instance (concequently it will delete old log files)
@@ -62,7 +62,7 @@ public:
         return instance;
     }
 
-    /*
+    /**
     *   This is an interesting solution to overloading the << operator.
     *   The main issue is that every time the boost logger logs, it will create a new line. This is not in our favor 
     *       because Logger::getInstance().log("file") << "Some text" << "More text"; will output on multiple lines. 
@@ -97,15 +97,20 @@ public:
         }
     };
 
-    /*
+    /**
     *   Will send the output to the default log file "General.log"
+    * 
+    *   @return The stream buffer object that handles streaming the output to the default file
     */
     StreamBuff log() {
         return log("General");
     }
 
-    /*
+    /**
     *   This will create the temporary object to stream the output to the log file specified
+    *   
+    *   @param The Filename for the log file that will be generated or added to if it already exists 
+    *   @return The stream buffer object that handles streaming the output to the default file
     */
     StreamBuff log(std::string filename) {
         return StreamBuff(getInstance().channel_lg, filename);
