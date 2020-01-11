@@ -169,33 +169,8 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
-            // Find the already received announcement
-            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
-            // If the current timestamp is newer (worse)
-            if (ann_to_check_for.tstamp > search->second.tstamp) {
-                // Skip it
-                continue;
-            } else if (ann_to_check_for.tstamp == search->second.tstamp) {
-                // Tie breaker for equal timestamp
-                bool value = true;
-                if (random) {
-                    value = as_on_path->get_random();
-                }
-                if (value) {
-                    continue;
-                } else {
-                    // Position of previous AS on path
-                    uint32_t pos = path_l - i + 1;
-                    // Prepending check, use original priority
-                    if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
-                        continue;
-                    }
-                    as_on_path->delete_ann(ann_to_check_for);
-                }
-            } else {
-                // Delete worse MRT announcement, proceed with seeding
-                as_on_path->delete_ann(ann_to_check_for);
-            }
+            // Find the already received announcement and delete it
+            as_on_path->delete_ann(ann_to_check_for);
         }
         
         // If ASes in the path aren't neighbors (data is out of sync)
