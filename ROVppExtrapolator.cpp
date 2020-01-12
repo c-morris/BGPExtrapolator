@@ -380,7 +380,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 200) {
                 continue;
             }
-
+            // ROV++ 0.1 do not forward blackhole announcements
+            if (rovpp_as != NULL &&
+                ann.second.origin == 64512 && 
+                rovpp_as->policy_vector.size() > 0 &&
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+                continue;
+            }
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -448,8 +454,14 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Propagate all announcements to customers
             // Priority is reduced by 1 per path length
             // Base priority is 0 for provider to customers
-            
-            
+
+            // ROV++ 0.1 do not forward blackhole announcements
+            if (rovpp_as != NULL &&
+                ann.second.origin == 64512 && 
+                rovpp_as->policy_vector.size() > 0 &&
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+                continue;
+            }
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
