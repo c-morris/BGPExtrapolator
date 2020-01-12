@@ -53,6 +53,9 @@ int main(int argc, char *argv[]) {
         ("rovpp,v", 
          po::value<bool>()->default_value(false), 
          "flag for rovpp run")
+        ("random,b", 
+         po::value<bool>()->default_value(true), 
+         "disables random tiebraking for testing")
         ("invert-results,i", 
          po::value<bool>()->default_value(true), 
          "record ASNs which do *not* have a route to a prefix-origin")
@@ -103,6 +106,7 @@ int main(int argc, char *argv[]) {
             (vm.count("policy-tables") ?
                 vm["policy-tables"].as< vector<string> >() : 
                 vector<string>()),
+            vm["random"].as<bool>(),
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 RESULTS_TABLE),
@@ -121,7 +125,8 @@ int main(int argc, char *argv[]) {
         delete extrap;
     } else {
         // Instantiate Extrapolator
-        Extrapolator *extrap = new Extrapolator(vm["invert-results"].as<bool>(),
+        Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
+            vm["invert-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
             (vm.count("announcements-table") ? 
                 vm["announcements-table"].as<string>() : 
@@ -138,7 +143,7 @@ int main(int argc, char *argv[]) {
             (vm["iteration-size"].as<uint32_t>()));
             
         // Run propagation
-        extrap->perform_propagation(true, 100000000000);
+        extrap->perform_propagation();
         // Clean up
         delete extrap;
     }

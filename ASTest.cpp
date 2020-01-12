@@ -106,12 +106,12 @@ bool test_process_announcement(){
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
     AS as = AS();
-    as.process_announcement(ann);
+    as.process_announcement(ann, true);
     Prefix<> old_prefix = ann.prefix;
     ann.prefix.addr = 0x321C9F00;
     ann.prefix.netmask = 0xFFFFFF00;
     Prefix<> new_prefix = ann.prefix;
-    as.process_announcement(ann);
+    as.process_announcement(ann, true);
     if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
         old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
         return false;
@@ -121,8 +121,8 @@ bool test_process_announcement(){
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
     Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, false);
     Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, false);
-    as.process_announcement(a1);
-    as.process_announcement(a2);
+    as.process_announcement(a1, true);
+    as.process_announcement(a2, true);
     if (as.all_anns->find(p)->second.received_from_asn != 223 ||
         as.depref_anns->find(p)->second.received_from_asn != 222) {
         std::cerr << "Failed best path inference priority check." << std::endl;
@@ -131,7 +131,7 @@ bool test_process_announcement(){
 
     // Check new best announcement
     Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, false);
-    as.process_announcement(a3);
+    as.process_announcement(a3, true);
     if (as.all_anns->find(p)->second.received_from_asn != 224 ||
         as.depref_anns->find(p)->second.received_from_asn != 223) {
         std::cerr << "Failed best path priority correction check." << std::endl;
@@ -166,7 +166,7 @@ bool test_process_announcements(){
 
     // does it work if all_anns is empty?
     as.receive_announcements(vect);
-    as.process_announcements();
+    as.process_announcements(true);
     if (as.all_anns->find(ann1_prefix)->second.priority != 100) {
         std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;
@@ -177,7 +177,7 @@ bool test_process_announcements(){
     ann1.priority = 290;
     vect.push_back(ann1);
     as.receive_announcements(vect);
-    as.process_announcements();
+    as.process_announcements(true);
     if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
@@ -188,7 +188,7 @@ bool test_process_announcements(){
     ann1.priority = 200;
     vect.push_back(ann1);
     as.receive_announcements(vect);
-    as.process_announcements();
+    as.process_announcements(true);
     if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
@@ -199,7 +199,7 @@ bool test_process_announcements(){
     ann1.priority = 299;
     vect.push_back(ann1);
     as.receive_announcements(vect);
-    as.process_announcements();
+    as.process_announcements(true);
     if (as.all_anns->find(ann1_prefix)->second.priority != 299) {
         std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
@@ -210,7 +210,7 @@ bool test_process_announcements(){
     ann2.priority = 300;
     vect.push_back(ann2);
     as.receive_announcements(vect);
-    as.process_announcements();
+    as.process_announcements(true);
     if (as.all_anns->find(ann2_prefix)->second.priority != 200) {
         std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
@@ -226,7 +226,7 @@ bool test_clear_announcements(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     AS as = AS();
     // if receive_announcement is broken, this test will also be broken
-    as.process_announcement(ann);
+    as.process_announcement(ann, true);
     if (as.all_anns->size() != 1) {
         return false;
     }
@@ -246,7 +246,7 @@ bool test_already_received(){
     Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
     AS as = AS();
     // if receive_announcement is broken, this test will also be broken
-    as.process_announcement(ann1);
+    as.process_announcement(ann1, true);
     if (as.already_received(ann1) && !as.already_received(ann2)) {
         return true;
     }

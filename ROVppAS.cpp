@@ -77,7 +77,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  * 
  * @param ann The announcement to be processed
  */ 
-void ROVppAS::process_announcement(Announcement &ann) {
+void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     // Check for existing announcement for prefix
     auto search = all_anns->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
@@ -170,7 +170,7 @@ void ROVppAS::process_announcement(Announcement &ann) {
 
 /** Iterate through incoming_announcements and keep only the best. 
  */
-void ROVppAS::process_announcements() {
+void ROVppAS::process_announcements(bool ran) {
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
@@ -188,14 +188,14 @@ void ROVppAS::process_announcements() {
             if (policy_vector.size() > 0) { // if we have a policy
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
-                        process_announcement(ann);
+                        process_announcement(ann, ran);
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                     // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
-                        process_announcement(ann);
+                        process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -203,16 +203,16 @@ void ROVppAS::process_announcements() {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann);
+                            process_announcement(ann, ran);
                         } else {
-                            process_announcement(best_alternative_ann);
+                            process_announcement(best_alternative_ann, ran);
                         }
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
-                        process_announcement(ann);
+                        process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -221,9 +221,9 @@ void ROVppAS::process_announcements() {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann);
+                            process_announcement(ann, ran);
                         } else {
-                          process_announcement(best_alternative_ann);
+                          process_announcement(best_alternative_ann, ran);
                         }
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
@@ -254,10 +254,10 @@ void ROVppAS::process_announcements() {
                         }
                     }
                 } else { // unrecognized policy defaults to bgp
-                    process_announcement(ann);
+                    process_announcement(ann, ran);
                 }
             } else { // if there is no policy
-                process_announcement(ann);
+                process_announcement(ann, ran);
             }
         }
     }

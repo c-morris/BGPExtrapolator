@@ -35,18 +35,19 @@
 #define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
 #define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
 
-// Special Constants
-#define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  // This is used for ROVpp 0.1+ to 
-                                             // identify blackhole announcements in the dataplane.
-                                             // We're also using this in contrl plane in pass_rov
-                                             // Constant was agreed upon with Simulation code.
+// Special Constants 
+// This is used for ROVpp 0.1+ to 
+// identify blackhole announcements in the dataplane.
+// We're also using this in contrl plane in pass_rov
+// Constant was agreed upon with Simulation code.
+#define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  
 
 struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;
     std::set<uint32_t> *attackers;
     // Announcement Tracking Member Variables
-    std::vector<Announcement> *failed_rov; // Save dropped announcements (i.e. attacker announcements)
-    std::vector<Announcement> *passed_rov; // History of all announcements that have passed ROV
+    std::vector<Announcement> *failed_rov;  // Save dropped announcements (i.e. attacker announcements)
+    std::vector<Announcement> *passed_rov;  // History of all announcements that have passed ROV
     std::vector<Announcement> *blackholes;  // Keep track of blackholes created
     std::vector<std::pair<Announcement,Announcement>> *preventive_anns;  // Keep track of preventive announcements and their alternatives
 
@@ -59,8 +60,8 @@ struct ROVppAS : public AS {
     ~ROVppAS();
     
     // Overrided Methods
-    void process_announcement(Announcement &ann);
-    void process_announcements();
+    void process_announcement(Announcement &ann, bool ran=true);
+    void process_announcements(bool ran=true);
     
     // ROV Methods
     bool pass_rov(Announcement &ann);

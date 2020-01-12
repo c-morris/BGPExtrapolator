@@ -29,9 +29,10 @@
 #include <chrono>
 #include "Extrapolator.h"
 
-int g_loop = 0;
-int g_ts_tb = 0;
-int g_broken_path = 0;
+// TODO Replace w/ logging for the
+int g_loop = 0;         // Number of loops in mrt
+int g_ts_tb = 0;        // Number of timestamp tiebreaks
+int g_broken_path = 0;  // Number of broke paths in mrt
 
 // ROV++ constructor
 Extrapolator::Extrapolator(ASGraph *g, 
@@ -45,13 +46,15 @@ Extrapolator::Extrapolator(ASGraph *g,
 }
 
 // Primary Constructor
-Extrapolator::Extrapolator(bool invert_results,
+Extrapolator::Extrapolator(bool random_b,
+                           bool invert_results,
                            bool store_depref,
                            std::string a, 
                            std::string r, 
                            std::string i,
                            std::string d,
                            uint32_t iteration_size) {
+    random = random_b;                          // True to enable random tiebreaks
     invert = invert_results;                    // True to store the results inverted
     depref = store_depref;                      // True to store the second best ann for depref
     it_size = iteration_size;                   // Number of prefix to be precessed per iteration
@@ -73,7 +76,7 @@ Extrapolator::~Extrapolator(){
  * @param iteration_size number of rows to process each iteration, rounded down to the nearest full prefix
  * @param max_total maximum number of rows to process, ignored if zero
  */
-void Extrapolator::perform_propagation(bool test, size_t max_total){
+void Extrapolator::perform_propagation(){
     using namespace std;
    
     // Make tmp directory if it does not exist
@@ -387,8 +390,13 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                 // Skip it
                 continue;
             } else if (ann_to_check_for.tstamp == search->second.tstamp) {
-                // Random tie breaker for equal timestamp
-                bool value = as_on_path->get_random();
+                // Tie breaker for equal timestamp
+                bool value = true;
+                // Random tiebreak if enabled
+                if (random == true) {
+                    value = as_on_path->get_random();
+                }
+                // First come, first saved if random is disabled
                 if (value) {
                     continue;
                 } else {
@@ -448,7 +456,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                             timestamp,
                                             true);
             // Send the announcement to the current AS
-            as_on_path->process_announcement(ann);
+            as_on_path->process_announcement(ann, random);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
                         std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
@@ -472,8 +480,10 @@ void Extrapolator::propagate_up() {
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_empty) {
                 send_all_announcements(asn, true, false, false);
             }
         }
@@ -481,8 +491,10 @@ void Extrapolator::propagate_up() {
     // Propagate to peers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_empty) {
                 send_all_announcements(asn, false, true, false);
             }
         }
@@ -496,8 +508,10 @@ void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_empty) {
                 send_all_announcements(asn, false, false, true);
             }
         }
@@ -639,31 +653,6 @@ void Extrapolator::send_all_announcements(uint32_t asn,
         }
     }
 }
-
-
-// TODO Remove unused function? 
-/** Invert the extrapolation results for more compact storage. 
- *
- * Since a prefix is most often reachable from every AS in the internet, it
- * makes sense to store only the instances where an AS cannot reach a
- * particular prefix. In order to detect hijacks, we map distinct prefix-origin
- * pairs to sets of Autonomous Systems that have not selected a route to them.
- *
- * NO LONGER USED, inversion is now done during propagation
- */
-void Extrapolator::invert_results(void) {
-    for (auto &as : *graph->ases) {
-        for (auto ann : *as.second->all_anns) {
-            // error checking?
-            auto set = graph->inverse_results->find(
-                std::pair<Prefix<>,uint32_t>(ann.second.prefix, ann.second.origin));
-            if (set != graph->inverse_results->end()) {
-                set->second->erase(as.second->asn);
-            }
-        }
-    }
-}
-
 
 /** Save the results of a single iteration to a in-memory
  *

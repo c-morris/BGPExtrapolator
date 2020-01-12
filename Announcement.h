@@ -39,6 +39,8 @@ public:
     bool from_monitor = false;  // flag for seeded ann
     int64_t tstamp;             // timestamp from mrt file
     uint32_t alt;               // flag for preventive alt ASN
+    // TODO replace with proper templating
+    uint32_t policy_index;      // stores the policy index the ann applies
 
     /** Default constructor
      */
@@ -51,6 +53,7 @@ public:
         priority = 0;
         from_monitor = false;
         tstamp = timestamp;
+        policy_index = 0;
         alt = 0;
     }
     

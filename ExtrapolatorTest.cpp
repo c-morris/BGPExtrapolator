@@ -160,7 +160,7 @@ bool test_propagate_up() {
     Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
-    e.graph->ases->find(5)->second->process_announcement(ann);
+    e.graph->ases->find(5)->second->process_announcement(ann, true);
     e.propagate_up();
     
     // Check all announcements are propagted
@@ -217,7 +217,7 @@ bool test_propagate_down() {
     Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
-    e.graph->ases->find(2)->second->process_announcement(ann);
+    e.graph->ases->find(2)->second->process_announcement(ann, true);
     e.propagate_down();
     
     // Check all announcements are propagted

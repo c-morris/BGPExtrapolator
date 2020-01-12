@@ -44,9 +44,10 @@
 
 class Extrapolator {
 public:
-    bool invert;
-    bool depref;
-    uint32_t it_size;
+    bool random;            // If randomness is enabled
+    bool invert;            // If inverted results are enabled
+    bool depref;            // If depref results are enabled
+    uint32_t it_size;       // # of announcements per iteration
     ASGraph *graph;
     SQLQuerier *querier;
     
@@ -54,7 +55,8 @@ public:
                  SQLQuerier*, 
                  uint32_t=false);
  
-    Extrapolator(bool invert_results=true, 
+    Extrapolator(bool random=true,
+                 bool invert_results=true, 
                  bool store_depref=false, 
                  std::string a=ANNOUNCEMENTS_TABLE,
                  std::string r=RESULTS_TABLE,
@@ -63,7 +65,7 @@ public:
                  uint32_t iteration_size=false);
     virtual ~Extrapolator();
 
-    virtual void perform_propagation(bool, size_t);
+    virtual void perform_propagation();
     template <typename Integer>
     void populate_blocks(Prefix<Integer>*,
                          std::vector<Prefix<>*>*,
