@@ -13,11 +13,6 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/support/date_time.hpp>
 
-namespace logging = boost::log;
-namespace src = boost::log::sources;
-namespace sinks = boost::log::sinks;
-namespace keywords = boost::log::keywords;
-
 //Add the channel attribute as a standard string
 BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 
@@ -32,10 +27,19 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 *
 *   Logger::getInstance().log("filename") << "Some Messege " << num;
 *
+*   OR
+*
+*   Logger::getInstance().log() << "Some Messege " << num;
+*
+*   The latter messege will be sent to the default log file, General.log
+*
 *   How it works:
 *       This uses the Boost logging library in order to handle multiple named files. Specifically a multi-file sink is configured to name files based on
 *           the provided channel name (a standard string). In addition, a channel logger is used to log with channels.
 *       The use of channels is that it is a string type (good for naming) that can be filterd for files
+*
+*   Output:
+*       Output is sent to the log file specified, with a timestamp and the messege.     
 *
 *   Important Notes:
 *       The Logger will erase the log files stored in the log folder when the first instance is created. If 
@@ -56,11 +60,7 @@ public:
     *   This should be guarenteed to be called in the start of the main. This is because if the function only gets called in an 
     *       if statement, then there is a chance old log files will live through a run of the extrapolator where they don't apply
     */
-    static Logger getInstance() {
-        static Logger instance;
-
-        return instance;
-    }
+    static Logger getInstance();
 
     /**
     *   This is an interesting solution to overloading the << operator.
@@ -76,25 +76,19 @@ public:
     *       to the corresponding file.
     */
     class StreamBuff {
-    private:
+    public:
         boost::log::sources::channel_logger<> lg;
         std::string filename;
         std::stringstream stringStreamer;
+
     public:
         StreamBuff(boost::log::sources::channel_logger<> logger, const std::string file) : lg(logger), filename(file) {}
         StreamBuff(const StreamBuff &other) : lg(other.lg), filename(other.filename) {}
 
-        ~StreamBuff() { 
-            std::string str = stringStreamer.str();
-            if(!str.empty())//if there is something to output, make the boost call to log to the file
-                BOOST_LOG_CHANNEL(lg, filename) << str;
-        }
+        ~StreamBuff();
 
         template<typename T>
-        StreamBuff& operator<<(const T& output) {
-            stringStreamer << output;//add to the string stream
-            return *this;
-        }
+        StreamBuff& operator<<(const T& output);
     };
 
     /**
@@ -102,9 +96,7 @@ public:
     * 
     *   @return The stream buffer object that handles streaming the output to the default file
     */
-    StreamBuff log() {
-        return log("General");
-    }
+    StreamBuff log();
 
     /**
     *   This will create the temporary object to stream the output to the log file specified
@@ -112,8 +104,17 @@ public:
     *   @param The Filename for the log file that will be generated or added to if it already exists 
     *   @return The stream buffer object that handles streaming the output to the default file
     */
-    StreamBuff log(std::string filename) {
-        return StreamBuff(getInstance().channel_lg, filename);
-    }
+    StreamBuff log(std::string filename);
 };
+
+/* Don't move this to the cpp file, it will cause a compilation issue. Specifically:
+*       undefined reference to `Logger::StreamBuff& Logger::StreamBuff::operator<<
+*  However, having the same exact defintion here in the header compiles just fine.
+*  It is a known problem and is being looked into
+*/
+template<typename T>
+Logger::StreamBuff& Logger::StreamBuff::operator<<(const T& output) {
+    stringStreamer << output;//add to the string stream
+    return *this;
+}
 #endif

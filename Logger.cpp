@@ -1,10 +1,13 @@
 #include "Logger.h"
 
 Logger::Logger() {
-    //Remove any logs that already exist, and send the possible output to the void
-    if(system("rm ./Logs/* > /dev/null 2>&1")) {
-
-    }
+    /* 
+    *   Remove any logs that already exist, and send the possible output to the void
+    *   if statement to remove warning of not checking the return value
+    *   an error generates if there are no files, but we don't really want to
+    *   do anything in that case.
+    */
+    if(system("rm ./Logs/* > /dev/null 2>&1")) {}
 
     //Adds the time-stamp attribute
     boost::log::add_common_attributes();
@@ -26,4 +29,24 @@ Logger::Logger() {
     );
 
     boost::log::core::get()->add_sink(multifile);
+}
+
+Logger Logger::getInstance() {
+    static Logger instance;
+
+    return instance;
+}
+
+Logger::StreamBuff::~StreamBuff() { 
+    std::string str = stringStreamer.str();
+    if(!str.empty())//if there is something to output, make the boost call to log to the file
+        BOOST_LOG_CHANNEL(lg, filename) << str;
+}
+
+Logger::StreamBuff Logger::log() {
+    return log("General");
+}
+
+Logger::StreamBuff Logger::log(std::string filename) {
+    return StreamBuff(getInstance().channel_lg, filename);
 }
