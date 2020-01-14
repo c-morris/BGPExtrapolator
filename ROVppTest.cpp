@@ -1100,6 +1100,62 @@ bool test_best_alternative_route() {
     return true; 
 }
 
+/** Test tiebreak override. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ *    
+ *    2
+ *   /|\
+ *  1 4 3 
+ *    |
+ *    5
+ *
+ *  Announcements are seeded at 1 and 3. Pass/Fail is determined by what 5 receives.  
+ */
+bool test_rovpp_tiebreak_override() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    // disable random tiebreaks, instead use lowest ASN
+    e.random = false;
+    e.graph->add_relationship(1, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 1, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 4, AS_REL_PROVIDER);
+    e.graph->add_relationship(4, 5, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path1 = new std::vector<uint32_t>();
+    as_path1->push_back(1);
+    std::vector<uint32_t> *as_path2 = new std::vector<uint32_t>();
+    as_path2->push_back(3);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    e.give_ann_to_as_path(as_path1, p, 2, 0);
+    e.give_ann_to_as_path(as_path2, p, 2, 0);
+
+    e.propagate_up();
+    e.propagate_down();
+
+    // confirm 5 has 1's announcement
+    if(!(e.graph->ases->find(5)->second->all_anns->find(p)->second.origin == 1)) {
+        std::cerr << "Tiebreak override failed step 1\n";
+        return false;
+    }
+
+    // set override. normally this AS would lose the tiebreak
+    e.graph->ases->find(2)->second->all_anns->find(p)->second.origin = 3;
+    e.graph->ases->find(2)->second->all_anns->find(p)->second.received_from_asn = 3;
+    e.graph->ases->find(2)->second->all_anns->find(p)->second.tiebreak_override = 3;
+    e.propagate_down();
+
+    // confirm 5 has 3's announcement
+    if(!(e.graph->ases->find(5)->second->all_anns->find(p)->second.origin != 3)) {
+        std::cerr << "Tiebreak override failed step 2\n";
+        return false;
+    }
+    return true;
+}
+
 
 /** Testing Blackholing (i.e. when only a blackhole is produced)
  *

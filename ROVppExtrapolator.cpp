@@ -334,6 +334,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // TODO implement rovppann and copy function
             // Set the alt variable
             new_ann.alt = ann.second.alt;
+            // Set the tiebreak override
+            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
             // Push announcement with new priority and alt to ann vector
             anns_to_providers.push_back(new_ann);
@@ -414,6 +416,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // TODO implement rovppann and copy function
             // Set the alt variable
             new_ann.alt = ann.second.alt;
+            // Set the tiebreak override
+            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
             // Push announcement with new priority to ann vector
             anns_to_peers.push_back(new_ann);
@@ -489,6 +493,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // TODO implement rovppann and copy function
             // Set the alt variable
             new_ann.alt = ann.second.alt;
+            // Set the tiebreak override
+            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
             // Push announcement with new priority to ann vector
             anns_to_customers.push_back(new_ann);

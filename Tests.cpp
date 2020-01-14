@@ -181,6 +181,10 @@ BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route ) {
 BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route_chosen ) {
         BOOST_CHECK( test_best_alternative_route_chosen() );
 }
+BOOST_AUTO_TEST_CASE( ROVpp_tiebreak_override ) {
+        BOOST_CHECK( test_rovpp_tiebreak_override() );
+}
+
 #endif // RUN_TESTS
 
 
