@@ -38,8 +38,10 @@ public:
     uint32_t received_from_asn; // ASN that sent the ann
     bool from_monitor = false;  // flag for seeded ann
     int64_t tstamp;             // timestamp from mrt file
+    uint32_t alt;               // flag for preventive alt ASN
     // TODO replace with proper templating
     uint32_t policy_index;      // stores the policy index the ann applies
+    uint32_t tiebreak_override; // ensure tiebreaks propagate where they should
 
     /** Default constructor
      */
@@ -53,6 +55,8 @@ public:
         from_monitor = false;
         tstamp = timestamp;
         policy_index = 0;
+        alt = 0;
+        tiebreak_override = 0;
     }
     
     /** Priority constructor

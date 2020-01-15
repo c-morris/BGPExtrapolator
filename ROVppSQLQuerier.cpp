@@ -109,6 +109,7 @@ void ROVppSQLQuerier::create_results_tbl(){
  */
 void ROVppSQLQuerier::copy_blackhole_list_to_db(std::string file_name) {
   std::string sql = std::string("COPY " ROVPP_BLACKHOLES_TABLE "(asn, prefix, origin, received_from_asn)") +
+  //std::string sql = std::string("COPY " ROVPP_BLACKHOLES_TABLE "(asn, prefix, origin, received_from_asn, tstamp)") +
                       "FROM '" + file_name + "' WITH (FORMAT csv)";
   execute(sql);
 }

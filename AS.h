@@ -75,7 +75,7 @@ public:
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
     void receive_announcements(std::vector<Announcement> &announcements);
-    void process_announcement(Announcement &ann, bool ran=true);
+    virtual void process_announcement(Announcement &ann, bool ran=true);
     virtual void process_announcements(bool ran=true);
     void clear_announcements();
     bool already_received(Announcement &ann);
