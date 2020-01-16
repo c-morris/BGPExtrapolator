@@ -725,7 +725,7 @@ bool test_rovpp_get_random(){
  * @return True if successful, otherwise false
  */
 bool test_rovpp_add_neighbor(){
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     as.add_neighbor(1, AS_REL_PROVIDER);
     as.add_neighbor(2, AS_REL_PEER);
     as.add_neighbor(3, AS_REL_CUSTOMER);
@@ -743,7 +743,7 @@ bool test_rovpp_add_neighbor(){
  * @return True if successful, otherwise false
  */
 bool test_rovpp_remove_neighbor(){
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     as.add_neighbor(1, AS_REL_PROVIDER);
     as.add_neighbor(2, AS_REL_PEER);
     as.add_neighbor(3, AS_REL_CUSTOMER);
@@ -774,7 +774,7 @@ bool test_rovpp_receive_announcements(){
     ann.prefix.netmask = 0xFFFFFF00;
     Prefix<> new_prefix = ann.prefix;
     vect.push_back(ann);
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     as.receive_announcements(vect);
     if (as.incoming_announcements->size() != 2) { return false; }
     // order really doesn't matter here
@@ -798,7 +798,7 @@ bool test_rovpp_rov_receive_announcements(){
     ann.prefix.netmask = 0xFFFFFF00;
     ann.origin = 666;
     vect.push_back(ann);
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     // add the attacker and set the policy to ROV
     as.attackers = new std::set<uint32_t>();
     as.attackers->insert(666);
@@ -818,7 +818,7 @@ bool test_rovpp_process_announcement(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     as.process_announcement(ann);
     Prefix<> old_prefix = ann.prefix;
     ann.prefix.addr = 0x321C9F00;
@@ -868,7 +868,7 @@ bool test_rovpp_process_announcements(){
     Prefix<> ann1_prefix = ann1.prefix;
     Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
     Prefix<> ann2_prefix = ann2.prefix;
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     // build a vector of announcements
     std::vector<Announcement> vect = std::vector<Announcement>();
     ann1.priority = 100;
@@ -937,8 +937,8 @@ bool test_rovpp_process_announcements(){
  */
 bool test_rovpp_clear_announcements(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
-    ROVppAS as = ROVppAS();
-    // if receive_announcement is broken, this test will also be broken
+    // AS must hve a non-zero ASN in order to accept this announcement
+    ROVppAS as = ROVppAS(1);
     as.process_announcement(ann);
     if (as.all_anns->size() != 1) {
         return false;
@@ -957,7 +957,7 @@ bool test_rovpp_clear_announcements(){
 bool test_rovpp_already_received(){
     Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann1);
     if (as.already_received(ann1) && !as.already_received(ann2)) {
@@ -1006,7 +1006,7 @@ bool test_rovpp_announcement(){
  */
 bool test_best_alternative_route_chosen() {
     // Initialize AS
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     as.attackers = new std::set<uint32_t>();
     
     uint32_t attacker_asn = 666;
@@ -1046,7 +1046,8 @@ bool test_best_alternative_route_chosen() {
     
     // See if it ended up with the correct one
     Announcement selected_ann = as.all_anns->find(p1)->second;
-    return selected_ann == a3;
+    // Note, this test is currently broken, correct behavior is choosing a1
+    return selected_ann == a1;
 }
 
 /**
@@ -1057,7 +1058,7 @@ bool test_best_alternative_route_chosen() {
  */
 bool test_best_alternative_route() {
     // Initialize AS
-    ROVppAS as = ROVppAS();
+    ROVppAS as = ROVppAS(1);
     as.attackers = new std::set<uint32_t>();
     
     uint32_t attacker_asn = 666;
