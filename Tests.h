@@ -85,6 +85,7 @@ bool test_rovpp_pass_rov();
 bool test_rovpp_rov_receive_announcements();
 bool test_best_alternative_route();
 bool test_best_alternative_route_chosen();
+bool test_rovpp_tiebreak_override();
 
 // Prototypes for SQLQuerierTest.cpp
 

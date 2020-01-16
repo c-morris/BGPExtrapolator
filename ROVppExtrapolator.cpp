@@ -27,6 +27,7 @@
 
 
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
+                                     bool random_b,
                                      std::string r,
                                      std::string e,
                                      std::string f,
@@ -34,7 +35,8 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
     : Extrapolator() {
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
-    it_size = iteration_size;  // Number of prefix to be precessed per iteration (currently not being used)
+    it_size = iteration_size;   // Number of prefix to be precessed per iteration (currently not being used)
+    random = random_b;          // Flag for using random tiebreaks
     // TODO fix this memory leak
     graph = new ROVppASGraph();
     querier = new ROVppSQLQuerier(g, r, e, f);
@@ -172,30 +174,8 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
-            // Find the already received announcement
-            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
-            // If the current timestamp is newer (worse)
-            if (ann_to_check_for.tstamp > search->second.tstamp) {
-                // Skip it
-                continue;
-            } else if (ann_to_check_for.tstamp == search->second.tstamp) {
-                // Random tie breaker for equal timestamp
-                bool value = as_on_path->get_random();
-                if (value) {
-                    continue;
-                } else {
-                    // Position of previous AS on path
-                    uint32_t pos = path_l - i + 1;
-                    // Prepending check, use original priority
-                    if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
-                        continue;
-                    }
-                    as_on_path->delete_ann(ann_to_check_for);
-                }
-            } else {
-                // Delete worse MRT announcement, proceed with seeding
-                as_on_path->delete_ann(ann_to_check_for);
-            }
+            // Find the already received announcement and delete it
+            as_on_path->delete_ann(ann_to_check_for);
         }
         
         // If ASes in the path aren't neighbors (data is out of sync)
@@ -254,7 +234,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             0, // policy defaults to BGP
                                             true);
             // Send the announcement to the current AS
-            as_on_path->process_announcement(ann);
+            as_on_path->process_announcement(ann, random);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
                         std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
@@ -319,14 +299,21 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = 200 + path_len_weight;
             
-            // Push announcement with new priority to ann vector
-            anns_to_providers.push_back(ROVppAnnouncement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
+                                                      ann.second.prefix.addr,
+                                                      ann.second.prefix.netmask,
+                                                      priority,
+                                                      asn,
+                                                      ann.second.tstamp,
+                                                      0);
+            // TODO implement rovppann and copy function
+            // Set the alt variable
+            new_ann.alt = ann.second.alt;
+            // Set the tiebreak override
+            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
+
+            // Push announcement with new priority and alt to ann vector
+            anns_to_providers.push_back(new_ann);
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -377,7 +364,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 200) {
                 continue;
             }
-
+            // ROV++ 0.1 do not forward blackhole announcements
+            if (rovpp_as != NULL &&
+                ann.second.origin == 64512 && 
+                rovpp_as->policy_vector.size() > 0 &&
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+                continue;
+            }
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -390,13 +383,21 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = 100 + path_len_weight;
             
-            anns_to_peers.push_back(ROVppAnnouncement(ann.second.origin,
-                                                 ann.second.prefix.addr,
-                                                 ann.second.prefix.netmask,
-                                                 priority,
-                                                 asn,
-                                                 ann.second.tstamp,
-                                                 0)); // policy defaults to BGP
+            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
+                                                          ann.second.prefix.addr,
+                                                          ann.second.prefix.netmask,
+                                                          priority,
+                                                          asn,
+                                                          ann.second.tstamp,
+                                                          0);
+            // TODO implement rovppann and copy function
+            // Set the alt variable
+            new_ann.alt = ann.second.alt;
+            // Set the tiebreak override
+            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
+
+            // Push announcement with new priority to ann vector
+            anns_to_peers.push_back(new_ann);
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -439,8 +440,14 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Propagate all announcements to customers
             // Priority is reduced by 1 per path length
             // Base priority is 0 for provider to customers
-            
-            
+
+            // ROV++ 0.1 do not forward blackhole announcements
+            if (rovpp_as != NULL &&
+                ann.second.origin == 64512 && 
+                rovpp_as->policy_vector.size() > 0 &&
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+                continue;
+            }
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -452,14 +459,22 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                 path_len_weight -= 1;
             }
             uint32_t priority = path_len_weight;
+ 
+            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
+                                                          ann.second.prefix.addr,
+                                                          ann.second.prefix.netmask,
+                                                          priority,
+                                                          asn,
+                                                          ann.second.tstamp,
+                                                          0);
+            // TODO implement rovppann and copy function
+            // Set the alt variable
+            new_ann.alt = ann.second.alt;
+            // Set the tiebreak override
+            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
-            anns_to_customers.push_back(ROVppAnnouncement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+            // Push announcement with new priority to ann vector
+            anns_to_customers.push_back(new_ann);
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

@@ -77,7 +77,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  * 
  * @param ann The announcement to be processed
  */ 
-void ROVppAS::process_announcement(Announcement &ann) {
+void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     // Check for existing announcement for prefix
     auto search = all_anns->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
@@ -102,35 +102,42 @@ void ROVppAS::process_announcement(Announcement &ann) {
         }
     // Tiebraker for equal priority between old and new ann
     } else if (ann.priority == search->second.priority) {
-        // Random tiebraker
-        //std::minstd_rand ran_bool(asn);
-        bool value = get_random();
-        if (value) {
-            // Use the new announcement
-            if (search_depref == depref_anns->end()) {
-                // Update inverse results
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                // Insert depref ann
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
-                                                                      search->second));
-                search->second = ann;
-            } else {
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                search_depref->second = search->second;
-                search->second = ann;
-            }
+        // Check for override
+        if (search->second.received_from_asn == ann.tiebreak_override) {
+            search->second = ann;
         } else {
-            // Use the old announcement
-            if (search_depref == depref_anns->end()) {
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
-                                                                      ann));
+            // Random tiebraker
+            //std::minstd_rand ran_bool(asn);
+            bool value = (ran ? get_random() : ann.received_from_asn < search->second.received_from_asn );
+            if (value) {
+                // Use the new announcement and record it won the tiebreak
+                if (search_depref == depref_anns->end()) {
+                    // Update inverse results
+                    swap_inverse_result(
+                        std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                        std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                    // Insert depref ann
+                    depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                          search->second));
+                    ann.tiebreak_override = ann.received_from_asn;
+                    search->second = ann;
+                } else {
+                    swap_inverse_result(
+                        std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                        std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                    search_depref->second = search->second;
+                    ann.tiebreak_override = ann.received_from_asn;
+                    search->second = ann;
+                }
             } else {
-                // Replace second best with the old priority announcement
-                search_depref->second = ann;
+                // Use the old announcement
+                if (search_depref == depref_anns->end()) {
+                    depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                                                                          ann));
+                } else {
+                    // Replace second best with the old priority announcement
+                    search_depref->second = ann;
+                }
             }
         }
     // Otherwise check new announcements priority for best path selection
@@ -170,7 +177,7 @@ void ROVppAS::process_announcement(Announcement &ann) {
 
 /** Iterate through incoming_announcements and keep only the best. 
  */
-void ROVppAS::process_announcements() {
+void ROVppAS::process_announcements(bool ran) {
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
@@ -188,14 +195,14 @@ void ROVppAS::process_announcements() {
             if (policy_vector.size() > 0) { // if we have a policy
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
-                        process_announcement(ann);
+                        process_announcement(ann, ran);
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                     // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
-                        process_announcement(ann);
+                        process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -203,16 +210,16 @@ void ROVppAS::process_announcements() {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann);
+                            process_announcement(ann, ran);
                         } else {
-                            process_announcement(best_alternative_ann);
+                            process_announcement(best_alternative_ann, ran);
                         }
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
-                        process_announcement(ann);
+                        process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -221,9 +228,9 @@ void ROVppAS::process_announcements() {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann);
+                            process_announcement(ann, ran);
                         } else {
-                          process_announcement(best_alternative_ann);
+                          process_announcement(best_alternative_ann, ran);
                         }
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
@@ -272,10 +279,10 @@ void ROVppAS::process_announcements() {
                         }
                     }
                 } else { // unrecognized policy defaults to bgp
-                    process_announcement(ann);
+                    process_announcement(ann, ran);
                 }
             } else { // if there is no policy
-                process_announcement(ann);
+                process_announcement(ann, ran);
             }
         }
     }
