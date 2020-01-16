@@ -237,7 +237,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
-                        process_announcement(ann);
+                        process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -246,9 +246,9 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann);
+                            process_announcement(ann, ran);
                         } else {
-                          process_announcement(best_alternative_ann);
+                          process_announcement(best_alternative_ann, ran);
                         }
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
