@@ -183,13 +183,13 @@ void ROVppAS::process_announcements(bool ran) {
         if (search == all_anns->end() || !search->second.from_monitor) {
             // Regardless of policy, if the announcement originates from this AS
             // *or is a subprefix of its own prefix*
-            // the received_from_asn set to 64514 (if we are not an attacker)
-            if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
+            // the received_from_asn set to UNUSED_ASN_FLAG_NOTHIJACKED (if we are not an attacker)
+            if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=UNUSED_ASN_FLAG_NOTHIJACKED; }
             for (auto rib_ann : *all_anns) {
                 if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
                     rib_ann.second.origin == asn &&
                     attackers->find(asn) == attackers->end()) {
-                    ann.received_from_asn=64514;
+                    ann.received_from_asn=UNUSED_ASN_FLAG_NOTHIJACKED;
                 }
             }
             if (policy_vector.size() > 0) { // if we have a policy
@@ -215,6 +215,22 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, ran);
                         }
                     }
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPR) {
+                  // For ROVpp 0.1r, instead of making a blackhole ann, retaliate
+                  if (pass_rov(ann)) {
+                      passed_rov->push_back(ann);
+                      process_announcement(ann, ran);
+                  } else {
+                      failed_rov->push_back(ann);
+                      Announcement best_alternative_ann = best_alternative_route(ann); 
+                      if (best_alternative_ann == ann) { // if no alternative
+                          // Create a retaliating announcement
+                          Announcement retliation_ann = create_retaliate_ann(ann);
+                          process_announcement(retliation_ann, ran);
+                      } else {
+                          process_announcement(best_alternative_ann, ran);
+                      }
+                  }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
@@ -273,7 +289,7 @@ void ROVppAS::process_announcements(bool ran) {
                             Announcement preventive_ann = best_alternative_ann;
                             preventive_ann.prefix = ann.prefix;
                             preventive_ann.alt = best_alternative_ann.received_from_asn;
-                            if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
+                            if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=UNUSED_ASN_FLAG_NOTHIJACKED; }
                             preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
                             process_announcement(preventive_ann);
                         }
@@ -351,6 +367,23 @@ bool ROVppAS::is_better(Announcement &a, Announcement &b) {
     // whether or not a blackhole exists in one of these two ann is significant
     // Use BGP priority to make decision
     return  a.priority > b.priority;
+}
+
+/**
+ * [ROVppAS::create_retaliate_ann description]
+ * @param  ann [description]
+ * @return     [description]
+ */
+Announcement ROVppAS::create_retaliate_ann(Announcement &ann) {
+    // TODO: Finish Implementing
+    // Create counter subprefix
+    Prefix<> counter_prefix = ann.prefix;
+    counter_prefix.addr += 1;  // to make subprefix
+    Announcement retaliation_ann = Announcement(asn, 
+                                                counter_prefix.addr, 
+                                                counter_prefix.netmask, 
+                                                UNUSED_ASN_FLAG_NOTHIJACKED);
+    return retaliation_ann;
 }
 
 /**

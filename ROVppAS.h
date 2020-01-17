@@ -34,7 +34,8 @@
 #define ROVPPAS_TYPE_ROVPP 2      // ROVpp 0.1 (Just Blackholing)
 #define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
 #define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
-#define ROVPPAS_TYPE_ROVPPBIS 5    // ROVpp 0.2bis (Blackhole Ann to Customers Only)
+#define ROVPPAS_TYPE_ROVPPBIS 5   // ROVpp 0.2bis (Blackhole Ann to Customers Only)
+#define ROVPPAS_TYPE_ROVPPR 6     // ROVpp 0.1r (0.1 but with retaliation) 
 
 // Special Constants 
 // This is used for ROVpp 0.1+ to 
@@ -42,6 +43,15 @@
 // We're also using this in contrl plane in pass_rov
 // Constant was agreed upon with Simulation code.
 #define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  
+#define UNUSED_ASN_FLAG_NOTHIJACKED 64514
+
+// As is in Justin's simulation code
+// BHOLED = 64512
+// HIJACKED = 64513
+// NOTHIJACKED = 64514
+// PREVENTATIVEHIJACKED = 64515
+// PREVENTATIVENOTHIJACKED = 64516
+
 
 struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;
@@ -78,6 +88,7 @@ struct ROVppAS : public AS {
                                                        // * Replace currently used ann for a better one
                                                        // * Help make decisions on an alternative routes
     std::ostream& stream_blackholes(std:: ostream &os);
+    Announcement create_retaliate_ann(Announcement &ann);
 };
 
 #endif

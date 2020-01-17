@@ -57,7 +57,7 @@ ROVppExtrapolator::~ROVppExtrapolator() {}
  * If iteration block sizes need to be considered, then we need to override and use the
  * perform_propagation(bool, size_t) method instead. 
  */
-void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
+void ROVppExtrapolator::perform_propagation(bool propagate_twice=true, bool retaliation_enabled=false) {
     // Main Differences:
     //   No longer need to consider prefix and subnet blocks
     //   No longer printing out ann count, loop counts, tiebreak information, broken path count
@@ -118,7 +118,9 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     
     // This code block runs if we want to propogate up and down only once
     // The similar code block above is mutually exclusive with this code block
-    if (!propagate_twice) {
+    // when retaliation_enabled is false, otherwise, this will if enabled.
+    // In effect it's a third propogation
+    if (!propagate_twice || retaliation_enabled) {
         propagate_up();
         propagate_down();
     }
@@ -207,7 +209,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // ROV++ Handle origin received_from here
         // BHOLED = 64512
         // HIJACKED = 64513
-        // NOTHIJACKED = 64514
+        // NOTHIJACKED = UNUSED_ASN_FLAG_NOTHIJACKED
         // PREVENTATIVEHIJACKED = 64515
         // PREVENTATIVENOTHIJACKED = 64516
         
@@ -217,7 +219,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             if (hijack) {
                 received_from_asn = 64513;
             } else {
-                received_from_asn = 64514;
+                received_from_asn = UNUSED_ASN_FLAG_NOTHIJACKED;
             }
         } else {
             // Otherwise received it from previous AS
@@ -543,7 +545,7 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int
     if (ann.received_from_asn == a) { return true; }
     if (ann.received_from_asn == 64512 ||
         ann.received_from_asn == 64513 ||
-        ann.received_from_asn == 64514) {
+        ann.received_from_asn == UNUSED_ASN_FLAG_NOTHIJACKED) {
         return false;
     }
     if (ann_pair == cur_as.all_anns->end()) { 

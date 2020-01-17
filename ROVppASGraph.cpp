@@ -156,7 +156,7 @@ void ROVppASGraph::to_graphviz(std::ostream &os, std::vector<uint32_t> asns) {
             os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
             (as.pass_rov(ann.second) ? "color='blue'" : "color='red'")
             << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;
-            if (ann.second.received_from_asn != asn && ann.second.received_from_asn != 64514 && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512) {
+            if (ann.second.received_from_asn != asn && ann.second.received_from_asn != UNUSED_ASN_FLAG_NOTHIJACKED && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512) {
                 to_graphviz_traceback(os, ann.second.received_from_asn, 0);
             }
         }
@@ -180,7 +180,7 @@ void ROVppASGraph::to_graphviz_traceback(std::ostream &os, uint32_t asn, int dep
         os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
         (ann.second.origin == 64512 ? "color='grey'" :  (as.pass_rov(ann.second) ? "color='blue'" : "color='red'"))
         << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;
-        if (ann.second.received_from_asn != asn && ann.second.received_from_asn != 64514 && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512 && depth < 3) {
+        if (ann.second.received_from_asn != asn && ann.second.received_from_asn != UNUSED_ASN_FLAG_NOTHIJACKED && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512 && depth < 3) {
             if (as.customers->find(ann.second.received_from_asn) != as.customers->end()) {
                 os << "dot.edge('" << as.asn << "', '" << ann.second.received_from_asn << "')" << std::endl;
             }

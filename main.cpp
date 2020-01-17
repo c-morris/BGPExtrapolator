@@ -86,9 +86,12 @@ int main(int argc, char *argv[]) {
         ("policy-tables,t",
          po::value< vector<string> >(),
          "space-separated names of ROVpp policy tables")
-       ("prop-twice,k",
-        po::value<bool>()->default_value(true),
-        "flag whether or not to propagate twice");
+        ("prop-twice,k",
+         po::value<bool>()->default_value(true),
+         "flag whether or not to propagate twice")
+        ("retaliate,l",
+          po::value<bool>()->default_value(true),
+          "flag whether or not enable retaliation, which also causes triple propogation.");
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
     po::notify(vm);
@@ -120,7 +123,8 @@ int main(int argc, char *argv[]) {
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
-        extrap->perform_propagation(prop_twice);
+        bool retaliate = vm["retaliate"].as<bool>();
+        extrap->perform_propagation(prop_twice, retaliate);
         // Clean up
         delete extrap;
     } else {
