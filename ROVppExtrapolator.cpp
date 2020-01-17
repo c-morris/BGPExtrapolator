@@ -406,7 +406,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             auto anns_to_peers_trimmed = anns_to_peers;
             if (rovpp_as != NULL &&
                 rovpp_as->policy_vector.size() > 0 &&
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
+                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS)) {
                 for (auto ann_pair : *rovpp_as->preventive_anns) {
                     for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
                         if (ann_pair.first.prefix == it->prefix &&
