@@ -257,80 +257,80 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                                       auto const& prefix_set) {
     // For each unprocessed block of announcements 
     for (Prefix<>* prefix : *prefix_set) {
-            std::cout << "Selecting Announcements..." << std::endl;
-            auto prefix_start = std::chrono::high_resolution_clock::now();
+        std::cout << "Selecting Announcements..." << std::endl;
+        auto prefix_start = std::chrono::high_resolution_clock::now();
+        
+        // Handle prefix blocks or subnet blocks of announcements
+        pqxx::result ann_block;
+        if (!subnet) {
+            // Get the block of announcements for the specific prefix
+            ann_block = querier->select_prefix_ann(prefix);
+        } else {
+            // Get the block of announcements for the whole subnet
+            ann_block = querier->select_subnet_ann(prefix);
+        } 
+        
+        // Check for empty block
+        auto bsize = ann_block.size();
+        if (bsize == 0)
+            break;
+        announcement_count += bsize;
+        
+        std::cout << "Seeding announcements..." << std::endl;
+        // For all announcements in this block
+        for (pqxx::result::size_type i = 0; i < bsize; i++) {
+            // Get row origin
+            uint32_t origin;
+            ann_block[i]["origin"].to(origin);
+            // Get row prefix
+            std::string ip = ann_block[i]["host"].c_str();
+            std::string mask = ann_block[i]["netmask"].c_str();
+            Prefix<> cur_prefix(ip, mask);
+            // Get row AS path
+            std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
+            std::vector<uint32_t> *as_path = parse_path(path_as_string);
             
-            // Handle prefix blocks or subnet blocks of announcements
-            pqxx::result ann_block;
-            if (!subnet) {
-                // Get the block of announcements for the specific prefix
-                ann_block = querier->select_prefix_ann(prefix);
-            } else {
-                // Get the block of announcements for the whole subnet
-                ann_block = querier->select_subnet_ann(prefix);
-            } 
-            
-            // Check for empty block
-            auto bsize = ann_block.size();
-            if (bsize == 0)
-                break;
-            announcement_count += bsize;
-            
-            std::cout << "Seeding announcements..." << std::endl;
-            // For all announcements in this block
-            for (pqxx::result::size_type i = 0; i < bsize; i++) {
-                // Get row origin
-                uint32_t origin;
-                ann_block[i]["origin"].to(origin);
-                // Get row prefix
-                std::string ip = ann_block[i]["host"].c_str();
-                std::string mask = ann_block[i]["netmask"].c_str();
-                Prefix<> cur_prefix(ip, mask);
-                // Get row AS path
-                std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
-                std::vector<uint32_t> *as_path = parse_path(path_as_string);
-                
-                // Check for loops in the path and drop announcement if they exist
-                bool loop = find_loop(as_path);
-                if (loop) {
-                    g_loop++;
-                    continue;
-                }
-
-                // Get timestamp
-                int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
-
-                // Assemble pair
-                auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
-                
-                // Insert the inverse results for this prefix
-                if (graph->inverse_results->find(prefix_origin) == graph->inverse_results->end()) {
-                    // This is horrifying
-                    graph->inverse_results->insert(std::pair<std::pair<Prefix<>, uint32_t>, 
-                                                            std::set<uint32_t>*>
-                                                            (prefix_origin, new std::set<uint32_t>()));
-                    
-                    // Put all non-stub ASNs in the set
-                    for (uint32_t asn : *graph->non_stubs) {
-                        graph->inverse_results->find(prefix_origin)->second->insert(asn);
-                    }
-                }
-                // Seed announcements along AS path
-                give_ann_to_as_path(as_path, cur_prefix, timestamp);
-                delete as_path;
+            // Check for loops in the path and drop announcement if they exist
+            bool loop = find_loop(as_path);
+            if (loop) {
+                g_loop++;
+                continue;
             }
-            // Propagate for this subnet
-            std::cout << "Propagating..." << std::endl;
-            propagate_up();
-            propagate_down();
-            save_results(iteration);
-            graph->clear_announcements();
-            iteration++;
+
+            // Get timestamp
+            int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
+
+            // Assemble pair
+            auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
             
-            std::cout << prefix->to_cidr() << " completed." << std::endl;
-            auto prefix_finish = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> q = prefix_finish - prefix_start;
+            // Insert the inverse results for this prefix
+            if (graph->inverse_results->find(prefix_origin) == graph->inverse_results->end()) {
+                // This is horrifying
+                graph->inverse_results->insert(std::pair<std::pair<Prefix<>, uint32_t>, 
+                                                        std::set<uint32_t>*>
+                                                        (prefix_origin, new std::set<uint32_t>()));
+                
+                // Put all non-stub ASNs in the set
+                for (uint32_t asn : *graph->non_stubs) {
+                    graph->inverse_results->find(prefix_origin)->second->insert(asn);
+                }
+            }
+            // Seed announcements along AS path
+            give_ann_to_as_path(as_path, cur_prefix, timestamp);
+            delete as_path;
         }
+        // Propagate for this subnet
+        std::cout << "Propagating..." << std::endl;
+        propagate_up();
+        propagate_down();
+        save_results(iteration);
+        graph->clear_announcements();
+        iteration++;
+        
+        std::cout << prefix->to_cidr() << " completed." << std::endl;
+        auto prefix_finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> q = prefix_finish - prefix_start;
+    }
 }
 
 /** Seed announcement on all ASes on as_path. 
@@ -472,7 +472,7 @@ void Extrapolator::propagate_up() {
             search->second->process_announcements(random);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(asn, true, false, false);
+                send_all_announcements(search->second, true, false, false);
             }
         }
     }
@@ -483,7 +483,7 @@ void Extrapolator::propagate_up() {
             search->second->process_announcements(random);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(asn, false, true, false);
+                send_all_announcements(search->second, false, true, false);
             }
         }
     }
@@ -500,7 +500,7 @@ void Extrapolator::propagate_down() {
             search->second->process_announcements(random);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(asn, false, false, true);
+                send_all_announcements(search->second, false, false, true);
             }
         }
     }
@@ -516,12 +516,13 @@ void Extrapolator::propagate_down() {
  * @param to_peers Send to peers
  * @param to_customers Send to customers
  */
-void Extrapolator::send_all_announcements(uint32_t asn, 
+void Extrapolator::send_all_announcements(AS* source_as, 
                                           bool to_providers, 
                                           bool to_peers, 
                                           bool to_customers) {
     // Get the AS that is sending it's announcements
-    auto *source_as = graph->ases->find(asn)->second; 
+    // auto *source_as = graph->ases->find(asn)->second; 
+
     // If we are sending to providers
     if (to_providers) {
         // Assemble the list of announcements to send to providers

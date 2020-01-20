@@ -72,12 +72,12 @@ ASGraph::~ASGraph() {
 /** Clear all announcements in AS.
  */
 void ASGraph::clear_announcements(){
-    for (auto const& as : *ases){
+    for (auto const& as : *ases)
         as.second->clear_announcements();
-    }
-    for (auto const& i : *inverse_results) {
+
+    for (auto const& i : *inverse_results)
         delete i.second;
-    }
+
     inverse_results->clear();
 }
 
@@ -93,23 +93,42 @@ void ASGraph::add_relationship(uint32_t asn,
                                uint32_t neighbor_asn, 
                                int relation) {
     auto search = ases->find(asn);
+    AS* as = NULL;//no point in searching for the pointer all over again
+
     if (search == ases->end()) {
         // if AS not yet in graph, create it
-        ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
-        search = ases->find(asn);
+        as = new AS(asn, inverse_results);
+
+        ases->insert(std::pair<uint32_t, AS*>(asn, as));
+        // search = ases->find(asn);
+    } else {
+        as = search->second;
     }
-    search->second->add_neighbor(neighbor_asn, relation);
+
+    //TODO improve this, double searching is not ideal
+    auto neighbor_search = ases->find(neighbor_asn);
+    AS* neighbor = NULL;
+
+    if (neighbor_search == ases->end()) {
+        // if AS not yet in graph, create it
+        neighbor = new AS(neighbor_asn, inverse_results)
+
+        ases->insert(std::pair<uint32_t, AS*>(neighbor_asn, neighbor));
+    } else {
+        neighbor = neighbor_search->second;
+    }
+
+    as->add_neighbor(neighbor, relation);
 }
 
 /** Translates asn to asn of component it belongs to in graph.
  *
  * @return 0 if asn isn't found, otherwise return identifying ASN
  */
-uint32_t ASGraph::translate_asn(uint32_t asn){
+uint32_t ASGraph::translate_asn(uint32_t asn) {
     auto search = component_translation->find(asn);
-    if(search == component_translation->end()){
-       return asn; 
-    }
+    if(search == component_translation->end())
+        return asn; 
     return search->second;
 }
 
@@ -155,10 +174,10 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
  *
  * @param querier
  */
-void ASGraph::remove_stubs(SQLQuerier *querier){
+void ASGraph::remove_stubs(SQLQuerier *querier) {
     std::vector<AS*> to_remove;
     // For all ASes in the graph
-    for (auto &as : *ases){
+    for (auto &as : *ases) {
         // If this AS is a stub
         if(as.second->peers->size() == 0 &&
            as.second->providers->size() == 1 && 
@@ -171,13 +190,15 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     // Handle stub removal
     for (auto *as : to_remove) {
         // Remove any edges to this stub from graph
-        for(uint32_t provider_asn : *as->providers){
-            auto iter = ases->find(provider_asn);
-            if (iter != ases->end()) {
-                AS* provider = iter->second;
-                provider->customers->erase(as->asn);
-            }
-            stubs_to_parents->insert(std::pair<uint32_t, uint32_t>(as->asn,provider_asn));
+        for(auto& provider_pair : *as->providers) {
+            // auto iter = ases->find(provider_asn);
+            // if (iter != ases->end()) {
+            //     AS* provider = iter->second;
+            //     provider->customers->erase(as->asn);
+            // }
+            provider_pair.second->customers->erase(as->asn);
+
+            stubs_to_parents->insert(std::pair<uint32_t, uint32_t>(as->asn, provider_pair.second->asn));
         }
         
         // Remove from graph if it has not been already removed

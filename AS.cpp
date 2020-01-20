@@ -29,9 +29,9 @@
  */
 AS::AS(uint32_t myasn, 
        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
-       std::set<uint32_t> *prov,
-       std::set<uint32_t> *peer,
-       std::set<uint32_t> *cust) : ran_bool(myasn) {
+       std::map<uint32_t, AS*>* prov,
+       std::map<uint32_t, AS*>* peer,
+       std::map<uint32_t, AS*>* cust) : ran_bool(myasn) {
     // Set ASN
     asn = myasn;
     // Initialize AS to invalid rank
@@ -39,17 +39,17 @@ AS::AS(uint32_t myasn,
     
     // Create AS relationship sets
     if (prov == NULL) {
-        providers = new std::set<uint32_t>;
+        providers = new std::map<uint32_t, AS*>;
     } else {
         providers = prov;
     }
     if (peer == NULL) {
-        peers = new std::set<uint32_t>;
+        peers = new std::map<uint32_t, AS*>;
     } else {
         peers = peer;
     }
     if (cust == NULL) {
-        customers = new std::set<uint32_t>;
+        customers = new std::map<uint32_t, AS*>;
     } else {
         customers = cust;
     }
@@ -83,21 +83,31 @@ bool AS::get_random() {
 
 /** Add neighbor AS to the appropriate set in this AS based on the relationship.
  *
- * @param asn ASN of neighbor.
+ * @param as pointer to AS
  * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
-void AS::add_neighbor(uint32_t asn, int relationship) {
+void AS::add_neighbor(AS* as, int relationship) {
     switch (relationship) {
         case AS_REL_PROVIDER:
-            providers->insert(asn);
+            providers->insert(std::pair<uint32_t, AS*>(as->asn, as));
             break;
         case AS_REL_PEER:
-            peers->insert(asn);
+            peers->insert(std::pair<uint32_t, AS*>(as->asn, as));
             break;
         case AS_REL_CUSTOMER:
-            customers->insert(asn);
+            // customers->insert(asn);
+            customers->insert(std::pair<uint32_t, AS*>(as->asn, as));
             break;
     }
+}
+
+/** Remove neighbor AS from the appropriate set in this AS based on the relationship.
+ *
+ * @param as pointer to AS
+ * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
+ */
+void AS::remove_neighbor(AS* as, int relationship) {
+    remove_neighbor(as->asn, relationship);
 }
 
 /** Remove neighbor AS from the appropriate set in this AS based on the relationship.
@@ -184,20 +194,18 @@ void AS::process_announcement(Announcement &ann, bool ran) {
         }
         // Defaults to first come, first kept if not random
         if (value) {
+            // Update inverse results
+            swap_inverse_result(
+                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+
             // Use the new announcement
             if (search_depref == depref_anns->end()) {
-                // Update inverse results
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 // Insert depref ann
                 depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                       search->second));
                 search->second = ann;
             } else {
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 search_depref->second = search->second;
                 search->second = ann;
             }
@@ -272,9 +280,9 @@ void AS::clear_announcements() {
  * @return True if recv'd, false otherwise.
  */
 bool AS::already_received(Announcement &ann) {
-    auto search = all_anns->find(ann.prefix);
-    bool found = (search == all_anns->end()) ? false : true;
-    return found;
+    // auto search = all_anns->find(ann.prefix);
+    // bool found = (search == all_anns->end()) ? false : true;
+    return all_anns->find(ann.prefix) != all_anns->end();
 }
 
 /** Deletes given announcement.
