@@ -553,14 +553,14 @@ void Extrapolator::send_all_announcements(AS* source_as,
                                                      ann.second.prefix.addr,
                                                      ann.second.prefix.netmask,
                                                      priority,
-                                                     asn,
+                                                     source_as->asn,
                                                      ann.second.tstamp));
         }
         // Send the vector of assembled announcements
-        for (uint32_t provider_asn : *source_as->providers) {
+        for (auto& provider_pair : *source_as->providers) {
             // For each provider, give the vector of announcements
-            auto *recving_as = graph->ases->find(provider_asn)->second;
-            recving_as->receive_announcements(anns_to_providers);
+            // auto *recving_as = graph->ases->find(provider_asn)->second;
+            provider_pair.second->receive_announcements(anns_to_providers);
         }
     }
 
@@ -594,14 +594,14 @@ void Extrapolator::send_all_announcements(AS* source_as,
                                                  ann.second.prefix.addr,
                                                  ann.second.prefix.netmask,
                                                  priority,
-                                                 asn,
+                                                 source_as->asn,
                                                  ann.second.tstamp));
         }
         // Send the vector of assembled announcements
-        for (uint32_t peer_asn : *source_as->peers) {
+        for (auto& peer_pair : *source_as->peers) {
             // For each provider, give the vector of announcements
-            auto *recving_as = graph->ases->find(peer_asn)->second;
-            recving_as->receive_announcements(anns_to_peers);
+            // auto *recving_as = graph->ases->find(peer_asn)->second;
+            peer_pair.second->receive_announcements(anns_to_peers);
         }
     }
 
@@ -631,14 +631,14 @@ void Extrapolator::send_all_announcements(AS* source_as,
                                                      ann.second.prefix.addr,
                                                      ann.second.prefix.netmask,
                                                      priority,
-                                                     asn,
+                                                     source_as->asn,
                                                      ann.second.tstamp));
         }
         // Send the vector of assembled announcements
-        for (uint32_t customer_asn : *source_as->customers) {
+        for (auto& customer_pair : *source_as->customers) {
             // For each customer, give the vector of announcements
-            auto *recving_as = graph->ases->find(customer_asn)->second;
-            recving_as->receive_announcements(anns_to_customers);
+            // auto *recving_as = graph->ases->find(customer_asn)->second;
+            customer_pair.second->receive_announcements(anns_to_customers);
         }
     }
 }

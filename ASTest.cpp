@@ -36,17 +36,17 @@ bool test_get_random(){
  * @return True if successful, otherwise false
  */
 bool test_add_neighbor(){
-    AS as = AS();
-    as.add_neighbor(1, AS_REL_PROVIDER);
-    as.add_neighbor(2, AS_REL_PEER);
-    as.add_neighbor(3, AS_REL_CUSTOMER);
-    if (as.providers->find(1) == as.providers->end() ||
-        as.peers->find(2) == as.peers->end() ||
-        as.customers->find(3) == as.customers->end()) {
-        std::cerr << "Failed add neighbor check." << std::endl;
+    // AS as = AS();TODO update this
+    // as.add_neighbor(1, AS_REL_PROVIDER);
+    // as.add_neighbor(2, AS_REL_PEER);
+    // as.add_neighbor(3, AS_REL_CUSTOMER);
+    // if (as.providers->find(1) == as.providers->end() ||
+    //     as.peers->find(2) == as.peers->end() ||
+    //     as.customers->find(3) == as.customers->end()) {
+    //     std::cerr << "Failed add neighbor check." << std::endl;
         return false;
-    }
-    return true;
+    // }
+    // return true;
 }
 
 /** Test removing neighbor AS from the appropriate set based on the relationship.
@@ -54,20 +54,20 @@ bool test_add_neighbor(){
  * @return True if successful, otherwise false
  */
 bool test_remove_neighbor(){
-    AS as = AS();
-    as.add_neighbor(1, AS_REL_PROVIDER);
-    as.add_neighbor(2, AS_REL_PEER);
-    as.add_neighbor(3, AS_REL_CUSTOMER);
-    as.remove_neighbor(1, AS_REL_PROVIDER);
-    as.remove_neighbor(2, AS_REL_PEER);
-    as.remove_neighbor(3, AS_REL_CUSTOMER);
-    if (as.providers->find(1) != as.providers->end() ||
-        as.peers->find(2) != as.peers->end() ||
-        as.customers->find(3) != as.customers->end()) {
-        std::cerr << "Failed remove neighbor check." << std::endl;
+    // AS as = AS();
+    // as.add_neighbor(1, AS_REL_PROVIDER);
+    // as.add_neighbor(2, AS_REL_PEER);
+    // as.add_neighbor(3, AS_REL_CUSTOMER);
+    // as.remove_neighbor(1, AS_REL_PROVIDER);
+    // as.remove_neighbor(2, AS_REL_PEER);
+    // as.remove_neighbor(3, AS_REL_CUSTOMER);
+    // if (as.providers->find(1) != as.providers->end() ||
+    //     as.peers->find(2) != as.peers->end() ||
+    //     as.customers->find(3) != as.customers->end()) {
+    //     std::cerr << "Failed remove neighbor check." << std::endl;
         return false;
-    }
-    return true;
+    // }
+    // return true;
 }
 
 /** Test pushing the received announcement to the incoming_announcements vector. 

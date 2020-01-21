@@ -301,17 +301,17 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
     os << "ASN: " << as.asn << std::endl << "Rank: " << as.rank
         << std::endl << "Providers: ";
     for (auto &provider : *as.providers) {
-        os << provider << ' ';
+        os << provider.first << ' ';
     }
     os << '\n';
     os << "Peers: ";
     for (auto &peer : *as.peers) {
-        os << peer << ' ';
+        os << peer.first << ' ';
     }
     os << '\n';
     os << "Customers: ";
     for (auto &customer : *as.customers) {
-        os << customer << ' ';
+        os << customer.first << ' ';
     }
     os << '\n';
     return os;

@@ -24,16 +24,16 @@ bool test_add_relationship(){
     graph.add_relationship(2, 1, AS_REL_CUSTOMER);
     graph.add_relationship(1, 3, AS_REL_PEER);
     graph.add_relationship(3, 1, AS_REL_PEER);
-    if (*graph.ases->find(1)->second->providers->find(2) != 2) {
+    if (graph.ases->find(1)->second->providers->find(2)->first != 2) {
         return false;
     }
-    if (*graph.ases->find(1)->second->peers->find(3) != 3) {
+    if (graph.ases->find(1)->second->peers->find(3)->first != 3) {
         return false;
     }
-    if (*graph.ases->find(2)->second->customers->find(1) != 1) {
+    if (graph.ases->find(2)->second->customers->find(1)->first != 1) {
         return false;
     }
-    if (*graph.ases->find(3)->second->peers->find(1) != 1) {
+    if (graph.ases->find(3)->second->peers->find(1)->first != 1) {
         return false;
     }
     return true;
