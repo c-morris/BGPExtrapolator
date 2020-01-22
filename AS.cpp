@@ -163,6 +163,7 @@ void AS::process_announcement(Announcement &ann, bool ran) {
     auto search = all_anns->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
+    // TODO Log how often matching prefix show up
     // No announcement found for incoming announcement prefix
     if (search == all_anns->end()) {
         all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
@@ -175,7 +176,8 @@ void AS::process_announcement(Announcement &ann, bool ran) {
             }
         }
     // Tiebraker for equal priority between old and new ann
-    } else if (ann.priority == search->second.priority) {
+    } else if (ann.priority == search->second.priority) { 
+        // TODO Log the occurances of matching priority
         // Tiebreaker
         bool value = true;
         // Random tiebreaker if enabled

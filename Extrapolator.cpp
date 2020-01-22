@@ -32,7 +32,7 @@
 
 #include <iostream>
 
-// TODO Replace w/ logging for the
+// TODO Replace w/ logging
 // int g_loop = 0;         // Number of loops in mrt
 int g_ts_tb = 0;        // Number of timestamp tiebreaks, where?
 // int g_broken_path = 0;  // Number of broke paths in mrt
@@ -297,7 +297,7 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                 bool loop = find_loop(as_path);
                 if (loop) {
                     static int g_loop = 1;
-
+                    
                     Logger::getInstance().log("Loops") << "AS path loop #" << g_loop << ", Origin: " << origin << ", Prefix: " << cur_prefix.to_cidr() << ", Path: " << path_as_string;
 
                     g_loop++;
@@ -385,6 +385,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                 // Skip it
                 continue;
             } else if (ann_to_check_for.tstamp == search->second.tstamp) {
+                // TODO Log annoucements with equal timestamps 
                 // Tie breaker for equal timestamp
                 bool value = true;
                 // Random tiebreak if enabled
@@ -404,6 +405,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                     as_on_path->delete_ann(ann_to_check_for);
                 }
             } else {
+                // TODO log announcements that arent handled by sorting
                 // Delete worse MRT announcement, proceed with seeding
                 as_on_path->delete_ann(ann_to_check_for);
             }
@@ -466,6 +468,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             
             static int g_broken_path = 0;
 
+            // TODO Need to log the part of path where break takes place
             Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", For: " << *(it - 1) << ", " << *it;
 
             g_broken_path++;
