@@ -37,11 +37,11 @@ bool cyclic_util(ASGraph* graph, int asn, std::map<uint32_t, bool>* visited, std
         visited->find(asn)->second = true;
         recStack->find(asn)->second = true;
         AS* cur_AS = graph->ases->find(asn)->second;
-        for (auto &provider_pair : *cur_AS->providers) {
-            if (!visited->find(provider_pair.first)->second &&
-                cyclic_util(graph, provider_pair.first, visited, recStack)) {
+        for (auto &provider_asn : *cur_AS->providers) {
+            if (!visited->find(provider_asn)->second &&
+                cyclic_util(graph, provider_asn, visited, recStack)) {
                 return true;
-            } else if (recStack->find(provider_pair.first)->second) {
+            } else if (recStack->find(provider_asn)->second) {
                 return true;
             }
         }

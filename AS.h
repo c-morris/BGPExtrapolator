@@ -51,13 +51,9 @@ public:
     std::map<Prefix<>, Announcement> *all_anns;
     std::map<Prefix<>, Announcement> *depref_anns;
     // Stores AS Relationships
-    // std::set<uint32_t> *providers; 
-    // std::set<uint32_t> *peers; 
-    // std::set<uint32_t> *customers; 
-    std::map<uint32_t, AS*>* providers;
-    std::map<uint32_t, AS*>* peers;
-    std::map<uint32_t, AS*>* customers;
-
+    std::set<uint32_t> *providers; 
+    std::set<uint32_t> *peers; 
+    std::set<uint32_t> *customers; 
     // Pointer to inverted results map for efficiency
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
     // If this AS represents multiple ASes, it's "members" are listed here (Supernodes)
@@ -70,19 +66,14 @@ public:
     // Constructor
     AS(uint32_t myasn=0, 
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
-        std::map<uint32_t, AS*>* prov=NULL, 
-        std::map<uint32_t, AS*>* peer=NULL,
-        std::map<uint32_t, AS*>* cust=NULL);
+        std::set<uint32_t> *prov=NULL, 
+        std::set<uint32_t> *peer=NULL,
+        std::set<uint32_t> *cust=NULL);
     ~AS();
     
     bool get_random(); 
-
-    // void add_neighbor(uint32_t asn, int relationship);
-    void add_neighbor(AS* as, int relationship);
-
-    void remove_neighbor(AS* as, int relationship);
+    void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
-    
     void receive_announcements(std::vector<Announcement> &announcements);
     void process_announcement(Announcement &ann, bool ran=true);
     void process_announcements(bool ran=true);
