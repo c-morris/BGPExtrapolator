@@ -362,7 +362,7 @@ std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
   for(std::size_t i=0; i<blackholes->size(); ++i) {
       Announcement ann = blackholes->at(i);
       os << asn << ",";
-      ann.to_csv(os);
+      ann.to_blackholes_csv(os);
   }
   return os;
 }
