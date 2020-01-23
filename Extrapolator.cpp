@@ -361,18 +361,21 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
         // Increments path length, including prepending
         i++;
-        // If ASN not in graph, continue
-        if (graph->ases->find(*it) == graph->ases->end()) {
-            continue;
-        }
+
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
+        auto search_as = graph->ases->find(asn_on_path);
+
+        // If ASN not in graph, continue
+        if(search_as == graph->ases->end())
+            continue;
+
         // Find the current AS on the path
-        AS *as_on_path = graph->ases->find(asn_on_path)->second;
+        AS *as_on_path = search_as->second;//graph->ases->find(asn_on_path)->second;
+
         // Check if already received this prefix
-        if (as_on_path->already_received(ann_to_check_for)) {
-            // Find the already received announcement
-            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
+        auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
+        if (search != as_on_path->all_anns->end()) {
             // If the current timestamp is newer (worse)
             if (ann_to_check_for.tstamp > search->second.tstamp) {
                 // Skip it
@@ -520,9 +523,6 @@ void Extrapolator::send_all_announcements(AS* source_as,
                                           bool to_providers, 
                                           bool to_peers, 
                                           bool to_customers) {
-    // Get the AS that is sending it's announcements
-    // auto *source_as = graph->ases->find(asn)->second; 
-
     // If we are sending to providers
     if (to_providers) {
         // Assemble the list of announcements to send to providers
