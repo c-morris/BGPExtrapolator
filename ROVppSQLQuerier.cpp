@@ -88,7 +88,7 @@ pqxx::result ROVppSQLQuerier::select_all_pairs_from(std::string const& cur_table
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
 void ROVppSQLQuerier::copy_results_to_db(std::string file_name){
-    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn, opt_flag)") +
+    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn, time, alt)") +
                                   "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
 }
@@ -98,7 +98,7 @@ void ROVppSQLQuerier::copy_results_to_db(std::string file_name){
 void ROVppSQLQuerier::create_results_tbl(){
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
-    bigint, time bigint, opt_flag int); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
+    bigint, time bigint, alt bigint, opt_flag int); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
     std::cout << "Creating results table..." << std::endl;
     execute(sql, false);
 }
