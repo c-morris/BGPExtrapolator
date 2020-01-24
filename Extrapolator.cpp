@@ -362,20 +362,18 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         // Increments path length, including prepending
         i++;
 
+        // If ASN not in graph, continue
+        if (graph->ases->find(*it) == graph->ases->end()) {
+            continue;
+        }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
-        auto search_as = graph->ases->find(asn_on_path);
-
-        // If ASN not in graph, continue
-        if(search_as == graph->ases->end())
-            continue;
-
         // Find the current AS on the path
-        AS *as_on_path = search_as->second;//graph->ases->find(asn_on_path)->second;
-
+        AS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
-        auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
-        if (search != as_on_path->all_anns->end()) {
+        if (as_on_path->already_received(ann_to_check_for)) {
+            // Find the already received announcement
+            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
             // If the current timestamp is newer (worse)
             if (ann_to_check_for.tstamp > search->second.tstamp) {
                 // Skip it
@@ -470,23 +468,24 @@ void Extrapolator::propagate_up() {
     size_t levels = graph->ases_by_rank->size();
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
-        for (AS* as : *graph->ases_by_rank->at(level)) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             // auto search = graph->ases->find(asn);
-            as->process_announcements(random);
-            bool is_empty = as->all_anns->empty();
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(as, true, false, false);
+                send_all_announcements(search->second, true, false, false);
             }
         }
     }
     // Propagate to peers
     for (size_t level = 0; level < levels; level++) {
-        for (AS* as : *graph->ases_by_rank->at(level)) {
-            // auto search = graph->ases->find(asn);
-            as->process_announcements(random);
-            bool is_empty = as->all_anns->empty();
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(as, false, true, false);
+                send_all_announcements(search->second, false, true, false);
             }
         }
     }
@@ -498,12 +497,12 @@ void Extrapolator::propagate_up() {
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
-        for (AS* as : *graph->ases_by_rank->at(level)) {
-            // auto search = graph->ases->find(asn);
-            as->process_announcements(random);
-            bool is_empty = as->all_anns->empty();
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(as, false, false, true);
+                send_all_announcements(search->second, false, false, true);
             }
         }
     }

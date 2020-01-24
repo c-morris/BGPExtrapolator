@@ -33,7 +33,7 @@
 
 ASGraph::ASGraph() {
     ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
-    ases_by_rank = new std::vector<std::set<AS*>*>;        // Vector of ASes by rank
+    ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
     components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
     component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
     stubs_to_parents = new std::map<uint32_t, uint32_t>;        // Translace stub to parent
@@ -88,48 +88,56 @@ void ASGraph::add_relationship(uint32_t asn,
                                uint32_t neighbor_asn, 
                                int relation) {
 
-    AS* as = NULL;//no point in searching for the pointer all over again
     auto search = ases->find(asn);
     if (search == ases->end()) {
         // if AS not yet in graph, create it
-        as = new AS(asn, inverse_results);
-
-        ases->insert(std::pair<uint32_t, AS*>(asn, as));
-        // search = ases->find(asn);
-    } else {
-        as = search->second;
+        ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
+        search = ases->find(asn);
     }
+    search->second->add_neighbor(neighbor_asn, relation);
 
-    AS* neighbor = NULL;
-    auto neighbor_search = ases->find(neighbor_asn);
-    if (neighbor_search == ases->end()) {
-        // if AS not yet in graph, create it
-        neighbor = new AS(neighbor_asn, inverse_results);
+    // AS* as = NULL;//no point in searching for the pointer all over again
+    // auto search = ases->find(asn);
+    // if (search == ases->end()) {
+    //     // if AS not yet in graph, create it
+    //     as = new AS(asn, inverse_results);
 
-        ases->insert(std::pair<uint32_t, AS*>(neighbor_asn, neighbor));
-    } else {
-        neighbor = neighbor_search->second;
-    }
+    //     ases->insert(std::pair<uint32_t, AS*>(asn, as));
+    //     // search = ases->find(asn);
+    // } else {
+    //     as = search->second;
+    // }
 
-    switch (relation) {
-        case AS_REL_PEER:
-            as->add_neighbor(neighbor_asn, relation);
-            neighbor->add_neighbor(asn, relation);
-            break;
+    // AS* neighbor = NULL;
+    // auto neighbor_search = ases->find(neighbor_asn);
+    // if (neighbor_search == ases->end()) {
+    //     // if AS not yet in graph, create it
+    //     neighbor = new AS(neighbor_asn, inverse_results);
 
-        case AS_REL_PROVIDER:
-            as->add_neighbor(neighbor_asn, relation);
-            neighbor->add_neighbor(asn, AS_REL_CUSTOMER);
-            break;
+    //     ases->insert(std::pair<uint32_t, AS*>(neighbor_asn, neighbor));
+    // } else {
+    //     neighbor = neighbor_search->second;
+    // }
 
-        case AS_REL_CUSTOMER:
-            as->add_neighbor(neighbor_asn, relation);
-            neighbor->add_neighbor(asn, AS_REL_PROVIDER);
-            break;
+    // switch (relation) {
+    //     case AS_REL_PEER:
+    //         as->add_neighbor(neighbor_asn, relation);
+    //         neighbor->add_neighbor(asn, relation);
+    //         break;
+
+    //     case AS_REL_PROVIDER:
+    //         as->add_neighbor(neighbor_asn, relation);
+    //         neighbor->add_neighbor(asn, AS_REL_CUSTOMER);
+    //         break;
+
+    //     case AS_REL_CUSTOMER:
+    //         as->add_neighbor(neighbor_asn, relation);
+    //         neighbor->add_neighbor(asn, AS_REL_PROVIDER);
+    //         break;
         
-        default:
-            break;
-    }
+    //     default:
+    //         break;
+    // }
 }
 
 /** Translates asn to asn of component it belongs to in graph.
@@ -166,16 +174,16 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c["peer_as_1"].as<uint32_t>(),
                          c["peer_as_2"].as<uint32_t>(),AS_REL_PEER);
-        // add_relationship(c["peer_as_2"].as<uint32_t>(),
-        //                  c["peer_as_1"].as<uint32_t>(),AS_REL_PEER);
+        add_relationship(c["peer_as_2"].as<uint32_t>(),
+                         c["peer_as_1"].as<uint32_t>(),AS_REL_PEER);
     }
     // Assemble Customer-Providers
     R = querier->select_from_table(CUSTOMER_PROVIDER_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
         add_relationship(c["customer_as"].as<uint32_t>(),
                          c["provider_as"].as<uint32_t>(),AS_REL_PROVIDER);
-        // add_relationship(c["provider_as"].as<uint32_t>(),
-        //                  c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
+        add_relationship(c["provider_as"].as<uint32_t>(),
+                         c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
     }
     process(querier);
     return;
@@ -314,12 +322,12 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
  */
 void ASGraph::decide_ranks() {
     // Initial set of customer ASes at the bottom of the DAG
-    ases_by_rank->push_back(new std::set<AS*>());
+    ases_by_rank->push_back(new std::set<uint32_t>());
     // For ASes with no customers
     for (auto &as : *ases) {
         // If AS is a leaf node
         if (as.second->customers->empty()) {
-            (*ases_by_rank)[0]->insert(as.second);
+            (*ases_by_rank)[0]->insert(as.first);
             as.second->rank = 0;
         }
     }
@@ -327,18 +335,18 @@ void ASGraph::decide_ranks() {
     int i = 0;
     // While there are elements to process current rank
     while (!(*ases_by_rank)[i]->empty()) {
-        ases_by_rank->push_back(new std::set<AS*>());
-        for (AS* as : *(*ases_by_rank)[i]) {
+        ases_by_rank->push_back(new std::set<uint32_t>());
+        for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
-            for (const uint32_t &provider_asn : *as->providers) {
+            for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
                 AS* prov_AS = ases->find(translate_asn(provider_asn))->second;
                 int oldrank = prov_AS->rank;
                 // Move provider up to next rank
                 if (oldrank < i + 1) {
                     prov_AS->rank = i + 1;
-                    (*ases_by_rank)[i+1]->insert(prov_AS);
+                    (*ases_by_rank)[i+1]->insert(provider_asn);
                     if (oldrank != -1)
-                        (*ases_by_rank)[oldrank]->erase(prov_AS);
+                        (*ases_by_rank)[oldrank]->erase(provider_asn);
                 }
             }
         }
