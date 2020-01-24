@@ -147,14 +147,20 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     
     uint32_t i = 0;
     uint32_t path_l = as_path->size();
+    uint32_t origin_asn = as_path->back();
     
     // Announcement at origin for checking along the path
-    Announcement ann_to_check_for(as_path->at(path_l-1),
+    Announcement ann_to_check_for(origin_asn,
                                   prefix.addr,
                                   prefix.netmask,
                                   0,
                                   timestamp); 
     
+    // Full path pointer
+    // TODO only handles seeding announcements at origin
+    std::vector<uint32_t> cur_path;
+    cur_path.push_back(origin_asn);
+  
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
         // Increments path length, including prepending
@@ -252,6 +258,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             received_from_asn,
                                             timestamp,
                                             0, // policy defaults to BGP
+                                            cur_path,
                                             true);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann, random);
@@ -265,7 +272,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             }
         } else {
             // Report the broken path if desired
-            //std::cerr << "Broken path for " << *(it - 1) << ", " << *it << std::endl;
         }
     }
 }
@@ -305,6 +311,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                 continue;
             }
             
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            // Handles appending after origin
+            if (cur_path.back() != asn) {
+                cur_path.push_back(asn);
+            }
+   
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -324,7 +337,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                      priority,
                                                      asn,
                                                      ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+                                                     0, // policy defaults to BGP
+                                                     cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -347,6 +361,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 200) {
                 continue;
             }
+            
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            // Handles appending after origin
+            if (cur_path.back() != asn) {
+                cur_path.push_back(asn);
+            }
 
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
@@ -366,7 +387,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                  priority,
                                                  asn,
                                                  ann.second.tstamp,
-                                                 0)); // policy defaults to BGP
+                                                 0, // policy defaults to BGP
+                                                 cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -385,7 +407,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Priority is reduced by 1 per path length
             // Base priority is 0 for provider to customers
             
-            
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            // Handles appending after origin
+            if (cur_path.back() != asn) {
+                cur_path.push_back(asn);
+            }
+
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -404,7 +432,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                      priority,
                                                      asn,
                                                      ann.second.tstamp,
-                                                     0)); // policy defaults to BGP
+                                                     0, // policy defaults to BGP
+                                                     cur_path));
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

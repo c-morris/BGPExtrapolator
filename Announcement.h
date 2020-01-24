@@ -40,11 +40,15 @@ public:
     int64_t tstamp;             // timestamp from mrt file
     // TODO replace with proper templating
     uint32_t policy_index;      // stores the policy index the ann applies
-
+    std::vector<uint32_t> as_path; // stores full as path
+    
     /** Default constructor
      */
-    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t from_asn, int64_t timestamp = 0) {
+    Announcement(uint32_t aorigin, 
+                 uint32_t aprefix, 
+                 uint32_t anetmask,
+                 uint32_t from_asn, 
+                 int64_t timestamp = 0) {
         prefix.addr = aprefix;
         prefix.netmask = anetmask;
         origin = aorigin;
@@ -57,11 +61,18 @@ public:
     
     /** Priority constructor
      */
-    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false) 
-        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) { 
+    Announcement(uint32_t aorigin, 
+                 uint32_t aprefix, 
+                 uint32_t anetmask,
+                 uint32_t pr, 
+                 uint32_t from_asn, 
+                 int64_t timestamp, 
+                 const std::vector<uint32_t> &path,
+                 bool a_from_monitor = false) 
+        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
         priority = pr; 
         from_monitor = a_from_monitor;
+        as_path = path;
     }
 
     /** Defines the << operator for the Announcements
