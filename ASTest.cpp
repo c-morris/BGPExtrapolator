@@ -97,7 +97,7 @@ bool test_receive_announcements(){
     return true;
 }
 
-/** Test directly adding an announcement to the all_anns map.
+/** Test directly adding an announcement to the loc_rib map.
  *
  * @return true if successful.
  */
@@ -112,8 +112,8 @@ bool test_process_announcement(){
     ann.prefix.netmask = 0xFFFFFF00;
     Prefix<> new_prefix = ann.prefix;
     as.process_announcement(ann, true);
-    if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
-        old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
+    if (new_prefix != as.loc_rib->find(ann.prefix)->second.prefix ||
+        old_prefix != as.loc_rib->find(old_prefix)->second.prefix) {
         return false;
     }
 
@@ -123,7 +123,7 @@ bool test_process_announcement(){
     Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, false);
     as.process_announcement(a1, true);
     as.process_announcement(a2, true);
-    if (as.all_anns->find(p)->second.received_from_asn != 223 ||
+    if (as.loc_rib->find(p)->second.received_from_asn != 223 ||
         as.depref_anns->find(p)->second.received_from_asn != 222) {
         std::cerr << "Failed best path inference priority check." << std::endl;
         return false;
@@ -132,7 +132,7 @@ bool test_process_announcement(){
     // Check new best announcement
     Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, false);
     as.process_announcement(a3, true);
-    if (as.all_anns->find(p)->second.received_from_asn != 224 ||
+    if (as.loc_rib->find(p)->second.received_from_asn != 224 ||
         as.depref_anns->find(p)->second.received_from_asn != 223) {
         std::cerr << "Failed best path priority correction check." << std::endl;
         return false;
@@ -164,10 +164,10 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     vect.push_back(ann2);
 
-    // does it work if all_anns is empty?
+    // does it work if loc_rib is empty?
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 100) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 100) {
         std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;
     }
@@ -178,7 +178,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
     }
@@ -189,7 +189,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
     }
@@ -200,7 +200,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 299) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 299) {
         std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
     }
@@ -211,7 +211,7 @@ bool test_process_announcements(){
     vect.push_back(ann2);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann2_prefix)->second.priority != 200) {
+    if (as.loc_rib->find(ann2_prefix)->second.priority != 200) {
         std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
     }
@@ -227,11 +227,11 @@ bool test_clear_announcements(){
     AS as = AS();
     // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann, true);
-    if (as.all_anns->size() != 1) {
+    if (as.loc_rib->size() != 1) {
         return false;
     }
     as.clear_announcements();
-    if (as.all_anns->size() != 0) {
+    if (as.loc_rib->size() != 0) {
         return false;
     }
     return true;

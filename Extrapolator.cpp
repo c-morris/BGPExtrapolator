@@ -384,7 +384,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
             // Find the already received announcement
-            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
+            auto search = as_on_path->loc_rib->find(ann_to_check_for.prefix);
             // If the current timestamp is newer (worse)
             if (ann_to_check_for.tstamp > search->second.tstamp) {
                 // Skip it
@@ -482,7 +482,7 @@ void Extrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
+            bool is_empty = search->second->loc_rib->empty();
             if (!is_empty) {
                 send_all_announcements(asn, true, false, false);
             }
@@ -493,7 +493,7 @@ void Extrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
+            bool is_empty = search->second->loc_rib->empty();
             if (!is_empty) {
                 send_all_announcements(asn, false, true, false);
             }
@@ -510,7 +510,7 @@ void Extrapolator::propagate_down() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
+            bool is_empty = search->second->loc_rib->empty();
             if (!is_empty) {
                 send_all_announcements(asn, false, false, true);
             }
@@ -538,7 +538,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_providers) {
         // Assemble the list of announcements to send to providers
         std::vector<Announcement> anns_to_providers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 200 for customer to provider
@@ -579,7 +579,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_peers) {
         // Assemble vector of announcement to send to peers
         std::vector<Announcement> anns_to_peers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 100 for peers to peers
@@ -620,7 +620,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_customers) {
         // Assemble the vector of announcement for customers
         std::vector<Announcement> anns_to_customers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Propagate all announcements to customers
             // Priority is reduced by 1 per path length
             // Base priority is 0 for provider to customers

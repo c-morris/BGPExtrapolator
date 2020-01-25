@@ -48,7 +48,7 @@ public:
     // Defer processing of incoming announcements for efficiency
     std::vector<Announcement> *incoming_announcements;
     // Maps of all announcements stored
-    std::map<Prefix<>, Announcement> *all_anns;
+    std::map<Prefix<>, Announcement> *loc_rib;
     std::map<Prefix<>, Announcement> *depref_anns;
     // Stores AS Relationships
     std::set<uint32_t> *providers; 

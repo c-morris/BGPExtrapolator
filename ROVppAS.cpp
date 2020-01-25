@@ -79,7 +79,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  */ 
 void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     // Check for existing announcement for prefix
-    auto search = all_anns->find(ann.prefix);
+    auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
     // ROV++ 
@@ -90,8 +90,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     }
 
     // No announcement found for incoming announcement prefix
-    if (search == all_anns->end()) {
-        all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+    if (search == loc_rib->end()) {
+        loc_rib->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
             auto set = inverse_results->find(
@@ -179,13 +179,13 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
  */
 void ROVppAS::process_announcements(bool ran) {
     for (auto &ann : *incoming_announcements) {
-        auto search = all_anns->find(ann.prefix);
-        if (search == all_anns->end() || !search->second.from_monitor) {
+        auto search = loc_rib->find(ann.prefix);
+        if (search == loc_rib->end() || !search->second.from_monitor) {
             // Regardless of policy, if the announcement originates from this AS
             // *or is a subprefix of its own prefix*
             // the received_from_asn set to 64514 (if we are not an attacker)
             if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
-            for (auto rib_ann : *all_anns) {
+            for (auto rib_ann : *loc_rib) {
                 if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
                     rib_ann.second.origin == asn &&
                     attackers->find(asn) == attackers->end()) {

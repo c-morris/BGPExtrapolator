@@ -126,9 +126,9 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
 
     for (auto &as : *rovpp_graph->ases){
         // Check for loops
-        for (auto it = as.second->all_anns->begin(); it != as.second->all_anns->end();) {
+        for (auto it = as.second->loc_rib->begin(); it != as.second->loc_rib->end();) {
             if (it->second.alt != 0 && loop_check(it->second.prefix, as.second->asn, as.second->asn, 0)) {
-                it = as.second->all_anns->erase(it);
+                it = as.second->loc_rib->erase(it);
             } else {
                 ++it;
             }
@@ -283,7 +283,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     if (to_providers) {
         // Assemble the list of announcements to send to providers
         std::vector<Announcement> anns_to_providers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 200 for customer to provider
@@ -375,7 +375,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     if (to_peers) {
         // Assemble vector of announcement to send to peers
         std::vector<Announcement> anns_to_peers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 100 for peers to peers
@@ -465,7 +465,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     if (to_customers) {
         // Assemble the vector of announcement for customers
         std::vector<Announcement> anns_to_customers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Propagate all announcements to customers
             // Priority is reduced by 1 per path length
             // Base priority is 0 for provider to customers
@@ -549,7 +549,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
  */
 bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int d) {
     if (d > 100) { std::cerr << "Maximum depth exceeded during traceback.\n"; return true; }
-    auto ann_pair = cur_as.all_anns->find(p);
+    auto ann_pair = cur_as.loc_rib->find(p);
     const Announcement &ann = ann_pair->second;
     // i wonder if a cabinet holding a subwoofer counts as a bass case 
     if (ann.received_from_asn == a) { return true; }
@@ -558,7 +558,7 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int
         ann.received_from_asn == 64514) {
         return false;
     }
-    if (ann_pair == cur_as.all_anns->end()) { 
+    if (ann_pair == cur_as.loc_rib->end()) { 
         //std::cerr << "AS_PATH not continuous during traceback.\n" << a << p.to_cidr(); 
         return false; 
     }
