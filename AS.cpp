@@ -255,7 +255,7 @@ void AS::process_announcements(bool ran) {
             process_announcement(ann, ran);
         }
     }
-    //ribs_in->clear();
+    ribs_in->clear();
 }
 
 /** Clear all announcement collections. 

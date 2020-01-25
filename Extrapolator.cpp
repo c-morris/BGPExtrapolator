@@ -560,12 +560,10 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             uint32_t priority = 200 + path_len_weight;
             
             // Push announcement with new priority to ann vector
-            anns_to_providers.push_back(Announcement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp));
+            Announcement copy =ann.second;
+            copy.priority = priority;
+            copy.received_from_asn = asn;
+            anns_to_providers.push_back(copy);
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -601,12 +599,10 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = 100 + path_len_weight;
             
-            anns_to_peers.push_back(Announcement(ann.second.origin,
-                                                 ann.second.prefix.addr,
-                                                 ann.second.prefix.netmask,
-                                                 priority,
-                                                 asn,
-                                                 ann.second.tstamp));
+            Announcement copy =ann.second;
+            copy.priority = priority;
+            copy.received_from_asn = asn;
+            anns_to_peers.push_back(copy);
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -638,12 +634,10 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = path_len_weight;
 
-            anns_to_customers.push_back(Announcement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp));
+            Announcement copy =ann.second;
+            copy.priority = priority;
+            copy.received_from_asn = asn;
+            anns_to_customers.push_back(copy);
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

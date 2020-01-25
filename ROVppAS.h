@@ -44,6 +44,7 @@
 #define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  
 
 struct ROVppAS : public AS {
+    std::vector<Announcement> *ribs_out;
     std::vector<uint32_t> policy_vector;
     std::set<uint32_t> *attackers;
     // Announcement Tracking Member Variables
