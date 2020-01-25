@@ -175,10 +175,10 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     }
 }
 
-/** Iterate through incoming_announcements and keep only the best. 
+/** Iterate through ribs_in and keep only the best. 
  */
 void ROVppAS::process_announcements(bool ran) {
-    for (auto &ann : *incoming_announcements) {
+    for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
         if (search == loc_rib->end() || !search->second.from_monitor) {
             // Regardless of policy, if the announcement originates from this AS
@@ -286,7 +286,7 @@ void ROVppAS::process_announcements(bool ran) {
             }
         }
     }
-    incoming_announcements->clear();
+    //ribs_in->clear();
 }
 
 /**
@@ -301,10 +301,10 @@ void ROVppAS::process_announcements(bool ran) {
      // Initialize the default answer of (No best alternative with the current given ann)
      // This variable will update with the best ann if it exists
      Announcement best_alternative_ann = ann;
-     // Create an ultimate list of good candidate announcemnts (passed_rov + incoming_announcements)
+     // Create an ultimate list of good candidate announcemnts (passed_rov + ribs_in)
      std::vector<Announcement> candidates = *passed_rov;
      std::vector<Announcement> baddies = *failed_rov;
-     for (auto candidate_ann : *incoming_announcements) {
+     for (auto candidate_ann : *ribs_in) {
          if (pass_rov(candidate_ann)) {
              candidates.push_back(candidate_ann);
          } else {

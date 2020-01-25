@@ -55,7 +55,7 @@ AS::AS(uint32_t myasn,
     }
     inverse_results = inv;                      // Inverted results map
     member_ases = new std::vector<uint32_t>;    // Supernode members
-    incoming_announcements = new std::vector<Announcement>;
+    ribs_in = new std::vector<Announcement>;
     loc_rib = new std::map<Prefix<>, Announcement>;
     depref_anns = new std::map<Prefix<>, Announcement>;
     // Tarjan variables
@@ -64,7 +64,7 @@ AS::AS(uint32_t myasn,
 }
 
 AS::~AS() {
-    delete incoming_announcements;
+    delete ribs_in;
     delete loc_rib;
     delete depref_anns;
     delete peers;
@@ -138,16 +138,16 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
     }
 }
 
-/** Push the incoming propagated announcements to the incoming_announcements vector.
+/** Push the incoming propagated announcements to the ribs_in vector.
  *
  * This is NOT called for seeded announcements.
  *
- * @param announcements The announcements to be pushed onto the incoming_announcements vector.
+ * @param announcements The announcements to be pushed onto the ribs_in vector.
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
         // push_back makes a copy of the announcement
-        incoming_announcements->push_back(ann);
+        ribs_in->push_back(ann);
     }
 }
 
@@ -246,23 +246,23 @@ void AS::process_announcement(Announcement &ann, bool ran) {
     }
 }
 
-/** Iterate through incoming_announcements and keep only the best. 
+/** Iterate through ribs_in and keep only the best. 
  */
 void AS::process_announcements(bool ran) {
-    for (auto &ann : *incoming_announcements) {
+    for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
         if (search == loc_rib->end() || !search->second.from_monitor) {
             process_announcement(ann, ran);
         }
     }
-    incoming_announcements->clear();
+    //ribs_in->clear();
 }
 
 /** Clear all announcement collections. 
  */
 void AS::clear_announcements() {
     loc_rib->clear();
-    incoming_announcements->clear();
+    ribs_in->clear();
     depref_anns->clear();
 }
 

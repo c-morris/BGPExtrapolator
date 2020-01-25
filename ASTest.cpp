@@ -70,7 +70,7 @@ bool test_remove_neighbor(){
     return true;
 }
 
-/** Test pushing the received announcement to the incoming_announcements vector. 
+/** Test pushing the received announcement to the ribs_in vector. 
  *
  * @return true if successful.
  */
@@ -87,9 +87,9 @@ bool test_receive_announcements(){
     vect.push_back(ann);
     AS as = AS();
     as.receive_announcements(vect);
-    if (as.incoming_announcements->size() != 2) { return false; }
+    if (as.ribs_in->size() != 2) { return false; }
     // order really doesn't matter here
-    for (Announcement a : *as.incoming_announcements) {
+    for (Announcement a : *as.ribs_in) {
         if (a.prefix != old_prefix && a.prefix != new_prefix) {
             return false;
         }

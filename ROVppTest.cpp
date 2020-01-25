@@ -489,7 +489,7 @@ bool test_rovpp_send_all_announcements() {
 
     // Check to providers
     e.send_all_announcements(2, true, false, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->ribs_in->size() == 1 &&
           e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
           e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
           e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
@@ -502,11 +502,11 @@ bool test_rovpp_send_all_announcements() {
     
     // Check to peers
     e.send_all_announcements(2, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->ribs_in->size() == 1 &&
           e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->ribs_in->size() == 1 &&
           e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(5)->second->ribs_in->size() == 0 &&
           e.graph->ases->find(6)->second->loc_rib->size() == 0 &&
           e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Err sending to peers" << std::endl;
@@ -515,11 +515,11 @@ bool test_rovpp_send_all_announcements() {
 
     // Check to customers
     e.send_all_announcements(2, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->ribs_in->size() == 1 &&
           e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->ribs_in->size() == 1 &&
           e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(5)->second->ribs_in->size() == 1 &&
           e.graph->ases->find(6)->second->loc_rib->size() == 0 &&
           e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
@@ -759,7 +759,7 @@ bool test_rovpp_remove_neighbor(){
     return true;
 }
 
-/** Test pushing the received announcement to the incoming_announcements vector. 
+/** Test pushing the received announcement to the ribs_in vector. 
  *
  * @return true if successful.
  */
@@ -776,9 +776,9 @@ bool test_rovpp_receive_announcements(){
     vect.push_back(ann);
     ROVppAS as = ROVppAS(1);
     as.receive_announcements(vect);
-    if (as.incoming_announcements->size() != 2) { return false; }
+    if (as.ribs_in->size() != 2) { return false; }
     // order really doesn't matter here
-    for (Announcement a : *as.incoming_announcements) {
+    for (Announcement a : *as.ribs_in) {
         if (a.prefix != old_prefix && a.prefix != new_prefix) {
             return false;
         }
@@ -805,7 +805,7 @@ bool test_rovpp_rov_receive_announcements(){
     as.add_policy(ROVPPAS_TYPE_ROV);
     as.receive_announcements(vect);
     delete as.attackers;
-    if (as.incoming_announcements->size() != 2) { return false; }
+    if (as.ribs_in->size() != 2) { return false; }
     return true;
 }
 
@@ -1039,7 +1039,7 @@ bool test_best_alternative_route_chosen() {
     
     // Notice the victim's ann come first, then the attackers
     for (Announcement a : {a1, a2, a3, a4, a5}) {
-        as.incoming_announcements->push_back(a);
+        as.ribs_in->push_back(a);
     }
     
     as.process_announcements();
@@ -1091,7 +1091,7 @@ bool test_best_alternative_route() {
     
     // Notice the victim's ann come first, then the attackers
     for (Announcement a : {a1, a2, a3, a4, a5}) {
-        as.incoming_announcements->push_back(a);
+        as.ribs_in->push_back(a);
     }
     
     if (!(as.best_alternative_route(a4) == a3) ||
