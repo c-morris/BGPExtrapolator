@@ -319,9 +319,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                       ann.second.tstamp,
                                                       0);
             // TODO implement rovppann and copy function
-            // Set the alt variable
             new_ann.alt = ann.second.alt;
-            // Set the tiebreak override
+            new_ann.withdraw = ann.second.withdraw;
             new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
             // Push announcement with new priority and alt to ann vector
@@ -367,7 +366,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     ++it;
                 }
             }
-            recving_as->receive_announcements(anns_to_providers_trimmed);
+            // TODO refactor
+            for (auto ann : anns_to_providers_trimmed) {
+                // this must be a copy, not a reference!
+                // use the received from asn as a "sent to asn"
+                ann.sent_to_asn = recving_as->asn;
+                source_as->ribs_out->push_back(ann);
+            }
         }
     }
 
@@ -411,9 +416,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                           ann.second.tstamp,
                                                           0);
             // TODO implement rovppann and copy function
-            // Set the alt variable
             new_ann.alt = ann.second.alt;
-            // Set the tiebreak override
+            new_ann.withdraw = ann.second.withdraw;
             new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
             // Push announcement with new priority to ann vector
@@ -457,7 +461,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     ++it;
                 }
             }
-            recving_as->receive_announcements(anns_to_peers_trimmed);
+            // TODO refactor
+            for (auto ann : anns_to_peers_trimmed) {
+                // this must be a copy, not a reference!
+                // use the received from asn as a "sent to asn"
+                ann.sent_to_asn = recving_as->asn;
+                source_as->ribs_out->push_back(ann);
+            }
         }
     }
 
@@ -497,9 +507,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                           ann.second.tstamp,
                                                           0);
             // TODO implement rovppann and copy function
-            // Set the alt variable
             new_ann.alt = ann.second.alt;
-            // Set the tiebreak override
+            new_ann.withdraw = ann.second.withdraw;
             new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
             // Push announcement with new priority to ann vector
@@ -533,9 +542,20 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                     ++it;
                 }
             }
-            // For each customer, give the vector of announcements
-            recving_as->receive_announcements(anns_to_customers_trimmed);
+            // TODO refactor
+            for (auto ann : anns_to_customers_trimmed) {
+                // this must be a copy, not a reference!
+                // use the received from asn as a "sent to asn"
+                ann.sent_to_asn = recving_as->asn;
+                source_as->ribs_out->push_back(ann);
+            }
         }
+    }
+    // TODO make this more efficient
+    for (auto const &ann : *source_as->ribs_out) {
+        auto *recving_as = graph->ases->find(ann.sent_to_asn)->second;
+        recving_as->ribs_in->push_back(ann);
+        // yes, this makes duplicates
     }
 }
 

@@ -634,6 +634,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = path_len_weight;
 
+            // TODO: write this to do less extraneous copying...
             Announcement copy =ann.second;
             copy.priority = priority;
             copy.received_from_asn = asn;

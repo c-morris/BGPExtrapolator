@@ -42,6 +42,7 @@ public:
     // TODO replace with proper templating
     uint32_t policy_index;      // stores the policy index the ann applies
     uint32_t tiebreak_override; // ensure tiebreaks propagate where they should
+    uint32_t sent_to_asn;       // ASN this ann is being sent to
     bool withdraw;              // if this is a withdrawn route
 
     /** Default constructor
@@ -58,6 +59,7 @@ public:
         policy_index = 0;
         alt = 0;
         tiebreak_override = 0;
+        sent_to_asn = 0;
         withdraw = false;
     }
     

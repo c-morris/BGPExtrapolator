@@ -489,8 +489,7 @@ bool test_rovpp_send_all_announcements() {
 
     // Check to providers
     e.send_all_announcements(2, true, false, false);
-    if (!(e.graph->ases->find(1)->second->ribs_in->size() == 1 &&
-          e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+    if (!(e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
           e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
           e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
           e.graph->ases->find(5)->second->loc_rib->size() == 0 &&
@@ -502,11 +501,8 @@ bool test_rovpp_send_all_announcements() {
     
     // Check to peers
     e.send_all_announcements(2, false, true, false);
-    if (!(e.graph->ases->find(1)->second->ribs_in->size() == 1 &&
-          e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(3)->second->ribs_in->size() == 1 &&
+    if (!(e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
           e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(5)->second->ribs_in->size() == 0 &&
           e.graph->ases->find(6)->second->loc_rib->size() == 0 &&
           e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Err sending to peers" << std::endl;
@@ -515,11 +511,8 @@ bool test_rovpp_send_all_announcements() {
 
     // Check to customers
     e.send_all_announcements(2, false, false, true);
-    if (!(e.graph->ases->find(1)->second->ribs_in->size() == 1 &&
-          e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(3)->second->ribs_in->size() == 1 &&
+    if (!(e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
           e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
-          e.graph->ases->find(5)->second->ribs_in->size() == 1 &&
           e.graph->ases->find(6)->second->loc_rib->size() == 0 &&
           e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;

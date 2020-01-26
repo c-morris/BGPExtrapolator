@@ -42,6 +42,7 @@ ROVppAS::~ROVppAS() {
     delete failed_rov;
     delete passed_rov;
     delete blackholes;
+    delete preventive_anns;
 }
 
 /** Adds a policy to the policy_vector
@@ -185,6 +186,8 @@ void ROVppAS::process_announcements(bool ran) {
             // *or is a subprefix of its own prefix*
             // the received_from_asn set to 64514 (if we are not an attacker)
             if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
+            // Process withdrawals, regardless of policy
+            if (search != loc_rib->end()) {}
             for (auto rib_ann : *loc_rib) {
                 if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
                     rib_ann.second.origin == asn &&
