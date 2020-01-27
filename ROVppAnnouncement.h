@@ -29,6 +29,7 @@ struct ROVppAnnouncement : public Announcement {
                       uint32_t from_asn, 
                       int64_t timestamp,
                       uint32_t policy,
+                      const std::vector<uint32_t> &path,
                       bool a_from_monitor = false)
                       : Announcement(aorigin,
                                      aprefix,
@@ -36,6 +37,7 @@ struct ROVppAnnouncement : public Announcement {
                                      pr,
                                      from_asn,
                                      timestamp,
+                                     path,
                                      a_from_monitor) {
         policy_index = policy;
         opt_flag = 0;
