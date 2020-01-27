@@ -490,7 +490,6 @@ void Extrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->loc_rib->empty();
             send_all_announcements(asn, true, false, false);
         }
     }
@@ -499,7 +498,6 @@ void Extrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->loc_rib->empty();
             send_all_announcements(asn, false, true, false);
         }
     }
@@ -514,7 +512,6 @@ void Extrapolator::propagate_down() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->loc_rib->empty();
             send_all_announcements(asn, false, false, true);
         }
     }
