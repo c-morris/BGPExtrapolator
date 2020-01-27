@@ -119,8 +119,9 @@ bool test_process_announcement(){
 
     // Check priority
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, false);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, false);
+    std::vector<uint32_t> x; 
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, 0, x);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, 0, x);
     as.process_announcement(a1, true);
     as.process_announcement(a2, true);
     if (as.loc_rib->find(p)->second.received_from_asn != 223 ||
@@ -130,7 +131,7 @@ bool test_process_announcement(){
     }    
 
     // Check new best announcement
-    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, false);
+    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, 0, x);
     as.process_announcement(a3, true);
     if (as.loc_rib->find(p)->second.received_from_asn != 224 ||
         as.depref_anns->find(p)->second.received_from_asn != 223) {
