@@ -71,6 +71,12 @@ bool ROVppAS::pass_rov(Announcement &ann) {
     }
 }
 
+void ROVppAS::withdraw(Announcement &ann) {
+    Announcement copy = ann;
+    copy.withdraw = true;
+    ribs_out->push_back(copy);
+}
+
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
  *
  * Approximates BGP best path selection based on announcement priority.
@@ -106,6 +112,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
         // Check for override
         if (search->second.received_from_asn == ann.tiebreak_override) {
             search->second = ann;
+            withdraw(ann);
         } else {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
@@ -122,6 +129,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                                                                           search->second));
                     ann.tiebreak_override = ann.received_from_asn;
                     search->second = ann;
+                    withdraw(ann);
                 } else {
                     swap_inverse_result(
                         std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
@@ -129,6 +137,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                     search_depref->second = search->second;
                     ann.tiebreak_override = ann.received_from_asn;
                     search->second = ann;
+                    withdraw(ann);
                 }
             } else {
                 // Use the old announcement
@@ -153,6 +162,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                                                                   search->second));
             // Replace the old announcement with the higher priority
             search->second = ann;
+            withdraw(ann);
         } else {
             // Update inverse results
             swap_inverse_result(
@@ -162,6 +172,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             search_depref->second = search->second;
             // Replace the old announcement with the higher priority
             search->second = ann;
+            withdraw(ann);
         }
     // Old announcement was better
     // Check depref announcements priority for best path selection
@@ -191,9 +202,7 @@ void ROVppAS::process_announcements(bool ran) {
                 if (search != loc_rib->end()) {
                     loc_rib->erase(ann.prefix);    
                 }
-                Announcement copy = ann;
-                copy.received_from_asn = asn;
-                ribs_out->push_back(copy);
+                ribs_out->push_back(ann);
                 continue;
             }
             for (auto rib_ann : *loc_rib) {

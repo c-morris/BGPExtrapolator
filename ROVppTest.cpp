@@ -1182,13 +1182,6 @@ bool test_withdrawal() {
     e.give_ann_to_as_path(as_path, p, 2, 0);
     e.propagate_up();
     e.propagate_down();
-    
-   // std::cerr << e.graph->ases->find(1)->second->loc_rib->size() << std::endl; 
-   // std::cerr << e.graph->ases->find(2)->second->loc_rib->size() << std::endl; 
-   // std::cerr << e.graph->ases->find(3)->second->loc_rib->size() << std::endl; 
-   // std::cerr << e.graph->ases->find(4)->second->loc_rib->size() << std::endl; 
-   // std::cerr << e.graph->ases->find(5)->second->loc_rib->size() << std::endl; 
-   // std::cerr << e.graph->ases->find(6)->second->loc_rib->size() << std::endl; 
 
     // Check all announcements are propagted
     if (!(e.graph->ases->find(1)->second->loc_rib->size() == 1 &&
@@ -1202,11 +1195,19 @@ bool test_withdrawal() {
     }
     
     // Make withdrawal
-    //ann.withdraw = true;
+    Announcement copy = e.graph->ases->find(5)->second->loc_rib->find(p)->second;
+    copy.withdraw = true;
+    e.graph->ases->find(5)->second->ribs_out->push_back(copy);
     //e.graph->ases->find(5)->second->process_announcement(ann);
     e.propagate_up();
     e.propagate_down();
 
+    std::cerr << e.graph->ases->find(1)->second->loc_rib->size() << std::endl; 
+    std::cerr << e.graph->ases->find(2)->second->loc_rib->size() << std::endl; 
+    std::cerr << e.graph->ases->find(3)->second->loc_rib->size() << std::endl; 
+    std::cerr << e.graph->ases->find(4)->second->loc_rib->size() << std::endl; 
+    std::cerr << e.graph->ases->find(5)->second->loc_rib->size() << std::endl; 
+    std::cerr << e.graph->ases->find(6)->second->loc_rib->size() << std::endl; 
 
     
     if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
