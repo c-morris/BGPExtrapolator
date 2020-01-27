@@ -119,6 +119,7 @@ public:
     bool operator==(const Announcement &b) const {
         return (origin == b.origin) &&
                (prefix == b.prefix) &&
+               (as_path == b.as_path) &&
                (priority == b.priority) &&
                (received_from_asn == b.received_from_asn);
     }
