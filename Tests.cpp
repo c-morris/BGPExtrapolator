@@ -184,6 +184,9 @@ BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route_chosen ) {
 BOOST_AUTO_TEST_CASE( ROVpp_tiebreak_override ) {
         BOOST_CHECK( test_rovpp_tiebreak_override() );
 }
+BOOST_AUTO_TEST_CASE( ROVpp_test_withdrawal ) {
+        BOOST_CHECK( test_withdrawal() );
+}
 
 #endif // RUN_TESTS
 

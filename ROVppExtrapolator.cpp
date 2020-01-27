@@ -276,31 +276,119 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                                                bool to_providers, 
                                                bool to_peers, 
                                                bool to_customers) {
+    // TODO cleanup
+    std::vector<Announcement> anns_to_providers;
+    std::vector<Announcement> anns_to_peers;
+    std::vector<Announcement> anns_to_customers;
+    std::vector<std::vector<Announcement>*> outgoing;
+    outgoing.push_back(&anns_to_providers);
+    outgoing.push_back(&anns_to_peers);
+    outgoing.push_back(&anns_to_customers);
+    
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
     ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(source_as);
-    // If we are sending to providers
-    if (to_providers) {
-        // Assemble the list of announcements to send to providers
-        std::vector<Announcement> anns_to_providers;
-        for (auto &ann : *source_as->loc_rib) {
-            // Do not propagate any announcements from peers/providers
-            // Priority is reduced by 1 per path length
-            // Base priority is 200 for customer to provider
-            // Ignore announcements not from a customer
-            if (ann.second.priority < 200) {
-                continue;
-            }
-            // ROV++ 0.1 do not forward blackhole announcements
-            if (rovpp_as != NULL &&
-                ann.second.origin == 64512 && 
-                rovpp_as->policy_vector.size() > 0 &&
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
-                continue;
-            }
-            
+
+    for (auto &ann : *source_as->loc_rib) {
+        // ROV++ 0.1 do not forward blackhole announcements
+        if (rovpp_as != NULL && 
+            ann.second.origin == 64512 && 
+            rovpp_as->policy_vector.size() > 0 &&
+            rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+            continue;
+        }
+        // Compute portion of priority from path length
+        uint32_t old_priority = ann.second.priority;
+        uint32_t path_len_weight = old_priority % 100;
+        if (path_len_weight == 0) {
+            // For MRT ann at origin: old_priority = 400
+            path_len_weight = 99;
+        } else {
+            // Sub 1 for the current hop
+            path_len_weight -= 1;
+        }
+        // Copy announcement
+        Announcement copy = ann.second;
+        copy.received_from_asn = asn;
+        copy.from_monitor = false;
+        copy.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
+
+        // Do not propagate any announcements from peers/providers
+        // Priority is reduced by 1 per path length
+        // Ignore announcements not from a customer
+        if (to_providers && ann.second.priority >= 200) {
             // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
+            // Base priority is 200 for customer to provider
+            uint32_t priority = 200 + path_len_weight;
+            copy.priority = priority;
+            anns_to_providers.push_back(copy);
+        }
+        if (to_peers && ann.second.priority >= 200) {
+            // Base priority is 100 for peers to peers
+            uint32_t priority = 100 + path_len_weight;
+            copy.priority = priority;
+            anns_to_peers.push_back(copy);
+        }
+        if (to_customers) {
+            // Base priority is 0 for provider to customers
+            uint32_t priority = path_len_weight;
+            copy.priority = priority;
+            anns_to_customers.push_back(copy);
+        }
+            
+    }
+    // trim provider and peer vectors of preventive and blackhole anns for 0.3 and 0.2bis
+    if (rovpp_as != NULL &&
+        rovpp_as->policy_vector.size() > 0 &&
+        (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
+        rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS)) {
+        for (auto ann_pair : *rovpp_as->preventive_anns) {
+            for (auto it = anns_to_providers.begin(); it != anns_to_providers.end();) {
+                if (ann_pair.first.prefix == it->prefix &&
+                    ann_pair.first.origin == it->origin) {
+                    it = anns_to_providers.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            for (auto it = anns_to_peers.begin(); it != anns_to_peers.end();) {
+                if (ann_pair.first.prefix == it->prefix &&
+                    ann_pair.first.origin == it->origin) {
+                    it = anns_to_peers.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+        for (auto blackhole_ann : *rovpp_as->blackholes) {
+            for (auto it = anns_to_providers.begin(); it != anns_to_providers.end();) {
+                if (blackhole_ann.prefix == it->prefix &&
+                    blackhole_ann.origin == it->origin) {
+                    it = anns_to_providers.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            for (auto it = anns_to_peers.begin(); it != anns_to_peers.end();) {
+                if (blackhole_ann.prefix == it->prefix &&
+                    blackhole_ann.origin == it->origin) {
+                    it = anns_to_peers.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+        
+    }
+
+    // Clear ribs_out and re-add withdrawals
+    for (auto it = source_as->ribs_out->begin(); it != source_as->ribs_out->end();) {
+        if (!it->withdraw) {
+            it = source_as->ribs_out->erase(it);
+        } else {
+            // correct withdrawals found in ribs_out
+            // Compute portion of priority from path length
+            uint32_t old_priority = it->priority;
             uint32_t path_len_weight = old_priority % 100;
             if (path_len_weight == 0) {
                 // For MRT ann at origin: old_priority = 400
@@ -309,252 +397,147 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                 // Sub 1 for the current hop
                 path_len_weight -= 1;
             }
-            uint32_t priority = 200 + path_len_weight;
-            
-            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
-                                                      ann.second.prefix.addr,
-                                                      ann.second.prefix.netmask,
-                                                      priority,
-                                                      asn,
-                                                      ann.second.tstamp,
-                                                      0);
-            // TODO implement rovppann and copy function
-            new_ann.alt = ann.second.alt;
-            new_ann.withdraw = ann.second.withdraw;
-            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
+            // Copy announcement
+            Announcement copy = *it;
+            copy.received_from_asn = asn;
+            copy.from_monitor = false;
+            copy.tiebreak_override = (it->tiebreak_override == 0 ? 0 : asn);
 
-            // Push announcement with new priority and alt to ann vector
-            anns_to_providers.push_back(new_ann);
-        }
-        // Send the vector of assembled announcements
-        for (uint32_t provider_asn : *source_as->providers) {
-            auto *recving_as = graph->ases->find(provider_asn)->second;
-            auto anns_to_providers_trimmed = anns_to_providers;
-            // ROV++ 0.3 do not send preventive announcements to peers or providers
-            // ROV++ 0.2bis do not send blackhole announcements to peers or providers
-            if (rovpp_as != NULL &&
-                rovpp_as->policy_vector.size() > 0 &&
-                (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS)) {
-                for (auto ann_pair : *rovpp_as->preventive_anns) {
-                    for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
-                        if (ann_pair.first.prefix == it->prefix &&
-                            ann_pair.first.origin == it->origin) {
-                            it = anns_to_providers_trimmed.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-                }
-                for (auto blackhole_ann : *rovpp_as->blackholes) {
-                    for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
-                        if (blackhole_ann.prefix == it->prefix &&
-                            blackhole_ann.origin == it->origin) {
-                            // remove the blackhole ann
-                            it = anns_to_providers_trimmed.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-                }
+            // Do not propagate any announcements from peers/providers
+            // Priority is reduced by 1 per path length
+            // Ignore announcements not from a customer
+            if (to_providers && it->priority < 200) {
+                // Set the priority of the announcement at destination 
+                // Base priority is 200 for customer to provider
+                uint32_t priority = 200 + path_len_weight;
+                copy.priority = priority;
+                anns_to_providers.push_back(copy);
             }
-	    // Check for loops
+            if (to_peers && it->priority < 200) {
+                // Base priority is 100 for peers to peers
+                uint32_t priority = 100 + path_len_weight;
+                copy.priority = priority;
+                anns_to_peers.push_back(copy);
+            }
+            if (to_customers) {
+                // Base priority is 0 for provider to customers
+                uint32_t priority = path_len_weight;
+                copy.priority = priority;
+                anns_to_customers.push_back(copy);
+            }
+            it = source_as->ribs_out->erase(it);
+        }
+    }
+    // Send the vectors of assembled announcements
+    for (uint32_t provider_asn : *source_as->providers) {
+        auto anns_to_providers_trimmed = anns_to_providers;
+        auto *recving_as = graph->ases->find(provider_asn)->second;
+        // Check for loops
+        for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
+            if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                it = anns_to_providers_trimmed.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        // ROV++ 0.3 do not send preventive announcements from where the best alternative came
+        for (auto ann_pair : *rovpp_as->preventive_anns) {
             for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
-                if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                if (ann_pair.first.prefix == it->prefix && 
+                    ann_pair.first.origin == it->origin &&
+                    ann_pair.second.received_from_asn == provider_asn) {
                     it = anns_to_providers_trimmed.erase(it);
                 } else {
                     ++it;
                 }
             }
-            // TODO refactor
-            for (auto ann : anns_to_providers_trimmed) {
-                // this must be a copy, not a reference!
-                // use the received from asn as a "sent to asn"
-                ann.sent_to_asn = recving_as->asn;
-                source_as->ribs_out->push_back(ann);
-            }
+        }
+        // TODO refactor
+        for (auto ann : anns_to_providers_trimmed) {
+            // this must be a copy, not a reference!
+            // use the received from asn as a "sent to asn"
+            ann.sent_to_asn = recving_as->asn;
+            source_as->ribs_out->push_back(ann);
         }
     }
 
-    // If we are sending to peers
-    if (to_peers) {
-        // Assemble vector of announcement to send to peers
-        std::vector<Announcement> anns_to_peers;
-        for (auto &ann : *source_as->loc_rib) {
-            // Do not propagate any announcements from peers/providers
-            // Priority is reduced by 1 per path length
-            // Base priority is 100 for peers to peers
-
-            // Ignore announcements not from a customer
-            if (ann.second.priority < 200) {
-                continue;
-            }
-            // ROV++ 0.1 do not forward blackhole announcements
-            if (rovpp_as != NULL &&
-                ann.second.origin == 64512 && 
-                rovpp_as->policy_vector.size() > 0 &&
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
-                continue;
-            }
-            // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
-            uint32_t path_len_weight = old_priority % 100;
-            if (path_len_weight == 0) {
-                // For MRT ann at origin: old_priority = 400
-                path_len_weight = 99;
+    // Send the vector of assembled announcements
+    for (uint32_t peer_asn : *source_as->peers) {
+        auto *recving_as = graph->ases->find(peer_asn)->second;
+        auto anns_to_peers_trimmed = anns_to_peers;
+       
+        // Check for loops
+        for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
+            if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                it = anns_to_peers_trimmed.erase(it);
             } else {
-                // Sub 1 for the current hop
-                path_len_weight -= 1;
+                ++it;
             }
-            uint32_t priority = 100 + path_len_weight;
-            
-            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
-                                                          ann.second.prefix.addr,
-                                                          ann.second.prefix.netmask,
-                                                          priority,
-                                                          asn,
-                                                          ann.second.tstamp,
-                                                          0);
-            // TODO implement rovppann and copy function
-            new_ann.alt = ann.second.alt;
-            new_ann.withdraw = ann.second.withdraw;
-            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
-
-            // Push announcement with new priority to ann vector
-            anns_to_peers.push_back(new_ann);
         }
-        // Send the vector of assembled announcements
-        for (uint32_t peer_asn : *source_as->peers) {
-            // ROV++ 0.3 do not send preventive announcements whence the best alternative came
-            auto *recving_as = graph->ases->find(peer_asn)->second;
-            auto anns_to_peers_trimmed = anns_to_peers;
-            if (rovpp_as != NULL &&
-                rovpp_as->policy_vector.size() > 0 &&
-                (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS)) {
-                for (auto ann_pair : *rovpp_as->preventive_anns) {
-                    for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
-                        if (ann_pair.first.prefix == it->prefix &&
-                            ann_pair.first.origin == it->origin) {
-                            it = anns_to_peers_trimmed.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-                }
-                for (auto blackhole_ann : *rovpp_as->blackholes) {
-                    for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
-                        if (blackhole_ann.prefix == it->prefix &&
-                            blackhole_ann.origin == it->origin) {
-                            it = anns_to_peers_trimmed.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-                }
-            }
-	    // Check for loops
+        // ROV++ 0.3 do not send preventive announcements from where the best alternative came
+        for (auto ann_pair : *rovpp_as->preventive_anns) {
             for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
-                if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                if (ann_pair.first.prefix == it->prefix && 
+                    ann_pair.first.origin == it->origin &&
+                    ann_pair.second.received_from_asn == peer_asn) {
                     it = anns_to_peers_trimmed.erase(it);
                 } else {
                     ++it;
                 }
             }
-            // TODO refactor
-            for (auto ann : anns_to_peers_trimmed) {
-                // this must be a copy, not a reference!
-                // use the received from asn as a "sent to asn"
-                ann.sent_to_asn = recving_as->asn;
-                source_as->ribs_out->push_back(ann);
-            }
+        }
+        // TODO refactor
+        for (auto ann : anns_to_peers_trimmed) {
+            // this must be a copy, not a reference!
+            // use the received from asn as a "sent to asn"
+            ann.sent_to_asn = recving_as->asn;
+            source_as->ribs_out->push_back(ann);
         }
     }
 
-    // If we are sending to customers
-    if (to_customers) {
-        // Assemble the vector of announcement for customers
-        std::vector<Announcement> anns_to_customers;
-        for (auto &ann : *source_as->loc_rib) {
-            // Propagate all announcements to customers
-            // Priority is reduced by 1 per path length
-            // Base priority is 0 for provider to customers
-
-            // ROV++ 0.1 do not forward blackhole announcements
-            if (rovpp_as != NULL &&
-                ann.second.origin == 64512 && 
-                rovpp_as->policy_vector.size() > 0 &&
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
-                continue;
-            }
-            // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
-            uint32_t path_len_weight = old_priority % 100;
-            if (path_len_weight == 0) {
-                // For MRT ann at origin: old_priority = 400
-                path_len_weight = 99;
+    // Send the vector of assembled announcements
+    for (uint32_t customer_asn : *source_as->customers) {
+        // ROV++ 0.3 do not send preventive announcements whence the best alternative came
+        auto *recving_as = graph->ases->find(customer_asn)->second;
+        auto anns_to_customers_trimmed = anns_to_customers;
+        
+        // Check for loops
+        for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
+            if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                it = anns_to_customers_trimmed.erase(it);
             } else {
-                // Sub 1 for the current hop
-                path_len_weight -= 1;
+                ++it;
             }
-            uint32_t priority = path_len_weight;
- 
-            ROVppAnnouncement new_ann = ROVppAnnouncement(ann.second.origin,
-                                                          ann.second.prefix.addr,
-                                                          ann.second.prefix.netmask,
-                                                          priority,
-                                                          asn,
-                                                          ann.second.tstamp,
-                                                          0);
-            // TODO implement rovppann and copy function
-            new_ann.alt = ann.second.alt;
-            new_ann.withdraw = ann.second.withdraw;
-            new_ann.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
-
-            // Push announcement with new priority to ann vector
-            anns_to_customers.push_back(new_ann);
         }
-        // Send the vector of assembled announcements
-        for (uint32_t customer_asn : *source_as->customers) {
-            // ROV++ 0.3 do not send preventive announcements whence the best alternative came
-            auto *recving_as = graph->ases->find(customer_asn)->second;
-            auto anns_to_customers_trimmed = anns_to_customers;
-            if (rovpp_as != NULL &&
-                rovpp_as->policy_vector.size() > 0 &&
-                rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
-                for (auto ann_pair : *rovpp_as->preventive_anns) {
-                    for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
-                        if (ann_pair.first.prefix == it->prefix && 
-                            ann_pair.first.origin == it->origin &&
-                            ann_pair.second.received_from_asn == customer_asn) {
-                            it = anns_to_customers_trimmed.erase(it);
-                        } else {
-                            ++it;
-                        }
-                    }
-                }
-            }
-	    // Check for loops
+        // ROV++ 0.3 do not send preventive announcements from where the best alternative came
+        for (auto ann_pair : *rovpp_as->preventive_anns) {
             for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
-                if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
+                if (ann_pair.first.prefix == it->prefix && 
+                    ann_pair.first.origin == it->origin &&
+                    ann_pair.second.received_from_asn == customer_asn) {
                     it = anns_to_customers_trimmed.erase(it);
                 } else {
                     ++it;
                 }
             }
-            // TODO refactor
-            for (auto ann : anns_to_customers_trimmed) {
-                // this must be a copy, not a reference!
-                // use the received from asn as a "sent to asn"
-                ann.sent_to_asn = recving_as->asn;
-                source_as->ribs_out->push_back(ann);
-            }
+        }
+        // TODO refactor
+        for (auto ann : anns_to_customers_trimmed) {
+            // this must be a copy, not a reference!
+            // use the received from asn as a "sent to asn"
+            ann.sent_to_asn = recving_as->asn;
+            source_as->ribs_out->push_back(ann);
         }
     }
+
     // TODO make this more efficient
     for (auto const &ann : *source_as->ribs_out) {
         auto *recving_as = graph->ases->find(ann.sent_to_asn)->second;
-        recving_as->ribs_in->push_back(ann);
+        if ((to_customers && source_as->customers->find(ann.sent_to_asn) != source_as->customers->end()) ||
+            (to_peers     && source_as->peers->find(ann.sent_to_asn) != source_as->peers->end()) ||
+            (to_providers && source_as->providers->find(ann.sent_to_asn) != source_as->providers->end())) {
+            recving_as->ribs_in->push_back(ann);
+        }
         // yes, this makes duplicates
     }
 }

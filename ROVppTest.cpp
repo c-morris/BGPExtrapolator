@@ -1150,6 +1150,86 @@ bool test_rovpp_tiebreak_override() {
     return true;
 }
 
+/** Test withdrawals.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ */
+bool test_withdrawal() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+   // e.graph->ases->find(5)->second->process_announcement(ann);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+    e.propagate_up();
+    e.propagate_down();
+    
+   // std::cerr << e.graph->ases->find(1)->second->loc_rib->size() << std::endl; 
+   // std::cerr << e.graph->ases->find(2)->second->loc_rib->size() << std::endl; 
+   // std::cerr << e.graph->ases->find(3)->second->loc_rib->size() << std::endl; 
+   // std::cerr << e.graph->ases->find(4)->second->loc_rib->size() << std::endl; 
+   // std::cerr << e.graph->ases->find(5)->second->loc_rib->size() << std::endl; 
+   // std::cerr << e.graph->ases->find(6)->second->loc_rib->size() << std::endl; 
+
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(3)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(5)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(6)->second->loc_rib->size() == 1)) {
+        std::cerr << "Announcements did not propagate as expected\n";
+        return false;
+    }
+    
+    // Make withdrawal
+    //ann.withdraw = true;
+    //e.graph->ases->find(5)->second->process_announcement(ann);
+    e.propagate_up();
+    e.propagate_down();
+
+
+    
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(2)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(4)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(5)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(6)->second->loc_rib->size() == 0)) {
+        std::cerr << "Announcements did not withdraw as expected\n";
+        return false;
+    }
+
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 290 &&
+        e.graph->ases->find(4)->second->loc_rib->find(p)->second.priority != 89 &&
+        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    delete as_path;
+    return true;
+}
+
+
 
 /** Testing Blackholing (i.e. when only a blackhole is produced)
  *
