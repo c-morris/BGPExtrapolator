@@ -96,6 +96,13 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
         return;
     }
 
+    // Check path for self
+    for (uint32_t i : ann.as_path) {
+        if (i == asn && ann.origin != asn) {
+            return;
+        }
+    }
+
     // No announcement found for incoming announcement prefix
     if (search == loc_rib->end()) {
         loc_rib->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
@@ -107,12 +114,12 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 set->second->erase(asn);
             }
         }
-    // Tiebraker for equal priority between old and new ann
-    } else if (ann.priority == search->second.priority) {
+    // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
+    } else if (ann.priority == search->second.priority && ann != search->second) {
         // Check for override
         if (search->second.received_from_asn == ann.tiebreak_override) {
+            withdraw(search->second);
             search->second = ann;
-            withdraw(ann);
         } else {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
@@ -128,16 +135,16 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                     depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                           search->second));
                     ann.tiebreak_override = ann.received_from_asn;
+                    withdraw(search->second);
                     search->second = ann;
-                    withdraw(ann);
                 } else {
                     swap_inverse_result(
                         std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                         std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                     search_depref->second = search->second;
                     ann.tiebreak_override = ann.received_from_asn;
+                    withdraw(search->second);
                     search->second = ann;
-                    withdraw(ann);
                 }
             } else {
                 // Use the old announcement
@@ -161,8 +168,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                   search->second));
             // Replace the old announcement with the higher priority
+            withdraw(search->second);
             search->second = ann;
-            withdraw(ann);
         } else {
             // Update inverse results
             swap_inverse_result(
@@ -171,8 +178,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             // Replace second best with the old priority announcement
             search_depref->second = search->second;
             // Replace the old announcement with the higher priority
+            withdraw(search->second);
             search->second = ann;
-            withdraw(ann);
         }
     // Old announcement was better
     // Check depref announcements priority for best path selection

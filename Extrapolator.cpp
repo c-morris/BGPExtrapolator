@@ -491,9 +491,7 @@ void Extrapolator::propagate_up() {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
             bool is_empty = search->second->loc_rib->empty();
-            if (!is_empty) {
-                send_all_announcements(asn, true, false, false);
-            }
+            send_all_announcements(asn, true, false, false);
         }
     }
     // Propagate to peers
@@ -502,9 +500,7 @@ void Extrapolator::propagate_up() {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
             bool is_empty = search->second->loc_rib->empty();
-            if (!is_empty) {
-                send_all_announcements(asn, false, true, false);
-            }
+            send_all_announcements(asn, false, true, false);
         }
     }
 }
@@ -519,9 +515,7 @@ void Extrapolator::propagate_down() {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
             bool is_empty = search->second->loc_rib->empty();
-            if (!is_empty) {
-                send_all_announcements(asn, false, false, true);
-            }
+            send_all_announcements(asn, false, false, true);
         }
     }
 }
@@ -558,7 +552,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Full path generation
             auto cur_path = ann.second.as_path;
             // Handles appending after origin
-            if (cur_path.back() != asn) {
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
                 cur_path.push_back(asn);
             }
 
@@ -606,7 +600,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Full path generation
             auto cur_path = ann.second.as_path;
             // Handles appending after origin
-            if (cur_path.back() != asn) {
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
                 cur_path.push_back(asn);
             }
 
@@ -648,7 +642,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Full path generation
             auto cur_path = ann.second.as_path;
             // Handles appending after origin
-            if (cur_path.back() != asn) {
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
                 cur_path.push_back(asn);
             }
 

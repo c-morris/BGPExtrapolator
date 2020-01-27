@@ -317,7 +317,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         // Full path generation
         auto cur_path = ann.second.as_path;
         // Handles appending after origin
-        if (cur_path.back() != asn) {
+        if (cur_path.size() == 0 || cur_path.back() != asn) {
             cur_path.push_back(asn);
         }
 
@@ -325,6 +325,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         Announcement copy = ann.second;
         copy.received_from_asn = asn;
         copy.from_monitor = false;
+        copy.as_path = cur_path;
         copy.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
         // Do not propagate any announcements from peers/providers
@@ -336,20 +337,23 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Base priority is 200 for customer to provider
             
             uint32_t priority = 200 + path_len_weight;
-            copy.priority = priority;
-            anns_to_providers.push_back(copy);
+            auto newcopy = copy;
+            newcopy.priority = priority;
+            anns_to_providers.push_back(newcopy);
         }
         if (to_peers && ann.second.priority >= 200) {
             // Base priority is 100 for peers to peers
             uint32_t priority = 100 + path_len_weight;
-            copy.priority = priority;
-            anns_to_peers.push_back(copy);
+            auto newcopy = copy;
+            newcopy.priority = priority;
+            anns_to_peers.push_back(newcopy);
         }
         if (to_customers) {
             // Base priority is 0 for provider to customers
             uint32_t priority = path_len_weight;
-            copy.priority = priority;
-            anns_to_customers.push_back(copy);
+            auto newcopy = copy;
+            newcopy.priority = priority;
+            anns_to_customers.push_back(newcopy);
         }
             
     }
@@ -402,8 +406,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         if (!it->withdraw) {
             it = source_as->ribs_out->erase(it);
         } else {
-            // correct withdrawals found in ribs_out
-
+            // Prepare withdrawals found in ribs_out
             // Set the priority of the announcement at destination 
             uint32_t old_priority = it->priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -417,7 +420,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Full path generation
             auto cur_path = it->as_path;
             // Handles appending after origin
-            if (cur_path.back() != asn) {
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
                 cur_path.push_back(asn);
             }
             // Copy announcement
@@ -434,22 +437,26 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                 // Set the priority of the announcement at destination 
                 // Base priority is 200 for customer to provider
                 uint32_t priority = 200 + path_len_weight;
-                copy.priority = priority;
-                anns_to_providers.push_back(copy);
+                auto newcopy = copy;
+                newcopy.priority = priority;
+                anns_to_providers.push_back(newcopy);
             }
             if (to_peers && it->priority >= 200) {
                 // Base priority is 100 for peers to peers
                 uint32_t priority = 100 + path_len_weight;
-                copy.priority = priority;
-                anns_to_peers.push_back(copy);
+                auto newcopy = copy;
+                newcopy.priority = priority;
+                anns_to_peers.push_back(newcopy);
             }
             if (to_customers) {
                 // Base priority is 0 for provider to customers
                 uint32_t priority = path_len_weight;
-                copy.priority = priority;
-                anns_to_customers.push_back(copy);
+                auto newcopy = copy;
+                newcopy.priority = priority;
+                anns_to_customers.push_back(newcopy);
             }
-            it = source_as->ribs_out->erase(it);
+            //it = source_as->ribs_out->erase(it);
+            ++it;
         }
     }
     // Send the vectors of assembled announcements
@@ -556,6 +563,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 
     // TODO make this more efficient
     for (auto const &ann : *source_as->ribs_out) {
+        auto search = graph->ases->find(ann.sent_to_asn);
+        if (search == graph->ases->end()) { continue; }
         auto *recving_as = graph->ases->find(ann.sent_to_asn)->second;
         if ((to_customers && source_as->customers->find(ann.sent_to_asn) != source_as->customers->end()) ||
             (to_peers     && source_as->peers->find(ann.sent_to_asn) != source_as->peers->end()) ||

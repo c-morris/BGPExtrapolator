@@ -95,7 +95,15 @@ public:
         os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
             ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
             << std::endl << "Priority:\t" << ann.priority << std::endl 
-            << "Recv'd from:\t" << std::dec << ann.received_from_asn;
+            << "Recv'd from:\t" << std::dec << ann.received_from_asn << std::endl
+            << "Sent to:\t" << std::dec << ann.sent_to_asn << std::endl
+            << "Alt:\t\t" << std::dec << ann.alt << std::endl
+            << "TieBrk:\t\t" << std::dec << ann.tiebreak_override << std::endl
+            << "From Monitor:\t" << std::boolalpha << ann.from_monitor << std::endl
+            << "Withdraw:\t" << std::boolalpha << ann.withdraw << std::endl
+            << "AS_PATH\t";
+            for (auto i : ann.as_path) { os << i << ' '; }
+            os << std::endl;
         return os;
     }
 
@@ -126,6 +134,10 @@ public:
                (as_path == b.as_path) &&
                (priority == b.priority) &&
                (received_from_asn == b.received_from_asn);
+    }
+    
+    bool operator!=(const Announcement &b) const {
+        return !(*this == b);
     }
 };
 #endif

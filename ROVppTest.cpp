@@ -1200,20 +1200,15 @@ bool test_withdrawal() {
     
     // Make withdrawal
     Announcement copy = e.graph->ases->find(5)->second->loc_rib->find(p)->second;
+    e.graph->ases->find(5)->second->loc_rib->erase(e.graph->ases->find(5)->second->loc_rib->find(p));
     copy.withdraw = true;
     e.graph->ases->find(5)->second->ribs_out->push_back(copy);
     //e.graph->ases->find(5)->second->process_announcement(ann);
     e.propagate_up();
     e.propagate_down();
-
-    std::cerr << e.graph->ases->find(1)->second->loc_rib->size() << std::endl; 
-    std::cerr << e.graph->ases->find(2)->second->loc_rib->size() << std::endl; 
-    std::cerr << e.graph->ases->find(3)->second->loc_rib->size() << std::endl; 
-    std::cerr << e.graph->ases->find(4)->second->loc_rib->size() << std::endl; 
-    std::cerr << e.graph->ases->find(5)->second->loc_rib->size() << std::endl; 
-    std::cerr << e.graph->ases->find(6)->second->loc_rib->size() << std::endl; 
-
-    
+    e.propagate_up();
+    e.propagate_down();
+        
     if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
         e.graph->ases->find(2)->second->loc_rib->size() == 0 &&
         e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
@@ -1224,12 +1219,6 @@ bool test_withdrawal() {
         return false;
     }
 
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 290 &&
-        e.graph->ases->find(4)->second->loc_rib->find(p)->second.priority != 89 &&
-        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
-        std::cerr << "Propagted priority calculation failed." << std::endl;
-        return false;
-    }
     delete as_path;
     return true;
 }
