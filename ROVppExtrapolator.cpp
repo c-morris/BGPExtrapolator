@@ -570,6 +570,9 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             (to_peers     && source_as->peers->find(ann.sent_to_asn) != source_as->peers->end()) ||
             (to_providers && source_as->providers->find(ann.sent_to_asn) != source_as->providers->end())) {
             recving_as->ribs_in->push_back(ann);
+            if (recving_as->asn == 5) {
+                std::cout << ann;
+            }
         }
         // yes, this makes duplicates
     }

@@ -206,7 +206,7 @@ void ROVppAS::process_announcements(bool ran) {
             if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
             // Process withdrawals, regardless of policy
             if (ann.withdraw) {
-                if (search != loc_rib->end()) {
+                if (search != loc_rib->end() && search->second == ann) {
                     loc_rib->erase(ann.prefix);    
                 }
                 ribs_out->push_back(ann);
