@@ -573,6 +573,14 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
         // yes, this makes duplicates
     }
+    // Clear ribs_out except for withdrawals
+    for (auto it = source_as->ribs_out->begin(); it != source_as->ribs_out->end();) {
+        if (!it->withdraw) {
+            it = source_as->ribs_out->erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 /**
