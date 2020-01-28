@@ -197,6 +197,19 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
 /** Iterate through ribs_in and keep only the best. 
  */
 void ROVppAS::process_announcements(bool ran) {
+    // remove adjacent duplicate announcements (doesn't affect results)
+    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+        if (it+1 != ribs_in->end()) {
+            if (*it == *(it+1)) {
+                it = ribs_in->erase(it);
+            } else {
+                ++it;
+            }
+        } else {
+            ++it;
+        }
+    }
+
     for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
         if (search == loc_rib->end() || !search->second.from_monitor) {
