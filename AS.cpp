@@ -272,9 +272,7 @@ void AS::clear_announcements() {
  * @return True if recv'd, false otherwise.
  */
 bool AS::already_received(Announcement &ann) {
-    auto search = all_anns->find(ann.prefix);
-    bool found = (search == all_anns->end()) ? false : true;
-    return found;
+    return all_anns->find(ann.prefix) != all_anns->end();
 }
 
 /** Deletes given announcement.
