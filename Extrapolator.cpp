@@ -471,23 +471,23 @@ void Extrapolator::propagate_up() {
     size_t levels = graph->ases_by_rank->size();
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
-        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
+        for (AS* as : *graph->ases_by_rank->at(level)) {
+            // auto search = graph->ases->find(asn);
+            as->process_announcements(random);
+            bool is_empty = as->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(search->second, true, false, false);
+                send_all_announcements(as, true, false, false);
             }
         }
     }
     // Propagate to peers
     for (size_t level = 0; level < levels; level++) {
-        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
+        for (AS* as : *graph->ases_by_rank->at(level)) {
+            // auto search = graph->ases->find(asn);
+            as->process_announcements(random);
+            bool is_empty = as->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(search->second, false, true, false);
+                send_all_announcements(as, false, true, false);
             }
         }
     }
@@ -499,12 +499,12 @@ void Extrapolator::propagate_up() {
 void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
-        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
+        for (AS* as : *graph->ases_by_rank->at(level)) {
+            // auto search = graph->ases->find(asn);
+            as->process_announcements(random);
+            bool is_empty = as->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(search->second, false, false, true);
+                send_all_announcements(as, false, false, true);
             }
         }
     }

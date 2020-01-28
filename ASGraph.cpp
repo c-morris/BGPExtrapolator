@@ -33,7 +33,7 @@
 
 ASGraph::ASGraph() {
     ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
-    ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
+    ases_by_rank = new std::vector<std::set<AS*>*>;        // Vector of ASes by rank
     components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
     component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
     stubs_to_parents = new std::map<uint32_t, uint32_t>;        // Translace stub to parent
@@ -71,8 +71,8 @@ ASGraph::~ASGraph() {
 
 /** Clear all announcements in AS.
  */
-void ASGraph::clear_announcements(){
-    for (auto const& as : *ases){
+void ASGraph::clear_announcements() {
+    for (auto const& as : *ases) {
         as.second->clear_announcements();
     }
     for (auto const& i : *inverse_results) {
@@ -105,17 +105,16 @@ void ASGraph::add_relationship(uint32_t asn,
  *
  * @return 0 if asn isn't found, otherwise return identifying ASN
  */
-uint32_t ASGraph::translate_asn(uint32_t asn){
+uint32_t ASGraph::translate_asn(uint32_t asn) {
     auto search = component_translation->find(asn);
-    if(search == component_translation->end()){
+    if(search == component_translation->end())
        return asn; 
-    }
     return search->second;
 }
 
 /** Process with removing stubs (needs querier to save them).
  */
-void ASGraph::process(SQLQuerier *querier){
+void ASGraph::process(SQLQuerier *querier) {
     remove_stubs(querier);
     tarjan();
     combine_components();
@@ -130,10 +129,10 @@ void ASGraph::process(SQLQuerier *querier){
  * 
  * @param querier
  */
-void ASGraph::create_graph_from_db(SQLQuerier *querier){
+void ASGraph::create_graph_from_db(SQLQuerier *querier) {
     // Assemble Peers
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
-    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
+    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c) {
         add_relationship(c["peer_as_1"].as<uint32_t>(),
                          c["peer_as_2"].as<uint32_t>(),AS_REL_PEER);
         add_relationship(c["peer_as_2"].as<uint32_t>(),
@@ -141,7 +140,7 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
     }
     // Assemble Customer-Providers
     R = querier->select_from_table(CUSTOMER_PROVIDER_TABLE);
-    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
+    for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c) {
         add_relationship(c["customer_as"].as<uint32_t>(),
                          c["provider_as"].as<uint32_t>(),AS_REL_PROVIDER);
         add_relationship(c["provider_as"].as<uint32_t>(),
@@ -155,10 +154,10 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
  *
  * @param querier
  */
-void ASGraph::remove_stubs(SQLQuerier *querier){
+void ASGraph::remove_stubs(SQLQuerier *querier) {
     std::vector<AS*> to_remove;
     // For all ASes in the graph
-    for (auto &as : *ases){
+    for (auto &as : *ases) {
         // If this AS is a stub
         if(as.second->peers->size() == 0 &&
            as.second->providers->size() == 1 && 
@@ -171,7 +170,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     // Handle stub removal
     for (auto *as : to_remove) {
         // Remove any edges to this stub from graph
-        for(uint32_t provider_asn : *as->providers){
+        for(uint32_t provider_asn : *as->providers) {
             auto iter = ases->find(provider_asn);
             if (iter != ases->end()) {
                 AS* provider = iter->second;
@@ -289,12 +288,12 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
  */
 void ASGraph::decide_ranks() {
     // Initial set of customer ASes at the bottom of the DAG
-    ases_by_rank->push_back(new std::set<uint32_t>());
+    ases_by_rank->push_back(new std::set<AS*>());
     // For ASes with no customers
     for (auto &as : *ases) {
         // If AS is a leaf node
         if (as.second->customers->empty()) {
-            (*ases_by_rank)[0]->insert(as.first);
+            (*ases_by_rank)[0]->insert(as.second);
             as.second->rank = 0;
         }
     }
@@ -302,18 +301,22 @@ void ASGraph::decide_ranks() {
     int i = 0;
     // While there are elements to process current rank
     while (!(*ases_by_rank)[i]->empty()) {
-        ases_by_rank->push_back(new std::set<uint32_t>());
-        for (uint32_t asn : *(*ases_by_rank)[i]) {
+        ases_by_rank->push_back(new std::set<AS*>());
+        for (AS* as : *(*ases_by_rank)[i]) {
             //For all providers of this AS
-            for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
+            for (const uint32_t &provider_asn : *as->providers) {
                 AS* prov_AS = ases->find(translate_asn(provider_asn))->second;
                 int oldrank = prov_AS->rank;
+
+                //TODO improve this second search if possible
+                //It's only ran once so there is a good trade-off for execution time
+                AS* prov = ases->find(provider_asn)->second;
                 // Move provider up to next rank
                 if (oldrank < i + 1) {
                     prov_AS->rank = i + 1;
-                    (*ases_by_rank)[i+1]->insert(provider_asn);
+                    (*ases_by_rank)[i+1]->insert(prov);
                     if (oldrank != -1) {
-                        (*ases_by_rank)[oldrank]->erase(provider_asn);
+                        (*ases_by_rank)[oldrank]->erase(prov);
                     }
                 }
             }
