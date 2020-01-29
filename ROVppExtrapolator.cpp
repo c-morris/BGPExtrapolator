@@ -463,26 +463,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     for (uint32_t provider_asn : *source_as->providers) {
         auto anns_to_providers_trimmed = anns_to_providers;
         auto *recving_as = graph->ases->find(provider_asn)->second;
-        // Check for loops
-        for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
-            if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
-                it = anns_to_providers_trimmed.erase(it);
-            } else {
-                ++it;
-            }
-        }
-        // ROV++ 0.3 do not send preventive announcements from where the best alternative came
-        for (auto ann_pair : *rovpp_as->preventive_anns) {
-            for (auto it = anns_to_providers_trimmed.begin(); it != anns_to_providers_trimmed.end();) {
-                if (ann_pair.first.prefix == it->prefix && 
-                    ann_pair.first.origin == it->origin &&
-                    ann_pair.second.received_from_asn == provider_asn) {
-                    it = anns_to_providers_trimmed.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
         // TODO refactor
         for (auto ann : anns_to_providers_trimmed) {
             // this must be a copy, not a reference!
@@ -497,26 +477,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         auto *recving_as = graph->ases->find(peer_asn)->second;
         auto anns_to_peers_trimmed = anns_to_peers;
        
-        // Check for loops
-        for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
-            if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
-                it = anns_to_peers_trimmed.erase(it);
-            } else {
-                ++it;
-            }
-        }
-        // ROV++ 0.3 do not send preventive announcements from where the best alternative came
-        for (auto ann_pair : *rovpp_as->preventive_anns) {
-            for (auto it = anns_to_peers_trimmed.begin(); it != anns_to_peers_trimmed.end();) {
-                if (ann_pair.first.prefix == it->prefix && 
-                    ann_pair.first.origin == it->origin &&
-                    ann_pair.second.received_from_asn == peer_asn) {
-                    it = anns_to_peers_trimmed.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
         // TODO refactor
         for (auto ann : anns_to_peers_trimmed) {
             // this must be a copy, not a reference!
@@ -532,26 +492,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         auto *recving_as = graph->ases->find(customer_asn)->second;
         auto anns_to_customers_trimmed = anns_to_customers;
         
-        // Check for loops
-        for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
-            if (it->alt != 0 && loop_check(it->prefix, *source_as, recving_as->asn, 0)) {
-                it = anns_to_customers_trimmed.erase(it);
-            } else {
-                ++it;
-            }
-        }
-        // ROV++ 0.3 do not send preventive announcements from where the best alternative came
-        for (auto ann_pair : *rovpp_as->preventive_anns) {
-            for (auto it = anns_to_customers_trimmed.begin(); it != anns_to_customers_trimmed.end();) {
-                if (ann_pair.first.prefix == it->prefix && 
-                    ann_pair.first.origin == it->origin &&
-                    ann_pair.second.received_from_asn == customer_asn) {
-                    it = anns_to_customers_trimmed.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
         // TODO refactor
         for (auto ann : anns_to_customers_trimmed) {
             // this must be a copy, not a reference!
