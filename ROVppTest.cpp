@@ -1303,6 +1303,7 @@ bool test_withdrawal() {
  *  4 5--6  7
  */
 bool test_rovpp_full_path() {
+    // TODO finish this 
     ROVppExtrapolator e = ROVppExtrapolator();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
@@ -1323,15 +1324,13 @@ bool test_rovpp_full_path() {
     as_path->push_back(5);
     
     e.give_ann_to_as_path(as_path, p, 1, 0);
-
-    // Check if seeded path is present
-    if () {}
-    
     e.propagate_up();
     e.propagate_down();
+
+    // Check if seeded path is present
+    
     
     // Check if propagated paths are correct
-    if () {}
 
     return true;
 }

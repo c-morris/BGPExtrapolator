@@ -72,53 +72,11 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 }
 
 /** Withdraw given announcement from all neighbors.
- *
- * Calls the helper 
  */
 void ROVppAS::withdraw(Announcement &ann) {
-    //Announcement copy = ann;
-    //copy.withdraw = true;
-    //withdrawals->push_back(copy);
-    std::set<std::set<uint32_t>*> neighbor_set;
-    neighbor_set.insert(providers);
-    neighbor_set.insert(peers);
-    neighbor_set.insert(customers);
-    
-    // For providers
-    for (uint32_t provider_asn : *providers) {
-        // Get the neighbor
-        AS *neighbor = graph->ases->find(provider_asn)->second;
-        withdraw(ann, neighbor);
-    }
-    // For peers
-    for (uint32_t peer_asn : *peers) {
-        // Get the neighbor
-        AS *neighbor = graph->ases->find(peer_asn)->second;
-        withdraw(ann, neighbor);
-    }
-    // For customers
-    for (uint32_t provider_asn : *providers) {
-        // Get the neighbor
-        AS *neighbor = graph->ases->find(peer_asn)->second;
-        withdraw(ann, neighbor);
-    }
-
-}
-
-/** Withdraw given announcement at given neighbor.
- *
- */
-void ROVppAS::withdraw(Announcement &ann, AS &neighbor) {
-    // Get the neighbors announcement
-    auto neighbor_ann = neighbor->all_anns->find(ann_to_check_for.prefix);
-    
-    // If neighbors announcement came from previous AS
-    if (neighbor_ann->second.received_from_asn == asn) {
-        // Delete ann
-        loc_rib->erase(ann.prefix);    
-        // Recursively fix path at this neighbor
-        withdraw(ann);
-    }
+    Announcement copy = ann;
+    copy.withdraw = true;
+    withdrawals->push_back(copy);
 }
 
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
