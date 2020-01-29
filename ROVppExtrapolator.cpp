@@ -401,12 +401,12 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         
     }
 
-    // Clear ribs_out and re-add withdrawals
-    for (auto it = source_as->ribs_out->begin(); it != source_as->ribs_out->end();) {
+    // Clear withdrawals and re-add withdrawals
+    for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
         if (!it->withdraw) {
-            it = source_as->ribs_out->erase(it);
+            it = source_as->withdrawals->erase(it);
         } else {
-            // Prepare withdrawals found in ribs_out
+            // Prepare withdrawals found in withdrawals
             // Set the priority of the announcement at destination 
             uint32_t old_priority = it->priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -455,77 +455,43 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                 newcopy.priority = priority;
                 anns_to_customers.push_back(newcopy);
             }
-            //it = source_as->ribs_out->erase(it);
+            //it = source_as->withdrawals->erase(it);
             ++it;
         }
     }
+
+
     // Send the vectors of assembled announcements
     for (uint32_t provider_asn : *source_as->providers) {
-        auto anns_to_providers_trimmed = anns_to_providers;
+        // For each provider, give the vector of announcements
         auto *recving_as = graph->ases->find(provider_asn)->second;
-        // TODO refactor
-        for (auto ann : anns_to_providers_trimmed) {
-            // this must be a copy, not a reference!
-            // use the received from asn as a "sent to asn"
-            ann.sent_to_asn = recving_as->asn;
-            source_as->ribs_out->push_back(ann);
-        }
+        // NOTE SENT TO ASN IS NO LONGER SET
+        recving_as->receive_announcements(anns_to_providers);
     }
-
-    // Send the vector of assembled announcements
     for (uint32_t peer_asn : *source_as->peers) {
+        // For each provider, give the vector of announcements
         auto *recving_as = graph->ases->find(peer_asn)->second;
-        auto anns_to_peers_trimmed = anns_to_peers;
-       
-        // TODO refactor
-        for (auto ann : anns_to_peers_trimmed) {
-            // this must be a copy, not a reference!
-            // use the received from asn as a "sent to asn"
-            ann.sent_to_asn = recving_as->asn;
-            source_as->ribs_out->push_back(ann);
-        }
+        recving_as->receive_announcements(anns_to_peers);
     }
-
-    // Send the vector of assembled announcements
     for (uint32_t customer_asn : *source_as->customers) {
-        // ROV++ 0.3 do not send preventive announcements whence the best alternative came
+        // For each customer, give the vector of announcements
         auto *recving_as = graph->ases->find(customer_asn)->second;
-        auto anns_to_customers_trimmed = anns_to_customers;
-        
-        // TODO refactor
-        for (auto ann : anns_to_customers_trimmed) {
-            // this must be a copy, not a reference!
-            // use the received from asn as a "sent to asn"
-            ann.sent_to_asn = recving_as->asn;
-            source_as->ribs_out->push_back(ann);
-        }
+        recving_as->receive_announcements(anns_to_customers);
     }
 
-    // TODO make this more efficient
-    for (auto const &ann : *source_as->ribs_out) {
-        auto search = graph->ases->find(ann.sent_to_asn);
-        if (search == graph->ases->end()) { continue; }
-        auto *recving_as = graph->ases->find(ann.sent_to_asn)->second;
-        if ((to_customers && source_as->customers->find(ann.sent_to_asn) != source_as->customers->end()) ||
-            (to_peers     && source_as->peers->find(ann.sent_to_asn) != source_as->peers->end()) ||
-            (to_providers && source_as->providers->find(ann.sent_to_asn) != source_as->providers->end())) {
-            recving_as->ribs_in->push_back(ann);
-        }
-        // yes, this makes duplicates
-    }
-    // Clear ribs_out except for withdrawals
-    for (auto it = source_as->ribs_out->begin(); it != source_as->ribs_out->end();) {
+    // Clear withdrawals except for withdrawals
+    for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
         if (!it->withdraw) {
-            it = source_as->ribs_out->erase(it);
+            it = source_as->withdrawals->erase(it);
         } else {
             ++it;
         }
     }
     // de-duplicate
-    //std::sort(source_as->ribs_out->begin(), source_as->ribs_out->end());
-    //source_as->ribs_out->erase(std::unique(source_as->ribs_out->begin(), source_as->ribs_out->end()), source_as->ribs_out->end());
-    //std::cerr << "RIBs Out: " << source_as->ribs_out->size() << std::endl;
-    //std::cerr << "RIBs In:  " << source_as->ribs_in->size() << std::endl;
+    //std::sort(source_as->withdrawals->begin(), source_as->withdrawals->end());
+    //source_as->withdrawals->erase(std::unique(source_as->withdrawals->begin(), source_as->withdrawals->end()), source_as->withdrawals->end());
+    std::cerr << "RIBs Out: " << source_as->withdrawals->size() << std::endl;
+    std::cerr << "RIBs In:  " << source_as->ribs_in->size() << std::endl;
 }
 
 /**

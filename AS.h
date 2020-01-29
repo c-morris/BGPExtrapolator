@@ -47,7 +47,7 @@ public:
     
     // Defer processing of incoming announcements for efficiency
     std::vector<Announcement> *ribs_in;
-    std::vector<Announcement> *ribs_out;
+    std::vector<Announcement> *withdrawals;
     // Maps of all announcements stored
     std::map<Prefix<>, Announcement> *loc_rib;
     std::map<Prefix<>, Announcement> *depref_anns;

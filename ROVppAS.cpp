@@ -74,7 +74,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
 void ROVppAS::withdraw(Announcement &ann) {
     Announcement copy = ann;
     copy.withdraw = true;
-    ribs_out->push_back(copy);
+    withdrawals->push_back(copy);
 }
 
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
@@ -215,7 +215,7 @@ void ROVppAS::process_announcements(bool ran) {
                 if (search != loc_rib->end() && search->second == ann) {
                     loc_rib->erase(ann.prefix);    
                 }
-                ribs_out->push_back(ann);
+                withdrawals->push_back(ann);
                 continue;
             }
             for (auto rib_ann : *loc_rib) {

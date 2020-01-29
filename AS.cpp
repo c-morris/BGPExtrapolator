@@ -58,7 +58,7 @@ AS::AS(uint32_t myasn,
     ribs_in = new std::vector<Announcement>;
     loc_rib = new std::map<Prefix<>, Announcement>;
     depref_anns = new std::map<Prefix<>, Announcement>;
-    ribs_out = new std::vector<Announcement>;
+    withdrawals = new std::vector<Announcement>;
     // Tarjan variables
     index = -1;
     onStack = false;
@@ -67,7 +67,7 @@ AS::AS(uint32_t myasn,
 AS::~AS() {
     delete ribs_in;
     delete loc_rib;
-    delete ribs_out;
+    delete withdrawals;
     delete depref_anns;
     delete peers;
     delete providers;

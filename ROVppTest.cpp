@@ -1202,7 +1202,7 @@ bool test_withdrawal() {
     Announcement copy = e.graph->ases->find(5)->second->loc_rib->find(p)->second;
     e.graph->ases->find(5)->second->loc_rib->erase(e.graph->ases->find(5)->second->loc_rib->find(p));
     copy.withdraw = true;
-    e.graph->ases->find(5)->second->ribs_out->push_back(copy);
+    e.graph->ases->find(5)->second->withdrawals->push_back(copy);
     //e.graph->ases->find(5)->second->process_announcement(ann);
     e.propagate_up();
     e.propagate_down();
