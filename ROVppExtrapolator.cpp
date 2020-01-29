@@ -461,7 +461,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     }
 
 
-    std::cerr << "sending to each nbr " << anns_to_providers.size() + anns_to_peers.size() + anns_to_customers.size() << std::endl;
     // Send the vectors of assembled announcements
     for (uint32_t provider_asn : *source_as->providers) {
         // For each provider, give the vector of announcements
@@ -488,11 +487,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             ++it;
         }
     }
-    // de-duplicate
-    //std::sort(source_as->withdrawals->begin(), source_as->withdrawals->end());
-    //source_as->withdrawals->erase(std::unique(source_as->withdrawals->begin(), source_as->withdrawals->end()), source_as->withdrawals->end());
-    std::cerr << "Withdrw: " << source_as->withdrawals->size() << std::endl;
-    std::cerr << "RIBs In:  " << source_as->ribs_in->size() << std::endl;
 }
 
 /**

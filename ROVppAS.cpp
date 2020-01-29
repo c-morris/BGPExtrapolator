@@ -190,7 +190,6 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
 /** Iterate through ribs_in and keep only the best. 
  */
 void ROVppAS::process_announcements(bool ran) {
-    std::cerr << "processing " << ribs_in->size() << std::endl;
     // Remove announcements which have a withdrawal after them
     for (auto it = ribs_in->begin(); it != ribs_in->end();) {
         bool deleted = false;
@@ -215,6 +214,7 @@ void ROVppAS::process_announcements(bool ran) {
         if (ann.withdraw) {
             if (search != loc_rib->end() && search->second == ann) {
                 loc_rib->erase(ann.prefix);    
+                withdrawals->push_back(ann);
                 // remove also from passed_rov
                 for (auto it = passed_rov->begin(); it != passed_rov->end();) {
                     if (*it == ann) {
@@ -224,7 +224,7 @@ void ROVppAS::process_announcements(bool ran) {
                     }
                 }
             }
-            withdrawals->push_back(ann);
+            //withdrawals->push_back(ann);
             continue;
         }
         if (search == loc_rib->end() || !search->second.from_monitor) {
