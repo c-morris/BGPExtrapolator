@@ -433,7 +433,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Ignore announcements not from a customer
-            if (to_providers && it->priority >= 200) {
+            if (it->priority >= 200) {
                 // Set the priority of the announcement at destination 
                 // Base priority is 200 for customer to provider
                 uint32_t priority = 200 + path_len_weight;
@@ -441,22 +441,22 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
                 newcopy.priority = priority;
                 anns_to_providers.push_back(newcopy);
             }
-            if (to_peers && it->priority >= 200) {
+            if (it->priority >= 200) {
                 // Base priority is 100 for peers to peers
                 uint32_t priority = 100 + path_len_weight;
                 auto newcopy = copy;
                 newcopy.priority = priority;
                 anns_to_peers.push_back(newcopy);
             }
-            if (to_customers) {
+            if (true) {
                 // Base priority is 0 for provider to customers
                 uint32_t priority = path_len_weight;
                 auto newcopy = copy;
                 newcopy.priority = priority;
                 anns_to_customers.push_back(newcopy);
             }
-            //it = source_as->withdrawals->erase(it);
-            ++it;
+            it = source_as->withdrawals->erase(it);
+            //++it;
         }
     }
 
