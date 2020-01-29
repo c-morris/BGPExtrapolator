@@ -31,6 +31,9 @@
 #include "ASGraph.h"
 #include "AS.h"
 
+// Initialize Static Member Variables
+bool ASGraph::graph_changed = false;  // This is a static variable shared by all instances ASGraph
+
 ASGraph::ASGraph() {
     ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
     ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
