@@ -52,6 +52,8 @@ public:
     std::map<uint32_t, uint32_t> *stubs_to_parents;
     std::vector<uint32_t> *non_stubs;
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results;
+    // Static Member Variables
+    static bool graph_changed;
 
     ASGraph();
     virtual ~ASGraph();
