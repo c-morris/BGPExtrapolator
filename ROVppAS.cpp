@@ -190,15 +190,19 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
 /** Iterate through ribs_in and keep only the best. 
  */
 void ROVppAS::process_announcements(bool ran) {
-    // remove adjacent duplicate announcements (doesn't affect results)
+    // Remove announcements which have a withdrawal after them
     for (auto it = ribs_in->begin(); it != ribs_in->end();) {
-        if (it+1 != ribs_in->end()) {
-            if (*it == *(it+1)) {
+        bool deleted = false;
+        for (auto it2 = it+1; it2 != ribs_in->end();) {
+            if (it2->withdraw && *it2 == *it) {
                 it = ribs_in->erase(it);
+                deleted = true;
+                break;
             } else {
-                ++it;
+                ++it2;
             }
-        } else {
+        } 
+        if (!deleted) {
             ++it;
         }
     }
@@ -319,6 +323,14 @@ void ROVppAS::process_announcements(bool ran) {
             }
         }
     }
+    // Remove withdrawals
+    //for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+    //    if (it->withdraw) {
+    //        it = ribs_in->erase(it);
+    //    } else {
+    //        ++it;
+    //    }
+    //}
     //ribs_in->clear();
 }
 
