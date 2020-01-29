@@ -1293,3 +1293,47 @@ bool test_withdrawal() {
 //     return !(check_infected_vector(e.graph, saved_ones, attacker_prefix));
 // }
 
+/** Test full path propagation.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2---3
+ *   /|    \
+ *  4 5--6  7
+ */
+bool test_rovpp_full_path() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(7, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 7, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(5);
+    
+    e.give_ann_to_as_path(as_path, p, 1, 0);
+
+    // Check if seeded path is present
+    if () {}
+    
+    e.propagate_up();
+    e.propagate_down();
+    
+    // Check if propagated paths are correct
+    if () {}
+
+    return true;
+}
+
+
