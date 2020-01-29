@@ -197,6 +197,7 @@ void ROVppAS::process_announcements(bool ran) {
             if (it2->withdraw && *it2 == *it) {
                 it = ribs_in->erase(it);
                 deleted = true;
+                std::cerr << "deleted";
                 break;
             } else {
                 ++it2;
@@ -206,22 +207,23 @@ void ROVppAS::process_announcements(bool ran) {
             ++it;
         }
     }
-
+        
     for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
+
+        // Process withdrawals, regardless of policy
+        if (ann.withdraw) {
+            if (search != loc_rib->end() && search->second == ann) {
+                loc_rib->erase(ann.prefix);    
+            }
+            withdrawals->push_back(ann);
+            continue;
+        }
         if (search == loc_rib->end() || !search->second.from_monitor) {
             // Regardless of policy, if the announcement originates from this AS
             // *or is a subprefix of its own prefix*
             // the received_from_asn set to 64514 (if we are not an attacker)
             if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
-            // Process withdrawals, regardless of policy
-            if (ann.withdraw) {
-                if (search != loc_rib->end() && search->second == ann) {
-                    loc_rib->erase(ann.prefix);    
-                }
-                withdrawals->push_back(ann);
-                continue;
-            }
             for (auto rib_ann : *loc_rib) {
                 if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
                     rib_ann.second.origin == asn &&
@@ -324,14 +326,14 @@ void ROVppAS::process_announcements(bool ran) {
         }
     }
     // Remove withdrawals
-    //for (auto it = ribs_in->begin(); it != ribs_in->end();) {
-    //    if (it->withdraw) {
-    //        it = ribs_in->erase(it);
-    //    } else {
-    //        ++it;
-    //    }
-    //}
-    //ribs_in->clear();
+    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+        if (it->withdraw) {
+            it = ribs_in->erase(it);
+        } else {
+            ++it;
+        }
+    }
+    ribs_in->clear();
 }
 
 /**
