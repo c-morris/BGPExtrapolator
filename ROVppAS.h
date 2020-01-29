@@ -69,6 +69,7 @@ struct ROVppAS : public AS {
     void add_policy(uint32_t);
     // Helper functions
     void withdraw(Announcement &ann);
+    void withdraw(Announcement &ann, AS &neighbor);
     Announcement best_alternative_route(Announcement &ann);  // help find a good alternative route 
                                                         // (i.e. an ann from a neighbor which 
                                                         // didn't give you the attacker's announcement)
