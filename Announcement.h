@@ -133,12 +133,20 @@ public:
                (prefix == b.prefix) &&
                (as_path == b.as_path) &&
                (priority == b.priority) &&
-               (priority == b.priority) &&
+               (sent_to_asn == b.sent_to_asn) &&
                (received_from_asn == b.received_from_asn);
     }
     
     bool operator!=(const Announcement &b) const {
         return !(*this == b);
+    }
+
+    bool operator<(const Announcement &b) const {
+        return (origin < b.origin) ||
+               (prefix < b.prefix) ||
+               (priority < b.priority) ||
+               (sent_to_asn < b.sent_to_asn) ||
+               (received_from_asn < b.received_from_asn);
     }
 };
 #endif

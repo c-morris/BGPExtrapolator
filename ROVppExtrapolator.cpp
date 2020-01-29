@@ -581,6 +581,11 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             ++it;
         }
     }
+    // de-duplicate
+    //std::sort(source_as->ribs_out->begin(), source_as->ribs_out->end());
+    //source_as->ribs_out->erase(std::unique(source_as->ribs_out->begin(), source_as->ribs_out->end()), source_as->ribs_out->end());
+    //std::cerr << "RIBs Out: " << source_as->ribs_out->size() << std::endl;
+    //std::cerr << "RIBs In:  " << source_as->ribs_in->size() << std::endl;
 }
 
 /**
