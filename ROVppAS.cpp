@@ -89,13 +89,6 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
-    // ROV++ 
-    // Check preventive announcement alt
-    if (ann.alt == asn) {
-        // Ignore the preventive announcement
-        return;
-    }
-
     // Check path for self
     for (uint32_t i : ann.as_path) {
         if (i == asn && ann.origin != asn) {
