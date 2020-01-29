@@ -268,6 +268,95 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     }
 }
 
+/** Withdraw given announcement at given neighbor.
+ *
+ * @param asn The AS issuing the withdrawal
+ * @param ann The announcement to withdraw
+ * @param neighbor The AS applying the withdraw
+ */
+void ROVppExtrapolator::process_withdrawal(uint32_t asn, Announcement ann, ROVppAS *neighbor) {
+    // Get the neighbors announcement
+    auto neighbor_ann = neighbor->loc_rib->find(ann.prefix);
+    
+    // If neighbors announcement came from previous AS (relevant withdrawal)
+    if (neighbor_ann != neighbor->loc_rib->end() && 
+        neighbor_ann->second.received_from_asn == asn) {
+        // Add withdrawal to this neighbor
+        neighbor->withdraw(ann);
+        // Apply withdrawal by deleting ann
+        neighbor->loc_rib->erase(neighbor_ann);
+        // Recursively process at this neighbor
+        process_withdrawals(neighbor);
+    }
+}
+
+/** Handles processing all withdrawals at a particular AS. 
+ *
+ * @param as The AS that is sending out it's withdrawals
+ */
+void ROVppExtrapolator::process_withdrawals(ROVppAS *as) {
+    std::vector<std::set<uint32_t>*> neighbor_set;
+    neighbor_set.push_back(as->providers);
+    neighbor_set.push_back(as->peers);
+    neighbor_set.push_back(as->customers);
+
+    // For each withdrawal
+    for (auto withdrawal: *as->withdrawals) { 
+        // For the current set
+        for (auto cur_neighbors: neighbor_set) { 
+            // For the current neighbor
+            for (uint32_t neighbor_asn : *cur_neighbors) {
+                // Get the neighbor
+                AS *neighbor = graph->ases->find(neighbor_asn)->second;
+                ROVppAS *r_neighbor = dynamic_cast<ROVppAS*>(neighbor);
+                // Recursively process withdrawal at neighbor
+                process_withdrawal(as->asn, withdrawal, r_neighbor);
+           }
+        }
+    }
+}
+
+/** Propagate announcements from customers to peers and providers ASes.
+ */
+void ROVppExtrapolator::propagate_up() {
+    size_t levels = graph->ases_by_rank->size();
+    // Propagate to providers
+    for (size_t level = 0; level < levels; level++) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+            process_withdrawals(rovpp_as);
+            send_all_announcements(asn, true, false, false);
+        }
+    }
+    // Propagate to peers
+    for (size_t level = 0; level < levels; level++) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+            process_withdrawals(rovpp_as);
+            send_all_announcements(asn, false, true, false);
+        }
+    }
+}
+
+/** Send "best" announces from providers to customer ASes. 
+ */
+void ROVppExtrapolator::propagate_down() {
+    size_t levels = graph->ases_by_rank->size();
+    for (size_t level = levels-1; level-- > 0;) {
+        for (uint32_t asn : *graph->ases_by_rank->at(level)) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements(random);
+            ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+            process_withdrawals(rovpp_as);
+            send_all_announcements(asn, false, false, true);
+        }
+    }
+}
+
 /** Send all announcements kept by an AS to its neighbors. 
  *
  * This approximates the Adj-RIBs-out. ROVpp version simply replaces Announcement 
@@ -489,8 +578,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     }
 }
 
-/**
- * Check for a loop in the AS path using traceback.
+/** Check for a loop in the AS path using traceback.
+ *
  * @param  p Prefix to check for
  * @param  a The ASN that, if seen, will mean we have a loop
  * @param  cur_as The current AS we are at in the traceback
