@@ -23,6 +23,9 @@
 
 #include "AS.h"
 
+// Initialize Static Member Variables
+bool AS::graph_changed = false;  // This is a static variable shared by all AS instances
+
 /** Constructor for AS class.
  *
  * AS objects represent a node in the AS Graph.

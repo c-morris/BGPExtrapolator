@@ -63,6 +63,8 @@ public:
     int index;
     int lowlink;
     bool onStack;
+    // Static Member Variables
+    static bool graph_changed;
     
     // Constructor
     AS(uint32_t myasn=0, 
