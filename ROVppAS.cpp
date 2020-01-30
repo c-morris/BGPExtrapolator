@@ -77,6 +77,7 @@ void ROVppAS::withdraw(Announcement &ann) {
     Announcement copy = ann;
     copy.withdraw = true;
     withdrawals->push_back(copy);
+    AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
@@ -217,6 +218,7 @@ void ROVppAS::process_announcements(bool ran) {
             if (search != loc_rib->end() && search->second == ann) {
                 loc_rib->erase(ann.prefix);    
                 withdrawals->push_back(ann);
+                AS::graph_changed = true;  // This means we will need to do another propagation
                 // remove also from passed_rov
                 for (auto it = passed_rov->begin(); it != passed_rov->end();) {
                     if (*it == ann) {
