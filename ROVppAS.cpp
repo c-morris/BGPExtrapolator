@@ -235,14 +235,13 @@ void ROVppAS::process_announcements(bool ran) {
         if (ann.withdraw) {
             if (search != loc_rib->end() && search->second == ann) {
                 withdraw(ann);
-                loc_rib->erase(ann.prefix);    
-                // Put the best alternative announcement into the ribs_in
-                Announcement best_alternative_ann = best_alternative_route(ann); 
-                if (ann != best_alternative_ann) {
-                    loc_rib->insert(std::pair<Prefix<>, Announcement>(best_alternative_ann.prefix, best_alternative_ann));
+                // Put the best alternative announcement into the loc_rib
+                Announcement best_alternative_ann = best_alternative_route(search->second); 
+                if (search->second != best_alternative_ann) {
+                    search->second = best_alternative_ann;
+                } else {
+                    loc_rib->erase(ann.prefix);    
                 }
-                std::cerr << "out of " << ribs_in->size() << std::endl;
-                std::cerr << best_alternative_ann;
                 AS::graph_changed = true;  // This means we will need to do another propagation
                 
             }
