@@ -71,12 +71,23 @@ bool ROVppAS::pass_rov(Announcement &ann) {
     }
 }
 
-/** Withdraw given announcement from all neighbors.
+/** Add the announcement to the vector of withdrawals to be processed.
+ *
+ * Also remove it from the ribs_in.
  */
 void ROVppAS::withdraw(Announcement &ann) {
     Announcement copy = ann;
     copy.withdraw = true;
     withdrawals->push_back(copy);
+    // Remove announcements which have a withdrawal after them
+    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+        if (copy == *it) {
+            it = ribs_in->erase(it);
+        } else {
+            ++it;
+        }
+    }
+
 }
 
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
