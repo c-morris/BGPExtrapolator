@@ -24,6 +24,7 @@
 #include "ROVppExtrapolator.h"
 #include "ROVppASGraph.h"
 #include "TableNames.h"
+#include "AS.h"
 
 
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
@@ -56,6 +57,8 @@ ROVppExtrapolator::~ROVppExtrapolator() {}
  *
  * If iteration block sizes need to be considered, then we need to override and use the
  * perform_propagation(bool, size_t) method instead. 
+ *
+ * @param propagate_twice: Don't worry about it, it's ignored
  */
 void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     // Main Differences:
@@ -108,21 +111,15 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             // Clean up
             delete parsed_path;
         }
-        
-        // This block runs only if we want to propogate up and down twice
-        // The similar code block below is mutually exclusive with this code block 
-        if (propagate_twice) {
-            propagate_up();
-            propagate_down();
-        }
     }
     
-    // This code block runs if we want to propogate up and down only once
-    // The similar code block above is mutually exclusive with this code block
-    if (!propagate_twice) {
+    // This will propogate up and down until the graph no longer changes
+    // Changes are tripped when the graph_changed variable is triggered
+    do {
+        AS::graph_changed = false;
         propagate_up();
         propagate_down();
-    }
+    } while (AS::graph_changed);
 
     for (auto &as : *rovpp_graph->ases){
         // Check for loops
