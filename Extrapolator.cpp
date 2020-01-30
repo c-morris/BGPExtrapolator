@@ -392,6 +392,11 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                 if (random == true) {
                     value = as_on_path->get_random();
                 }
+
+                Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << ann_to_check_for.prefix.to_cidr() << 
+                    ", rand value: " << value << ", tstamp on announcements: " << ann_to_check_for.tstamp << 
+                    ", origin on ann_to_check_for: " << ann_to_check_for.origin << ", origin on stored announcement: " << search->second.origin;
+
                 // First come, first saved if random is disabled
                 if (value) {
                     continue;
@@ -406,6 +411,12 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                 }
             } else {
                 // TODO log announcements that arent handled by sorting
+                Logger::getInstance().log("Unsorted_Announcements") 
+                    << "This announcement is being deleted and is noy handled by sorting." 
+                    << " Prefix: " << ann_to_check_for.prefix.to_cidr() 
+                    << ", tstamp: " << ann_to_check_for.tstamp 
+                    << ", origin: " << ann_to_check_for.origin;
+
                 // Delete worse MRT announcement, proceed with seeding
                 as_on_path->delete_ann(ann_to_check_for);
             }
@@ -469,7 +480,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             static int g_broken_path = 0;
 
             // TODO Need to log the part of path where break takes place
-            Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", For: " << *(it - 1) << ", " << *it;
+            Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
 
             g_broken_path++;
         }

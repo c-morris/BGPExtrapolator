@@ -28,6 +28,8 @@
 #define AS_REL_PEER 100
 #define AS_REL_CUSTOMER 200
 
+#include "Logger.h"
+
 #include <string>
 #include <set>
 #include <map>
