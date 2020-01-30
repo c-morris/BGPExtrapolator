@@ -123,7 +123,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
     } else if (ann.priority == search->second.priority && ann != search->second) {
         // Check for override
-        if (search->second.received_from_asn == ann.tiebreak_override) {
+        if (!search->second.tiebreak_override && search->second.received_from_asn == ann.tiebreak_override) {
             withdraw(search->second);
             search->second = ann;
         } else {
