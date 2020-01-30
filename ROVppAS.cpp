@@ -87,6 +87,14 @@ void ROVppAS::withdraw(Announcement &ann) {
             ++it;
         }
     }
+    // remove also from passed_rov
+    for (auto it = passed_rov->begin(); it != passed_rov->end();) {
+        if (*it == copy) {
+            it = passed_rov->erase(it);
+        } else {
+            ++it;
+        }
+    }
     AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
@@ -226,19 +234,18 @@ void ROVppAS::process_announcements(bool ran) {
         // Process withdrawals, regardless of policy
         if (ann.withdraw) {
             if (search != loc_rib->end() && search->second == ann) {
+                withdraw(ann);
                 loc_rib->erase(ann.prefix);    
-                withdrawals->push_back(ann);
-                AS::graph_changed = true;  // This means we will need to do another propagation
-                // remove also from passed_rov
-                for (auto it = passed_rov->begin(); it != passed_rov->end();) {
-                    if (*it == ann) {
-                        it = passed_rov->erase(it);
-                    } else {
-                        ++it;
-                    }
+                // Put the best alternative announcement into the ribs_in
+                Announcement best_alternative_ann = best_alternative_route(ann); 
+                if (ann != best_alternative_ann) {
+                    loc_rib->insert(std::pair<Prefix<>, Announcement>(best_alternative_ann.prefix, best_alternative_ann));
                 }
+                std::cerr << "out of " << ribs_in->size() << std::endl;
+                std::cerr << best_alternative_ann;
+                AS::graph_changed = true;  // This means we will need to do another propagation
+                
             }
-            //withdrawals->push_back(ann);
             continue;
         }
         if (search == loc_rib->end() || !search->second.from_monitor) {

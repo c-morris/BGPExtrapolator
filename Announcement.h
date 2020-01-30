@@ -83,6 +83,51 @@ public:
         as_path = path;
     }
 
+    /** Copy constructor
+     */
+    Announcement(const Announcement& ann) {
+        prefix = ann.prefix;           
+        origin = ann.origin;           
+        priority = ann.priority;         
+        received_from_asn = ann.received_from_asn;
+        from_monitor = ann.from_monitor; 
+        tstamp = ann.tstamp;            
+        alt = ann.alt;              
+        policy_index = ann.policy_index;     
+        tiebreak_override = ann.tiebreak_override;
+        sent_to_asn = ann.sent_to_asn;       
+        withdraw =  ann.withdraw;              
+        // this is the important part
+        as_path = ann.as_path; 
+     }
+
+    /** Copy assignment
+     */
+    Announcement& operator=(Announcement ann) {
+        if(&ann == this)
+            return *this;
+        swap(*this, ann);
+        return *this;
+    }
+
+    /** Swap
+     */
+    friend void swap(Announcement& a, Announcement& b) {
+        std::swap(a.prefix, b.prefix);
+        std::swap(a.origin, b.origin);
+        std::swap(a.priority, b.priority);
+        std::swap(a.received_from_asn, b.received_from_asn);
+        std::swap(a.from_monitor, b.from_monitor);
+        std::swap(a.tstamp, b.tstamp);
+        std::swap(a.alt, b.alt);
+        std::swap(a.policy_index, b.policy_index);
+        std::swap(a.tiebreak_override, b.tiebreak_override);
+        std::swap(a.sent_to_asn, b.sent_to_asn);
+        std::swap(a.withdraw, b.withdraw);
+        a.as_path.resize(b.as_path.size());
+        std::swap(a.as_path, b.as_path);
+    }
+
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.

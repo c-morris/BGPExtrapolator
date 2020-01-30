@@ -1209,7 +1209,12 @@ bool test_withdrawal() {
     e.propagate_up();
     e.propagate_down();
 
-    //std::cerr << e.graph->ases->find(6)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(1)->second->loc_rib->size() << std::endl; 
+    std::cerr << e.graph->ases->find(2)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(3)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(4)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(5)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(6)->second->loc_rib->size() << std::endl;
         
     if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
         e.graph->ases->find(2)->second->loc_rib->size() == 0 &&
