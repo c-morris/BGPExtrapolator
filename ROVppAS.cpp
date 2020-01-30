@@ -397,20 +397,6 @@ void ROVppAS::process_announcements(bool ran) {
  }
 
 /**
- * Computes "Is a better than b?".
- * @param  a Announcement 1
- * @param  b Announcement 2
- * @return   Will return a bool of whether or not a is better than b
- */
-bool ROVppAS::is_better(Announcement &a, Announcement &b) {    
-    // TODO: We will return to this to consider blackhole size
-    // We opted to use this for simplicity, but the case of considering
-    // whether or not a blackhole exists in one of these two ann is significant
-    // Use BGP priority to make decision
-    return  a.priority > b.priority;
-}
-
-/**
  * [ROVppAS::stream_blacklist description]
  * @param  os [description]
  * @return    [description]

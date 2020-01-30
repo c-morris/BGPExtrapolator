@@ -308,9 +308,9 @@ void ROVppExtrapolator::process_withdrawals(ROVppAS *as) {
             for (uint32_t neighbor_asn : *cur_neighbors) {
                 // Get the neighbor
                 AS *neighbor = graph->ases->find(neighbor_asn)->second;
-                ROVppAS *r_neighbor = dynamic_cast<ROVppAS*>(neighbor);
+                //ROVppAS *r_neighbor = dynamic_cast<ROVppAS*>(neighbor);
                 // Recursively process withdrawal at neighbor
-                process_withdrawal(as->asn, withdrawal, r_neighbor);
+                //process_withdrawal(as->asn, withdrawal, r_neighbor);
            }
         }
     }
@@ -325,8 +325,8 @@ void ROVppExtrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
-            process_withdrawals(rovpp_as);
+            //ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+            //process_withdrawals(rovpp_as);
             send_all_announcements(asn, true, false, false);
         }
     }
@@ -335,8 +335,8 @@ void ROVppExtrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
-            process_withdrawals(rovpp_as);
+            //ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+            //process_withdrawals(rovpp_as);
             send_all_announcements(asn, false, true, false);
         }
     }
@@ -350,8 +350,8 @@ void ROVppExtrapolator::propagate_down() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
-            process_withdrawals(rovpp_as);
+            //ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
+            //process_withdrawals(rovpp_as);
             send_all_announcements(asn, false, false, true);
         }
     }
@@ -490,7 +490,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         
     }
 
-    // Clear withdrawals and re-add withdrawals
+    // Add withdrawals
     for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
         if (!it->withdraw) {
             it = source_as->withdrawals->erase(it);

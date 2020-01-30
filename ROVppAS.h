@@ -75,10 +75,6 @@ struct ROVppAS : public AS {
                                                         // didn't give you the attacker's announcement)
                                                         // Will return the same given ann if there is
                                                         // no better alternative
-    bool is_better(Announcement &a, Announcement &b);  // Computes "is a better than b"
-                                                       // This will be used to determine:
-                                                       // * Replace currently used ann for a better one
-                                                       // * Help make decisions on an alternative routes
     std::ostream& stream_blackholes(std:: ostream &os);
 };
 
