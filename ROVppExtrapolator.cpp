@@ -115,11 +115,13 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     
     // This will propogate up and down until the graph no longer changes
     // Changes are tripped when the graph_changed variable is triggered
+    int count = 0;
     do {
         AS::graph_changed = false;
         propagate_up();
         propagate_down();
-    } while (AS::graph_changed);
+        count++;
+    } while (AS::graph_changed && count < 5);
 
     for (auto &as : *rovpp_graph->ases){
         // Check for loops
