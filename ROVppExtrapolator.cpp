@@ -121,8 +121,8 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         propagate_up();
         propagate_down();
         count++;
-    } while (AS::graph_changed && count < 10);
-    std::cerr << count << std::endl;
+    } while (AS::graph_changed && count < 5);
+    std::cout << "Times propagated: " << count << std::endl;
 
     for (auto &as : *rovpp_graph->ases){
         // Check for loops
@@ -379,10 +379,69 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     outgoing.push_back(&anns_to_providers);
     outgoing.push_back(&anns_to_peers);
     outgoing.push_back(&anns_to_customers);
-    
+
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
     ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(source_as);
+    // Add withdrawals
+    for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
+        if (!it->withdraw) {
+            it = source_as->withdrawals->erase(it);
+        } else {
+            // Prepare withdrawals found in withdrawals
+            // Set the priority of the announcement at destination 
+            uint32_t old_priority = it->priority;
+            uint32_t path_len_weight = old_priority % 100;
+            if (path_len_weight == 0) {
+                // For MRT ann at origin: old_priority = 400
+                path_len_weight = 99;
+            } else {
+                // Sub 1 for the current hop
+                path_len_weight -= 1;
+            }
+            // Full path generation
+            auto cur_path = it->as_path;
+            // Handles appending after origin
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
+                cur_path.push_back(asn);
+            }
+            // Copy announcement
+            Announcement copy = *it;
+            copy.received_from_asn = asn;
+            copy.from_monitor = false;
+            copy.tiebreak_override = (it->tiebreak_override == 0 ? 0 : asn);
+            copy.as_path = cur_path;
+
+            // Do not propagate any announcements from peers/providers
+            // Priority is reduced by 1 per path length
+            // Ignore announcements not from a customer
+            if (it->priority >= 200) {
+                // Set the priority of the announcement at destination 
+                // Base priority is 200 for customer to provider
+                uint32_t priority = 200 + path_len_weight;
+                auto newcopy = copy;
+                newcopy.priority = priority;
+                anns_to_providers.push_back(newcopy);
+            }
+            if (it->priority >= 200) {
+                // Base priority is 100 for peers to peers
+                uint32_t priority = 100 + path_len_weight;
+                auto newcopy = copy;
+                newcopy.priority = priority;
+                anns_to_peers.push_back(newcopy);
+            }
+            if (true) {
+                // Base priority is 0 for provider to customers
+                uint32_t priority = path_len_weight;
+                auto newcopy = copy;
+                newcopy.priority = priority;
+                anns_to_customers.push_back(newcopy);
+            }
+            it = source_as->withdrawals->erase(it);
+            //++it;
+        }
+    }
+
 
     for (auto &ann : *source_as->loc_rib) {
         // ROV++ 0.1 do not forward blackhole announcements
@@ -489,67 +548,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
         
     }
-
-    // Add withdrawals
-    for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
-        if (!it->withdraw) {
-            it = source_as->withdrawals->erase(it);
-        } else {
-            // Prepare withdrawals found in withdrawals
-            // Set the priority of the announcement at destination 
-            uint32_t old_priority = it->priority;
-            uint32_t path_len_weight = old_priority % 100;
-            if (path_len_weight == 0) {
-                // For MRT ann at origin: old_priority = 400
-                path_len_weight = 99;
-            } else {
-                // Sub 1 for the current hop
-                path_len_weight -= 1;
-            }
-            // Full path generation
-            auto cur_path = it->as_path;
-            // Handles appending after origin
-            if (cur_path.size() == 0 || cur_path.back() != asn) {
-                cur_path.push_back(asn);
-            }
-            // Copy announcement
-            Announcement copy = *it;
-            copy.received_from_asn = asn;
-            copy.from_monitor = false;
-            copy.tiebreak_override = (it->tiebreak_override == 0 ? 0 : asn);
-            copy.as_path = cur_path;
-
-            // Do not propagate any announcements from peers/providers
-            // Priority is reduced by 1 per path length
-            // Ignore announcements not from a customer
-            if (it->priority >= 200) {
-                // Set the priority of the announcement at destination 
-                // Base priority is 200 for customer to provider
-                uint32_t priority = 200 + path_len_weight;
-                auto newcopy = copy;
-                newcopy.priority = priority;
-                anns_to_providers.push_back(newcopy);
-            }
-            if (it->priority >= 200) {
-                // Base priority is 100 for peers to peers
-                uint32_t priority = 100 + path_len_weight;
-                auto newcopy = copy;
-                newcopy.priority = priority;
-                anns_to_peers.push_back(newcopy);
-            }
-            if (true) {
-                // Base priority is 0 for provider to customers
-                uint32_t priority = path_len_weight;
-                auto newcopy = copy;
-                newcopy.priority = priority;
-                anns_to_customers.push_back(newcopy);
-            }
-            it = source_as->withdrawals->erase(it);
-            //++it;
-        }
-    }
-
-
+    
     // Send the vectors of assembled announcements
     for (uint32_t provider_asn : *source_as->providers) {
         // For each provider, give the vector of announcements

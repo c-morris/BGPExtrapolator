@@ -80,13 +80,13 @@ void ROVppAS::withdraw(Announcement &ann) {
     copy.withdraw = true;
     withdrawals->push_back(copy);
     // Remove announcements which have a withdrawal after them
-    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
-        if (copy == *it) {
-            it = ribs_in->erase(it);
-        } else {
-            ++it;
-        }
-    }
+    //for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+    //    if (copy == *it) {
+    //        it = ribs_in->erase(it);
+    //    } else {
+    //        ++it;
+    //    }
+    //}
     // remove also from passed_rov
     for (auto it = passed_rov->begin(); it != passed_rov->end();) {
         if (*it == copy) {
@@ -110,12 +110,6 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
-    // Check path for self
-    for (uint32_t i : ann.as_path) {
-        if (i == asn && ann.origin != asn) {
-            return;
-        }
-    }
 
     // No announcement found for incoming announcement prefix
     if (search == loc_rib->end()) {
@@ -130,10 +124,11 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
         }
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
     } else if (ann.priority == search->second.priority && ann != search->second) {
-        // Check for override
-        if (!search->second.tiebreak_override && search->second.received_from_asn == ann.tiebreak_override) {
-            withdraw(search->second);
-            search->second = ann;
+        // DON'T Check for override
+        //if (!search->second.tiebreak_override && search->second.received_from_asn == ann.tiebreak_override) {
+        //    withdraw(search->second);
+        //    search->second = ann;
+        if (false) {
         } else {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
@@ -211,6 +206,21 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
 /** Iterate through ribs_in and keep only the best. 
  */
 void ROVppAS::process_announcements(bool ran) {
+
+    // Check path for self
+    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+        bool deleted = false;
+        for (uint32_t i : it->as_path) {
+            if (i == asn && it->origin != asn) {
+                it = ribs_in->erase(it);
+                deleted = true;
+                break;
+            }
+        }
+        if (!deleted) {
+            ++it;
+        }
+    }
     // Remove announcements which have a withdrawal after them
     for (auto it = ribs_in->begin(); it != ribs_in->end();) {
         bool deleted = false;
@@ -227,14 +237,27 @@ void ROVppAS::process_announcements(bool ran) {
             ++it;
         }
     }
-        
+    // Remove announcements which have a withdrawal before them
+    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+        if (it->withdraw) {
+            for (auto it2 = it+1; it2 != ribs_in->end();) {
+                if (*it2 == *it) {
+                    it2 = ribs_in->erase(it);
+                } else {
+                    ++it2;
+                }
+            } 
+        }
+        ++it;
+    }
+ 
     for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
 
         // Process withdrawals, regardless of policy
         if (ann.withdraw) {
             if (search != loc_rib->end() && search->second == ann) {
-                withdraw(ann);
+                withdraw(search->second);
                 // Put the best alternative announcement into the loc_rib
                 Announcement best_alternative_ann = best_alternative_route(search->second); 
                 if (search->second != best_alternative_ann) {
