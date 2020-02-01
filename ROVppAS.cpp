@@ -76,6 +76,11 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  * Also remove it from the ribs_in.
  */
 void ROVppAS::withdraw(Announcement &ann) {
+    if (ann.withdraw) {
+       // std::cerr << "this shouldn't be here\n";
+        return;
+    }
+        
     Announcement copy = ann;
     copy.withdraw = true;
     withdrawals->push_back(copy);
@@ -133,6 +138,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
             bool value = (ran ? get_random() : ann.received_from_asn < search->second.received_from_asn );
+            value = false;
             if (value) {
                 // Use the new announcement and record it won the tiebreak
                 if (search_depref == depref_anns->end()) {
@@ -221,39 +227,83 @@ void ROVppAS::process_announcements(bool ran) {
             ++it;
         }
     }
-    // Remove announcements which have a withdrawal after them
-    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
-        bool deleted = false;
-        for (auto it2 = it+1; it2 != ribs_in->end();) {
-            if (it2->withdraw && *it2 == *it) {
-                it = ribs_in->erase(it);
-                deleted = true;
-                break;
-            } else {
-                ++it2;
-            }
-        } 
-        if (!deleted) {
-            ++it;
-        }
-    }
-    // Remove announcements which have a withdrawal before them
-    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
-        if (it->withdraw) {
-            for (auto it2 = it+1; it2 != ribs_in->end();) {
-                if (*it2 == *it) {
-                    it2 = ribs_in->erase(it);
-                } else {
-                    ++it2;
+
+    // cancel out withdrawals in the ribs in
+    bool something_removed = false;
+    do {
+        something_removed = false;
+        auto ribs_in_copy = *ribs_in;
+        for (auto it = ribs_in_copy.begin(); it != ribs_in_copy.end(); ++it) {
+            bool should_cancel = false;
+            if (it->withdraw) {
+                // determin if cancellation should occur
+                for (auto ann : *ribs_in) {
+                    if (!ann.withdraw && ann == *it) {
+                        should_cancel = true;
+                        break;
+                    }
                 }
-            } 
+                if (should_cancel) {
+                    for (auto it2 = ribs_in->begin(); it2 != ribs_in->end();) {
+                        if (*it2 == *it) {
+                            it2 = ribs_in->erase(it2);
+                            something_removed = true;
+                        } else {
+                            ++it2;
+                        }
+                    }
+                }
+            }
         }
-        ++it;
-    }
+    } while (something_removed);
+
+    //for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+    //    bool deleted = false;
+    //    for (auto it2 = it+1; it2 != ribs_in->end();) {
+    //        if (it2->withdraw && *it2 == *it) {
+    //            it = ribs_in->erase(it);
+    //            deleted = true;
+    //            break;
+    //        } else {
+    //            ++it2;
+    //        }
+    //    } 
+    //    if (!deleted) {
+    //        ++it;
+    //    }
+    //}
+    // Remove announcements which have a withdrawal after them
+    //for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+    //    bool deleted = false;
+    //    for (auto it2 = it+1; it2 != ribs_in->end();) {
+    //        if (it2->withdraw && *it2 == *it) {
+    //            it = ribs_in->erase(it);
+    //            deleted = true;
+    //            break;
+    //        } else {
+    //            ++it2;
+    //        }
+    //    } 
+    //    if (!deleted) {
+    //        ++it;
+    //    }
+    //}
+    // Remove announcements which have a withdrawal before them
+    //for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+    //    if (it->withdraw) {
+    //        for (auto it2 = it+1; it2 != ribs_in->end();) {
+    //            if (*it2 == *it) {
+    //                it2 = ribs_in->erase(it);
+    //            } else {
+    //                ++it2;
+    //            }
+    //        } 
+    //    }
+    //    ++it;
+    //}
  
     for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
-
         // Process withdrawals, regardless of policy
         if (ann.withdraw) {
             if (search != loc_rib->end() && search->second == ann) {
@@ -282,6 +332,7 @@ void ROVppAS::process_announcements(bool ran) {
                     ann.received_from_asn=64514;
                 }
             }
+            
             if (policy_vector.size() > 0) { // if we have a policy
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
@@ -400,10 +451,11 @@ void ROVppAS::process_announcements(bool ran) {
      // This variable will update with the best ann if it exists
      Announcement best_alternative_ann = ann;
      // Create an ultimate list of good candidate announcemnts (passed_rov + ribs_in)
-     std::vector<Announcement> candidates = *passed_rov;
+     //std::vector<Announcement> candidates = *passed_rov;
+     std::vector<Announcement> candidates;
      std::vector<Announcement> baddies = *failed_rov;
      for (auto candidate_ann : *ribs_in) {
-         if (pass_rov(candidate_ann)) {
+         if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
              candidates.push_back(candidate_ann);
          } else {
              baddies.push_back(candidate_ann);

@@ -121,7 +121,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         propagate_up();
         propagate_down();
         count++;
-    } while (AS::graph_changed && count < 5);
+    } while (AS::graph_changed && count < 8);
     std::cout << "Times propagated: " << count << std::endl;
 
     for (auto &as : *rovpp_graph->ases){
@@ -379,7 +379,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     outgoing.push_back(&anns_to_providers);
     outgoing.push_back(&anns_to_peers);
     outgoing.push_back(&anns_to_customers);
-
+    
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
     ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(source_as);
