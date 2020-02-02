@@ -455,7 +455,14 @@ void ROVppAS::process_announcements(bool ran) {
      std::vector<Announcement> candidates;
      std::vector<Announcement> baddies = *failed_rov;
      for (auto candidate_ann : *ribs_in) {
-         if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
+         bool loop = false;
+         for (uint32_t i : candidate_ann.as_path) {
+            if (i == asn) {
+                loop = true;
+                break;
+            }
+         }
+         if (pass_rov(candidate_ann) && !candidate_ann.withdraw && !loop) {
              candidates.push_back(candidate_ann);
          } else {
              baddies.push_back(candidate_ann);
