@@ -236,7 +236,7 @@ void ROVppAS::process_announcements(bool ran) {
         for (auto it = ribs_in_copy.begin(); it != ribs_in_copy.end(); ++it) {
             bool should_cancel = false;
             if (it->withdraw) {
-                // determin if cancellation should occur
+                // determine if cancellation should occur
                 for (auto ann : *ribs_in) {
                     if (!ann.withdraw && ann == *it) {
                         should_cancel = true;
@@ -244,6 +244,21 @@ void ROVppAS::process_announcements(bool ran) {
                     }
                 }
                 if (should_cancel) {
+                    auto search = loc_rib->find(it->prefix);
+                    // Process withdrawals, regardless of policy
+                    if (search != loc_rib->end() && search->second == *it) {
+                        withdraw(search->second);
+                        // Put the best alternative announcement into the loc_rib
+                        Announcement best_alternative_ann = best_alternative_route(search->second); 
+                        if (search->second != best_alternative_ann) {
+                            search->second = best_alternative_ann;
+                        } else {
+                            loc_rib->erase(it->prefix);    
+                        }
+                        AS::graph_changed = true;  // This means we will need to do another propagation
+                        
+                    }
+
                     for (auto it2 = ribs_in->begin(); it2 != ribs_in->end();) {
                         if (*it2 == *it) {
                             it2 = ribs_in->erase(it2);
@@ -456,12 +471,12 @@ void ROVppAS::process_announcements(bool ran) {
      std::vector<Announcement> baddies = *failed_rov;
      for (auto candidate_ann : *ribs_in) {
          bool loop = false;
-         for (uint32_t i : candidate_ann.as_path) {
-            if (i == asn) {
-                loop = true;
-                break;
-            }
-         }
+         //for (uint32_t i : candidate_ann.as_path) {
+         //   if (i == asn) {
+         //       loop = true;
+         //       break;
+         //   }
+         //}
          if (pass_rov(candidate_ann) && !candidate_ann.withdraw && !loop) {
              candidates.push_back(candidate_ann);
          } else {
