@@ -1328,9 +1328,106 @@ bool test_rovpp_full_path() {
     e.propagate_down();
 
     // Check if seeded path is present
+    if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path.size() != 1) {
+        std::cerr << "Failed seeding full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
     
+    // Check if propagated paths are correct]
+    // Paths are stored in reverse order
+    std::vector<uint32_t> path_1{ 5, 2 };
+    std::vector<uint32_t> path_2{ 5 };
+    std::vector<uint32_t> path_3{ 5, 2 };
+    std::vector<uint32_t> path_4{ 5, 2 };
+    std::vector<uint32_t> path_6{ 5 };
+    std::vector<uint32_t> path_7{ 5, 2, 3 };
+
+    if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path.size() != 2 || 
+        e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
+        e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
+        e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
+        e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
+        e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path.size() != 3) {
+        std::cerr << "Failed propagating full AS path." << '\n';
+        return false;
+    }
     
-    // Check if propagated paths are correct
+    if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path != path_1) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_1) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path != path_2) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_2) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path != path_3) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_3) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path != path_4) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_4) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path != path_6) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_6) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path != path_7) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_7) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
 
     return true;
 }

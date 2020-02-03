@@ -187,6 +187,9 @@ BOOST_AUTO_TEST_CASE( ROVpp_tiebreak_override ) {
 BOOST_AUTO_TEST_CASE( ROVpp_test_withdrawal ) {
         BOOST_CHECK( test_withdrawal() );
 }
+BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
+        BOOST_CHECK( test_rovpp_full_path() );
+}
 
 #endif // RUN_TESTS
 
