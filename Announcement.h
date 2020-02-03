@@ -168,10 +168,10 @@ public:
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-	virtual std::ostream& to_blackholes_csv(std::ostream &os){
+    virtual std::ostream& to_blackholes_csv(std::ostream &os) {
         os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
         return os;
-	}
+    }
     
     bool operator==(const Announcement &b) const {
         return (origin == b.origin) &&

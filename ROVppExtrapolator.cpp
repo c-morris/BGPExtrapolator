@@ -79,7 +79,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     rovpp_querier->clear_supernodes_from_db();
     rovpp_querier->create_supernodes_tbl();
     rovpp_querier->create_rovpp_blacklist_tbl();
-    //rovpp_querier->create_rovpp_blacklist_tbl();
     
     // Generate the graph and populate the stubs & supernode tables
     rovpp_graph->create_graph_from_db(rovpp_querier);
@@ -163,7 +162,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     }
     
     uint32_t i = 0;
-    uint32_t path_l = as_path->size();
     uint32_t origin_asn = as_path->back();
     
     // Announcement at origin for checking along the path
@@ -173,7 +171,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                   0,
                                   timestamp); 
     
-    // Full path pointer
+    // Full path vector
     // TODO only handles seeding announcements at origin
     std::vector<uint32_t> cur_path;
     cur_path.push_back(origin_asn);
@@ -221,7 +219,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
        
         uint32_t received_from_asn = 0;
         
-        // TODO Implimentation for rovpp
         // ROV++ Handle origin received_from here
         // BHOLED = 64512
         // HIJACKED = 64513
@@ -308,9 +305,9 @@ void ROVppExtrapolator::process_withdrawals(ROVppAS *as) {
             for (uint32_t neighbor_asn : *cur_neighbors) {
                 // Get the neighbor
                 AS *neighbor = graph->ases->find(neighbor_asn)->second;
-                //ROVppAS *r_neighbor = dynamic_cast<ROVppAS*>(neighbor);
+                ROVppAS *r_neighbor = dynamic_cast<ROVppAS*>(neighbor);
                 // Recursively process withdrawal at neighbor
-                //process_withdrawal(as->asn, withdrawal, r_neighbor);
+                process_withdrawal(as->asn, withdrawal, r_neighbor);
            }
         }
     }
@@ -383,10 +380,13 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     // Get the AS that is sending it's announcements
     auto *source_as = graph->ases->find(asn)->second; 
     ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(source_as);
-    // Add withdrawals
+    
+    // For each withdrawal
     for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
+        // TODO This shouldn't ever happen
         if (!it->withdraw) {
             it = source_as->withdrawals->erase(it);
+        // Add each withdrawal to be sent
         } else {
             // Prepare withdrawals found in withdrawals
             // Set the priority of the announcement at destination 
@@ -441,8 +441,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             //++it;
         }
     }
-
-
+    
+    // Process all other ann in loc_rib
     for (auto &ann : *source_as->loc_rib) {
         // ROV++ 0.1 do not forward blackhole announcements
         if (rovpp_as != NULL && 
@@ -474,7 +474,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         copy.received_from_asn = asn;
         copy.from_monitor = false;
         copy.as_path = cur_path;
-        copy.tiebreak_override = (ann.second.tiebreak_override == 0 ? 0 : asn);
 
         // Do not propagate any announcements from peers/providers
         // Priority is reduced by 1 per path length
@@ -505,7 +504,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
             
     }
-    // trim provider and peer vectors of preventive and blackhole anns for 0.3 and 0.2bis
+    
+    // Trim provider and peer vectors of preventive and blackhole anns for 0.3 and 0.2bis
     if (rovpp_as != NULL &&
         rovpp_as->policy_vector.size() > 0 &&
         (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
@@ -567,6 +567,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         recving_as->receive_announcements(anns_to_customers);
     }
 
+    // TODO Remove this?
     // Clear withdrawals except for withdrawals
     for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
         if (!it->withdraw) {
@@ -589,7 +590,8 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int
     if (d > 100) { std::cerr << "Maximum depth exceeded during traceback.\n"; return true; }
     auto ann_pair = cur_as.loc_rib->find(p);
     const Announcement &ann = ann_pair->second;
-    // i wonder if a cabinet holding a subwoofer counts as a bass case 
+    // i wonder if a cabinet holding a subwoofer counts as a bass case
+    // Ba dum tss, nice
     if (ann.received_from_asn == a) { return true; }
     if (ann.received_from_asn == 64512 ||
         ann.received_from_asn == 64513 ||
@@ -597,7 +599,6 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int
         return false;
     }
     if (ann_pair == cur_as.loc_rib->end()) { 
-        //std::cerr << "AS_PATH not continuous during traceback.\n" << a << p.to_cidr(); 
         return false; 
     }
     auto next_as_pair = rovpp_graph->ases->find(ann.received_from_asn);
