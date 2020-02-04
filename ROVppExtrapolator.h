@@ -54,6 +54,8 @@ struct ROVppExtrapolator: public Extrapolator {
                              bool hijack);
     void propagate_up();
     void propagate_down();
+    uint32_t get_priority(Announcement const& ann, uint32_t i);
+    bool is_filtered(ROVppAS *rovpp_as, Announcement const& ann);
     void send_all_announcements(uint32_t asn,
                                 bool to_providers = false,
                                 bool to_peers = false,
