@@ -1337,10 +1337,10 @@ bool test_rovpp_full_path() {
 
 
 bool test_tiny_hash() {
-    std::cout << (int) ROVppAS(1).tiny_hash() << std::endl;
-    std::cout << (int) ROVppAS(2).tiny_hash() << std::endl;
-    std::cout << (int) ROVppAS(3).tiny_hash() << std::endl;
-    std::cout << (int) ROVppAS(4).tiny_hash() << std::endl;
-    std::cout << (int) ROVppAS(5).tiny_hash() << std::endl;
+    std::cout << (int) ROVppAS(1).tiny_hash(1) << std::endl;
+    std::cout << (int) ROVppAS(2).tiny_hash(2) << std::endl;
+    std::cout << (int) ROVppAS(3).tiny_hash(3) << std::endl;
+    std::cout << (int) ROVppAS(4).tiny_hash(4) << std::endl;
+    std::cout << (int) ROVppAS(5).tiny_hash(5) << std::endl;
     return true;
 }

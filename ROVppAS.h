@@ -70,7 +70,7 @@ struct ROVppAS : public AS {
     // Helper functions
     void withdraw(Announcement &ann);
     void withdraw(Announcement &ann, AS &neighbor);
-    uint8_t tiny_hash(void);
+    uint8_t tiny_hash(uint32_t);
     Announcement best_alternative_route(Announcement &ann);  // help find a good alternative route 
                                                         // (i.e. an ann from a neighbor which 
                                                         // didn't give you the attacker's announcement)
