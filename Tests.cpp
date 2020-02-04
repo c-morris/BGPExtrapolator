@@ -187,7 +187,9 @@ BOOST_AUTO_TEST_CASE( ROVpp_tiebreak_override ) {
 BOOST_AUTO_TEST_CASE( ROVpp_test_withdrawal ) {
         BOOST_CHECK( test_withdrawal() );
 }
-
+BOOST_AUTO_TEST_CASE( ROVpp_test_tiny_hash ) {
+        BOOST_CHECK( test_tiny_hash() );
+}
 #endif // RUN_TESTS
 
 

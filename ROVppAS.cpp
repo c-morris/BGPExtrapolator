@@ -138,7 +138,6 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
             bool value = (ran ? get_random() : ann.received_from_asn < search->second.received_from_asn );
-            value = false;
             if (value) {
                 // Use the new announcement and record it won the tiebreak
                 if (search_depref == depref_anns->end()) {
@@ -510,6 +509,17 @@ void ROVppAS::process_announcements(bool ran) {
      }
      return best_alternative_ann;
  }
+
+/** Tiny galois field hash with a fixed key of 3.
+ */
+uint8_t ROVppAS::tiny_hash(void) {
+    uint8_t mask = 0xFF;
+    uint8_t value = 0;
+    for (int i = 0; i < sizeof(asn); i++) {
+        value = (value ^ mask & (asn>>i)) * 3;
+    }
+    return value;
+}
 
 /**
  * [ROVppAS::stream_blacklist description]
