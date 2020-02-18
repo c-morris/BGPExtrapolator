@@ -412,7 +412,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             } else {
                 // TODO log announcements that arent handled by sorting
                 Logger::getInstance().log("Unsorted_Announcements") 
-                    << "This announcement is being deleted and is noy handled by sorting." 
+                    << "This announcement is being deleted and is not handled by sorting." 
                     << " Prefix: " << ann_to_check_for.prefix.to_cidr() 
                     << ", tstamp: " << ann_to_check_for.tstamp 
                     << ", origin: " << ann_to_check_for.origin;

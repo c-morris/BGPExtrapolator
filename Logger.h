@@ -48,11 +48,14 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 *           The concequence would be log files from a previous run that someone may assume is from the current run (assuming the current run generated no logs).
 */
 class Logger {
-public:
+private:
+    static std::string folder;
+
     boost::log::sources::channel_logger<> channel_lg;
 
     Logger();
 
+public:
     /**
     *   Returns the single instance of the Logger.
     * 
@@ -61,6 +64,8 @@ public:
     *       if statement, then there is a chance old log files will live through a run of the extrapolator where they don't apply
     */
     static Logger getInstance();
+
+    static void initialize(std::string& folder);
 
     /**
     *   This is an interesting solution to overloading the << operator.
@@ -114,7 +119,8 @@ public:
 */
 template<typename T>
 Logger::StreamBuff& Logger::StreamBuff::operator<<(const T& output) {
-    stringStreamer << output;//add to the string stream
+    if(Logger::folder != "")
+        stringStreamer << output;//add to the string stream
     return *this;
 }
 #endif

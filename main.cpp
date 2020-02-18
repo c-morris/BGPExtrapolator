@@ -43,8 +43,6 @@ void intro() {
 }
 
 int main(int argc, char *argv[]) {
-    Logger::getInstance();//Clear the log files, and initialize the logger
-
     using namespace std;   
     // don't sync iostreams with printf
     ios_base::sync_with_stdio(false);
@@ -76,7 +74,10 @@ int main(int argc, char *argv[]) {
          "name of the inverse results table")
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
-         "name of announcements table");
+         "name of announcements table")
+        ("logging,l",
+         po::value<string>()->default_value(""),
+         "enables the use of logging, best used for debugging only");
     ;
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -89,6 +90,16 @@ int main(int argc, char *argv[]) {
     // Handle intro information
     intro();
     
+    std::string loggingFolder = vm.count("logging") ? vm["logging"].as<string>() : "";
+    if(loggingFolder != "") {
+        if(loggingFolder.back() == '/') {
+            Logger::initialize(loggingFolder);
+            Logger::getInstance();
+        } else {
+            std::cerr << "ERROR: Logger Folder must be a directory" << endl;
+        }
+    }
+
     // Instantiate Extrapolator
     Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
         vm["invert-results"].as<bool>(),
@@ -101,6 +112,7 @@ int main(int argc, char *argv[]) {
     
     // Run propagation
     extrap->perform_propagation();
+
     delete extrap;
     return 0;
 }

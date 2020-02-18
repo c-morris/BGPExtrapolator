@@ -1,5 +1,7 @@
 #include "Logger.h"
 
+std::string Logger::folder = "";
+
 Logger::Logger() {
     /* 
     *   Remove any logs that already exist, and send the possible output to the void
@@ -7,7 +9,13 @@ Logger::Logger() {
     *   an error generates if there are no files, but we don't really want to
     *   do anything in that case.
     */
-    if(system("rm ./Logs/* > /dev/null 2>&1")) {}
+    if(folder != "") {
+        std::string rmCommand = "rm ";
+        rmCommand.append(folder);
+        rmCommand.append("*.log > /dev/null 2>&1");
+
+        if(system(rmCommand.c_str())) {}
+    }
 
     //Adds the time-stamp attribute
     boost::log::add_common_attributes();
@@ -18,7 +26,7 @@ Logger::Logger() {
     //sets up the multi-file sink based on the name of the channel
     multifile->locked_backend()->set_file_name_composer(
         boost::log::sinks::file::as_file_name_composer(
-        boost::log::expressions::stream << "Logs/" << channel << ".log"));
+        boost::log::expressions::stream << folder << channel << ".log"));
   
     //Describes the format of the output files (this format applies to all files generated)
     //Format: [TimeStamp] Messege
@@ -31,6 +39,10 @@ Logger::Logger() {
     boost::log::core::get()->add_sink(multifile);
 }
 
+void Logger::initialize(std::string& f) {
+    Logger::folder = f;
+}
+
 Logger Logger::getInstance() {
     static Logger instance;
 
@@ -38,6 +50,9 @@ Logger Logger::getInstance() {
 }
 
 Logger::StreamBuff::~StreamBuff() { 
+    if(Logger::folder == "")
+        return;
+
     std::string str = stringStreamer.str();
     if(!str.empty())//if there is something to output, make the boost call to log to the file
         BOOST_LOG_CHANNEL(lg, filename) << str;
