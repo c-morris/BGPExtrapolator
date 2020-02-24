@@ -64,6 +64,7 @@ Optional arguments:
 | -r --results-table | extrapolation-results | name of the normal results table (if -i 0)
 | -d --depref-table | depref-results | name of the depref results table (if -d 1)
 | -o --inverse-results-table | extrapolation-inverse-results | name of the inverse results table
+| -l --log-folder | disabled | enables the logger and specifies a folder to save log files
 
 **Parameter -i**
 
@@ -92,6 +93,10 @@ Allows specification of the output name of the depref results table.
 **Parameter -o**
 
 Allows specification of the output name of the inverse results table.
+
+**Parameter -l**
+
+With this flag and a specified directory, the logger will be enabled and generate files in the specified directory. A directory MUST be specified. Everytime the logger runs, it will remove all .log files in the directory.
 
 ## Classes and Structs
 
