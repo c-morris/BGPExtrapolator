@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
          "name of announcements table")
-        ("logging,l",
+        ("log-folder,l",
          po::value<string>()->default_value(""),
          "enables the use of logging, best used for debugging only");
     ;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     // Handle intro information
     intro();
     
-    std::string loggingFolder = vm.count("logging") ? vm["logging"].as<string>() : "";
+    std::string loggingFolder = vm.count("log-folder") ? vm["log-folder"].as<string>() : "";
     if(loggingFolder != "") {
         if(loggingFolder.back() == '/') {
             Logger::initialize(loggingFolder);
