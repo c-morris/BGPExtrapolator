@@ -32,10 +32,6 @@
 
 #include <iostream>
 
-// TODO Replace w/ logging
-// int g_loop = 0;         // Number of loops in mrt
-int g_ts_tb = 0;        // Number of timestamp tiebreaks, where?
-// int g_broken_path = 0;  // Number of broke paths in mrt
 
 Extrapolator::Extrapolator(bool random_b,
                            bool invert_results,
@@ -131,9 +127,6 @@ void Extrapolator::perform_propagation(){
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
-    // std::cout << "Loop count: " << g_loop << std::endl;
-    // std::cout << "Timestamp Tiebreak count: " << g_ts_tb << std::endl;
-    // std::cout << "Broken Path count: " << g_broken_path << std::endl;
 }
 
 
@@ -385,7 +378,6 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                 // Skip it
                 continue;
             } else if (ann_to_check_for.tstamp == search->second.tstamp) {
-                // TODO Log annoucements with equal timestamps 
                 // Tie breaker for equal timestamp
                 bool value = true;
                 // Random tiebreak if enabled
@@ -393,6 +385,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                     value = as_on_path->get_random();
                 }
 
+                // Log annoucements with equal timestamps 
                 Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << ann_to_check_for.prefix.to_cidr() << 
                     ", rand value: " << value << ", tstamp on announcements: " << ann_to_check_for.tstamp << 
                     ", origin on ann_to_check_for: " << ann_to_check_for.origin << ", origin on stored announcement: " << search->second.origin;
@@ -410,7 +403,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                     as_on_path->delete_ann(ann_to_check_for);
                 }
             } else {
-                // TODO log announcements that arent handled by sorting
+                // Log announcements that arent handled by sorting
                 Logger::getInstance().log("Unsorted_Announcements") 
                     << "This announcement is being deleted and is not handled by sorting." 
                     << " Prefix: " << ann_to_check_for.prefix.to_cidr() 
@@ -479,7 +472,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             
             static int g_broken_path = 0;
 
-            // TODO Need to log the part of path where break takes place
+            // Log the part of path where break takes place
             Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
 
             g_broken_path++;
