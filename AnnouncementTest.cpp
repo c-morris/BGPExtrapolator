@@ -9,7 +9,8 @@
  * @ return True for success
  */
 bool test_announcement(){
-    Announcement ann = Announcement(111, 0x01010101, 0xffffff00, 262, 222, false);
+    std::vector<uint32_t> x;
+    Announcement ann = Announcement(111, 0x01010101, 0xffffff00, 262, 222, 0, x, false);
     if (ann.origin != 111 || ann.prefix.addr != 0x01010101 || ann.prefix.netmask != 0xffffff00 || ann.received_from_asn != 222 || ann.priority != 262 || ann.from_monitor != false)
         return false;
     return true;
@@ -20,12 +21,13 @@ bool test_announcement(){
  * @ return True for success 
  */
 bool test_ann_eq_operator(){
-    Announcement a = Announcement(111, 0x01010101, 0xffffff00, 262, 222, false);
-    Announcement b = Announcement(112, 0x01010101, 0xffffff00, 262, 222, false);
-    Announcement c = Announcement(111, 0x01010102, 0xffffff00, 262, 222, false);
-    Announcement d = Announcement(111, 0x01010101, 0xfffffff0, 262, 222, false);
-    Announcement e = Announcement(111, 0x01010101, 0xffffff00, 261, 222, false);
-    Announcement f = Announcement(111, 0x01010101, 0xffffff00, 262, 221, false);
+    std::vector<uint32_t> x;
+    Announcement a = Announcement(111, 0x01010101, 0xffffff00, 262, 222, 0, x, false);
+    Announcement b = Announcement(112, 0x01010101, 0xffffff00, 262, 222, 0, x, false);
+    Announcement c = Announcement(111, 0x01010102, 0xffffff00, 262, 222, 0, x, false);
+    Announcement d = Announcement(111, 0x01010101, 0xfffffff0, 262, 222, 0, x, false);
+    Announcement e = Announcement(111, 0x01010101, 0xffffff00, 261, 222, 0, x, false);
+    Announcement f = Announcement(111, 0x01010101, 0xffffff00, 262, 221, 0, x, false);
     return !((!(a == a)) ||
         (a == b) ||
         (a == c) ||

@@ -68,15 +68,13 @@ struct ROVppAS : public AS {
     bool pass_rov(Announcement &ann);
     void add_policy(uint32_t);
     // Helper functions
+    void withdraw(Announcement &ann);
+    void withdraw(Announcement &ann, AS &neighbor);
     Announcement best_alternative_route(Announcement &ann);  // help find a good alternative route 
                                                         // (i.e. an ann from a neighbor which 
                                                         // didn't give you the attacker's announcement)
                                                         // Will return the same given ann if there is
                                                         // no better alternative
-    bool is_better(Announcement &a, Announcement &b);  // Computes "is a better than b"
-                                                       // This will be used to determine:
-                                                       // * Replace currently used ann for a better one
-                                                       // * Help make decisions on an alternative routes
     std::ostream& stream_blackholes(std:: ostream &os);
 };
 

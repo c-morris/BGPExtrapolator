@@ -58,7 +58,7 @@ void add_two_way_relationship(ASGraph * as_graph, uint32_t asn, uint32_t neighbo
  * @return true if "prefix is found in the given asn RIB-OUT", otherwise false.
  */
 bool is_infected(ASGraph * as_graph, uint32_t asn, Prefix<> prefix) {
-    auto rib_out =  as_graph->ases->find(asn)->second->all_anns;
+    auto rib_out =  as_graph->ases->find(asn)->second->loc_rib;
     auto search = rib_out->find(prefix);
     if (search == rib_out->end()) {
       return false;
@@ -292,28 +292,28 @@ bool test_rovpp_give_ann_to_as_path() {
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
     // Test that monitor annoucements were received
-    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
+    if(!(e.graph->ases->find(2)->second->loc_rib->find(p)->second.from_monitor &&
+         e.graph->ases->find(3)->second->loc_rib->find(p)->second.from_monitor &&
+         e.graph->ases->find(5)->second->loc_rib->find(p)->second.from_monitor)) {
         std::cerr << "Monitor flag failed." << std::endl;
         return false;
     }
     
     // Test announcement priority calculation
-    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 &&
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400) {
+    if (e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 198 &&
+        e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299 &&
+        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 400) {
         std::cerr << "Priority calculation failed." << std::endl;
         return false;
     }
 
     // Test that only path received the announcement
-    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(3)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(4)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(5)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(6)->second->loc_rib->size() == 0)) {
         std::cerr << "MRT overseeding check failed." << std::endl;
         return false;
     }
@@ -326,13 +326,13 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path_b->push_back(4);
     e.give_ann_to_as_path(as_path_b, p, 1, 0);
 
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.tstamp != 1) {
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
         return false;
     }
     
     // Test prepending calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 298) {
-        std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second.priority << std::endl;
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 298) {
+        std::cout << e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority << std::endl;
         return false;
     }
 
@@ -377,23 +377,23 @@ bool test_rovpp_propagate_up() {
     e.propagate_up();
     
     // Check all announcements are propagted
-    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
-          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(6)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(3)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(4)->second->loc_rib->size() == 0 &&
+          e.graph->ases->find(5)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(6)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Loop detection failed." << std::endl;
         return false;
     }
     
     // Check propagation priority calculation
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 290 &&
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(6)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 288 &&
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 188) {
+    if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 290 &&
+        e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 289 &&
+        e.graph->ases->find(6)->second->loc_rib->find(p)->second.priority != 189 &&
+        e.graph->ases->find(1)->second->loc_rib->find(p)->second.priority != 288 &&
+        e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 188) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
@@ -434,18 +434,18 @@ bool test_rovpp_propagate_down() {
     e.propagate_down();
     
     // Check all announcements are propagted
-    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(5)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(6)->second->loc_rib->size() == 0)) {
         return false;
     }
     
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 290 &&
+        e.graph->ases->find(4)->second->loc_rib->find(p)->second.priority != 89 &&
+        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
@@ -489,48 +489,41 @@ bool test_rovpp_send_all_announcements() {
 
     // Check to providers
     e.send_all_announcements(2, true, false, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
-          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
-          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
-          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+    if (!(e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
+          e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(5)->second->loc_rib->size() == 0 &&
+          e.graph->ases->find(6)->second->loc_rib->size() == 0 &&
+          e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Err sending to providers" << std::endl;
         return false;
     }
     
     // Check to peers
     e.send_all_announcements(2, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
-          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+    if (!(e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(6)->second->loc_rib->size() == 0 &&
+          e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Err sending to peers" << std::endl;
         return false;
     }
 
     // Check to customers
     e.send_all_announcements(2, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
-          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+    if (!(e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
+          e.graph->ases->find(6)->second->loc_rib->size() == 0 &&
+          e.graph->ases->find(7)->second->loc_rib->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
         return false;
     }
     
     // Check priority calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299 &&
+        e.graph->ases->find(1)->second->loc_rib->find(p)->second.priority != 289 &&
+        e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 189 &&
+        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
         std::cerr << "Send all announcement priority calculation failed." << std::endl;
         return false;
     }
@@ -759,7 +752,7 @@ bool test_rovpp_remove_neighbor(){
     return true;
 }
 
-/** Test pushing the received announcement to the incoming_announcements vector. 
+/** Test pushing the received announcement to the ribs_in vector. 
  *
  * @return true if successful.
  */
@@ -776,9 +769,9 @@ bool test_rovpp_receive_announcements(){
     vect.push_back(ann);
     ROVppAS as = ROVppAS(1);
     as.receive_announcements(vect);
-    if (as.incoming_announcements->size() != 2) { return false; }
+    if (as.ribs_in->size() != 2) { return false; }
     // order really doesn't matter here
-    for (Announcement a : *as.incoming_announcements) {
+    for (Announcement a : *as.ribs_in) {
         if (a.prefix != old_prefix && a.prefix != new_prefix) {
             return false;
         }
@@ -805,12 +798,12 @@ bool test_rovpp_rov_receive_announcements(){
     as.add_policy(ROVPPAS_TYPE_ROV);
     as.receive_announcements(vect);
     delete as.attackers;
-    if (as.incoming_announcements->size() != 2) { return false; }
+    if (as.ribs_in->size() != 2) { return false; }
     return true;
 }
 
 
-/** Test directly adding an announcement to the all_anns map.
+/** Test directly adding an announcement to the loc_rib map.
  *
  * @return true if successful.
  */
@@ -825,27 +818,28 @@ bool test_rovpp_process_announcement(){
     ann.prefix.netmask = 0xFFFFFF00;
     Prefix<> new_prefix = ann.prefix;
     as.process_announcement(ann);
-    if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
-        old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
+    if (new_prefix != as.loc_rib->find(ann.prefix)->second.prefix ||
+        old_prefix != as.loc_rib->find(old_prefix)->second.prefix) {
         return false;
     }
 
     // Check priority
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, false);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, false);
+    std::vector<uint32_t> x;
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, 0, x);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, 0, x);
     as.process_announcement(a1);
     as.process_announcement(a2);
-    if (as.all_anns->find(p)->second.received_from_asn != 223 ||
+    if (as.loc_rib->find(p)->second.received_from_asn != 223 ||
         as.depref_anns->find(p)->second.received_from_asn != 222) {
         std::cerr << "Failed best path inference priority check." << std::endl;
         return false;
     }    
 
     // Check new best announcement
-    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, false);
+    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, 0, x);
     as.process_announcement(a3);
-    if (as.all_anns->find(p)->second.received_from_asn != 224 ||
+    if (as.loc_rib->find(p)->second.received_from_asn != 224 ||
         as.depref_anns->find(p)->second.received_from_asn != 223) {
         std::cerr << "Failed best path priority correction check." << std::endl;
         return false;
@@ -877,10 +871,10 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann1);
     vect.push_back(ann2);
 
-    // does it work if all_anns is empty?
+    // does it work if loc_rib is empty?
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 100) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 100) {
         std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;
     }
@@ -891,7 +885,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
     }
@@ -902,7 +896,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 290) {
         std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
     }
@@ -913,7 +907,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann1_prefix)->second.priority != 299) {
+    if (as.loc_rib->find(ann1_prefix)->second.priority != 299) {
         std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
     }
@@ -924,7 +918,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann2);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.all_anns->find(ann2_prefix)->second.priority != 200) {
+    if (as.loc_rib->find(ann2_prefix)->second.priority != 200) {
         std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
     }
@@ -940,11 +934,11 @@ bool test_rovpp_clear_announcements(){
     // AS must hve a non-zero ASN in order to accept this announcement
     ROVppAS as = ROVppAS(1);
     as.process_announcement(ann);
-    if (as.all_anns->size() != 1) {
+    if (as.loc_rib->size() != 1) {
         return false;
     }
     as.clear_announcements();
-    if (as.all_anns->size() != 0) {
+    if (as.loc_rib->size() != 0) {
         return false;
     }
     return true;
@@ -971,7 +965,8 @@ bool test_rovpp_already_received(){
  * @ return True for success
  */
 bool test_rovpp_announcement(){
-    ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 222, 100, 1);
+    std::vector<uint32_t> x;
+    ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 0, 222, 100, 1, x);
     if (ann.origin != 111 
         || ann.prefix.addr != 0x01010101 
         || ann.prefix.netmask != 0xffffff00 
@@ -983,7 +978,7 @@ bool test_rovpp_announcement(){
         return false;
     }
     
-    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1, true);
+    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1, x, true);
     if (ann.origin != 111 
         || ann.prefix.addr != 0x01010101 
         || ann.prefix.netmask != 0xffffff00 
@@ -1022,30 +1017,31 @@ bool test_best_alternative_route_chosen() {
     // The difference between the following three is the received_from_asn
     // Notice the priorities
     // The Announcements will be handled in this order
-    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, false);  // If done incorrectly it will end up with this one
+    std::vector<uint32_t> x;
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, false);  // or this one
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, x);  // or this one
     a2.priority = 292;
-    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, false);  // It should end up with this one if done correctly
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
     Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
     // The difference between the following is the received_from_asn
-    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
     for (Announcement a : {a1, a2, a3, a4, a5}) {
-        as.incoming_announcements->push_back(a);
+        as.ribs_in->push_back(a);
     }
     
     as.process_announcements();
     
     // See if it ended up with the correct one
-    Announcement selected_ann = as.all_anns->find(p1)->second;
+    Announcement selected_ann = as.loc_rib->find(p1)->second;
     // Note, this test is currently broken, correct behavior is choosing a1
     return selected_ann == a1;
 }
@@ -1074,24 +1070,25 @@ bool test_best_alternative_route() {
     // The difference between the following three is the received_from_asn
     // Notice the priorities
     // The Announcements will be handled in this order
-    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, false);  // If done incorrectly it will end up with this one
+    std::vector<uint32_t> x;
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, false);  // or this one
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, x);  // or this one
     a2.priority = 292;
-    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, false);  // It should end up with this one if done correctly
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
     Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
     // The difference between the following is the received_from_asn
-    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, false);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, false);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
     for (Announcement a : {a1, a2, a3, a4, a5}) {
-        as.incoming_announcements->push_back(a);
+        as.ribs_in->push_back(a);
     }
     
     if (!(as.best_alternative_route(a4) == a3) ||
@@ -1138,24 +1135,101 @@ bool test_rovpp_tiebreak_override() {
     e.propagate_down();
 
     // confirm 5 has 1's announcement
-    if(!(e.graph->ases->find(5)->second->all_anns->find(p)->second.origin == 1)) {
+    if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->second.origin == 1)) {
         std::cerr << "Tiebreak override failed step 1\n";
         return false;
     }
 
     // set override. normally this AS would lose the tiebreak
-    e.graph->ases->find(2)->second->all_anns->find(p)->second.origin = 3;
-    e.graph->ases->find(2)->second->all_anns->find(p)->second.received_from_asn = 3;
-    e.graph->ases->find(2)->second->all_anns->find(p)->second.tiebreak_override = 3;
+    e.graph->ases->find(2)->second->loc_rib->find(p)->second.origin = 3;
+    e.graph->ases->find(2)->second->loc_rib->find(p)->second.received_from_asn = 3;
+    e.graph->ases->find(2)->second->loc_rib->find(p)->second.tiebreak_override = 3;
     e.propagate_down();
 
     // confirm 5 has 3's announcement
-    if(!(e.graph->ases->find(5)->second->all_anns->find(p)->second.origin != 3)) {
+    if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->second.origin != 3)) {
         std::cerr << "Tiebreak override failed step 2\n";
         return false;
     }
     return true;
 }
+
+/** Test withdrawals.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ */
+bool test_withdrawal() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+   // e.graph->ases->find(5)->second->process_announcement(ann);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+    e.propagate_up();
+    e.propagate_down();
+
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(2)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(3)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(4)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(5)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(6)->second->loc_rib->size() == 1)) {
+        std::cerr << "Announcements did not propagate as expected\n";
+        return false;
+    }
+    
+    // Make withdrawal
+    Announcement copy = e.graph->ases->find(5)->second->loc_rib->find(p)->second;
+    e.graph->ases->find(5)->second->loc_rib->erase(e.graph->ases->find(5)->second->loc_rib->find(p));
+    copy.withdraw = true;
+    e.graph->ases->find(5)->second->withdrawals->push_back(copy);
+    //e.graph->ases->find(5)->second->process_announcement(ann);
+    e.propagate_up();
+    e.propagate_down();
+    e.propagate_up();
+    e.propagate_down();
+
+    std::cerr << e.graph->ases->find(1)->second->loc_rib->size() << std::endl; 
+    std::cerr << e.graph->ases->find(2)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(3)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(4)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(5)->second->loc_rib->size() << std::endl;
+    std::cerr << e.graph->ases->find(6)->second->loc_rib->size() << std::endl;
+        
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(2)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(4)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(5)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(6)->second->loc_rib->size() == 0)) {
+        std::cerr << "Announcements did not withdraw as expected\n";
+        return false;
+    }
+
+    delete as_path;
+    return true;
+}
+
 
 
 /** Testing Blackholing (i.e. when only a blackhole is produced)
@@ -1218,4 +1292,144 @@ bool test_rovpp_tiebreak_override() {
 //     std::vector<uint32_t> saved_ones = {77, 11, 78, 12};
 //     return !(check_infected_vector(e.graph, saved_ones, attacker_prefix));
 // }
+
+/** Test full path propagation.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2---3
+ *   /|    \
+ *  4 5--6  7
+ */
+bool test_rovpp_full_path() {
+    // TODO finish this 
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(7, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 7, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(5);
+    
+    e.give_ann_to_as_path(as_path, p, 1, 0);
+    e.propagate_up();
+    e.propagate_down();
+
+    // Check if seeded path is present
+    if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path.size() != 1) {
+        std::cerr << "Failed seeding full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    
+    // Check if propagated paths are correct]
+    // Paths are stored in reverse order
+    std::vector<uint32_t> path_1{ 5, 2 };
+    std::vector<uint32_t> path_2{ 5 };
+    std::vector<uint32_t> path_3{ 5, 2 };
+    std::vector<uint32_t> path_4{ 5, 2 };
+    std::vector<uint32_t> path_6{ 5 };
+    std::vector<uint32_t> path_7{ 5, 2, 3 };
+
+    if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path.size() != 2 || 
+        e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
+        e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
+        e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
+        e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
+        e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path.size() != 3) {
+        std::cerr << "Failed propagating full AS path." << '\n';
+        return false;
+    }
+    
+    if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path != path_1) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_1) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path != path_2) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_2) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path != path_3) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_3) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path != path_4) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_4) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path != path_6) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_6) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+    if (e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path != path_7) { 
+        std::cerr << "Failed propagating full AS path." << '\n';
+        for (auto const& i: e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        for (auto const& i: path_7) {
+            std::cerr << i;
+        }
+        std::cerr << '\n';
+        return false;
+    }
+
+    return true;
+}
+
 

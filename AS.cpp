@@ -23,6 +23,9 @@
 
 #include "AS.h"
 
+// Initialize Static Member Variables
+bool AS::graph_changed = false;  // This is a static variable shared by all AS instances
+
 /** Constructor for AS class.
  *
  * AS objects represent a node in the AS Graph.
@@ -55,17 +58,19 @@ AS::AS(uint32_t myasn,
     }
     inverse_results = inv;                      // Inverted results map
     member_ases = new std::vector<uint32_t>;    // Supernode members
-    incoming_announcements = new std::vector<Announcement>;
-    all_anns = new std::map<Prefix<>, Announcement>;
+    ribs_in = new std::vector<Announcement>;
+    loc_rib = new std::map<Prefix<>, Announcement>;
     depref_anns = new std::map<Prefix<>, Announcement>;
+    withdrawals = new std::vector<Announcement>;
     // Tarjan variables
     index = -1;
     onStack = false;
 }
 
 AS::~AS() {
-    delete incoming_announcements;
-    delete all_anns;
+    delete ribs_in;
+    delete loc_rib;
+    delete withdrawals;
     delete depref_anns;
     delete peers;
     delete providers;
@@ -138,16 +143,16 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
     }
 }
 
-/** Push the incoming propagated announcements to the incoming_announcements vector.
+/** Push the incoming propagated announcements to the ribs_in vector.
  *
  * This is NOT called for seeded announcements.
  *
- * @param announcements The announcements to be pushed onto the incoming_announcements vector.
+ * @param announcements The announcements to be pushed onto the ribs_in vector.
  */
 void AS::receive_announcements(std::vector<Announcement> &announcements) {
     for (Announcement &ann : announcements) {
         // push_back makes a copy of the announcement
-        incoming_announcements->push_back(ann);
+        ribs_in->push_back(ann);
     }
 }
 
@@ -160,12 +165,12 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
  */ 
 void AS::process_announcement(Announcement &ann, bool ran) {
     // Check for existing announcement for prefix
-    auto search = all_anns->find(ann.prefix);
+    auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
     // No announcement found for incoming announcement prefix
-    if (search == all_anns->end()) {
-        all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+    if (search == loc_rib->end()) {
+        loc_rib->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
             auto set = inverse_results->find(
@@ -246,23 +251,23 @@ void AS::process_announcement(Announcement &ann, bool ran) {
     }
 }
 
-/** Iterate through incoming_announcements and keep only the best. 
+/** Iterate through ribs_in and keep only the best. 
  */
 void AS::process_announcements(bool ran) {
-    for (auto &ann : *incoming_announcements) {
-        auto search = all_anns->find(ann.prefix);
-        if (search == all_anns->end() || !search->second.from_monitor) {
+    for (auto &ann : *ribs_in) {
+        auto search = loc_rib->find(ann.prefix);
+        if (search == loc_rib->end() || !search->second.from_monitor) {
             process_announcement(ann, ran);
         }
     }
-    incoming_announcements->clear();
+    ribs_in->clear();
 }
 
 /** Clear all announcement collections. 
  */
 void AS::clear_announcements() {
-    all_anns->clear();
-    incoming_announcements->clear();
+    loc_rib->clear();
+    ribs_in->clear();
     depref_anns->clear();
 }
 
@@ -272,15 +277,15 @@ void AS::clear_announcements() {
  * @return True if recv'd, false otherwise.
  */
 bool AS::already_received(Announcement &ann) {
-    auto search = all_anns->find(ann.prefix);
-    bool found = (search == all_anns->end()) ? false : true;
+    auto search = loc_rib->find(ann.prefix);
+    bool found = (search == loc_rib->end()) ? false : true;
     return found;
 }
 
 /** Deletes given announcement.
  */
 void AS::delete_ann(Announcement &ann) {
-    all_anns->erase(ann.prefix);
+    loc_rib->erase(ann.prefix);
 }
 
 /** Insertion operator for AS class.
@@ -315,7 +320,7 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
  * @return output stream into which is passed the .csv row formatted announcements
  */
 std::ostream& AS::stream_announcements(std::ostream &os){
-    for (auto &ann : *all_anns) {
+    for (auto &ann : *loc_rib) {
         os << asn << ',';
         ann.second.to_csv(os);
     }

@@ -152,7 +152,7 @@ void ROVppASGraph::to_graphviz(std::ostream &os, std::vector<uint32_t> asns) {
             os << "dot.edge('" << other << "', '" << as.asn << "')" << std::endl;
         }
         // announcements
-        for (auto ann : *as.all_anns) {
+        for (auto ann : *as.loc_rib) {
             os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
             (as.pass_rov(ann.second) ? "color='blue'" : "color='red'")
             << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;
@@ -176,7 +176,7 @@ void ROVppASGraph::to_graphviz_traceback(std::ostream &os, uint32_t asn, int dep
     os << ((as.policy_vector.size() > 0 && as.policy_vector.at(0) != 0) ? ", color='green'" : " ");
     os << ")" << std::endl;
     
-    for (auto ann : *as.all_anns) {
+    for (auto ann : *as.loc_rib) {
         os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
         (ann.second.origin == 64512 ? "color='grey'" :  (as.pass_rov(ann.second) ? "color='blue'" : "color='red'"))
         << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;

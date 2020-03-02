@@ -39,7 +39,9 @@ struct ROVppExtrapolator: public Extrapolator {
                       uint32_t iteration_size=false);
     ~ROVppExtrapolator();
 
-    bool loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int d);
+    void process_withdrawal(uint32_t asn, Announcement ann, ROVppAS *neighbor);
+    void process_withdrawals(ROVppAS *as);
+    bool loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int d); 
     ////////////////////////////////////////////////////////////////////
     // Overidden Methods
     ////////////////////////////////////////////////////////////////////
@@ -50,6 +52,10 @@ struct ROVppExtrapolator: public Extrapolator {
                              Prefix<> prefix, 
                              int64_t timestamp, 
                              bool hijack);
+    void propagate_up();
+    void propagate_down();
+    uint32_t get_priority(Announcement const& ann, uint32_t i);
+    bool is_filtered(ROVppAS *rovpp_as, Announcement const& ann);
     void send_all_announcements(uint32_t asn,
                                 bool to_providers = false,
                                 bool to_peers = false,

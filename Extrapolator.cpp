@@ -361,30 +361,38 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
     
     uint32_t i = 0;
     uint32_t path_l = as_path->size();
-    
+    uint32_t origin_asn = as_path->back();
+
     // Announcement at origin for checking along the path
-    Announcement ann_to_check_for(as_path->at(path_l-1),
+    Announcement ann_to_check_for(origin_asn,
                                   prefix.addr,
                                   prefix.netmask,
                                   0,
                                   timestamp); 
     
+    // Full path pointer
+    // TODO only handles announcements at origin
+    std::vector<uint32_t> cur_path;
+    cur_path.push_back(origin_asn);
+
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
         // Increments path length, including prepending
         i++;
+        
         // If ASN not in graph, continue
         if (graph->ases->find(*it) == graph->ases->end()) {
             continue;
-        }
+        } 
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
         // Find the current AS on the path
         AS *as_on_path = graph->ases->find(asn_on_path)->second;
+        
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
             // Find the already received announcement
-            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
+            auto search = as_on_path->loc_rib->find(ann_to_check_for.prefix);
             // If the current timestamp is newer (worse)
             if (ann_to_check_for.tstamp > search->second.tstamp) {
                 // Skip it
@@ -454,6 +462,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                             priority,
                                             received_from_asn,
                                             timestamp,
+                                            cur_path,
                                             true);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann, random);
@@ -467,7 +476,6 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
             }
         } else {
             // Report the broken path
-            //std::cerr << "Broken path for " << *(it - 1) << ", " << *it << std::endl;
             g_broken_path++;
         }
     }
@@ -482,10 +490,7 @@ void Extrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
-            if (!is_empty) {
-                send_all_announcements(asn, true, false, false);
-            }
+            send_all_announcements(asn, true, false, false);
         }
     }
     // Propagate to peers
@@ -493,10 +498,7 @@ void Extrapolator::propagate_up() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
-            if (!is_empty) {
-                send_all_announcements(asn, false, true, false);
-            }
+            send_all_announcements(asn, false, true, false);
         }
     }
 }
@@ -510,10 +512,7 @@ void Extrapolator::propagate_down() {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random);
-            bool is_empty = search->second->all_anns->empty();
-            if (!is_empty) {
-                send_all_announcements(asn, false, false, true);
-            }
+            send_all_announcements(asn, false, false, true);
         }
     }
 }
@@ -538,7 +537,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_providers) {
         // Assemble the list of announcements to send to providers
         std::vector<Announcement> anns_to_providers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 200 for customer to provider
@@ -546,7 +545,14 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             if (ann.second.priority < 200) {
                 continue;
             }
-            
+           
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            // Handles appending after origin
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
+                cur_path.push_back(asn);
+            }
+
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -560,12 +566,11 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             uint32_t priority = 200 + path_len_weight;
             
             // Push announcement with new priority to ann vector
-            anns_to_providers.push_back(Announcement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp));
+            Announcement copy =ann.second;
+            copy.priority = priority;
+            copy.received_from_asn = asn;
+            copy.as_path = cur_path;
+            anns_to_providers.push_back(copy);
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -579,7 +584,7 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_peers) {
         // Assemble vector of announcement to send to peers
         std::vector<Announcement> anns_to_peers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 100 for peers to peers
@@ -587,6 +592,13 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             // Ignore announcements not from a customer
             if (ann.second.priority < 200) {
                 continue;
+            }
+            
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            // Handles appending after origin
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
+                cur_path.push_back(asn);
             }
 
             // Set the priority of the announcement at destination 
@@ -601,12 +613,11 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = 100 + path_len_weight;
             
-            anns_to_peers.push_back(Announcement(ann.second.origin,
-                                                 ann.second.prefix.addr,
-                                                 ann.second.prefix.netmask,
-                                                 priority,
-                                                 asn,
-                                                 ann.second.tstamp));
+            Announcement copy =ann.second;
+            copy.priority = priority;
+            copy.received_from_asn = asn;
+            copy.as_path = cur_path;
+            anns_to_peers.push_back(copy);
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -620,12 +631,18 @@ void Extrapolator::send_all_announcements(uint32_t asn,
     if (to_customers) {
         // Assemble the vector of announcement for customers
         std::vector<Announcement> anns_to_customers;
-        for (auto &ann : *source_as->all_anns) {
+        for (auto &ann : *source_as->loc_rib) {
             // Propagate all announcements to customers
             // Priority is reduced by 1 per path length
             // Base priority is 0 for provider to customers
             
-            
+            // Full path generation
+            auto cur_path = ann.second.as_path;
+            // Handles appending after origin
+            if (cur_path.size() == 0 || cur_path.back() != asn) {
+                cur_path.push_back(asn);
+            }
+
             // Set the priority of the announcement at destination 
             uint32_t old_priority = ann.second.priority;
             uint32_t path_len_weight = old_priority % 100;
@@ -638,12 +655,12 @@ void Extrapolator::send_all_announcements(uint32_t asn,
             }
             uint32_t priority = path_len_weight;
 
-            anns_to_customers.push_back(Announcement(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp));
+            // TODO: write this to do less extraneous copying...
+            Announcement copy =ann.second;
+            copy.priority = priority;
+            copy.received_from_asn = asn;
+            copy.as_path = cur_path;
+            anns_to_customers.push_back(copy);
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

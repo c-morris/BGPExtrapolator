@@ -42,6 +42,7 @@ ROVppAS::~ROVppAS() {
     delete failed_rov;
     delete passed_rov;
     delete blackholes;
+    delete preventive_anns;
 }
 
 /** Adds a policy to the policy_vector
@@ -70,6 +71,30 @@ bool ROVppAS::pass_rov(Announcement &ann) {
     }
 }
 
+/** Add the announcement to the vector of withdrawals to be processed.
+ *
+ * Also remove it from the ribs_in.
+ */
+void ROVppAS::withdraw(Announcement &ann) {
+    // TODO remove this?
+    if (ann.withdraw) {
+        std::cerr << "Withdraw found in loc_rib.\n";
+        return;
+    }
+
+    Announcement copy = ann;
+    copy.withdraw = true;
+    withdrawals->push_back(copy);
+    for (auto it = passed_rov->begin(); it != passed_rov->end();) {
+        if (*it == copy) {
+            it = passed_rov->erase(it);
+        } else {
+            ++it;
+        }
+    }
+    AS::graph_changed = true;  // This means we will need to do another propagation
+}
+
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
  *
  * Approximates BGP best path selection based on announcement priority.
@@ -79,19 +104,12 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  */ 
 void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     // Check for existing announcement for prefix
-    auto search = all_anns->find(ann.prefix);
+    auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
-    // ROV++ 
-    // Check preventive announcement alt
-    if (ann.alt == asn) {
-        // Ignore the preventive announcement
-        return;
-    }
-
     // No announcement found for incoming announcement prefix
-    if (search == all_anns->end()) {
-        all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+    if (search == loc_rib->end()) {
+        loc_rib->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
             auto set = inverse_results->find(
@@ -100,44 +118,41 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 set->second->erase(asn);
             }
         }
-    // Tiebraker for equal priority between old and new ann
-    } else if (ann.priority == search->second.priority) {
-        // Check for override
-        if (search->second.received_from_asn == ann.tiebreak_override) {
-            search->second = ann;
-        } else {
-            // Random tiebraker
-            //std::minstd_rand ran_bool(asn);
-            bool value = (ran ? get_random() : ann.received_from_asn < search->second.received_from_asn );
-            if (value) {
-                // Use the new announcement and record it won the tiebreak
-                if (search_depref == depref_anns->end()) {
-                    // Update inverse results
-                    swap_inverse_result(
-                        std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                        std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                    // Insert depref ann
-                    depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
-                                                                          search->second));
-                    ann.tiebreak_override = ann.received_from_asn;
-                    search->second = ann;
-                } else {
-                    swap_inverse_result(
-                        std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                        std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                    search_depref->second = search->second;
-                    ann.tiebreak_override = ann.received_from_asn;
-                    search->second = ann;
-                }
+    // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
+    } else if (ann.priority == search->second.priority && ann != search->second) {
+        // Random tiebraker
+        //std::minstd_rand ran_bool(asn);
+        bool value = (ran ? get_random() : ann.received_from_asn < search->second.received_from_asn );
+        // TODO This sets first come, first kept
+        // value = false;
+        if (value) {
+            // Use the new announcement and record it won the tiebreak
+            if (search_depref == depref_anns->end()) {
+                // Update inverse results
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                // Insert depref ann
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                      search->second));
+                withdraw(search->second);
+                search->second = ann;
             } else {
-                // Use the old announcement
-                if (search_depref == depref_anns->end()) {
-                    depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
-                                                                          ann));
-                } else {
-                    // Replace second best with the old priority announcement
-                    search_depref->second = ann;
-                }
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                search_depref->second = search->second;
+                withdraw(search->second);
+                search->second = ann;
+            }
+        } else {
+            // Use the old announcement
+            if (search_depref == depref_anns->end()) {
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                                                                      ann));
+            } else {
+                // Replace second best with the old priority announcement
+                search_depref->second = ann;
             }
         }
     // Otherwise check new announcements priority for best path selection
@@ -151,6 +166,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                   search->second));
             // Replace the old announcement with the higher priority
+            withdraw(search->second);
             search->second = ann;
         } else {
             // Update inverse results
@@ -160,10 +176,10 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             // Replace second best with the old priority announcement
             search_depref->second = search->second;
             // Replace the old announcement with the higher priority
+            withdraw(search->second);
             search->second = ann;
         }
     // Old announcement was better
-    // Check depref announcements priority for best path selection
     } else {
         if (search_depref == depref_anns->end()) {
             // Insert new second best annoucement
@@ -175,30 +191,114 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     }
 }
 
-/** Iterate through incoming_announcements and keep only the best. 
+/** Iterate through ribs_in and keep only the best. 
  */
 void ROVppAS::process_announcements(bool ran) {
-    for (auto &ann : *incoming_announcements) {
-        auto search = all_anns->find(ann.prefix);
-        if (search == all_anns->end() || !search->second.from_monitor) {
+    // Filter ribs_in for loops, checking path for self
+    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+        bool deleted = false;
+        for (uint32_t i : it->as_path) {
+            if (i == asn && it->origin != asn) {
+                it = ribs_in->erase(it);
+                deleted = true;
+                break;
+            }
+        }
+        if (!deleted) {
+            ++it;
+        }
+    }
+
+    // Process all withdrawals in the ribs_in
+    bool something_removed = false;
+    do {
+        something_removed = false;
+        auto ribs_in_copy = *ribs_in;
+        for (auto it = ribs_in_copy.begin(); it != ribs_in_copy.end(); ++it) {
+            bool should_cancel = false;
+            // For each withdrawal
+            if (it->withdraw) {
+                // Determine if cancellation should occur
+                for (auto ann : *ribs_in) {
+                    // Indicates there is a ann for the withdrawal to apply to
+                    if (!ann.withdraw && ann == *it) {
+                        should_cancel = true;
+                        break;
+                    }
+                }
+                if (should_cancel) {
+                    auto search = loc_rib->find(it->prefix);
+                    // Process withdrawal if it applies to loc_rib
+                    if (search != loc_rib->end() && search->second == *it) {
+                        withdraw(search->second);
+                        // Put the best alternative announcement into the loc_rib
+                        Announcement best_alternative_ann = best_alternative_route(search->second); 
+                        if (search->second != best_alternative_ann) {
+                            search->second = best_alternative_ann;
+                        } else {
+                            loc_rib->erase(it->prefix);    
+                        }
+                        AS::graph_changed = true;  // This means we will need to do another propagation
+                    }
+                    // Process withdrawal in the ribs_in
+                    for (auto it2 = ribs_in->begin(); it2 != ribs_in->end();) {
+                        // Remove any real ann and withdrawal itself
+                        if (*it2 == *it) {
+                            it2 = ribs_in->erase(it2);
+                            something_removed = true;
+                        } else {
+                            ++it2;
+                        }
+                    }
+                }
+            }
+        }
+    } while (something_removed);
+    
+    // Process the ribs_in
+    for (auto &ann : *ribs_in) {
+        auto search = loc_rib->find(ann.prefix);
+        // TODO Remove this?
+        // Withdrawals should be processed already above
+        // Process withdrawals, regardless of policy
+        if (ann.withdraw) {
+            if (search != loc_rib->end() && search->second == ann) {
+                withdraw(search->second);
+                // Put the best alternative announcement into the loc_rib
+                Announcement best_alternative_ann = best_alternative_route(search->second); 
+                if (search->second != best_alternative_ann) {
+                    search->second = best_alternative_ann;
+                } else {
+                    loc_rib->erase(ann.prefix);    
+                }
+                AS::graph_changed = true;  // This means we will need to do another propagation
+                
+            }
+            continue;
+        }
+        // If loc_rib announcement isn't a seeded announcement
+        if (search == loc_rib->end() || !search->second.from_monitor) {
             // Regardless of policy, if the announcement originates from this AS
             // *or is a subprefix of its own prefix*
-            // the received_from_asn set to 64514 (if we are not an attacker)
-            if (ann.origin == asn && attackers->find(asn) == attackers->end()) { ann.received_from_asn=64514; }
-            for (auto rib_ann : *all_anns) {
+            // drop it
+            if (ann.origin == asn && attackers->find(asn) == attackers->end()) { continue; }
+            for (auto rib_ann : *loc_rib) {
                 if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
                     rib_ann.second.origin == asn &&
                     attackers->find(asn) == attackers->end()) {
                     ann.received_from_asn=64514;
                 }
             }
-            if (policy_vector.size() > 0) { // if we have a policy
+            // If we have a policy adopted
+            if (policy_vector.size() > 0) {
+                // Basic ROV
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
                         process_announcement(ann, ran);
                     }
+                // ROV++ V0.1
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
-                    // The policy for ROVpp 0.1 is identical to ROV in the extrapolator.
+                    // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
@@ -206,7 +306,7 @@ void ROVppAS::process_announcements(bool ran) {
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
-                        if (best_alternative_ann == ann) { // if no alternative
+                        if (best_alternative_ann == ann) { // If no alternative
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
@@ -215,6 +315,7 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, ran);
                         }
                     }
+                // ROV++ V0.2
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
@@ -223,16 +324,17 @@ void ROVppAS::process_announcements(bool ran) {
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
-                        if (best_alternative_ann == ann) { // if no alternative
-                            // mark as blackholed and accept this announcement
+                        if (best_alternative_ann == ann) { // If no alternative
+                            // Mark as blackholed and accept this announcement
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, ran);
                         } else {
-                          process_announcement(best_alternative_ann, ran);
+                            process_announcement(best_alternative_ann, ran);
                         }
                     }
+                // ROV++ V0.2bis
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
@@ -241,16 +343,17 @@ void ROVppAS::process_announcements(bool ran) {
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
-                        if (best_alternative_ann == ann) { // if no alternative
-                            // mark as blackholed and accept this announcement
+                        if (best_alternative_ann == ann) { // If no alternative
+                            // Mark as blackholed and accept this announcement
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, ran);
                         } else {
-                          process_announcement(best_alternative_ann, ran);
+                            process_announcement(best_alternative_ann, ran);
                         }
                     }
+                // ROV++ V0.3
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
@@ -258,12 +361,12 @@ void ROVppAS::process_announcements(bool ran) {
                         passed_rov->push_back(ann);
                         process_announcement(ann);
                     } else {
-                        // if it is from a customer, silently drop it
+                        // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         failed_rov->push_back(ann);
-                        if (best_alternative_route(ann) == ann) { // if no alternative
-                            // mark as blackholed and accept this announcement
+                        if (best_alternative_route(ann) == ann) { // If no alternative
+                            // Mark as blackholed and accept this announcement
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
@@ -278,20 +381,28 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(preventive_ann);
                         }
                     }
-                } else { // unrecognized policy defaults to bgp
+                } else { // Unrecognized policy defaults to bgp
                     process_announcement(ann, ran);
                 }
-            } else { // if there is no policy
+            } else { // If there is no policy, default to bgp
                 process_announcement(ann, ran);
             }
         }
     }
-    incoming_announcements->clear();
+    // TODO Remove this?
+    // Withdrawals are deleted after processing above
+    // Remove withdrawals
+    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
+        if (it->withdraw) {
+            it = ribs_in->erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
-/**
- * Will return the best alternative announcemnt if it exists. If it doesn't exist, it will return the
- * the announcement it was given.
+/** Will return the best alternative announcemnt if it exists. If it doesn't exist, it will return the 
+ * announcement it was given.
  * 
  * @param  ann An announcemnt you want to find an alternative for.
  * @return     The best alternative announcement (i.e. an announcement which came from a neighbor who hadn't shared
@@ -301,11 +412,15 @@ void ROVppAS::process_announcements(bool ran) {
      // Initialize the default answer of (No best alternative with the current given ann)
      // This variable will update with the best ann if it exists
      Announcement best_alternative_ann = ann;
-     // Create an ultimate list of good candidate announcemnts (passed_rov + incoming_announcements)
-     std::vector<Announcement> candidates = *passed_rov;
+     // Create an ultimate list of good candidate announcemnts (passed_rov + ribs_in)
+     std::vector<Announcement> candidates;
      std::vector<Announcement> baddies = *failed_rov;
-     for (auto candidate_ann : *incoming_announcements) {
-         if (pass_rov(candidate_ann)) {
+     // For each possible alternative
+     for (auto candidate_ann : *ribs_in) {
+         // TODO Remove loop check var?
+         // Already performed loop check over ribs_in in process_announcements()
+         bool loop = false;
+         if (pass_rov(candidate_ann) && !candidate_ann.withdraw && !loop) {
              candidates.push_back(candidate_ann);
          } else {
              baddies.push_back(candidate_ann);
@@ -335,22 +450,8 @@ void ROVppAS::process_announcements(bool ran) {
                  }
              }
          }
-     }
-     return best_alternative_ann;
- }
-
-/**
- * Computes "Is a better than b?".
- * @param  a Announcement 1
- * @param  b Announcement 2
- * @return   Will return a bool of whether or not a is better than b
- */
-bool ROVppAS::is_better(Announcement &a, Announcement &b) {    
-    // TODO: We will return to this to consider blackhole size
-    // We opted to use this for simplicity, but the case of considering
-    // whether or not a blackhole exists in one of these two ann is significant
-    // Use BGP priority to make decision
-    return  a.priority > b.priority;
+    }
+    return best_alternative_ann;
 }
 
 /**

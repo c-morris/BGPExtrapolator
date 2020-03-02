@@ -42,11 +42,17 @@ public:
     // TODO replace with proper templating
     uint32_t policy_index;      // stores the policy index the ann applies
     uint32_t tiebreak_override; // ensure tiebreaks propagate where they should
+    uint32_t sent_to_asn;       // ASN this ann is being sent to
+    bool withdraw;              // if this is a withdrawn route
+    std::vector<uint32_t> as_path; // stores full as path
 
     /** Default constructor
      */
-    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t from_asn, int64_t timestamp = 0) {
+    Announcement(uint32_t aorigin, 
+                 uint32_t aprefix, 
+                 uint32_t anetmask,
+                 uint32_t from_asn, 
+                 int64_t timestamp = 0) {
         prefix.addr = aprefix;
         prefix.netmask = anetmask;
         origin = aorigin;
@@ -57,15 +63,69 @@ public:
         policy_index = 0;
         alt = 0;
         tiebreak_override = 0;
+        sent_to_asn = 0;
+        withdraw = false;
     }
     
     /** Priority constructor
      */
-    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false) 
-        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) { 
+    Announcement(uint32_t aorigin, 
+                 uint32_t aprefix, 
+                 uint32_t anetmask,
+                 uint32_t pr, 
+                 uint32_t from_asn, 
+                 int64_t timestamp, 
+                 const std::vector<uint32_t> &path,
+                 bool a_from_monitor = false) 
+        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
         priority = pr; 
         from_monitor = a_from_monitor;
+        as_path = path;
+    }
+
+    /** Copy constructor
+     */
+    Announcement(const Announcement& ann) {
+        prefix = ann.prefix;           
+        origin = ann.origin;           
+        priority = ann.priority;         
+        received_from_asn = ann.received_from_asn;
+        from_monitor = ann.from_monitor; 
+        tstamp = ann.tstamp;            
+        alt = ann.alt;              
+        policy_index = ann.policy_index;     
+        tiebreak_override = ann.tiebreak_override;
+        sent_to_asn = ann.sent_to_asn;       
+        withdraw =  ann.withdraw;              
+        // this is the important part
+        as_path = ann.as_path; 
+     }
+
+    /** Copy assignment
+     */
+    Announcement& operator=(Announcement ann) {
+        if(&ann == this)
+            return *this;
+        swap(*this, ann);
+        return *this;
+    }
+
+    /** Swap
+     */
+    friend void swap(Announcement& a, Announcement& b) {
+        std::swap(a.prefix, b.prefix);
+        std::swap(a.origin, b.origin);
+        std::swap(a.priority, b.priority);
+        std::swap(a.received_from_asn, b.received_from_asn);
+        std::swap(a.from_monitor, b.from_monitor);
+        std::swap(a.tstamp, b.tstamp);
+        std::swap(a.alt, b.alt);
+        std::swap(a.policy_index, b.policy_index);
+        std::swap(a.tiebreak_override, b.tiebreak_override);
+        std::swap(a.sent_to_asn, b.sent_to_asn);
+        std::swap(a.withdraw, b.withdraw);
+        a.as_path.resize(b.as_path.size());
+        std::swap(a.as_path, b.as_path);
     }
 
     /** Defines the << operator for the Announcements
@@ -80,7 +140,15 @@ public:
         os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
             ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
             << std::endl << "Priority:\t" << ann.priority << std::endl 
-            << "Recv'd from:\t" << std::dec << ann.received_from_asn;
+            << "Recv'd from:\t" << std::dec << ann.received_from_asn << std::endl
+            << "Sent to:\t" << std::dec << ann.sent_to_asn << std::endl
+            << "Alt:\t\t" << std::dec << ann.alt << std::endl
+            << "TieBrk:\t\t" << std::dec << ann.tiebreak_override << std::endl
+            << "From Monitor:\t" << std::boolalpha << ann.from_monitor << std::endl
+            << "Withdraw:\t" << std::boolalpha << ann.withdraw << std::endl
+            << "AS_PATH\t";
+            for (auto i : ann.as_path) { os << i << ' '; }
+            os << std::endl;
         return os;
     }
 
@@ -100,16 +168,30 @@ public:
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-	virtual std::ostream& to_blackholes_csv(std::ostream &os){
+    virtual std::ostream& to_blackholes_csv(std::ostream &os) {
         os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
         return os;
-	}
+    }
     
     bool operator==(const Announcement &b) const {
         return (origin == b.origin) &&
                (prefix == b.prefix) &&
+               (as_path == b.as_path) &&
                (priority == b.priority) &&
+               (sent_to_asn == b.sent_to_asn) &&
                (received_from_asn == b.received_from_asn);
+    }
+    
+    bool operator!=(const Announcement &b) const {
+        return !(*this == b);
+    }
+
+    bool operator<(const Announcement &b) const {
+        return (origin < b.origin) ||
+               (prefix < b.prefix) ||
+               (priority < b.priority) ||
+               (sent_to_asn < b.sent_to_asn) ||
+               (received_from_asn < b.received_from_asn);
     }
 };
 #endif

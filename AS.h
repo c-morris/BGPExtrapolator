@@ -46,9 +46,10 @@ public:
     std::minstd_rand ran_bool;  // Random Number Generator
     
     // Defer processing of incoming announcements for efficiency
-    std::vector<Announcement> *incoming_announcements;
+    std::vector<Announcement> *ribs_in;
+    std::vector<Announcement> *withdrawals;
     // Maps of all announcements stored
-    std::map<Prefix<>, Announcement> *all_anns;
+    std::map<Prefix<>, Announcement> *loc_rib;
     std::map<Prefix<>, Announcement> *depref_anns;
     // Stores AS Relationships
     std::set<uint32_t> *providers; 
@@ -62,6 +63,8 @@ public:
     int index;
     int lowlink;
     bool onStack;
+    // Static Member Variables
+    static bool graph_changed;
     
     // Constructor
     AS(uint32_t myasn=0, 
