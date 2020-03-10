@@ -5,7 +5,7 @@
 #define DEPREF_RESULTS_TABLE "extrapolation_deprefer_results"
 #define INVERSE_RESULTS_TABLE "extrapolation_inverse_results"
 #define PEERS_TABLE "peers"
-#define CUSTOMER_PROVIDER_TABLE "customer_providers"
+#define CUSTOMER_PROVIDER_TABLE "provider_customers"
 #define ROAS_TABLE "roas"
 #define STUBS_TABLE "stubs"
 #define NON_STUBS_TABLE "non_stubs"
