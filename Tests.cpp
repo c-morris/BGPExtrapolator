@@ -190,6 +190,10 @@ BOOST_AUTO_TEST_CASE( ROVpp_test_withdrawal ) {
 BOOST_AUTO_TEST_CASE( ROVpp_test_tiny_hash ) {
         BOOST_CHECK( test_tiny_hash() );
 }
+BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
+        BOOST_CHECK( test_rovpp_full_path() );
+}
+
 #endif // RUN_TESTS
 
 

@@ -88,7 +88,7 @@ bool test_best_alternative_route_chosen();
 bool test_rovpp_tiebreak_override();
 bool test_withdrawal();
 bool test_tiny_hash();
-
+bool test_rovpp_full_path();
 // Prototypes for SQLQuerierTest.cpp
 
 #endif
