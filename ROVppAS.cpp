@@ -404,10 +404,7 @@ void ROVppAS::process_announcements(bool ran) {
      std::vector<Announcement> baddies = *failed_rov;
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
-         // TODO Remove loop check var?
-         // Already performed loop check over ribs_in in process_announcements()
-         bool loop = false;
-         if (pass_rov(candidate_ann) && !candidate_ann.withdraw && !loop) {
+         if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
              candidates.push_back(candidate_ann);
          } else {
              baddies.push_back(candidate_ann);
