@@ -197,8 +197,8 @@ void ROVppAS::process_announcements(bool ran) {
     // Filter ribs_in for loops, checking path for self
     for (auto it = ribs_in->begin(); it != ribs_in->end();) {
         bool deleted = false;
-        for (uint32_t i : it->as_path) {
-            if (i == asn && it->origin != asn) {
+        for (uint32_t a : it->as_path) {
+            if (a == asn && it->origin != asn) {
                 it = ribs_in->erase(it);
                 deleted = true;
                 break;
@@ -214,13 +214,18 @@ void ROVppAS::process_announcements(bool ran) {
     do {
         something_removed = false;
         auto ribs_in_copy = *ribs_in;
+        int i = 0;
         for (auto it = ribs_in_copy.begin(); it != ribs_in_copy.end(); ++it) {
             bool should_cancel = false;
             // For each withdrawal
             if (it->withdraw) {
+                if (asn == 3301) {
+                    std::cout << "Cancelling withdraw" << *it << '\n';
+                }
                 // Determine if cancellation should occur
-                for (auto ann : *ribs_in) {
+                for (int j = 0; j <= i && j < ribs_in->size(); j++) {
                     // Indicates there is a ann for the withdrawal to apply to
+                    auto ann = ribs_in->at(j);
                     if (!ann.withdraw && ann == *it) {
                         should_cancel = true;
                         break;
@@ -246,12 +251,15 @@ void ROVppAS::process_announcements(bool ran) {
                         if (*it2 == *it) {
                             it2 = ribs_in->erase(it2);
                             something_removed = true;
+                            // decrement index
+                            i--;
                         } else {
                             ++it2;
                         }
                     }
                 }
             }
+            i++;
         }
     } while (something_removed);
     
