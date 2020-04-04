@@ -33,14 +33,12 @@ ROVppAS::ROVppAS(uint32_t myasn,
     // Save reference to attackers
     attackers = rovpp_attackers;
     failed_rov = new std::vector<Announcement>;
-    passed_rov = new std::vector<Announcement>;
     blackholes = new std::vector<Announcement>;
     preventive_anns = new std::vector<std::pair<Announcement,Announcement>>;  
 }
 
 ROVppAS::~ROVppAS() { 
     delete failed_rov;
-    delete passed_rov;
     delete blackholes;
     delete preventive_anns;
 }
@@ -85,13 +83,6 @@ void ROVppAS::withdraw(Announcement &ann) {
     Announcement copy = ann;
     copy.withdraw = true;
     withdrawals->push_back(copy);
-    for (auto it = passed_rov->begin(); it != passed_rov->end();) {
-        if (*it == copy) {
-            it = passed_rov->erase(it);
-        } else {
-            ++it;
-        }
-    }
     AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
@@ -309,7 +300,6 @@ void ROVppAS::process_announcements(bool ran) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
                         process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
@@ -327,7 +317,6 @@ void ROVppAS::process_announcements(bool ran) {
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
                         process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
@@ -346,7 +335,6 @@ void ROVppAS::process_announcements(bool ran) {
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
                         process_announcement(ann, ran);
                     } else {
                         failed_rov->push_back(ann);
@@ -366,7 +354,6 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
                         process_announcement(ann);
                     } else {
                         // If it is from a customer, silently drop it
@@ -420,15 +407,12 @@ void ROVppAS::process_announcements(bool ran) {
      // Initialize the default answer of (No best alternative with the current given ann)
      // This variable will update with the best ann if it exists
      Announcement best_alternative_ann = ann;
-     // Create an ultimate list of good candidate announcemnts (passed_rov + ribs_in)
+     // Create an ultimate list of good candidate announcemnts (ribs_in)
      std::vector<Announcement> candidates;
      std::vector<Announcement> baddies = *failed_rov;
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
-         // TODO Remove loop check var?
-         // Already performed loop check over ribs_in in process_announcements()
-         bool loop = false;
-         if (pass_rov(candidate_ann) && !candidate_ann.withdraw && !loop) {
+         if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
              candidates.push_back(candidate_ann);
          } else {
              baddies.push_back(candidate_ann);
