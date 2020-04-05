@@ -456,8 +456,8 @@ void ROVppAS::check_preventives(Announcement ann) {
         ann.prefix.netmask = 0xffffff00;
         // find the preventive ann if it exists
         auto search = loc_rib->find(ann.prefix);
-        Announcement best_alternative_ann = best_alternative_route(search->second); 
         if (search != loc_rib->end()) {
+            Announcement best_alternative_ann = best_alternative_route(search->second); 
             if (ann.received_from_asn == search->second.received_from_asn) {
                 // Remove and attempt to replace the preventive ann
                 withdrawals->push_back(ann);
