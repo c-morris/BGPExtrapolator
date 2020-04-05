@@ -78,39 +78,6 @@ void ROVppAS::withdraw(Announcement &ann) {
     copy.withdraw = true;
     withdrawals->push_back(copy);
     AS::graph_changed = true;  // This means we will need to do another propagation
-
-    // ROV++ V0.3
-    if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
-        // note this only works for /24...
-        copy.prefix.netmask = 0xffffff00;
-        // find the preventive ann if it exists
-        auto search = loc_rib->find(copy.prefix);
-        if (search != loc_rib->end()) {
-            if (copy.received_from_asn == search->second.received_from_asn) {
-                // Remove and attempt to replace the preventive ann
-                withdrawals->push_back(copy);
-                loc_rib->erase(copy.prefix);    
-                copy.withdraw = false;
-                // replace
-                Announcement best_alternative_ann = best_alternative_route(search->second); 
-                if (best_alternative_route(copy) == copy) { // If no alternative
-                    // Mark as blackholed and accept this announcement
-                    blackholes->push_back(copy);
-                    copy.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                    copy.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                    process_announcement(copy);
-                } else {
-                    // Make preventive announcement
-                    Announcement preventive_ann = best_alternative_ann;
-                    preventive_ann.prefix = copy.prefix;
-                    preventive_ann.alt = best_alternative_ann.received_from_asn;
-                    if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
-                    preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
-                    process_announcement(preventive_ann);
-                }
-            }
-        }
-    }
 }
 
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
@@ -140,6 +107,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     } else if (ann.priority == search->second.priority && ann != search->second) {
         // Random tiebraker
         //std::minstd_rand ran_bool(asn);
+        ran = false;
         bool value = (ran ? get_random() : tiny_hash(ann.received_from_asn) < tiny_hash(search->second.received_from_asn) );
         // TODO This sets first come, first kept
         // value = false;
@@ -154,6 +122,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                       search->second));
                 withdraw(search->second);
+                check_preventives(search->second);
                 search->second = ann;
             } else {
                 swap_inverse_result(
@@ -161,6 +130,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 search_depref->second = search->second;
                 withdraw(search->second);
+                check_preventives(search->second);
                 search->second = ann;
             }
         } else {
@@ -185,6 +155,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                                                                   search->second));
             // Replace the old announcement with the higher priority
             withdraw(search->second);
+            check_preventives(search->second);
             search->second = ann;
         } else {
             // Update inverse results
@@ -195,6 +166,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             search_depref->second = search->second;
             // Replace the old announcement with the higher priority
             withdraw(search->second);
+            check_preventives(search->second);
             search->second = ann;
         }
     // Old announcement was better
@@ -471,6 +443,45 @@ void ROVppAS::process_announcements(bool ran) {
          }
     }
     return best_alternative_ann;
+}
+
+void ROVppAS::check_preventives(Announcement ann) {
+    // ROV++ V0.3
+    if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+        // note this only works for /24...
+        if (ann.prefix.netmask == 0xffffff00) {
+            // this is already a preventive
+            return;
+        }
+        ann.prefix.netmask = 0xffffff00;
+        // find the preventive ann if it exists
+        auto search = loc_rib->find(ann.prefix);
+        Announcement best_alternative_ann = best_alternative_route(search->second); 
+        if (search != loc_rib->end()) {
+            if (ann.received_from_asn == search->second.received_from_asn) {
+                // Remove and attempt to replace the preventive ann
+                withdrawals->push_back(ann);
+                loc_rib->erase(ann.prefix);    
+                ann.withdraw = false;
+                // replace
+                if (best_alternative_route(ann) == ann) { // If no alternative
+                    // Mark as blackholed and accept this announcement
+                    blackholes->push_back(ann);
+                    ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                    ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                    process_announcement(ann);
+                } else {
+                    // Make preventive announcement
+                    Announcement preventive_ann = best_alternative_ann;
+                    preventive_ann.prefix = ann.prefix;
+                    preventive_ann.alt = best_alternative_ann.received_from_asn;
+                    if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
+                    preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
+                    process_announcement(preventive_ann);
+                }
+            }
+        }
+    }
 }
 
 /** Tiny galois field hash with a fixed key of 3.
