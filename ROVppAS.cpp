@@ -293,14 +293,14 @@ void ROVppAS::process_announcements(bool ran) {
                 // Basic ROV
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
-                        process_announcement(ann, ran);
+                        process_announcement(ann, false);
                     }
                 // ROV++ V0.1
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
-                        process_announcement(ann, ran);
+                        process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -308,16 +308,16 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann, ran);
+                            process_announcement(ann, false);
                         } else {
-                            process_announcement(best_alternative_ann, ran);
+                            process_announcement(best_alternative_ann, false);
                         }
                     }
                 // ROV++ V0.2
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
-                        process_announcement(ann, ran);
+                        process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -326,16 +326,16 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann, ran);
+                            process_announcement(ann, false);
                         } else {
-                            process_announcement(best_alternative_ann, ran);
+                            process_announcement(best_alternative_ann, false);
                         }
                     }
                 // ROV++ V0.2bis
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
-                        process_announcement(ann, ran);
+                        process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -344,9 +344,9 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->push_back(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann, ran);
+                            process_announcement(ann, false);
                         } else {
-                            process_announcement(best_alternative_ann, ran);
+                            process_announcement(best_alternative_ann, false);
                         }
                     }
                 // ROV++ V0.3
@@ -377,10 +377,10 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 } else { // Unrecognized policy defaults to bgp
-                    process_announcement(ann, ran);
+                    process_announcement(ann, false);
                 }
             } else { // If there is no policy, default to bgp
-                process_announcement(ann, ran);
+                process_announcement(ann, false);
             }
         }
     }

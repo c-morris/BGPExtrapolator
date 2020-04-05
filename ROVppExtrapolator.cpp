@@ -38,6 +38,7 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
     // The graph variable maintains backwards compatibility
     it_size = iteration_size;   // Number of prefix to be precessed per iteration (currently not being used)
     random = random_b;          // Flag for using random tiebreaks
+    random = false;          // FIX ME
     // TODO fix this memory leak
     graph = new ROVppASGraph();
     querier = new ROVppSQLQuerier(g, r, e, f);
@@ -250,7 +251,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             cur_path,
                                             true);
             // Send the announcement to the current AS
-            as_on_path->process_announcement(ann, random);
+            as_on_path->process_announcement(ann, false);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
                         std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
@@ -321,7 +322,7 @@ void ROVppExtrapolator::propagate_up() {
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
+            search->second->process_announcements(false);
             //ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
             //process_withdrawals(rovpp_as);
             send_all_announcements(asn, true, false, false);
@@ -331,7 +332,7 @@ void ROVppExtrapolator::propagate_up() {
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
+            search->second->process_announcements(false);
             //ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
             //process_withdrawals(rovpp_as);
             send_all_announcements(asn, false, true, false);
@@ -346,7 +347,7 @@ void ROVppExtrapolator::propagate_down() {
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
+            search->second->process_announcements(false);
             //ROVppAS *rovpp_as = dynamic_cast<ROVppAS*>(search->second);
             //process_withdrawals(rovpp_as);
             send_all_announcements(asn, false, false, true);
