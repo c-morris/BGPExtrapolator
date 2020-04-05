@@ -237,7 +237,7 @@ void ROVppAS::process_announcements(bool ran) {
             // For each withdrawal
             if (it->withdraw) {
                 if (asn == 3301) {
-                    std::cout << "Cancelling withdraw" << *it << '\n';
+                    //std::cout << "Cancelling withdraw" << *it << '\n';
                 }
                 // Determine if cancellation should occur
                 for (int j = 0; j <= i && j < ribs_in->size(); j++) {
