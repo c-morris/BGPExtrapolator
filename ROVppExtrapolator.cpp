@@ -121,7 +121,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         propagate_up();
         propagate_down();
         count++;
-    } while (AS::graph_changed && count < 3);
+    } while (AS::graph_changed && count < 10);
     std::cout << "Times propagated: " << count << std::endl;
 
     for (auto &as : *rovpp_graph->ases){
