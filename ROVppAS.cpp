@@ -122,16 +122,16 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                       search->second));
                 withdraw(search->second);
-                check_preventives(search->second);
                 search->second = ann;
+                check_preventives(search->second);
             } else {
                 swap_inverse_result(
                     std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 search_depref->second = search->second;
                 withdraw(search->second);
-                check_preventives(search->second);
                 search->second = ann;
+                check_preventives(search->second);
             }
         } else {
             // Use the old announcement
@@ -155,8 +155,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                                                                   search->second));
             // Replace the old announcement with the higher priority
             withdraw(search->second);
-            check_preventives(search->second);
             search->second = ann;
+            check_preventives(search->second);
         } else {
             // Update inverse results
             swap_inverse_result(
@@ -166,8 +166,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             search_depref->second = search->second;
             // Replace the old announcement with the higher priority
             withdraw(search->second);
-            check_preventives(search->second);
             search->second = ann;
+            check_preventives(search->second);
         }
     // Old announcement was better
     } else {
