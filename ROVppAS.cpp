@@ -88,7 +88,9 @@ void ROVppAS::withdraw(Announcement &ann) {
         if (search != loc_rib->end()) {
             if (copy.received_from_asn == search->second.received_from_asn) {
                 // Remove and attempt to replace the preventive ann
+                withdrawals->push_back(copy);
                 loc_rib->erase(copy.prefix);    
+                copy.withdraw = false;
                 // replace
                 Announcement best_alternative_ann = best_alternative_route(search->second); 
                 if (best_alternative_route(copy) == copy) { // If no alternative
