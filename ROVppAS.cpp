@@ -74,16 +74,42 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  * Also remove it from the ribs_in.
  */
 void ROVppAS::withdraw(Announcement &ann) {
-    // TODO remove this?
-    if (ann.withdraw) {
-        std::cerr << "Withdraw found in loc_rib.\n";
-        return;
-    }
-
     Announcement copy = ann;
     copy.withdraw = true;
     withdrawals->push_back(copy);
     AS::graph_changed = true;  // This means we will need to do another propagation
+
+    // ROV++ V0.3
+    if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+        // note this only works for /24...
+        copy.prefix.netmask = 0xffffff00;
+        // find the preventive ann if it exists
+        auto search = loc_rib->find(copy.prefix);
+        if (search != loc_rib->end()) {
+            if (copy.received_from_asn == search->second.received_from_asn) {
+                // Remove and attempt to replace the preventive ann
+                loc_rib->erase(ann.prefix);    
+                AS::graph_changed = true;  // This means we will need to do another propagation
+                // replace
+                Announcement best_alternative_ann = best_alternative_route(search->second); 
+                if (best_alternative_route(copy) == copy) { // If no alternative
+                    // Mark as blackholed and accept this announcement
+                    blackholes->push_back(copy);
+                    copy.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                    copy.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                    process_announcement(copy);
+                } else {
+                    // Make preventive announcement
+                    Announcement preventive_ann = best_alternative_ann;
+                    preventive_ann.prefix = copy.prefix;
+                    preventive_ann.alt = best_alternative_ann.received_from_asn;
+                    if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
+                    preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
+                    process_announcement(preventive_ann);
+                }
+            }
+        }
+    }
 }
 
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
