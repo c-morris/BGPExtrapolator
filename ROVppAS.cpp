@@ -87,13 +87,13 @@ void ROVppAS::withdraw(Announcement &ann) {
  * 
  * @param ann The announcement to be processed
  */ 
-void ROVppAS::process_announcement(Announcement &ann, bool ran) {
+void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
     // Check for existing announcement for prefix
     auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
     // No announcement found for incoming announcement prefix
-    if (search == loc_rib->end()) {
+    if (search == loc_rib->end() || override) {
         loc_rib->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
@@ -366,6 +366,8 @@ void ROVppAS::process_announcements(bool ran) {
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann);
                         } else {
+                            // Move entire prefix to alternative
+                            process_announcement(best_alternative_ann, false, true);
                             // Make preventive announcement
                             Announcement preventive_ann = best_alternative_ann;
                             preventive_ann.prefix = ann.prefix;
