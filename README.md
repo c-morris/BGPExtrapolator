@@ -90,15 +90,15 @@ Optional arguments:
 
 **-i**
 
-The normal extrapolator results contain a BGP announcement for each prefix for each AS, meaning the results contain (# of prefix) * (# of ASes). This can take significant time to write to disc as well as occupying large spaces within that disc. The inverse results store the set of ASes the DID NOT receive a particular prefix-origin, significantly reducing the size of the results stored and the time required to store them.
+The extrapolator results contain a BGP announcement for each prefix for each AS, meaning the results contain (# of prefixes) * (# of ASes). This can consume a lot of disk space. The inverse results take advantage of the fact that most ASes have routes to most other ASes and store the set of ASes the _did not_ receive a particular prefix-origin, significantly reducing the size of the results.
 
 **-d**
 
-In order to implement a depreference policy, to check for a second-best announcement that can be used in the case of a detected hijacking, the extrapolator can store the second-best announcement for each prefix at each AS. However, this has significant overhead in terms of the size of the results stored and the time required to store them.
+In order to implement a depreference policy, to check for a second-best announcement that can be used in the case of a detected hijacking, the extrapolator can store the second-best announcement for each prefix at each AS. This has significant overhead in terms of the size of the results stored and the time required to store them.
 
 **-s**
 
-The iteration size determines the maximum number of announcements that will be queried for and pulled into system memory at one time. Lower values means less memory usage and fewer CPU cache misses.
+The iteration size determines the maximum number of announcements that will be queried for and pulled into system memory at one time. Lower values means less memory usage and better CPU cache performance.
 
 **-a**
 
