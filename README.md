@@ -50,7 +50,7 @@ example bgp.conf:
 
 ```
 [bgp]
-#Lines starting with '[' or '#' are ignored 
+#Lines starting with '#' are ignored 
 username = user_name
 password = password123
 database = bgp
@@ -88,35 +88,35 @@ Optional arguments:
 | -o --inverse-results-table | extrapolation-inverse-results | name of the inverse results table
 | -l --log-folder | disabled | enables the logger and specifies a folder to save log files
 
-**Parameter -i**
+**-i**
 
 The normal extrapolator results contain a BGP announcement for each prefix for each AS, meaning the results contain (# of prefix) * (# of ASes). This can take significant time to write to disc as well as occupying large spaces within that disc. The inverse results store the set of ASes the DID NOT receive a particular prefix-origin, significantly reducing the size of the results stored and the time required to store them.
 
-**Parameter -d**
+**-d**
 
 In order to implement a depreference policy, to check for a second-best announcement that can be used in the case of a detected hijacking, the extrapolator can store the second-best announcement for each prefix at each AS. However, this has significant overhead in terms of the size of the results stored and the time required to store them.
 
-**Parameter -s**
+**-s**
 
 The iteration size determines the maximum number of announcements that will be queried for and pulled into system memory at one time. Lower values means less memory usage and fewer CPU cache misses.
 
-**Parameter -a**
+**-a**
 
 Allows specification of the input name of the MRT announcements table table.
 
-**Parameter -r**
+**-r**
 
 Allows specification of the output name of the normal results table.
 
-**Parameter -d**
+**-d**
 
 Allows specification of the output name of the depref results table.
 
-**Parameter -o**
+**-o**
 
 Allows specification of the output name of the inverse results table.
 
-**Parameter -l**
+**-l**
 
 With this flag and a specified directory, the logger will be enabled and generate files in the specified directory. A directory MUST be specified. Everytime the logger runs, it will remove all .log files in the directory.
 
