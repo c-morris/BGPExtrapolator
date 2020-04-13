@@ -67,7 +67,6 @@ bool ROVppAS::pass_rov(Announcement &ann) {
     if (attackers != NULL) {
         return (attackers->find(ann.origin) == attackers->end());
     } else {
-        passed_rov->push_back(ann);
         return true;
     }
 }
@@ -295,6 +294,7 @@ void ROVppAS::process_announcements(bool ran) {
                 // Basic ROV
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
                         process_announcement(ann, false);
                     }
                 // ROV++ V0.1
@@ -302,6 +302,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
                         process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
@@ -319,6 +320,7 @@ void ROVppAS::process_announcements(bool ran) {
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
                         process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
@@ -337,6 +339,7 @@ void ROVppAS::process_announcements(bool ran) {
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
                         process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
@@ -356,6 +359,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
                         process_announcement(ann);
                     } else {
                         // If it is from a customer, silently drop it
