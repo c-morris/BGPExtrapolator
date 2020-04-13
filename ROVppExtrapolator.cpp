@@ -601,10 +601,58 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         auto *recving_as = graph->ases->find(peer_asn)->second;
         recving_as->receive_announcements(anns_to_peers);
     }
-    for (uint32_t customer_asn : *source_as->customers) {
-        // For each customer, give the vector of announcements
-        auto *recving_as = graph->ases->find(customer_asn)->second;
-        recving_as->receive_announcements(anns_to_customers);
+    if (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+        // For ROVPPBP v3.1 we want to keep track of which Customers
+        // are receiving the preventive announcements, and be able to 
+        // withdraw them if they send us the prefix. Moreover, not send it
+        // to them at all if they send us the prefix to begin with. The simplest
+        // way of acheiving these two goals is to send them the preventive ann
+        // to the customer anyway and include a withdraw ann to immediately remove it.
+        std::vector<uint32_t> customer_asn_sent_prefix;
+        for (Announcement curr_ann : *rovpp_as->passed_rov) {
+            if (curr_ann.prefix.netmask == 0xFFFF0000) {
+                customer_asn_sent_prefix.push_back(curr_ann.received_from_asn);
+            }
+        }
+        // Create withdraws for preventive ann in anns_to_customers
+        // if there are any there
+        std::vector<Announcement> preventive_ann_withdraws;
+        for (auto ann_pair : *rovpp_as->preventive_anns) {
+            for (Announcement to_cust_ann : anns_to_customers) {
+                if (ann_pair.first.prefix == to_cust_ann.prefix &&
+                    ann_pair.first.origin == to_cust_ann.origin) {
+                    // Create Withdraw Ann
+                    Announcement copy = to_cust_ann;
+                    copy.withdraw = true;
+                    // Add it to the list of withdraws to send for preventive anns
+                    preventive_ann_withdraws.push_back(copy);
+                    break;
+                }
+            }
+        }
+        // Send Announcements to Customers, but inject preventive announcemnt 
+        // withdraws to the anns_to_customers if the AS shared the prefix
+        // with this AS (source_as || rovpp_as)
+        for (uint32_t customer_asn : *source_as->customers) {
+            // For each customer, give the vector of announcements
+            auto *recving_as = graph->ases->find(customer_asn)->second;
+            // Copy vector of anns to send to customer
+            std::vector<Announcement> copy_anns_to_customers = anns_to_customers;
+            // Check if the ASN of this AS in included in the list of customer_asn_sent_prefix
+            // If that is so, then we need to include preventive_ann_withdraws for this customer
+            if ( std::find(customer_asn_sent_prefix.begin(), customer_asn_sent_prefix.end(), recving_as->asn) != customer_asn_sent_prefix.end() ) {
+                for (Announcement prev_ann_withdraw : preventive_ann_withdraws) {
+                    copy_anns_to_customers.push_back(prev_ann_withdraw);
+                }
+            }
+            recving_as->receive_announcements(copy_anns_to_customers);
+        }
+    } else {
+        for (uint32_t customer_asn : *source_as->customers) {
+            // For each customer, give the vector of announcements
+            auto *recving_as = graph->ases->find(customer_asn)->second;
+            recving_as->receive_announcements(anns_to_customers);
+        }
     }
 
     // TODO Remove this?
