@@ -33,12 +33,14 @@ ROVppAS::ROVppAS(uint32_t myasn,
     // Save reference to attackers
     attackers = rovpp_attackers;
     failed_rov = new std::vector<Announcement>;
+    passed_rov = new std::vector<Announcement>;
     blackholes = new std::vector<Announcement>;
     preventive_anns = new std::vector<std::pair<Announcement,Announcement>>;  
 }
 
 ROVppAS::~ROVppAS() { 
     delete failed_rov;
+    delete passed_rov;
     delete blackholes;
     delete preventive_anns;
 }
@@ -65,6 +67,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
     if (attackers != NULL) {
         return (attackers->find(ann.origin) == attackers->end());
     } else {
+        passed_rov.push_back(ann);
         return true;
     }
 }
