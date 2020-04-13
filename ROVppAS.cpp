@@ -67,7 +67,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
     if (attackers != NULL) {
         return (attackers->find(ann.origin) == attackers->end());
     } else {
-        passed_rov.push_back(ann);
+        passed_rov->push_back(ann);
         return true;
     }
 }
