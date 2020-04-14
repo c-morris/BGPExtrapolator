@@ -49,7 +49,7 @@ ROVppSQLQuerier::~ROVppSQLQuerier() {
  * @param flag_table The table name holding the list of ASN to flag
  */
 pqxx::result ROVppSQLQuerier::select_AS_flags(std::string const& flag_table){
-    std::string sql = "SELECT asn, as_type, impliment FROM " + flag_table + ";";
+    std::string sql = "SELECT asn, as_type, adopting FROM " + flag_table + ";";
     return execute(sql);
 }
 
