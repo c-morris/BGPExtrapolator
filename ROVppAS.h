@@ -23,6 +23,9 @@
 #ifndef ROVPPAS_H
 #define ROVPPAS_H
 
+#include <string>
+#include <algorithm>
+
 #include "AS.h"
 #include "ROVppAnnouncement.h"
 
@@ -44,7 +47,7 @@
 #define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  
 
 struct ROVppAS : public AS {
-    std::vector<uint32_t> policy_vector;
+    std::vector<bool> policy_vector;
     std::set<uint32_t> *attackers;
     // Announcement Tracking Member Variables
     std::vector<Announcement> *failed_rov;  // Save dropped announcements (i.e. attacker announcements)
@@ -67,6 +70,7 @@ struct ROVppAS : public AS {
     // ROV Methods
     bool pass_rov(Announcement &ann);
     void add_policy(uint32_t);
+    void add_policies(std::string);
     // Helper functions
     void withdraw(Announcement &ann);
     void withdraw(Announcement &ann, AS &neighbor);

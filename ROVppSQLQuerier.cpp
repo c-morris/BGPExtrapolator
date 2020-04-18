@@ -49,7 +49,7 @@ ROVppSQLQuerier::~ROVppSQLQuerier() {
  * @param flag_table The table name holding the list of ASN to flag
  */
 pqxx::result ROVppSQLQuerier::select_AS_flags(std::string const& flag_table){
-    std::string sql = "SELECT asn, as_type, adopting FROM " + flag_table + ";";
+    std::string sql = "SELECT asn, as_types FROM " + flag_table + ";";
     return execute(sql);
 }
 
@@ -81,7 +81,17 @@ pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const
  * @return         Database results as [prefix, netmask, as_path, origin, policy_index]
  */
 pqxx::result ROVppSQLQuerier::select_all_pairs_from(std::string const& cur_table){
-    std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin FROM " + cur_table;
+    std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin, list_index, policy_val FROM " + cur_table;
+    return execute(sql);
+}
+
+/** Pulls in victim or attacker pairs for an index.
+ * 
+ * @param cur_table This is a constant value you can find in TableNames.h (either ATTACKER_TABLE or VICTIM_TABLE) 
+ * @return         Database results as [prefix, netmask, as_path, origin, policy_index]
+ */
+pqxx::result ROVppSQLQuerier::select_all_pairs_from_idx(int idx, std::string const& cur_table){
+    std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin, list_index, policy_val FROM " + cur_table + " WHERE list_index = " + std::to_string(idx);
     return execute(sql);
 }
 

@@ -81,7 +81,7 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
             if (search != ases->end()) {
                 // Add the policy to AS
                 // TODO Handle "as_type" policy as an array
-                dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
+                dynamic_cast<ROVppAS*>(search->second)->add_policies(c["as_types"].as<std::string>());
             }
         }
     }
