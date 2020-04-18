@@ -43,6 +43,7 @@ struct ROVppASGraph: public ASGraph {
     void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
 
     // Overloaded 
+    void clear_announcements();
     void to_graphviz(std::ostream &os, std::vector<uint32_t> asns);
     void to_graphviz_traceback(std::ostream &os, uint32_t asn, int depth);
 };

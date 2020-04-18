@@ -80,7 +80,7 @@ public:
     void receive_announcements(std::vector<Announcement> &announcements);
     virtual void process_announcement(Announcement &ann, bool ran=true);
     virtual void process_announcements(bool ran=true);
-    void clear_announcements();
+    virtual void clear_announcements();
     bool already_received(Announcement &ann);
     void delete_ann(Announcement &ann);
     void printDebug();

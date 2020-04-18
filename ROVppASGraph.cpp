@@ -109,6 +109,18 @@ void ROVppASGraph::add_relationship(uint32_t asn,
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
+/** Clear all announcements in AS.
+ */
+void ROVppASGraph::clear_announcements(){
+    for (auto const& as : *ases){
+        as.second->clear_announcements();
+    }
+    for (auto const& i : *inverse_results) {
+        delete i.second;
+    }
+    inverse_results->clear();
+}
+
 void ROVppASGraph::to_graphviz(std::ostream &os, std::vector<uint32_t> asns) {
     os << "import graphviz" << std::endl;
     os << "dot = graphviz.Digraph()" << std::endl;

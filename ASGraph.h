@@ -56,7 +56,7 @@ public:
     ASGraph();
     virtual ~ASGraph();
     // Propagation interaction
-    void clear_announcements();
+    virtual void clear_announcements();
     uint32_t translate_asn(uint32_t asn);
     // Graph setup
     virtual void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);

@@ -115,6 +115,18 @@ void ROVppAS::withdraw(Announcement &ann) {
     AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
+/** Clear all announcement collections. 
+ */
+void ROVppAS::clear_announcements() {
+    loc_rib->clear();
+    ribs_in->clear();
+    depref_anns->clear();
+    failed_rov->clear();
+    passed_rov->clear();
+    blackholes->clear();
+    preventive_anns->clear();
+}
+
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
  *
  * Approximates BGP best path selection based on announcement priority.
