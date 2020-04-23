@@ -123,17 +123,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         count++;
     } while (AS::graph_changed && count < 100);
     std::cout << "Times propagated: " << count << std::endl;
-
-    for (auto &as : *rovpp_graph->ases){
-        // Check for loops
-        for (auto it = as.second->loc_rib->begin(); it != as.second->loc_rib->end();) {
-            if (it->second.alt != 0 && loop_check(it->second.prefix, as.second->asn, as.second->asn, 0)) {
-                it = as.second->loc_rib->erase(it);
-            } else {
-                ++it;
-            }
-        }
-    }
     
     std::ofstream gvpythonfile;
     gvpythonfile.open("asgraph.py");
