@@ -297,6 +297,21 @@ void ROVppAS::process_announcements(bool ran) {
                         passed_rov->push_back(ann);
                         process_announcement(ann, false);
                     }
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP0) {
+                    // The policy for ROVpp 0 is similar to ROVpp 1 
+                    // Just doesn't creat blackholes
+                    if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
+                        process_announcement(ann, false);
+                    } else {
+                        failed_rov->push_back(ann);
+                        Announcement best_alternative_ann = best_alternative_route(ann); 
+                        if (best_alternative_ann == ann) { // If no alternative
+                            process_announcement(ann, false);
+                        } else {
+                            process_announcement(best_alternative_ann, false);
+                        }
+                    }
                 // ROV++ V0.1
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
