@@ -489,10 +489,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     }
 
     // Stores whether current AS needs to filter (0.2bis and 0.3)
-    bool filtered = (rovpp_as != NULL &&
-                     rovpp_as->policy_vector.size() > 0 && 
-                     (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-                      rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS));
+    //bool filtered = (rovpp_as != NULL &&
+    //                 rovpp_as->policy_vector.size() > 0 && 
+    //                 (rovpp_as->policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP ||
+    //                  policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS));
     
     // Process all other ann in loc_rib
     for (auto &ann : *source_as->loc_rib) {
@@ -500,7 +500,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         if (rovpp_as != NULL && 
             ann.second.origin == 64512 && 
             rovpp_as->policy_vector.size() > 0 &&
-            rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+            rovpp_as->policy_vector.at(ann.second.tstamp & 0xffffffff) && ((ann.second.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPP) {
             continue;
         }
 
@@ -523,7 +523,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Base priority is 200 for customer to provider
             copy.priority = get_priority(ann.second, i);
             // If AS adopts 0.2bis or 0.3
-            if (filtered) {
+            if (rovpp_as != NULL &&
+                rovpp_as->policy_vector.size() > 0 && 
+                ((rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP) ||
+                 (rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS))) {
                 if (!is_filtered(rovpp_as, ann.second)) {
                     anns_to_providers.push_back(copy);
                 }
@@ -536,7 +539,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Base priority is 100 for peers to peers
             copy.priority = get_priority(ann.second, i);
             // If AS adopts 0.2bis or 0.3
-            if (filtered) {
+            if (rovpp_as != NULL &&
+                rovpp_as->policy_vector.size() > 0 && 
+                ((rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP) ||
+                 (rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS))) {
                 if (!is_filtered(rovpp_as, ann.second)) {
                     anns_to_peers.push_back(copy);
                 }
@@ -610,7 +616,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         auto *recving_as = graph->ases->find(peer_asn)->second;
         recving_as->receive_announcements(anns_to_peers);
     }
-    if (rovpp_as != NULL && rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+    if (rovpp_as != NULL) {// && rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
         // For ROVPPBP v3.1 we want to keep track of which Customers
         // are receiving the preventive announcements, and be able to 
         // withdraw them if they send us the prefix. Moreover, not send it
