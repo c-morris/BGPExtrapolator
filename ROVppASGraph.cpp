@@ -81,7 +81,7 @@ void ROVppASGraph::create_graph_from_db(ROVppSQLQuerier *querier){
             if (search != ases->end()) {
                 // Add the policy to AS
                 // TODO Handle "as_type" policy as an array
-                dynamic_cast<ROVppAS*>(search->second)->add_policy(c["as_type"].as<uint32_t>());
+                dynamic_cast<ROVppAS*>(search->second)->add_policies(c["as_types"].as<std::string>());
             }
         }
     }
@@ -107,6 +107,18 @@ void ROVppASGraph::add_relationship(uint32_t asn,
         search = ases->find(asn);
     }
     search->second->add_neighbor(neighbor_asn, relation);
+}
+
+/** Clear all announcements in AS.
+ */
+void ROVppASGraph::clear_announcements(){
+    for (auto const& as : *ases){
+        as.second->clear_announcements();
+    }
+    for (auto const& i : *inverse_results) {
+        delete i.second;
+    }
+    inverse_results->clear();
 }
 
 void ROVppASGraph::to_graphviz(std::ostream &os, std::vector<uint32_t> asns) {

@@ -42,6 +42,7 @@ public:
     pqxx::result select_prefix_pairs(Prefix<>* p, std::string const& cur_table);
     pqxx::result select_subnet_pairs(Prefix<>* p, std::string const& cur_table);
     pqxx::result select_all_pairs_from(std::string const& cur_table);
+    pqxx::result select_all_pairs_from_idx(int idx, std::string const& cur_table);
     
     void copy_results_to_db(std::string);
     void create_results_tbl();

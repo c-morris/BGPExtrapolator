@@ -47,7 +47,7 @@ ROVppAS::~ROVppAS() {
     delete preventive_anns;
 }
 
-/** Adds a policy to the policy_vector
+/** DEPRECATED Adds a policy to the policy_vector
  *
  * This function allows you to specify the policies
  * that this AS implements. The different types of policies are listed in 
@@ -57,6 +57,39 @@ ROVppAS::~ROVppAS() {
  */
 void ROVppAS::add_policy(uint32_t p) {
     policy_vector.push_back(p);
+}
+
+/** Adds an array of policies to the policy_vector
+ *
+ * IMPORTANT: Because of a redesign, these are now booleans indicating whether
+ * the AS is implementing the policy listed in the announcement. 
+ * 
+ * @param p The policy to add. For example, ROVPPAS_TYPE_BGP (defualt), and
+ */
+void ROVppAS::add_policies(std::string policies_string) {
+    // Remove brackets from string
+    policies_string.erase(std::find(policies_string.begin(), policies_string.end(), '}'));
+    policies_string.erase(std::find(policies_string.begin(), policies_string.end(), '{'));
+
+    // Fill as_path vector from parsing string
+    std::string delimiter = ",";
+    std::string::size_type pos = 0;
+    std::string token;
+    while ((pos = policies_string.find(delimiter)) != std::string::npos) {
+        token = policies_string.substr(0,pos);
+        try {
+            policy_vector.push_back(token == "t");
+        } catch(...) {
+            std::cerr << "Parse path error, token was: " << token << std::endl;
+        }
+        policies_string.erase(0,pos + delimiter.length());
+    }
+    // Handle last policy after loop
+    try {
+        policy_vector.push_back(token == "t");
+    } catch(...) {
+        std::cerr << "Parse path error, token was: " << policies_string << std::endl;
+    }
 }
 
 /** Checks whether or not an announcement is from an attacker
@@ -82,6 +115,18 @@ void ROVppAS::withdraw(Announcement &ann) {
     copy.withdraw = true;
     withdrawals->push_back(copy);
     AS::graph_changed = true;  // This means we will need to do another propagation
+}
+
+/** Clear all announcement collections. 
+ */
+void ROVppAS::clear_announcements() {
+    loc_rib->clear();
+    ribs_in->clear();
+    depref_anns->clear();
+    failed_rov->clear();
+    passed_rov->clear();
+    blackholes->clear();
+    preventive_anns->clear();
 }
 
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
@@ -300,10 +345,13 @@ void ROVppAS::process_announcements(bool ran) {
                     ann.received_from_asn=64514;
                 }
             }
+            ROVppAnnouncement *rovpp_ann = dynamic_cast<ROVppAnnouncement*>(&ann);
             // If we have a policy adopted
             if (policy_vector.size() > 0) {
                 // Basic ROV
-                if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
+                // we store the list_index in the least significant part of the tstamp and the policy_val in the most significant half
+                // i am sorry
+                if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
                         process_announcement(ann, false);
@@ -324,7 +372,7 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 // ROV++ V0.1
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+                } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPP) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
@@ -347,7 +395,7 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 // ROV++ V0.2
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
+                } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
@@ -371,7 +419,7 @@ void ROVppAS::process_announcements(bool ran) {
                     }
                 /* // Temporarily comment out to test out new v0.2bis   
                 // ROV++ V0.2bis
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
+                } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
@@ -392,7 +440,7 @@ void ROVppAS::process_announcements(bool ran) {
                 
                  */
                 // New ROV++ V0.2bis (drops hijack announcements silently like v0.3)
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
+                } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
@@ -416,8 +464,7 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, false);
                         }
                     }
-                // ROV++ V0.3 (atually this is 3bis [or experiment to get rid of loops])
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+                } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rov(ann)) {
@@ -524,7 +571,10 @@ void ROVppAS::process_announcements(bool ran) {
 
 void ROVppAS::check_preventives(Announcement ann) {
     // ROV++ V0.3
-    if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+    ROVppAnnouncement *rovpp_ann = dynamic_cast<ROVppAnnouncement*>(&ann);
+    // we store the list_index in the least significant part of the tstamp and the policy_val in the most significant half
+    // i am sorry
+    if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP) {
         // note this only works for /24...
         if (ann.prefix.netmask == 0xffffff00) {
             // this is already a preventive

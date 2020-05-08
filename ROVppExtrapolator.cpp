@@ -89,47 +89,53 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
-    int iter = 0;
-    for (const string table_name: {rovpp_querier->victim_table, rovpp_querier->attack_table}) {
-        // Get the prefix-origin pairs from the database
-        pqxx::result prefix_origin_pairs = rovpp_querier->select_all_pairs_from(table_name);
-        // Seed each of the prefix-origin pairs
-        for (pqxx::result::const_iterator c = prefix_origin_pairs.begin(); c!=prefix_origin_pairs.end(); ++c) {
-            // Extract Arguments needed for give_ann_to_as_path
-            std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
-            Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
-            int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
-            bool is_hijack = table_name == rovpp_querier->attack_table;
-            if (is_hijack) {
-                // Add origin to attackers
-                rovpp_graph->attackers->insert(parsed_path->at(0));
+    int idxmax = it_size;
+    for (int idx = 0; idx < idxmax; idx++) {
+        std::cout << "Beginning Iteration " << idx << "..." << std::endl;
+        for (const string table_name: {rovpp_querier->victim_table, rovpp_querier->attack_table}) {
+            // Get the prefix-origin pairs from the database
+            pqxx::result prefix_origin_pairs = rovpp_querier->select_all_pairs_from_idx(idx, table_name);
+            // Seed each of the prefix-origin pairs
+            for (pqxx::result::const_iterator c = prefix_origin_pairs.begin(); c!=prefix_origin_pairs.end(); ++c) {
+                // Extract Arguments needed for give_ann_to_as_path
+                std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
+                Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
+                // two ints here, but the timestamp has room for two
+                int64_t timestamp = c["list_index"].as<int64_t>();  
+                timestamp |= (c["policy_val"].as<int64_t>() << 32);
+                bool is_hijack = table_name == rovpp_querier->attack_table;
+                if (is_hijack) {
+                    // Add origin to attackers
+                    rovpp_graph->attackers->insert(parsed_path->at(0));
+                }
+                
+                // Seed the announcement
+                give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
+        
+                // Clean up
+                delete parsed_path;
             }
-            
-            // Seed the announcement
-            give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
-    
-            // Clean up
-            delete parsed_path;
         }
+            // This will propogate up and down until the graph no longer changes
+            // Changes are tripped when the graph_changed variable is triggered
+            int count = 0;
+            do {
+                AS::graph_changed = false;
+                propagate_up();
+                propagate_down();
+                count++;
+            } while (AS::graph_changed && count < 100);
+            std::cout << "Times propagated: " << count << std::endl;
+
+            save_results(idx);
+            graph->clear_announcements();
     }
     
-    // This will propogate up and down until the graph no longer changes
-    // Changes are tripped when the graph_changed variable is triggered
-    int count = 0;
-    do {
-        AS::graph_changed = false;
-        propagate_up();
-        propagate_down();
-        count++;
-    } while (AS::graph_changed && count < 100);
-    std::cout << "Times propagated: " << count << std::endl;
-    
-    std::ofstream gvpythonfile;
-    gvpythonfile.open("asgraph.py");
-    std::vector<uint32_t> to_graph = {  };
-    rovpp_graph->to_graphviz(gvpythonfile, to_graph);
-    gvpythonfile.close();
-    save_results(iter);
+    // std::ofstream gvpythonfile;
+    // gvpythonfile.open("asgraph.py");
+    // std::vector<uint32_t> to_graph = {  };
+    // rovpp_graph->to_graphviz(gvpythonfile, to_graph);
+    // gvpythonfile.close();
     std::cout << "completed: ";
 }
 
@@ -145,7 +151,8 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
 void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
                                             Prefix<> prefix, 
                                             int64_t timestamp, 
-                                            bool hijack) {
+                                            bool hijack,
+                                            int policy_val) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -239,6 +246,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             0, // policy defaults to BGP
                                             cur_path,
                                             true);
+            ann.opt_flag = policy_val;
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann, false);
             if (graph->inverse_results != NULL) {
@@ -469,10 +477,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     }
 
     // Stores whether current AS needs to filter (0.2bis and 0.3)
-    bool filtered = (rovpp_as != NULL &&
-                     rovpp_as->policy_vector.size() > 0 && 
-                     (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-                      rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS));
+    //bool filtered = (rovpp_as != NULL &&
+    //                 rovpp_as->policy_vector.size() > 0 && 
+    //                 (rovpp_as->policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP ||
+    //                  policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS));
     
     // Process all other ann in loc_rib
     for (auto &ann : *source_as->loc_rib) {
@@ -480,7 +488,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         if (rovpp_as != NULL && 
             ann.second.origin == 64512 && 
             rovpp_as->policy_vector.size() > 0 &&
-            rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+            rovpp_as->policy_vector.at(ann.second.tstamp & 0xffffffff) && ((ann.second.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPP) {
             continue;
         }
 
@@ -503,7 +511,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Base priority is 200 for customer to provider
             copy.priority = get_priority(ann.second, i);
             // If AS adopts 0.2bis or 0.3
-            if (filtered) {
+            if (rovpp_as != NULL &&
+                rovpp_as->policy_vector.size() > 0 && 
+                ((rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP) ||
+                 (rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS))) {
                 if (!is_filtered(rovpp_as, ann.second)) {
                     anns_to_providers.push_back(copy);
                 }
@@ -516,7 +527,10 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // Base priority is 100 for peers to peers
             copy.priority = get_priority(ann.second, i);
             // If AS adopts 0.2bis or 0.3
-            if (filtered) {
+            if (rovpp_as != NULL &&
+                rovpp_as->policy_vector.size() > 0 && 
+                ((rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP) ||
+                 (rovpp_as->policy_vector.at(copy.tstamp & 0xffffffff) && ((copy.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS))) {
                 if (!is_filtered(rovpp_as, ann.second)) {
                     anns_to_peers.push_back(copy);
                 }
@@ -590,7 +604,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         auto *recving_as = graph->ases->find(peer_asn)->second;
         recving_as->receive_announcements(anns_to_peers);
     }
-    if (rovpp_as != NULL && rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+    if (rovpp_as != NULL) {// && rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
         // For ROVPPBP v3.1 we want to keep track of which Customers
         // are receiving the preventive announcements, and be able to 
         // withdraw them if they send us the prefix. Moreover, not send it

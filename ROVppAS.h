@@ -23,6 +23,9 @@
 #ifndef ROVPPAS_H
 #define ROVPPAS_H
 
+#include <string>
+#include <algorithm>
+
 #include "AS.h"
 #include "ROVppAnnouncement.h"
 
@@ -51,7 +54,7 @@
 #define ATTACKER_ON_ROUTE_FLAG 64570
 
 struct ROVppAS : public AS {
-    std::vector<uint32_t> policy_vector;
+    std::vector<bool> policy_vector;
     std::set<uint32_t> *attackers;
     std::set<uint32_t> *bad_neighbors;  // neighbors that have sent us an attacker ann
     // Announcement Tracking Member Variables
@@ -69,12 +72,14 @@ struct ROVppAS : public AS {
     ~ROVppAS();
     
     // Overrided Methods
+    void clear_announcements();
     void process_announcement(Announcement &ann, bool ran=true, bool override=false);
     void process_announcements(bool ran=true);
     
     // ROV Methods
     bool pass_rov(Announcement &ann);
     void add_policy(uint32_t);
+    void add_policies(std::string);
     // Helper functions
     void withdraw(Announcement &ann);
     void withdraw(Announcement &ann, AS &neighbor);
