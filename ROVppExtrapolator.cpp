@@ -116,19 +116,23 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
                 delete parsed_path;
             }
         }
-            // This will propogate up and down until the graph no longer changes
-            // Changes are tripped when the graph_changed variable is triggered
-            int count = 0;
-            do {
-                AS::graph_changed = false;
-                propagate_up();
-                propagate_down();
-                count++;
-            } while (AS::graph_changed && count < 100);
-            std::cout << "Times propagated: " << count << std::endl;
+        // This will propogate up and down until the graph no longer changes
+        // Changes are tripped when the graph_changed variable is triggered
+        int count = 0;
+        do {
+            AS::graph_changed = false;
+            propagate_up();
+            propagate_down();
+            count++;
+            if (count >= 1000) {
+                std::cout << "Exceeded max propagation cycles" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        } while (AS::graph_changed && count < 1000);
+        std::cout << "Times propagated: " << count << std::endl;
 
-            save_results(idx);
-            graph->clear_announcements();
+        save_results(idx);
+        graph->clear_announcements();
     }
     
     // std::ofstream gvpythonfile;
