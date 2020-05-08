@@ -97,7 +97,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
     auto search_depref = depref_anns->find(ann.prefix);
     
     // No announcement found for incoming announcement prefix
-    if (search == loc_rib->end() || override) {
+    if (search == loc_rib->end()) {
         loc_rib->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
@@ -107,6 +107,17 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
                 set->second->erase(asn);
             }
         }
+    // If overrid is true, the replace whatever is the current announcement regardless
+    } else if (override) {
+      // Update inverse results
+      swap_inverse_result(
+          std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+          std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+      // Insert depref ann
+      depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                            search->second));
+      withdraw(search->second);
+      search->second = ann;
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
     } else if (ann.priority == search->second.priority && ann != search->second) {
         // Random tiebraker
