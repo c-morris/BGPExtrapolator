@@ -121,14 +121,18 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         propagate_up();
         propagate_down();
         count++;
-    } while (AS::graph_changed && count < 100);
+        if (count >= 1000) {
+            std::cout << "Exceeded max propagation cycles" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    } while (AS::graph_changed && count < 1000);
     std::cout << "Times propagated: " << count << std::endl;
     
-    std::ofstream gvpythonfile;
-    gvpythonfile.open("asgraph.py");
-    std::vector<uint32_t> to_graph = {  };
-    rovpp_graph->to_graphviz(gvpythonfile, to_graph);
-    gvpythonfile.close();
+    // std::ofstream gvpythonfile;
+    // gvpythonfile.open("asgraph.py");
+    // std::vector<uint32_t> to_graph = {  };
+    // rovpp_graph->to_graphviz(gvpythonfile, to_graph);
+    // gvpythonfile.close();
     save_results(iter);
     std::cout << "completed: ";
 }
