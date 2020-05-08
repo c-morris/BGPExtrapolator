@@ -32,6 +32,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
     : AS(myasn, inv, prov, peer, cust)  {
     // Save reference to attackers
     attackers = rovpp_attackers;
+    bad_neighbors = new std::set<uint32_t>;
     failed_rov = new std::vector<Announcement>;
     passed_rov = new std::vector<Announcement>;
     blackholes = new std::vector<Announcement>;
@@ -39,6 +40,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
 }
 
 ROVppAS::~ROVppAS() { 
+    delete bad_neighbors;
     delete failed_rov;
     delete passed_rov;
     delete blackholes;
@@ -255,6 +257,15 @@ void ROVppAS::process_announcements(bool ran) {
         }
     } while (something_removed);
     
+    // Apply "holes" to prefix announcements (i.e. good ann)
+    // that came from neighbors that have sent as an attacker's ann
+    // First, identify neighbors that have sent attacker announcemnts
+    for (auto &ann : *ribs_in) {
+        if (!pass_rov(ann)) {
+            bad_neighbors->insert(ann.received_from_asn);
+        }
+    }
+    
     // Process the ribs_in
     for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
@@ -318,6 +329,10 @@ void ROVppAS::process_announcements(bool ran) {
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
@@ -336,6 +351,10 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
@@ -377,6 +396,10 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann, false);
                     } else {
                         // If it is from a customer, silently drop it
@@ -399,6 +422,10 @@ void ROVppAS::process_announcements(bool ran) {
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann);
                     } else {
                         // If it is from a customer, silently drop it
@@ -431,6 +458,7 @@ void ROVppAS::process_announcements(bool ran) {
             }
         }
     }
+    
     // TODO Remove this?
     // Withdrawals are deleted after processing above
     // Remove withdrawals
@@ -459,11 +487,12 @@ void ROVppAS::process_announcements(bool ran) {
      std::vector<Announcement> baddies = *failed_rov;
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
-         if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
-             candidates.push_back(candidate_ann);
-         } else {
-             baddies.push_back(candidate_ann);
-         }
+        if (pass_rov(candidate_ann) && !candidate_ann.withdraw && 
+            candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
+           candidates.push_back(candidate_ann);
+        } else {
+           baddies.push_back(candidate_ann);
+        }
      }
      // Find the best alternative to ann
      for (auto &candidate : candidates) {
