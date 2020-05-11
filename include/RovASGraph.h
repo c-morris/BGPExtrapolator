@@ -8,13 +8,9 @@
 
 class RovASGraph : public ASGraph<RovAnnouncement> {
 public:
-    RovASGraph(RovAnnouncement announcement) : ASGraph(announcement) {
+    RovASGraph(RovAnnouncement announcement);
 
-    }
-
-    void print() {
-        std::cout << announcement.origin << ", " << announcement.rovData << std::endl;
-    }
+    void print();
 };
 
 #endif

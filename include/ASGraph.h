@@ -14,13 +14,12 @@ static_assert(std::is_base_of<Announcement, T>::value, "T must inherit from Anno
 public:
     T announcement;
 
+    //Constructor implementation needs to be in the header
     ASGraph(T announcement) : announcement(announcement) {
 
     }
 
-    void print() {
-        std::cout << announcement.origin << std::endl;
-    }
+    void print();
 };
 
 #endif
