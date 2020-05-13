@@ -109,6 +109,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
         }
     // If overrid is true, the replace whatever is the current announcement regardless
     } else if (override) {
+      /*// Disabled this to get some runs to see if we get data plane loops (this block may need to be deleted)
+      // May 13, 2020: Reynaldo Morillo 
       // Update inverse results
       swap_inverse_result(
           std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
@@ -118,6 +120,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
                                                             search->second));
       withdraw(search->second);
       search->second = ann;
+      /*
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
     } else if (ann.priority == search->second.priority && ann != search->second) {
         // Random tiebraker
