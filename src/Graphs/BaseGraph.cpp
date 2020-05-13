@@ -28,50 +28,15 @@
 #include <stack>
 #include <algorithm>
 #include <limits.h>
-#include "ASGraph.h"
-#include "AS.h"
 
-ASGraph::ASGraph() {
-    ases = new std::unordered_map<uint32_t, AS*>;               // Map of all ASes
-    ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
-    components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
-    component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
-    stubs_to_parents = new std::map<uint32_t, uint32_t>;        // Translace stub to parent
-    non_stubs = new std::vector<uint32_t>;                      // All non-stubs in the graph
-    inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,
-                                             std::set<uint32_t>*>;
-}
-
-ASGraph::~ASGraph() {
-    for (auto const& as : *ases) {
-        delete as.second;
-    }
-    delete ases;
-    
-    for (auto const& as : *ases_by_rank) {
-        delete as;
-    }
-    delete ases_by_rank;
-
-    for (auto const& c : *components) {
-        delete c;
-    }
-    delete components;
-
-    for (auto const& i : *inverse_results) {
-        delete i.second;
-    }
-    delete inverse_results;
-
-    delete component_translation;
-    delete stubs_to_parents;
-    delete non_stubs;
-}
+#include "Graphs/ASGraph.h"
+#include "ASes/AS.h"
 
 
 /** Clear all announcements in AS.
  */
-void ASGraph::clear_announcements(){
+template <class ASType>
+void BaseGraph<ASType>::clear_announcements() {
     for (auto const& as : *ases){
         as.second->clear_announcements();
     }
@@ -89,13 +54,15 @@ void ASGraph::clear_announcements(){
  * @param neighbor_asn ASN of neighbor.
  * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
-void ASGraph::add_relationship(uint32_t asn, 
+template <class ASType>
+void BaseGraph<ASType>::add_relationship(uint32_t asn, 
                                uint32_t neighbor_asn, 
                                int relation) {
     auto search = ases->find(asn);
     if (search == ases->end()) {
         // if AS not yet in graph, create it
-        ases->insert(std::pair<uint32_t, AS*>(asn, new AS(asn, inverse_results)));
+        // ases->insert(std::pair<uint32_t, ASType*>(asn, new ASType(asn, inverse_results)));
+        ases->insert(std::pair<uint32_t, ASType*>(asn, createNew(asn)));
         search = ases->find(asn);
     }
     search->second->add_neighbor(neighbor_asn, relation);
@@ -105,23 +72,23 @@ void ASGraph::add_relationship(uint32_t asn,
  *
  * @return 0 if asn isn't found, otherwise return identifying ASN
  */
-uint32_t ASGraph::translate_asn(uint32_t asn){
+template <class ASType>
+uint32_t BaseGraph<ASType>::translate_asn(uint32_t asn) {
     auto search = component_translation->find(asn);
-    if(search == component_translation->end()){
+    if(search == component_translation->end())
        return asn; 
-    }
     return search->second;
 }
 
 /** Process with removing stubs (needs querier to save them).
  */
-void ASGraph::process(SQLQuerier *querier){
+template <class ASType>
+void BaseGraph<ASType>::process(SQLQuerier *querier) {
     remove_stubs(querier);
     tarjan();
     combine_components();
     save_supernodes_to_db(querier);
     decide_ranks();
-    return;
 }
 
 /** Generates an ASGraph from relationship data in an SQL database based upon:
@@ -130,7 +97,8 @@ void ASGraph::process(SQLQuerier *querier){
  * 
  * @param querier
  */
-void ASGraph::create_graph_from_db(SQLQuerier *querier){
+template <class ASType>
+void BaseGraph<ASType>::create_graph_from_db(SQLQuerier *querier) {
     // Assemble Peers
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
@@ -139,6 +107,7 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
         add_relationship(c["peer_as_2"].as<uint32_t>(),
                          c["peer_as_1"].as<uint32_t>(),AS_REL_PEER);
     }
+
     // Assemble Customer-Providers
     R = querier->select_from_table(CUSTOMER_PROVIDER_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
@@ -147,18 +116,19 @@ void ASGraph::create_graph_from_db(SQLQuerier *querier){
         add_relationship(c["provider_as"].as<uint32_t>(),
                          c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
     }
+
     process(querier);
-    return;
 }
 
 /** Remove the stub ASes from the graph.
  *
  * @param querier
  */
-void ASGraph::remove_stubs(SQLQuerier *querier){
-    std::vector<AS*> to_remove;
+template <class ASType>
+void BaseGraph<ASType>::remove_stubs(SQLQuerier *querier) {
+    std::vector<ASType*> to_remove;
     // For all ASes in the graph
-    for (auto &as : *ases){
+    for (auto &as : *ases) {
         // If this AS is a stub
         if(as.second->peers->size() == 0 &&
            as.second->providers->size() == 1 && 
@@ -171,7 +141,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
     // Handle stub removal
     for (auto *as : to_remove) {
         // Remove any edges to this stub from graph
-        for(uint32_t provider_asn : *as->providers){
+        for(uint32_t provider_asn : *as->providers) {
             auto iter = ases->find(provider_asn);
             if (iter != ases->end()) {
                 AS* provider = iter->second;
@@ -187,6 +157,7 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
             ases->erase(iter);
         }
     }
+
     save_stubs_to_db(querier);
     save_non_stubs_to_db(querier);
 }
@@ -195,22 +166,22 @@ void ASGraph::remove_stubs(SQLQuerier *querier){
  *
  * @param querier
  */
-void ASGraph::save_stubs_to_db(SQLQuerier *querier){
+template <class ASType>
+void BaseGraph<ASType>::save_stubs_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
-    if(!dir){
+    if(!dir)
         mkdir("/dev/shm/bgp",0777);
-    }
-    else{
+    else
         closedir(dir);
-    }
 
     std::ofstream outfile;
     std::cout << "Saving Stubs..." << std::endl;
     std::string file_name = "/dev/shm/bgp/stubs.csv";
     outfile.open(file_name);
-    for (auto &stub : *stubs_to_parents){
+
+    for (auto &stub : *stubs_to_parents)
         outfile << stub.first << "," << stub.second << "\n";
-    }
+    
     outfile.close();
     querier->copy_stubs_to_db(file_name);
     std::remove(file_name.c_str());
@@ -220,22 +191,22 @@ void ASGraph::save_stubs_to_db(SQLQuerier *querier){
  *
  * @param querier
  */
-void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
+template <class ASType>
+void BaseGraph<ASType>::save_non_stubs_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
-    if(!dir){
+    if(!dir)
         mkdir("/dev/shm/bgp",0777);
-    }
-    else{
+    else
         closedir(dir);
-    }
 
     std::ofstream outfile;
     std::cout << "Saving Non-Stubs..." << std::endl;
     std::string file_name = "/dev/shm/bgp/non-stubs.csv";
     outfile.open(file_name);
-    for (auto non_stub : *non_stubs){
+
+    for (auto non_stub : *non_stubs)
         outfile << non_stub << "\n";
-    }
+
     outfile.close();
     querier->copy_non_stubs_to_db(file_name);
     std::remove(file_name.c_str());
@@ -245,13 +216,13 @@ void ASGraph::save_non_stubs_to_db(SQLQuerier *querier){
  *
  * @param querier
  */
-void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
+template <class ASType>
+void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
-    if(!dir) {
+    if(!dir)
         mkdir("/dev/shm/bgp",0777);
-    } else {
+    else
         closedir(dir);
-    }
 
     std::ofstream outfile;
     std::cout << "Saving Supernodes..." << std::endl;
@@ -269,11 +240,11 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
                     low = cur_asn;
             }
             // Assemble rows as pairs; ASN in supernode, lowest ASN in that supernode
-            for (auto &cur_asn : *cur_node) {
+            for (auto &cur_asn : *cur_node)
                 outfile << cur_asn << "," << low << "\n";
-            }
         }
     }
+
     outfile.close();
     querier->copy_supernodes_to_db(file_name);
     std::remove(file_name.c_str());
@@ -287,7 +258,8 @@ void ASGraph::save_supernodes_to_db(SQLQuerier *querier) {
  *
  *  The bottom of the DAG is rank 0. 
  */
-void ASGraph::decide_ranks() {
+template <class ASType>
+void BaseGraph<ASType>::decide_ranks() {
     // Initial set of customer ASes at the bottom of the DAG
     ases_by_rank->push_back(new std::set<uint32_t>());
     // For ASes with no customers
@@ -306,7 +278,7 @@ void ASGraph::decide_ranks() {
         for (uint32_t asn : *(*ases_by_rank)[i]) {
             //For all providers of this AS
             for (const uint32_t &provider_asn : *ases->find(asn)->second->providers) {
-                AS* prov_AS = ases->find(translate_asn(provider_asn))->second;
+                ASType* prov_AS = ases->find(translate_asn(provider_asn))->second;
                 int oldrank = prov_AS->rank;
                 // Move provider up to next rank
                 if (oldrank < i + 1) {
@@ -327,21 +299,21 @@ void ASGraph::decide_ranks() {
  * 
  * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
  */
-void ASGraph::tarjan() {
+template <class ASType>
+void BaseGraph<ASType>::tarjan() {
     int index = 0;
     std::stack<AS*> s;
 
-    for (auto &as : *ases) {
-        if (as.second->index == -1){
+    for (auto &as : *ases)
+        if (as.second->index == -1)
             tarjan_helper(as.second, index, s);
-        }
-    }
     return;
 }
 
 /** Tarjan algorithm to detect strongly connected components in the ASGraph.
  */
-void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
+template <class ASType>
+void BaseGraph<ASType>::tarjan_helper(ASType *as, int &index, std::stack<ASType*> &s) {
     as->index = index;
     as->lowlink = index;
     index++;
@@ -349,18 +321,19 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
     as->onStack = true;
     
     for (auto &neighbor : *(as->providers)) {
-        AS *n = ases->find(neighbor)->second;
-        if (n->index == -1){
+        ASType *n = ases->find(neighbor)->second;
+        if (n->index == -1) {
             tarjan_helper(n, index, s);
             as->lowlink = std::min(as->lowlink, n->lowlink);
         } else if (n->onStack) {
             as->lowlink = std::min(as->lowlink, n->index);
         }
     }
+
     if (as->lowlink == as->index) {
         std::vector<uint32_t> *component = new std::vector<uint32_t>;
-        AS *as_from_stack;
-        do{
+        ASType *as_from_stack;
+        do {
             as_from_stack = s.top();
             s.pop();
             as_from_stack->onStack = false;
@@ -377,32 +350,31 @@ void ASGraph::tarjan_helper(AS *as, int &index, std::stack<AS*> &s) {
 /** Combine providers, peers, and customers of ASes in a strongly connected component.
  *  Also append to component_translation for future reference.
  */
-void ASGraph::combine_components(){
+template <class ASType>
+void BaseGraph<ASType>::combine_components() {
     
     // For each strongly connected component
-    for (auto const& component : *components){
+    for (auto const& component : *components) {
         // Ignore single AS nodes
-        if (component->size() <= 1) {
+        if (component->size() <= 1)
             continue;
-        }
         
         // Find indentifying ASN for supernode 
         uint32_t combined_asn = component->at(0);
-        for (auto &cur_asn : *component) {
-            if (cur_asn < combined_asn) {
+        for (auto &cur_asn : *component)
+            if (cur_asn < combined_asn)
                 combined_asn = cur_asn;
-            }
-        }
 
         // Combined Component will id as lowest ASN
-        AS *combined_AS = new AS(combined_asn, inverse_results);
+        // AS *combined_AS = new AS(combined_asn, inverse_results);
+        AS *combined_AS = createNew(combined_asn);
         
         // For all members of a component, gather neighbors
         for (auto &cur_asn : *component) {
             combined_AS->member_ases->push_back(cur_asn);
             // Get the AS object associated to ASN
             auto asn_search = ases->find(cur_asn);
-            AS *cur_AS = asn_search->second;
+            ASType *cur_AS = asn_search->second;
 
             // Handle providers
             for (auto &provider_asn : *cur_AS->providers) {
@@ -411,7 +383,7 @@ void ASGraph::combine_components(){
                                            component->end(), 
                                            provider_asn) == component->end());
                 if (external) {
-                    AS *provider_AS = ases->find(provider_asn)->second;
+                    ASType *provider_AS = ases->find(provider_asn)->second;
                     // Add new relationship
                     combined_AS->add_neighbor(provider_asn, AS_REL_PROVIDER);
                     provider_AS->add_neighbor(combined_asn, AS_REL_CUSTOMER);
@@ -431,7 +403,7 @@ void ASGraph::combine_components(){
                                            component->end(), 
                                            customer_asn) == component->end());
                 if (external) {
-                    AS *customer_AS = ases->find(customer_asn)->second;
+                    ASType *customer_AS = ases->find(customer_asn)->second;
                     // Add new relationship
                     combined_AS->add_neighbor(customer_asn, AS_REL_CUSTOMER);
                     customer_AS->add_neighbor(combined_asn, AS_REL_PROVIDER);
@@ -445,7 +417,7 @@ void ASGraph::combine_components(){
             }   
 
             // Handle peers
-            for (auto &peer_asn: *cur_AS->peers){
+            for (auto &peer_asn: *cur_AS->peers) {
                 // Check if peer is in component
                 bool external = (std::find(component->begin(), 
                                       component->end(), 
@@ -459,7 +431,7 @@ void ASGraph::combine_components(){
                 
                 // Peer is safe to add to combined AS
                 if (external && no_provider_rel && no_customer_rel) {
-                    AS *peer_AS = ases->find(peer_asn)->second;
+                    ASType *peer_AS = ases->find(peer_asn)->second;
                     // Add new relationship
                     combined_AS->add_neighbor(peer_asn, AS_REL_PEER);
                     peer_AS->add_neighbor(combined_asn, AS_REL_PEER);
@@ -467,7 +439,7 @@ void ASGraph::combine_components(){
                     peer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
                 } else if (external) {
                     // Other relationship superseeds peer
-                    AS *peer_AS = ases->find(peer_asn)->second;
+                    ASType *peer_AS = ases->find(peer_asn)->second;
                     // Remove the subnode peer relationship from the external node
                     peer_AS->remove_neighbor(cur_asn, AS_REL_PEER);
                 }
@@ -478,7 +450,7 @@ void ASGraph::combine_components(){
             delete cur_AS;
         }
         // Insert complete combined node to ases
-        ases->insert(std::pair<uint32_t,AS*>(combined_asn,combined_AS));
+        ases->insert(std::pair<uint32_t, ASType*>(combined_asn,combined_AS));
     }
     return;
 }
@@ -486,17 +458,18 @@ void ASGraph::combine_components(){
 
 /** Print all ASes for debug.
  */
-void ASGraph::printDebug() {
-    for (auto const& as : *ases) {
+template <class ASType>
+void BaseGraph<ASType>::printDebug() {
+    for (auto const& as : *ases)
         std::cout << as.first << ':' << as.second->asn << std::endl;
-    }
     return; 
 }
 
 
 /** Output python code for making graphviz digraph.
  */
-void ASGraph::to_graphviz(std::ostream &os) {
+template <class ASType>
+void BaseGraph<ASType>::to_graphviz(std::ostream &os) {
     std::string id = "";
     for (auto const &as : *ases) {
         os << "dot.node('" << as.second->asn << "', '" << as.second->asn << "')" << std::endl;
@@ -509,10 +482,12 @@ void ASGraph::to_graphviz(std::ostream &os) {
 
 /** Operation for debug printing AS
  */
-std::ostream& operator<<(std::ostream &os, const ASGraph& asg) {
+template <class U>
+std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg) {
     os << "AS's" << std::endl;
-    for (auto const& as : *(asg.ases)) {
+    for (auto const& as : *(asg.ases))
         os << *as.second << std::endl;
-    }
     return os;
 }
+
+template class BaseGraph<AS>;

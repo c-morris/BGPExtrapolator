@@ -21,8 +21,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef ASGRAPH_H
-#define ASGRAPH_H
+#ifndef BASE_GRAPH_H
+#define BASE_GRAPH_H
 
 // Define relationship macros
 #define AS_REL_PROVIDER 0
@@ -39,13 +39,17 @@ class SQLQuerier;
 #include <dirent.h>
 #include <pqxx/pqxx>
 
-#include "AS.h"
-#include "SQLQuerier.h"
+#include "ASes/AS.h"
+#include "SQLQueriers/SQLQuerier.h"
 #include "TableNames.h"
 
-class ASGraph {
+template <class ASType>
+class BaseGraph {
+
+static_assert(std::is_base_of<AS, ASType>::value, "ASType must inherit from AS");
+
 public:
-    std::unordered_map<uint32_t, AS*> *ases;            // Map of ASN to AS object 
+    std::unordered_map<uint32_t, ASType*> *ases;            // Map of ASN to AS object 
     std::vector<std::set<uint32_t>*> *ases_by_rank;     // Vector of ranks
     std::vector<std::vector<uint32_t>*> *components;    // Strongly connected components
     std::map<uint32_t, uint32_t> *component_translation;// Translate AS to supernode AS
@@ -53,8 +57,46 @@ public:
     std::vector<uint32_t> *non_stubs;
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
 
-    ASGraph();
-    ~ASGraph();
+    BaseGraph() {
+        ases = new std::unordered_map<uint32_t, ASType*>;               // Map of all ASes
+        ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
+        components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
+        component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
+        stubs_to_parents = new std::map<uint32_t, uint32_t>;        // Translace stub to parent
+        non_stubs = new std::vector<uint32_t>;                      // All non-stubs in the graph
+        inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,
+                                                std::set<uint32_t>*>;
+    }
+
+    virtual ~BaseGraph() {
+        for (auto const& as : *ases) {
+            delete as.second;
+        }
+        delete ases;
+        
+        for (auto const& as : *ases_by_rank) {
+            delete as;
+        }
+        delete ases_by_rank;
+
+        for (auto const& c : *components) {
+            delete c;
+        }
+        delete components;
+
+        for (auto const& i : *inverse_results) {
+            delete i.second;
+        }
+        delete inverse_results;
+
+        delete component_translation;
+        delete stubs_to_parents;
+        delete non_stubs;
+    }
+
+    //Creation of template type
+    virtual ASType* createNew(int asn) = 0;
+
     // Propagation interaction 
     void clear_announcements();
     uint32_t translate_asn(uint32_t asn);
@@ -70,12 +112,14 @@ public:
     void decide_ranks();
     // Supernode generation
     void tarjan();
-    void tarjan_helper(AS *as, int &index, std::stack<AS*> &s);
+    void tarjan_helper(ASType *as, int &index, std::stack<ASType*> &s);
     void combine_components();
     // Misc
     void printDebug();
     void to_graphviz(std::ostream &os);
-    friend std::ostream& operator<<(std::ostream &os, const ASGraph& asg);
+
+    template <class U>
+    friend std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg);
 };
 #endif
 

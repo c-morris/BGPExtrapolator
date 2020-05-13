@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdint>
 #include <vector>
+
 #include "Extrapolator.h"
 
 /** Unit tests for Extrapolator.h and Extrapolator.cpp

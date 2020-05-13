@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <iostream>
 #include <time.h>
-#include "AS.h"
-#include "ASGraph.h"
+
+#include "ASes/AS.h"
+#include "Graphs/ASGraph.h"
 
 ASGraph* ran_graph(int num_edges, int num_vertices) {
     ASGraph* graph = new ASGraph;

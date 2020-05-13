@@ -1,8 +1,9 @@
 #include <iostream>
 #include <fstream>
-#include "ASGraph.h"
-#include "AS.h"
-#include "RanGraph.h"
+
+#include "Graphs/ASGraph.h"
+#include "ASes/AS.h"
+#include "Graphs/RanGraph.h"
 
 /** Unit tests for ASGraph.h and ASGraph.cpp
  */

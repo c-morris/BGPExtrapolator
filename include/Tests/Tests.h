@@ -13,10 +13,10 @@
 #include <cmath>    // Need?
 #include <chrono>   // Need?
 
-#include "SQLQuerier.h"
-#include "AS.h"
-#include "ASGraph.h"
-#include "Announcement.h"
+#include "SQLQueriers/SQLQuerier.h"
+#include "ASes/AS.h"
+#include "Graphs/ASGraph.h"
+#include "Announcements/Announcement.h"
 #include "Extrapolator.h"
 #include "Prefix.h"
 

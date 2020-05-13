@@ -36,7 +36,7 @@ class ASGraph;
 #include <fstream>
 #include <algorithm>
 
-#include "ASGraph.h"
+#include "Graphs/ASGraph.h"
 #include "TableNames.h"
 
 class SQLQuerier {

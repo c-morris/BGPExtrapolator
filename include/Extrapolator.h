@@ -35,11 +35,11 @@
 #include <thread>
 #include <dirent.h>
 
-#include "AS.h"
-#include "ASGraph.h"
-#include "Announcement.h"
+#include "ASes/AS.h"
+#include "Graphs/ASGraph.h"
+#include "Announcements/Announcement.h"
 #include "Prefix.h"
-#include "SQLQuerier.h"
+#include "SQLQueriers/SQLQuerier.h"
 #include "TableNames.h"
 
 class Extrapolator {

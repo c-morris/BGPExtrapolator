@@ -27,11 +27,11 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
-#include "AS.h"
-#include "ASGraph.h"
-#include "Announcement.h"
+#include "ASes/AS.h"
+#include "Graphs/ASGraph.h"
+#include "Announcements/Announcement.h"
 #include "Extrapolator.h"
-#include "Tests.h"
+#include "Tests/Tests.h"
 
 void intro() {
     // This needs to be finished

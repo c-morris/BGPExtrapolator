@@ -1,4 +1,4 @@
-#include "Announcement.h"
+#include "Announcements/Announcement.h"
 
 /** Unit tests for Announcements.h
  */

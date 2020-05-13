@@ -21,17 +21,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "Logger.h"
 #include <cmath>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <cstring>
 #include <thread>
 #include <chrono>
-#include "Extrapolator.h"
-
 #include <iostream>
 
+#include "Logger.h"
+#include "Extrapolator.h"
 
 Extrapolator::Extrapolator(bool random_b,
                            bool invert_results,

@@ -21,7 +21,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "SQLQuerier.h"
+#include "SQLQueriers/SQLQuerier.h"
 
 SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string d) {
     announcements_table = a;

@@ -1,6 +1,6 @@
 #include <iostream>
-#include "AS.h"
-#include "Announcement.h"
+#include "ASes/AS.h"
+#include "Announcements/Announcement.h"
 
 /** Unit tests for AS.cpp
  */

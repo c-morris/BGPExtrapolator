@@ -21,14 +21,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef AS_H
-#define AS_H
+#ifndef BASE_AS_H
+#define BASE_AS_H
 
 #define AS_REL_PROVIDER 0
 #define AS_REL_PEER 100
 #define AS_REL_CUSTOMER 200
-
-#include "Logger.h"
 
 #include <string>
 #include <set>
@@ -37,10 +35,15 @@
 #include <random>
 #include <iostream>
 
-#include "Announcement.h"
+#include "Logger.h"
+#include "Announcements/Announcement.h"
 #include "Prefix.h"
 
-class AS {
+template <class AnnouncementType>
+class BaseAS {
+
+static_assert(std::is_base_of<Announcement, AnnouncementType>::value, "AnnouncementType must inherit from Announcement");
+
 public:
     uint32_t asn;       // Autonomous System Number
     bool visited;       // Marks something
@@ -48,10 +51,10 @@ public:
     // Random Number Generator
     std::minstd_rand ran_bool;
     // Defer processing of incoming announcements for efficiency
-    std::vector<Announcement> *incoming_announcements;
+    std::vector<AnnouncementType> *incoming_announcements;
     // Maps of all announcements stored
-    std::map<Prefix<>, Announcement> *all_anns;
-    std::map<Prefix<>, Announcement> *depref_anns;
+    std::map<Prefix<>, AnnouncementType> *all_anns;
+    std::map<Prefix<>, AnnouncementType> *depref_anns;
     // Stores AS Relationships
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 
@@ -66,26 +69,28 @@ public:
     bool onStack;
     
     // Constructor
-    AS(uint32_t myasn=0, 
+    BaseAS(uint32_t myasn=0, 
         std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
         std::set<uint32_t> *prov=NULL, 
         std::set<uint32_t> *peer=NULL,
         std::set<uint32_t> *cust=NULL);
-    ~AS();
+    ~BaseAS();
     
     bool get_random(); 
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
-    void receive_announcements(std::vector<Announcement> &announcements);
-    void process_announcement(Announcement &ann, bool ran=true);
+    void receive_announcements(std::vector<AnnouncementType> &announcements);
+    void process_announcement(AnnouncementType &ann, bool ran=true);
     void process_announcements(bool ran=true);
     void clear_announcements();
-    bool already_received(Announcement &ann);
-    void delete_ann(Announcement &ann);
+    bool already_received(AnnouncementType &ann);
+    void delete_ann(AnnouncementType &ann);
     void printDebug();
     void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
                              std::pair<Prefix<>,uint32_t> current);
-    friend std::ostream& operator<<(std::ostream &os, const AS& as);
+
+    template <class U>
+    friend std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as);
     std::ostream& stream_announcements(std:: ostream &os);
     std::ostream& stream_depref(std:: ostream &os);
 };

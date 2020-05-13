@@ -21,13 +21,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#include "AS.h"
+#include "ASes/BaseAS.h"
 
 /** Constructor for AS class.
  *
  * AS objects represent a node in the AS Graph.
  */
-AS::AS(uint32_t myasn, 
+template <class AnnouncementType>
+BaseAS<AnnouncementType>::BaseAS(uint32_t myasn, 
        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
        std::set<uint32_t> *prov,
        std::set<uint32_t> *peer,
@@ -43,27 +44,31 @@ AS::AS(uint32_t myasn,
     } else {
         providers = prov;
     }
+
     if (peer == NULL) {
         peers = new std::set<uint32_t>;
     } else {
         peers = peer;
     }
+
     if (cust == NULL) {
         customers = new std::set<uint32_t>;
     } else {
         customers = cust;
     }
+
     inverse_results = inv;                      // Inverted results map
     member_ases = new std::vector<uint32_t>;    // Supernode members
-    incoming_announcements = new std::vector<Announcement>;
-    all_anns = new std::map<Prefix<>, Announcement>;
-    depref_anns = new std::map<Prefix<>, Announcement>;
+    incoming_announcements = new std::vector<AnnouncementType>;
+    all_anns = new std::map<Prefix<>, AnnouncementType>;
+    depref_anns = new std::map<Prefix<>, AnnouncementType>;
     // Tarjan variables
     index = -1;
     onStack = false;
 }
 
-AS::~AS() {
+template <class AnnouncementType>
+BaseAS<AnnouncementType>::~BaseAS() {
     delete incoming_announcements;
     delete all_anns;
     delete depref_anns;
@@ -76,7 +81,8 @@ AS::~AS() {
 
 /** Generates a random boolean value.
  */
-bool AS::get_random() {
+template <class AnnouncementType>
+bool BaseAS<AnnouncementType>::get_random() {
     bool r = (ran_bool() % 2 == 0);
     return r;
 }
@@ -86,7 +92,8 @@ bool AS::get_random() {
  * @param asn ASN of neighbor.
  * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
-void AS::add_neighbor(uint32_t asn, int relationship) {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::add_neighbor(uint32_t asn, int relationship) {
     switch (relationship) {
         case AS_REL_PROVIDER:
             providers->insert(asn);
@@ -105,7 +112,8 @@ void AS::add_neighbor(uint32_t asn, int relationship) {
  * @param asn ASN of neighbor.
  * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
  */
-void AS::remove_neighbor(uint32_t asn, int relationship) {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::remove_neighbor(uint32_t asn, int relationship) {
     switch (relationship) {
         case AS_REL_PROVIDER:
             providers->erase(asn);
@@ -124,7 +132,8 @@ void AS::remove_neighbor(uint32_t asn, int relationship) {
  * @param old The prefix/origin to be inserted
  * @param current The prefix/origin to be removed
  */
-void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<>,uint32_t> current) {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<>,uint32_t> current) {
     if (inverse_results != NULL) {
         // Add back to old set, remove from new set
         auto set = inverse_results->find(old);
@@ -144,8 +153,9 @@ void AS::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<
  *
  * @param announcements The announcements to be pushed onto the incoming_announcements vector.
  */
-void AS::receive_announcements(std::vector<Announcement> &announcements) {
-    for (Announcement &ann : announcements) {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::receive_announcements(std::vector<AnnouncementType> &announcements) {
+    for (AnnouncementType &ann : announcements) {
         // push_back makes a copy of the announcement
         incoming_announcements->push_back(ann);
     }
@@ -158,14 +168,15 @@ void AS::receive_announcements(std::vector<Announcement> &announcements) {
  * 
  * @param ann The announcement to be processed
  */ 
-void AS::process_announcement(Announcement &ann, bool ran) {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::process_announcement(AnnouncementType &ann, bool ran) {
     // Check for existing announcement for prefix
     auto search = all_anns->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     
     // No announcement found for incoming announcement prefix
     if (search == all_anns->end()) {
-        all_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+        all_anns->insert(std::pair<Prefix<>, AnnouncementType>(ann.prefix, ann));
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
             auto set = inverse_results->find(
@@ -201,7 +212,7 @@ void AS::process_announcement(Announcement &ann, bool ran) {
                         std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                         std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                     // Insert depref ann
-                    depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                    depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(search->second.prefix, 
                                                                         search->second));
                     search->second = ann;
                 } else {
@@ -214,7 +225,7 @@ void AS::process_announcement(Announcement &ann, bool ran) {
             } else {
                 // Use the old announcement
                 if (search_depref == depref_anns->end()) {
-                    depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                    depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(ann.prefix, 
                                                                         ann));
                 } else {
                     // Replace second best with the old priority announcement
@@ -229,7 +240,7 @@ void AS::process_announcement(Announcement &ann, bool ran) {
                     std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 // Insert new second best announcement
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(search->second.prefix, 
                                                                     search->second));
                 // Replace the old announcement with the higher priority
                 search->second = ann;
@@ -248,7 +259,7 @@ void AS::process_announcement(Announcement &ann, bool ran) {
         } else {
             if (search_depref == depref_anns->end()) {
                 // Insert new second best annoucement
-                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
+                depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(ann.prefix, ann));
             } else if (ann.priority > search_depref->second.priority) {
                 // Replace the old depref announcement with the higher priority
                 search_depref->second = search->second;
@@ -259,7 +270,8 @@ void AS::process_announcement(Announcement &ann, bool ran) {
 
 /** Iterate through incoming_announcements and keep only the best. 
  */
-void AS::process_announcements(bool ran) {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::process_announcements(bool ran) {
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
         if (search == all_anns->end() || !search->second.from_monitor) {
@@ -271,7 +283,8 @@ void AS::process_announcements(bool ran) {
 
 /** Clear all announcement collections. 
  */
-void AS::clear_announcements() {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::clear_announcements() {
     all_anns->clear();
     incoming_announcements->clear();
     depref_anns->clear();
@@ -282,7 +295,8 @@ void AS::clear_announcements() {
  * @param ann Announcement to check for. 
  * @return True if recv'd, false otherwise.
  */
-bool AS::already_received(Announcement &ann) {
+template <class AnnouncementType>
+bool BaseAS<AnnouncementType>::already_received(AnnouncementType &ann) {
     auto search = all_anns->find(ann.prefix);
     bool found = (search == all_anns->end()) ? false : true;
     return found;
@@ -290,7 +304,8 @@ bool AS::already_received(Announcement &ann) {
 
 /** Deletes given announcement.
  */
-void AS::delete_ann(Announcement &ann) {
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::delete_ann(AnnouncementType &ann) {
     all_anns->erase(ann.prefix);
 }
 
@@ -300,7 +315,8 @@ void AS::delete_ann(Announcement &ann) {
  * @param as
  * @return os passed as parameter
  */
-std::ostream& operator<<(std::ostream &os, const AS& as) {
+template <class U>
+std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as) {
     os << "ASN: " << as.asn << std::endl << "Rank: " << as.rank
         << std::endl << "Providers: ";
     for (auto &provider : *as.providers) {
@@ -325,7 +341,8 @@ std::ostream& operator<<(std::ostream &os, const AS& as) {
  * @param os
  * @return output stream into which is passed the .csv row formatted announcements
  */
-std::ostream& AS::stream_announcements(std::ostream &os){
+template <class AnnouncementType>
+std::ostream& BaseAS<AnnouncementType>::stream_announcements(std::ostream &os) {
     for (auto &ann : *all_anns) {
         os << asn << ',';
         ann.second.to_csv(os);
@@ -338,10 +355,13 @@ std::ostream& AS::stream_announcements(std::ostream &os){
  * @param os
  * @return output stream into which is passed the .csv row formatted announcements
  */
-std::ostream& AS::stream_depref(std::ostream &os){
+template <class AnnouncementType>
+std::ostream& BaseAS<AnnouncementType>::stream_depref(std::ostream &os) {
     for (auto &ann : *depref_anns) {
         os << asn << ',';
         ann.second.to_csv(os);
     }
     return os;
 }
+
+template class BaseAS<Announcement>;
