@@ -55,10 +55,10 @@ struct ROVppAS : public AS {
     std::set<uint32_t> *attackers;
     std::set<uint32_t> *bad_neighbors;  // neighbors that have sent us an attacker ann
     // Announcement Tracking Member Variables
-    std::vector<Announcement> *failed_rov;  // Save dropped announcements (i.e. attacker announcements)
-    std::vector<Announcement> *passed_rov;  // History of all announcements that have passed ROV
-    std::vector<Announcement> *blackholes;  // Keep track of blackholes created
-    std::vector<std::pair<Announcement,Announcement>> *preventive_anns;  // Keep track of preventive announcements and their alternatives
+    std::set<Announcement> *failed_rov;  // Save dropped announcements (i.e. attacker announcements)
+    std::set<Announcement> *passed_rov;  // History of all announcements that have passed ROV
+    std::set<Announcement> *blackholes;  // Keep track of blackholes created
+    std::set<std::pair<Announcement,Announcement>> *preventive_anns;  // Keep track of preventive announcements and their alternatives
 
     ROVppAS(uint32_t myasn=0,
         std::set<uint32_t> *attackers=NULL,

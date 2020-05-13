@@ -33,10 +33,10 @@ ROVppAS::ROVppAS(uint32_t myasn,
     // Save reference to attackers
     attackers = rovpp_attackers;
     bad_neighbors = new std::set<uint32_t>;
-    failed_rov = new std::vector<Announcement>;
-    passed_rov = new std::vector<Announcement>;
-    blackholes = new std::vector<Announcement>;
-    preventive_anns = new std::vector<std::pair<Announcement,Announcement>>;  
+    failed_rov = new std::set<Announcement>;
+    passed_rov = new std::set<Announcement>;
+    blackholes = new std::set<Announcement>;
+    preventive_anns = new std::set<std::pair<Announcement,Announcement>>;  
 }
 
 ROVppAS::~ROVppAS() { 
@@ -316,17 +316,17 @@ void ROVppAS::process_announcements(bool ran) {
                 // Basic ROV
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
+                        passed_rov->insert(ann);
                         process_announcement(ann, false);
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP0) {
                     // The policy for ROVpp 0 is similar to ROVpp 1 
                     // Just doesn't creat blackholes
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
+                        passed_rov->insert(ann);
                         process_announcement(ann, false);
                     } else {
-                        failed_rov->push_back(ann);
+                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             process_announcement(ann, false);
@@ -339,17 +339,17 @@ void ROVppAS::process_announcements(bool ran) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
+                        passed_rov->insert(ann);
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
                         }
                         process_announcement(ann, false);
                     } else {
-                        failed_rov->push_back(ann);
+                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
-                            blackholes->push_back(ann);
+                            blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
@@ -361,18 +361,18 @@ void ROVppAS::process_announcements(bool ran) {
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
+                        passed_rov->insert(ann);
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
                         }
                         process_announcement(ann, false);
                     } else {
-                        failed_rov->push_back(ann);
+                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
-                            blackholes->push_back(ann);
+                            blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
@@ -385,14 +385,14 @@ void ROVppAS::process_announcements(bool ran) {
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
+                        passed_rov->insert(ann);
                         process_announcement(ann, false);
                     } else {
-                        failed_rov->push_back(ann);
+                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
-                            blackholes->push_back(ann);
+                            blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
@@ -406,7 +406,7 @@ void ROVppAS::process_announcements(bool ran) {
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
+                        passed_rov->insert(ann);
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
@@ -415,11 +415,11 @@ void ROVppAS::process_announcements(bool ran) {
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
-                        failed_rov->push_back(ann);
+                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
-                            blackholes->push_back(ann);
+                            blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
@@ -432,7 +432,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rov(ann)) {
-                        passed_rov->push_back(ann);
+                        passed_rov->insert(ann);
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
@@ -442,10 +442,10 @@ void ROVppAS::process_announcements(bool ran) {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
                         Announcement best_alternative_ann = best_alternative_route(ann); 
-                        failed_rov->push_back(ann);
+                        failed_rov->insert(ann);
                         if (best_alternative_route(ann) == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
-                            blackholes->push_back(ann);
+                            blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann);
@@ -457,7 +457,7 @@ void ROVppAS::process_announcements(bool ran) {
                             preventive_ann.prefix = ann.prefix;
                             preventive_ann.alt = best_alternative_ann.received_from_asn;
                             if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
-                            preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
+                            preventive_anns->insert(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
                             process_announcement(preventive_ann);
                         }
                     }
@@ -495,14 +495,14 @@ void ROVppAS::process_announcements(bool ran) {
      Announcement best_alternative_ann = ann;
      // Create an ultimate list of good candidate announcemnts (ribs_in)
      std::vector<Announcement> candidates;
-     std::vector<Announcement> baddies = *failed_rov;
+     std::set<Announcement> baddies = *failed_rov;
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
         if (pass_rov(candidate_ann) && !candidate_ann.withdraw && 
             candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
            candidates.push_back(candidate_ann);
         } else {
-           baddies.push_back(candidate_ann);
+           baddies.insert(candidate_ann);
         }
      }
      // Find the best alternative to ann
@@ -554,7 +554,7 @@ void ROVppAS::check_preventives(Announcement ann) {
                 // replace
                 if (best_alternative_route(ann) == ann) { // If no alternative
                     // Mark as blackholed and accept this announcement
-                    blackholes->push_back(ann);
+                    blackholes->insert(ann);
                     ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                     ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                     process_announcement(ann);
@@ -564,7 +564,7 @@ void ROVppAS::check_preventives(Announcement ann) {
                     preventive_ann.prefix = ann.prefix;
                     preventive_ann.alt = best_alternative_ann.received_from_asn;
                     if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
-                    preventive_anns->push_back(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
+                    preventive_anns->insert(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
                     process_announcement(preventive_ann);
                 }
             }
@@ -589,8 +589,7 @@ uint8_t ROVppAS::tiny_hash(uint32_t as_number) {
  * @return    [description]
  */
 std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
-  for(std::size_t i=0; i<blackholes->size(); ++i) {
-      Announcement ann = blackholes->at(i);
+  for (Announcement ann : *blackholes) {
       os << asn << ",";
       ann.to_blackholes_csv(os);
   }

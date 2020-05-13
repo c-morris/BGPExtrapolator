@@ -179,6 +179,7 @@ public:
                (as_path == b.as_path) &&
                (priority == b.priority) &&
                (sent_to_asn == b.sent_to_asn) &&
+               (alt == b.alt) &&
                (received_from_asn == b.received_from_asn);
     }
     
@@ -191,7 +192,8 @@ public:
                (prefix < b.prefix) ||
                (priority < b.priority) ||
                (sent_to_asn < b.sent_to_asn) ||
-               (received_from_asn < b.received_from_asn);
+               (received_from_asn < b.received_from_asn) ||
+               (alt < b.alt);
     }
 };
 #endif
