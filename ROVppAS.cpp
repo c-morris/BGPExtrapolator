@@ -154,6 +154,10 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
         }
     // If overrid is true, the replace whatever is the current announcement regardless
     } else if (override) {
+      /* // Commented out by Reynaldo Morillo May 14 2020
+      // Brought this change over from rovpp3.1.3 branch
+      // Found that moving the entire prefix causes convergence to take too long
+      // (we run out of memory before it converges)
       // Update inverse results
       swap_inverse_result(
           std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
@@ -163,6 +167,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
                                                             search->second));
       withdraw(search->second);
       search->second = ann;
+      */
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
     } else if (ann.priority == search->second.priority && ann != search->second) {
         // Random tiebraker

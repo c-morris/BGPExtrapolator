@@ -124,11 +124,10 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             propagate_up();
             propagate_down();
             count++;
-            if (count >= 1000) {
+            if (count >= 100) {
                 std::cout << "Exceeded max propagation cycles" << std::endl;
-                exit(EXIT_FAILURE);
             }
-        } while (AS::graph_changed && count < 1000);
+        } while (AS::graph_changed && count < 100);
         std::cout << "Times propagated: " << count << std::endl;
 
         save_results(idx);
