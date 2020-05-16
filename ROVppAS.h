@@ -34,6 +34,7 @@
 // and the in the set_rovpp_as_type function to set the type.
 #define ROVPPAS_TYPE_BGP 0        // Regular BGP
 #define ROVPPAS_TYPE_ROV 1        // Just standard ROV
+#define ROVPPAS_TYPE_ROVPP0 7      // ROVpp 0 (Just don't send to bad neighbors)
 #define ROVPPAS_TYPE_ROVPP 2      // ROVpp 0.1 (Just Blackholing)
 #define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
 #define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
@@ -45,10 +46,17 @@
 // We're also using this in contrl plane in pass_rov
 // Constant was agreed upon with Simulation code.
 #define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  
+// This flag is used to denote that along this
+// path an attacker's announcement was seen, but
+// the /16 is still going to be routed through here.
+// Othr ROVppASes will take this into consideration 
+// making decisions on what path is better.
+#define ATTACKER_ON_ROUTE_FLAG 64570
 
 struct ROVppAS : public AS {
     std::vector<bool> policy_vector;
     std::set<uint32_t> *attackers;
+    std::set<uint32_t> *bad_neighbors;  // neighbors that have sent us an attacker ann
     // Announcement Tracking Member Variables
     std::vector<Announcement> *failed_rov;  // Save dropped announcements (i.e. attacker announcements)
     std::vector<Announcement> *passed_rov;  // History of all announcements that have passed ROV

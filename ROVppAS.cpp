@@ -32,6 +32,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
     : AS(myasn, inv, prov, peer, cust)  {
     // Save reference to attackers
     attackers = rovpp_attackers;
+    bad_neighbors = new std::set<uint32_t>;
     failed_rov = new std::vector<Announcement>;
     passed_rov = new std::vector<Announcement>;
     blackholes = new std::vector<Announcement>;
@@ -39,6 +40,7 @@ ROVppAS::ROVppAS(uint32_t myasn,
 }
 
 ROVppAS::~ROVppAS() { 
+    delete bad_neighbors;
     delete failed_rov;
     delete passed_rov;
     delete blackholes;
@@ -140,7 +142,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
     auto search_depref = depref_anns->find(ann.prefix);
     
     // No announcement found for incoming announcement prefix
-    if (search == loc_rib->end() || override) {
+    if (search == loc_rib->end()) {
         loc_rib->insert(std::pair<Prefix<>, Announcement>(ann.prefix, ann));
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
@@ -150,6 +152,22 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
                 set->second->erase(asn);
             }
         }
+    // If overrid is true, the replace whatever is the current announcement regardless
+    } else if (override) {
+      /* // Commented out by Reynaldo Morillo May 14 2020
+      // Brought this change over from rovpp3.1.3 branch
+      // Found that moving the entire prefix causes convergence to take too long
+      // (we run out of memory before it converges)
+      // Update inverse results
+      swap_inverse_result(
+          std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+          std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+      // Insert depref ann
+      depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                            search->second));
+      withdraw(search->second);
+      search->second = ann;
+      */
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
     } else if (ann.priority == search->second.priority && ann != search->second) {
         // Random tiebraker
@@ -300,6 +318,15 @@ void ROVppAS::process_announcements(bool ran) {
         }
     } while (something_removed);
     
+    // Apply "holes" to prefix announcements (i.e. good ann)
+    // that came from neighbors that have sent as an attacker's ann
+    // First, identify neighbors that have sent attacker announcemnts
+    for (auto &ann : *ribs_in) {
+        if (!pass_rov(ann)) {
+            bad_neighbors->insert(ann.received_from_asn);
+        }
+    }
+    
     // Process the ribs_in
     for (auto &ann : *ribs_in) {
         auto search = loc_rib->find(ann.prefix);
@@ -345,12 +372,31 @@ void ROVppAS::process_announcements(bool ran) {
                         passed_rov->push_back(ann);
                         process_announcement(ann, false);
                     }
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP0) {
+                    // The policy for ROVpp 0 is similar to ROVpp 1 
+                    // Just doesn't creat blackholes
+                    if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
+                        process_announcement(ann, false);
+                    } else {
+                        failed_rov->push_back(ann);
+                        Announcement best_alternative_ann = best_alternative_route(ann); 
+                        if (best_alternative_ann == ann) { // If no alternative
+                            process_announcement(ann, false);
+                        } else {
+                            process_announcement(best_alternative_ann, false);
+                        }
+                    }
                 // ROV++ V0.1
                 } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPP) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
@@ -369,6 +415,10 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann, false);
                     } else {
                         failed_rov->push_back(ann);
@@ -383,6 +433,7 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, false);
                         }
                     }
+                /* // Temporarily comment out to test out new v0.2bis   
                 // ROV++ V0.2bis
                 } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
@@ -402,12 +453,42 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, false);
                         }
                     }
-                // ROV++ V0.3
+                
+                 */
+                // New ROV++ V0.2bis (drops hijack announcements silently like v0.3)
+                } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBIS) {
+                    // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
+                    if (pass_rov(ann)) {
+                        passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
+                        process_announcement(ann, false);
+                    } else {
+                        // If it is from a customer, silently drop it
+                        if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
+                        failed_rov->push_back(ann);
+                        Announcement best_alternative_ann = best_alternative_route(ann); 
+                        if (best_alternative_ann == ann) { // If no alternative
+                            // Mark as blackholed and accept this announcement
+                            blackholes->push_back(ann);
+                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            process_announcement(ann, false);
+                        } else {
+                            process_announcement(best_alternative_ann, false);
+                        }
+                    }
                 } else if (policy_vector.at(ann.tstamp & 0xffffffff) && ((ann.tstamp & 0xffffffff00000000) >> 32) == ROVPPAS_TYPE_ROVPPBP) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rov(ann)) {
                         passed_rov->push_back(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann);
                     } else {
                         // If it is from a customer, silently drop it
@@ -440,6 +521,7 @@ void ROVppAS::process_announcements(bool ran) {
             }
         }
     }
+    
     // TODO Remove this?
     // Withdrawals are deleted after processing above
     // Remove withdrawals
@@ -468,11 +550,12 @@ void ROVppAS::process_announcements(bool ran) {
      std::vector<Announcement> baddies = *failed_rov;
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
-         if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
-             candidates.push_back(candidate_ann);
-         } else {
-             baddies.push_back(candidate_ann);
-         }
+        if (pass_rov(candidate_ann) && !candidate_ann.withdraw && 
+            candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
+           candidates.push_back(candidate_ann);
+        } else {
+           baddies.push_back(candidate_ann);
+        }
      }
      // Find the best alternative to ann
      for (auto &candidate : candidates) {

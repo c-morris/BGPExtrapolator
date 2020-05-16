@@ -89,7 +89,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
-    int iter = 0;
     int idxmax = it_size;
     for (int idx = 0; idx < idxmax; idx++) {
         std::cout << "Beginning Iteration " << idx << "..." << std::endl;
@@ -117,7 +116,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
                 delete parsed_path;
             }
         }
-        
         // This will propogate up and down until the graph no longer changes
         // Changes are tripped when the graph_changed variable is triggered
         int count = 0;
@@ -126,28 +124,21 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             propagate_up();
             propagate_down();
             count++;
+            if (count >= 100) {
+                std::cout << "Exceeded max propagation cycles" << std::endl;
+            }
         } while (AS::graph_changed && count < 100);
         std::cout << "Times propagated: " << count << std::endl;
 
-        for (auto &as : *rovpp_graph->ases){
-            // Check for loops
-            for (auto it = as.second->loc_rib->begin(); it != as.second->loc_rib->end();) {
-                if (it->second.alt != 0 && loop_check(it->second.prefix, as.second->asn, as.second->asn, 0)) {
-                    it = as.second->loc_rib->erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
         save_results(idx);
         graph->clear_announcements();
-}
+    }
     
-    std::ofstream gvpythonfile;
-    gvpythonfile.open("asgraph.py");
-    std::vector<uint32_t> to_graph = {  };
-    rovpp_graph->to_graphviz(gvpythonfile, to_graph);
-    gvpythonfile.close();
+    // std::ofstream gvpythonfile;
+    // gvpythonfile.open("asgraph.py");
+    // std::vector<uint32_t> to_graph = {  };
+    // rovpp_graph->to_graphviz(gvpythonfile, to_graph);
+    // gvpythonfile.close();
     std::cout << "completed: ";
 }
 
