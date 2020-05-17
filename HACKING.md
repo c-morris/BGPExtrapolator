@@ -45,7 +45,7 @@ The extrapolation process is as follows:
 
 ### AS
 
-<u>Purpose:</u> The AS struct represents an Autonomous System(AS). 
+<u>Purpose:</u> AS objects represent a node in the AS Graph. 
 
 <u>How:</u> The AS struct, identified by an Autonomous System Number(ASN), keeps track of the other ASes it has relationships to as well as a set of BGP announcements it wants to keep, discarding those it prefers less. In BGP terminology, this set of preferred announcements is the Loc-RIB. 
 
