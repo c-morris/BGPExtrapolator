@@ -1,7 +1,10 @@
 #ifndef AS_H
 #define AS_H
 
+#include <type_traits>
+
 #include "ASes/BaseAS.h"
+#include "Announcements/Announcement.h"
 
 class AS : public BaseAS<Announcement> {
 public:

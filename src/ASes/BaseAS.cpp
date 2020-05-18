@@ -23,50 +23,6 @@
 
 #include "ASes/BaseAS.h"
 
-/** Constructor for AS class.
- *
- * AS objects represent a node in the AS Graph.
- */
-template <class AnnouncementType>
-BaseAS<AnnouncementType>::BaseAS(uint32_t myasn, 
-       std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv, 
-       std::set<uint32_t> *prov,
-       std::set<uint32_t> *peer,
-       std::set<uint32_t> *cust) : ran_bool(myasn) {
-    // Set ASN
-    asn = myasn;
-    // Initialize AS to invalid rank
-    rank = -1;     
-    
-    // Create AS relationship sets
-    if (prov == NULL) {
-        providers = new std::set<uint32_t>;
-    } else {
-        providers = prov;
-    }
-
-    if (peer == NULL) {
-        peers = new std::set<uint32_t>;
-    } else {
-        peers = peer;
-    }
-
-    if (cust == NULL) {
-        customers = new std::set<uint32_t>;
-    } else {
-        customers = cust;
-    }
-
-    inverse_results = inv;                      // Inverted results map
-    member_ases = new std::vector<uint32_t>;    // Supernode members
-    incoming_announcements = new std::vector<AnnouncementType>;
-    all_anns = new std::map<Prefix<>, AnnouncementType>;
-    depref_anns = new std::map<Prefix<>, AnnouncementType>;
-    // Tarjan variables
-    index = -1;
-    onStack = false;
-}
-
 template <class AnnouncementType>
 BaseAS<AnnouncementType>::~BaseAS() {
     delete incoming_announcements;
@@ -365,3 +321,4 @@ std::ostream& BaseAS<AnnouncementType>::stream_depref(std::ostream &os) {
 }
 
 template class BaseAS<Announcement>;
+template class BaseAS<ROVppAnnouncement>;

@@ -17,7 +17,14 @@
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
-#include "Extrapolator.h"
+#include "Extrapolators/Extrapolator.h"
+
+#include "SQLQueriers/ROVppSQLQuerier.h"
+#include "ASes/ROVppAS.h"
+#include "Graphs/ROVppASGraph.h"
+#include "Announcements/ROVppAnnouncement.h"
+#include "Extrapolators/ROVppExtrapolator.h"
+
 #include "Prefix.h"
 
 // Prototypes for PrefixTest.cpp
@@ -26,12 +33,12 @@ bool test_string_to_cidr();
 bool test_prefix_lt_operator();
 bool test_prefix_gt_operator();
 bool test_prefix_eq_operator();
+bool test_prefix_contained_in_or_equal_to_operator();
 
 // Prototypes for AnnouncementTest.cpp
 bool test_announcement();
 bool test_ann_lt_operator();
 bool test_ann_gt_operator();
-bool test_ann_eq_operator();
 bool test_to_sql();
 bool test_ann_os_operator();
 bool test_to_csv();
@@ -60,6 +67,36 @@ bool test_propagate_up();
 bool test_propagate_down();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
+
+// Prototypes for ROVppTest.cpp
+bool test_rovpp_ann_eq_operator();
+bool test_ROVppExtrapolator_constructor();
+bool test_rovpp_propagate_up();
+bool test_rovpp_propagate_down();
+bool test_rovpp_give_ann_to_as_path();
+bool test_rovpp_send_all_announcements();
+bool test_rovpp_add_relationship();
+bool test_rovpp_translate_asn();
+bool test_rovpp_decide_ranks();
+bool test_rovpp_remove_stubs();
+bool test_rovpp_combine_components();
+bool test_rovpp_get_random();
+bool test_rovpp_add_neighbor();
+bool test_rovpp_remove_neighbor();
+bool test_rovpp_receive_announcements();
+bool test_rovpp_process_announcement();
+bool test_rovpp_process_announcements();
+bool test_rovpp_already_received();
+bool test_rovpp_clear_announcements();
+bool test_rovpp_announcement();
+bool test_rovpp_pass_rov();
+bool test_rovpp_rov_receive_announcements();
+bool test_best_alternative_route();
+bool test_best_alternative_route_chosen();
+bool test_rovpp_tiebreak_override();
+bool test_withdrawal();
+bool test_tiny_hash();
+bool test_rovpp_full_path();
 
 // Prototypes for SQLQuerierTest.cpp
 

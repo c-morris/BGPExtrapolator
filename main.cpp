@@ -30,7 +30,7 @@
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
-#include "Extrapolator.h"
+#include "Extrapolators/Extrapolator.h"
 #include "Tests/Tests.h"
 
 void intro() {

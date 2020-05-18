@@ -41,11 +41,22 @@ class ASGraph;
 
 class SQLQuerier {
 public:
+    std::string results_table;
+    std::string depref_table;
+    std::string inverse_results_table;
+    std::string announcements_table;
+    std::string user;
+    std::string pass;
+    std::string db_name;
+    std::string host;
+    std::string port;
+    pqxx::connection *C;
+
     SQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, 
                std::string r=RESULTS_TABLE,
                std::string i=INVERSE_RESULTS_TABLE,
                std::string d=DEPREF_RESULTS_TABLE);
-    ~SQLQuerier();
+    virtual ~SQLQuerier();
     
     // Setup
     void read_config();
@@ -56,9 +67,9 @@ public:
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);
     pqxx::result select_prefix_count(Prefix<>*);
-    pqxx::result select_prefix_ann(Prefix<>*);
+    virtual pqxx::result select_prefix_ann(Prefix<>*);
     pqxx::result select_subnet_count(Prefix<>*);
-    pqxx::result select_subnet_ann(Prefix<>*);
+    virtual pqxx::result select_subnet_ann(Prefix<>*);
     
     // Preprocessing Tables
     void clear_stubs_from_db();
@@ -78,26 +89,14 @@ public:
     void clear_depref_from_db();
     void clear_inverse_from_db();
 
-    void create_results_tbl();
+    virtual void create_results_tbl();
     void create_depref_tbl();
     void create_inverse_results_tbl();
  
-    void copy_results_to_db(std::string file_name);
+    virtual void copy_results_to_db(std::string file_name);
     void copy_depref_to_db(std::string file_name);
     void copy_inverse_results_to_db(std::string file_name);
     
     void create_results_index();
-    
-private:
-    std::string results_table;
-    std::string depref_table;
-    std::string inverse_results_table;
-    std::string announcements_table;
-    std::string user;
-    std::string pass;
-    std::string db_name;
-    std::string host;
-    std::string port;
-    pqxx::connection *C;
 };
 #endif

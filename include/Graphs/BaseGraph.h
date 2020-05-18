@@ -39,14 +39,18 @@ class SQLQuerier;
 #include <dirent.h>
 #include <pqxx/pqxx>
 
+// #include "ASes/BaseAS.h"s
 #include "ASes/AS.h"
+#include "ASes/ROVppAS.h"
+
 #include "SQLQueriers/SQLQuerier.h"
 #include "TableNames.h"
 
 template <class ASType>
 class BaseGraph {
 
-static_assert(std::is_base_of<AS, ASType>::value, "ASType must inherit from AS");
+// static_assert(std::is_base_of<BaseAS, ASType>::value, "ASType must inherit from BaseAS");
+// static_assert(std::is_convertible<ASType*, BaseAS*>::value, "ASType must inherit BaseAS as public");
 
 public:
     std::unordered_map<uint32_t, ASType*> *ases;            // Map of ASN to AS object 
@@ -95,7 +99,7 @@ public:
     }
 
     //Creation of template type
-    virtual ASType* createNew(int asn) = 0;
+    virtual ASType* createNew(uint32_t asn) = 0;
 
     // Propagation interaction 
     void clear_announcements();

@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "Extrapolator.h"
+#include "Extrapolators/Extrapolator.h"
 
 /** Unit tests for Extrapolator.h and Extrapolator.cpp
  */

@@ -44,24 +44,16 @@ public:
     /** Default constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t from_asn, int64_t timestamp = 0) {
-        prefix.addr = aprefix;
-        prefix.netmask = anetmask;
-        origin = aorigin;
-        received_from_asn = from_asn;
-        priority = 0;
-        from_monitor = false;
-        tstamp = timestamp;
-    }
+        uint32_t from_asn, int64_t timestamp = 0);
     
     /** Priority constructor
      */
     Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false) 
-        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) { 
-        priority = pr; 
-        from_monitor = a_from_monitor;
-    }
+        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false);
+
+    /** Copy constructor
+     */
+    Announcement(const Announcement& ann);
 
     /** Defines the << operator for the Announcements
      *
@@ -71,22 +63,13 @@ public:
      * @param ann Specifies the announcement from which data is pulled.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    friend std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
-        os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
-            ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
-            << std::endl << "Priority:\t" << ann.priority << std::endl 
-            << "Recv'd from:\t" << std::dec << ann.received_from_asn;
-        return os;
-    }
+    friend std::ostream& operator<<(std::ostream &os, const Announcement& ann);
 
     /** Passes the announcement struct data to an output stream to csv generation.
      *
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
-        return os;
-    }
+    std::ostream& to_csv(std::ostream &os);
 };
 #endif

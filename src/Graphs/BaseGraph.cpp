@@ -144,7 +144,7 @@ void BaseGraph<ASType>::remove_stubs(SQLQuerier *querier) {
         for(uint32_t provider_asn : *as->providers) {
             auto iter = ases->find(provider_asn);
             if (iter != ases->end()) {
-                AS* provider = iter->second;
+                ASType* provider = iter->second;
                 provider->customers->erase(as->asn);
             }
             stubs_to_parents->insert(std::pair<uint32_t, uint32_t>(as->asn,provider_asn));
@@ -302,7 +302,7 @@ void BaseGraph<ASType>::decide_ranks() {
 template <class ASType>
 void BaseGraph<ASType>::tarjan() {
     int index = 0;
-    std::stack<AS*> s;
+    std::stack<ASType*> s;
 
     for (auto &as : *ases)
         if (as.second->index == -1)
@@ -367,7 +367,7 @@ void BaseGraph<ASType>::combine_components() {
 
         // Combined Component will id as lowest ASN
         // AS *combined_AS = new AS(combined_asn, inverse_results);
-        AS *combined_AS = createNew(combined_asn);
+        ASType *combined_AS = createNew(combined_asn);
         
         // For all members of a component, gather neighbors
         for (auto &cur_asn : *component) {
@@ -491,3 +491,4 @@ std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg) {
 }
 
 template class BaseGraph<AS>;
+template class BaseGraph<ROVppAS>;
