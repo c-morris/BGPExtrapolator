@@ -12,14 +12,6 @@
 #define MESSEGE_SIZE 24
 #define HMAC_KEY_LENGTH 32
 
-/*
-*   File of messeges (needed for HMAC)
-*       4 ASNs and a Prefix
-*       16 bytes + 8 bytes = 24 bytes each
-*
-*   File of SHA-256 hashes of the messeges (For Elliptic Curve)
-*   File of 256bit keys (for HMAC)
-*/
 int main() {
     unsigned char messege[MESSEGE_SIZE];
     unsigned char hash[SHA256_DIGEST_LENGTH];
