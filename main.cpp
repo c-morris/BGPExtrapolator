@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
             // printf("Time spent verifying ECDSA p-256 with SHA-256 hashing: %f (seconds)\n", ecdsa_verification_time_total);
             // printf("Average time to verify ECDSA p-256 with SHA-256 hashing: %f (milliseconds)\n\n", ((ecdsa_verification_time_total / (double) NUM_ANNOUNCEMENTS) * 1000.0));
             
-            ecdsaFile << num_announcements[i] << "," << ecdsa_verification_time_total << "," << ecdsa_signature_time_total << "\n";
+            ecdsaFile << num_announcements[i] << "," << ecdsa_signature_time_total << "," << ecdsa_verification_time_total << "\n";
 
             double hmac_verification_time_total = 0;
             double hmac_signature_time_total = 0;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
             // printf("Total time spent verifying HMAC with SHA-256 hashing: %f (seconds)\n", hmac_verification_time_total);
             // printf("Average time to verify HMAC with SHA-256 hashing: %f (milliseconds)\n", ((hmac_verification_time_total / (double) NUM_ANNOUNCEMENTS) * 1000.0));
 
-            hmacFile << num_announcements[i] << "," << hmac_verification_time_total << "," << hmac_signature_time_total << "\n";
+            hmacFile << num_announcements[i] << "," << hmac_signature_time_total << "," << hmac_verification_time_total<< "\n";
         }
 
         ecdsaFile << "\n";
