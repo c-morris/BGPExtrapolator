@@ -8,11 +8,17 @@
 #include <iostream>
 #include <string.h>
 
-#define NUM_VERIFICATIONS 100000
 #define MESSEGE_SIZE 24
 #define HMAC_KEY_LENGTH 32
 
-int main() {
+int main(int argc, char *argv[]) {
+    if(argc < 2) {
+        printf("Please specify the ammount of announcements");
+        return 0;
+    }
+
+    unsigned int num_announcements = atoi(argv[1]);
+
     unsigned char messege[MESSEGE_SIZE];
     unsigned char hash[SHA256_DIGEST_LENGTH];
 
@@ -23,7 +29,7 @@ int main() {
     double ecdsa_verification_time_total = 0;
 
     //ECDSA p-256 with SHA-256
-    for(unsigned int t = 0; t < NUM_VERIFICATIONS; t++) {
+    for(unsigned int t = 0; t < num_announcements; t++) {
         //Alter messege
         RAND_bytes(messege, MESSEGE_SIZE);
 
@@ -49,7 +55,8 @@ int main() {
         ECDSA_SIG_free(signature);
     }
 
-    printf("Average time to verify ECDSA p-256 with SHA-256 hashing: %f (seconds)\n", (ecdsa_verification_time_total / (double) NUM_VERIFICATIONS));
+    printf("Time spent verifying ECDSA p-256 with SHA-256 hashing: %f (seconds)\n", ecdsa_verification_time_total);
+    printf("Average time to verify ECDSA p-256 with SHA-256 hashing: %f (milliseconds)\n\n", ((ecdsa_verification_time_total / (double) num_announcements) * 1000.0));
     
     //cleanup
     EC_KEY_free(key);
@@ -60,7 +67,7 @@ int main() {
 
     unsigned char hkey[HMAC_KEY_LENGTH];
     unsigned char fake_original_auth_code[SHA256_DIGEST_LENGTH];
-    for(unsigned int i = 0; i < NUM_VERIFICATIONS; i++) {
+    for(unsigned int i = 0; i < num_announcements; i++) {
         //New Key
         RAND_bytes(hkey, HMAC_KEY_LENGTH);
 
@@ -87,5 +94,8 @@ int main() {
         hmac_verification_time_total += (double) ((end - start) + (end2 - start2)) / CLOCKS_PER_SEC;
     }
 
-    printf("Average time to verify HMAC with SHA-256 hashing: %f (seconds)\n", (hmac_verification_time_total / (double) NUM_VERIFICATIONS));
+    printf("Total time spent verifying HMAC with SHA-256 hashing: %f (seconds)\n", hmac_verification_time_total);
+    printf("Average time to verify HMAC with SHA-256 hashing: %f (milliseconds)\n", ((hmac_verification_time_total / (double) num_announcements) * 1000.0));
+
+    return 0;
 }
