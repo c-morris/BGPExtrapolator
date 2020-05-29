@@ -12,6 +12,23 @@
 
 #define HMAC_KEY_LENGTH 32
 
+int calculateECDSAByteLength(int path_length) {
+    //4 bytes: target AS Number
+    //Signature Segment: 20 (SKI) + 2(length) + 32(512 bit signature) -> for each hop (number of ASes on the path - 1)
+    //Path Segment: 6 bytes -> Each AS on the path
+    //Suite Identifier: 1 Byte
+    //AFI: 4 Bytes (bottom of page 4)
+    //SAFI: 2 Bytes
+    //NLRI: 1 Byte for prefix length and 8 bytes for the prefix itself
+    return 20 + (54 * (path_length - 1) + (6 * path_length));
+}
+
+int calculateHMACByteLength(int path_length) {
+    //Prefix: 8
+    //AS number: 4 bytes, HMAC signature: 32 bytes -> For each AS in the path
+    return 8 + (path_length * 36);
+}
+
 void calculateECDSARuntime(double &ecdsa_verification_time_total, double &ecdsa_signature_time_total, int num_announcements, EC_KEY* key, unsigned char* messege, int messege_size, unsigned char* hash ) {
     ecdsa_verification_time_total = 0;
     ecdsa_signature_time_total = 0;
@@ -114,20 +131,22 @@ int main(int argc, char *argv[]) {
     double hmac_verification_time_total = 0;
     double hmac_signature_time_total = 0;
 
-    int startByteLength = 12, maxByteLength = 56, byteStepSize = 4;
-
     //Calculate time to crunch verifications and signatures at different number of announcements
-    for(int messege_size = startByteLength; messege_size <= maxByteLength; messege_size += byteStepSize) {
-        ecdsaFile << "Number of Verifications (" << messege_size << " bytes),ECDSA Signature,ECDSA Verification\n";
-        hmacFile << "Number of Verifications (" << messege_size << " bytes),HMAC Signature,HMAC Verification\n";
+    for(int path_length = 1; path_length <= 8; path_length++) {
+        int ecdsaByteLength = calculateECDSAByteLength(path_length);
+        int hmacByteLength = calculateHMACByteLength(path_length);
 
-        unsigned char messege[messege_size];
+        ecdsaFile << "Path Length: " << path_length << " (" << ecdsaByteLength << " bytes),ECDSA Signature,ECDSA Verification\n";
+        hmacFile << "Path Length: " << path_length << " (" << hmacByteLength << " bytes),HMAC Signature,HMAC Verification\n";
+
+        unsigned char hmacMessege[hmacByteLength];
+        unsigned char ecdsaMessege[ecdsaByteLength];
 
         for(unsigned int i = 0; i < num_announcements.size(); i++) {
-            calculateECDSARuntime(ecdsa_verification_time_total, ecdsa_signature_time_total, num_announcements[i], key, messege, messege_size, hash);
+            calculateECDSARuntime(ecdsa_verification_time_total, ecdsa_signature_time_total, num_announcements[i], key, ecdsaMessege, ecdsaByteLength, hash);
             ecdsaFile << num_announcements[i] << "," << ecdsa_signature_time_total << "," << ecdsa_verification_time_total << "\n";
 
-            calculateHMACRuntime(hmac_verification_time_total, hmac_signature_time_total, num_announcements[i], hkey, messege, messege_size, fake_original_auth_code);
+            calculateHMACRuntime(hmac_verification_time_total, hmac_signature_time_total, num_announcements[i], hkey, hmacMessege, hmacByteLength, fake_original_auth_code);
             hmacFile << num_announcements[i] << "," << hmac_signature_time_total << "," << hmac_verification_time_total<< "\n";
         }
 
@@ -140,14 +159,18 @@ int main(int argc, char *argv[]) {
         ecdsaLengthFile << num_announcements[i] << " Announcements," << "ECDSA Signature,ECDSA Verification\n";
         hmacLengthFile << num_announcements[i] << " Announcements," << "HMAC Signature,HMAC Verification\n";
 
-        for(int messege_size = startByteLength; messege_size <= maxByteLength; messege_size += byteStepSize) {
-            unsigned char messege[messege_size];
+        for(int path_length = 1; path_length <= 8; path_length++) {
+            int ecdsaByteLength = calculateECDSAByteLength(path_length);
+            int hmacByteLength = calculateHMACByteLength(path_length);
 
-            calculateECDSARuntime(ecdsa_verification_time_total, ecdsa_signature_time_total, num_announcements[i], key, messege, messege_size, hash);
-            ecdsaLengthFile << messege_size << ", " << ecdsa_signature_time_total << "," << ecdsa_verification_time_total << "\n"; 
+            unsigned char hmacMessege[hmacByteLength];
+            unsigned char ecdsaMessege[ecdsaByteLength];
 
-            calculateHMACRuntime(hmac_verification_time_total, hmac_signature_time_total, num_announcements[i], hkey, messege, messege_size, fake_original_auth_code);
-            hmacLengthFile << messege_size << "," << hmac_signature_time_total << "," << hmac_verification_time_total<< "\n";
+            calculateECDSARuntime(ecdsa_verification_time_total, ecdsa_signature_time_total, num_announcements[i], key, ecdsaMessege, ecdsaByteLength, hash);
+            ecdsaLengthFile << path_length << ", " << ecdsa_signature_time_total << "," << ecdsa_verification_time_total << "\n"; 
+
+            calculateHMACRuntime(hmac_verification_time_total, hmac_signature_time_total, num_announcements[i], hkey, hmacMessege, hmacByteLength, fake_original_auth_code);
+            hmacLengthFile << path_length << "," << hmac_signature_time_total << "," << hmac_verification_time_total<< "\n";
         }
 
         ecdsaLengthFile << "\n";
