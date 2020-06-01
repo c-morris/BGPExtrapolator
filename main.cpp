@@ -22,11 +22,10 @@
  ************************************************************************/
 
 #ifndef RUN_TESTS
-#include "Logger.h"
-
 #include <iostream>
 #include <boost/program_options.hpp>
 
+#include "Logger.h"
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
@@ -51,12 +50,15 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("rovpp,v", 
+         po::value<bool>()->default_value(false), 
+         "flag for rovpp run")
         ("random,b", 
          po::value<bool>()->default_value(true), 
          "disables random tiebraking for testing")
         ("invert-results,i", 
          po::value<bool>()->default_value(true), 
-         "record ASNs which do *not* have a route to a prefix-origin (smaller results size)")
+         "record ASNs which do *not* have a route to a prefix-origin")
         ("store-depref,d", 
          po::value<bool>()->default_value(false), 
          "store depref results")
@@ -75,10 +77,22 @@ int main(int argc, char *argv[]) {
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
          "name of announcements table")
+        ("victim-table,e",
+         po::value<string>()->default_value(VICTIM_TABLE),
+         "name of victim table")
+        ("attacker-table,f",
+         po::value<string>()->default_value(ATTACKER_TABLE),
+         "name of attacker table")
+        ("policy-tables,t",
+         po::value< vector<string> >(),
+         "space-separated names of ROVpp policy tables")
+        ("prop-twice,k",
+         po::value<bool>()->default_value(true),
+         "flag whether or not to propagate twice")
         ("log-folder,l",
          po::value<string>()->default_value(""),
          "enables the use of logging, best used for debugging only");
-    ;
+
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
     po::notify(vm);
@@ -100,20 +114,54 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Instantiate Extrapolator
-    Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
-        vm["invert-results"].as<bool>(),
-        vm["store-depref"].as<bool>(),
-        (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
-        (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
-        (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),
-        (vm.count("depref-table") ? vm["depref-table"].as<string>() : DEPREF_RESULTS_TABLE),
-        (vm["iteration-size"].as<uint32_t>()));
-    
-    // Run propagation
-    extrap->perform_propagation();
+    // Check for ROV++ mode
+    if (vm["rovpp"].as<bool>()) {
+         ROVppExtrapolator *extrap = new ROVppExtrapolator(
+            (vm.count("policy-tables") ?
+                vm["policy-tables"].as< vector<string> >() : 
+                vector<string>()),
+            vm["random"].as<bool>(),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("victim-table") ?
+                vm["victim-table"].as<string>() : 
+                VICTIM_TABLE),
+            (vm.count("attacker-table") ?
+                vm["attacker-table"].as<string>() : 
+                ATTACKER_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+            
+        // Run propagation
+        bool prop_twice = vm["prop-twice"].as<bool>();
+        extrap->perform_propagation(prop_twice);
+        // Clean up
+        delete extrap;
+    } else {
+        // Instantiate Extrapolator
+        Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
+            vm["invert-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+            
+        // Run propagation
+        extrap->perform_propagation();
+        // Clean up
+        delete extrap;
+    }
 
-    delete extrap;
     return 0;
 }
 #endif // RUN_TESTS

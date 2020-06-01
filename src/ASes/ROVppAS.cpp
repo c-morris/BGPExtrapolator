@@ -593,7 +593,7 @@ uint8_t ROVppAS::tiny_hash(uint32_t as_number) {
     uint8_t mask = 0xFF;
     uint8_t value = 0;
     for (int i = 0; i < sizeof(asn); i++) {
-        value = (value ^ mask & (as_number>>i)) * 3;
+        value = (value ^ mask & (as_number>>(i * 8))) * 3;
     }
     return value;
 }
