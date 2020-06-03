@@ -40,6 +40,7 @@
 #include "Prefix.h"
 
 #include "Announcements/Announcement.h"
+#include "Announcements/EZAnnouncement.h"
 #include "Announcements/ROVppAnnouncement.h"
 
 template <class AnnouncementType>
@@ -111,17 +112,22 @@ public:
         index = -1;
         onStack = false;
     }
-    ~BaseAS();
+
+    virtual ~BaseAS();
     
     bool get_random(); 
+
     void add_neighbor(uint32_t asn, int relationship);
     void remove_neighbor(uint32_t asn, int relationship);
+
     void receive_announcements(std::vector<AnnouncementType> &announcements);
-    void process_announcement(AnnouncementType &ann, bool ran=true);
-    void process_announcements(bool ran=true);
+    virtual void process_announcement(AnnouncementType &ann, bool ran=true);
+    virtual void process_announcements(bool ran=true);
     void clear_announcements();
+
     bool already_received(AnnouncementType &ann);
     void delete_ann(AnnouncementType &ann);
+
     void printDebug();
     void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
                              std::pair<Prefix<>,uint32_t> current);

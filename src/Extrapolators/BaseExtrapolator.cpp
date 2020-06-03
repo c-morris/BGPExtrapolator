@@ -254,4 +254,5 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 }
 
 template class BaseExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
+template class BaseExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;
 template class BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph, ROVppAnnouncement, ROVppAS>;

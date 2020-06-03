@@ -243,7 +243,7 @@ void ROVppAS::process_announcements(bool ran) {
                     //std::cout << "Cancelling withdraw" << *it << '\n';
                 }
                 // Determine if cancellation should occur
-                for (int j = 0; j <= i && j < ribs_in->size(); j++) {
+                for (size_t j = 0; j <= i && j < ribs_in->size(); j++) {
                     // Indicates there is a ann for the withdrawal to apply to
                     auto ann = ribs_in->at(j);
                     if (!ann.withdraw && ann == *it) {
@@ -592,8 +592,8 @@ void ROVppAS::check_preventives(ROVppAnnouncement ann) {
 uint8_t ROVppAS::tiny_hash(uint32_t as_number) {
     uint8_t mask = 0xFF;
     uint8_t value = 0;
-    for (int i = 0; i < sizeof(asn); i++) {
-        value = (value ^ mask & (as_number>>(i * 8))) * 3;
+    for (size_t i = 0; i < sizeof(asn); i++) {
+        value = (value ^ (mask & (as_number>>(i * 8)))) * 3;
     }
     return value;
 }

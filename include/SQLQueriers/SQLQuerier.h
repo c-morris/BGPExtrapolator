@@ -27,8 +27,6 @@
 #define IPV4 4
 #define IPV6 6
 
-class ASGraph;
-
 #include <pqxx/pqxx>
 #include <iostream>
 #include <string>
@@ -36,7 +34,7 @@ class ASGraph;
 #include <fstream>
 #include <algorithm>
 
-#include "Graphs/ASGraph.h"
+#include "Prefix.h"
 #include "TableNames.h"
 
 class SQLQuerier {

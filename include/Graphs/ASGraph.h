@@ -28,10 +28,10 @@
 
 class ASGraph : public BaseGraph<AS> {
 public:
-    AS* createNew(uint32_t asn);
-
     ASGraph();
     ~ASGraph();
+
+    AS* createNew(uint32_t asn);
 };
 
 #endif

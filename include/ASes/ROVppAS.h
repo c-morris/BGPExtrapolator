@@ -82,13 +82,13 @@ public:
     
     // Constructor
     ROVppAS(uint32_t myasn=0,
-        std::set<uint32_t> *attackers=NULL,
-        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
-        std::set<uint32_t> *prov=NULL, 
-        std::set<uint32_t> *peer=NULL,
-        std::set<uint32_t> *cust=NULL);
+            std::set<uint32_t> *attackers=NULL,
+            std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
+            std::set<uint32_t> *prov=NULL, 
+            std::set<uint32_t> *peer=NULL,
+            std::set<uint32_t> *cust=NULL);
 
-    virtual ~ROVppAS();
+    ~ROVppAS();
     
     // Overrided Methods
     void process_announcement(ROVppAnnouncement &ann, bool ran=true, bool override=false);

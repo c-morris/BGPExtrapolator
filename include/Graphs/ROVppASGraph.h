@@ -24,7 +24,7 @@
 #ifndef ROVPP_AS_GRAPH_H
 #define ROVPP_AS_GRAPH_H
 
-// #include "Graphs/BaseGraph.h"
+#include "Graphs/BaseGraph.h"
 #include "ASes/ROVppAS.h"
 
 #include "SQLQueriers/ROVppSQLQuerier.h"

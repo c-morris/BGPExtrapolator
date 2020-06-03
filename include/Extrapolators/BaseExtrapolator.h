@@ -45,6 +45,11 @@
 #include "SQLQueriers/ROVppSQLQuerier.h"
 #include "Graphs/ROVppASGraph.h"
 
+#include "SQLQueriers/EZSQLQuerier.h"
+#include "Graphs/EZASGraph.h"
+#include "Announcements/EZAnnouncement.h"
+#include "ASes/EZAS.h"
+
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 class BaseExtrapolator {
 public:
@@ -56,13 +61,13 @@ public:
     SQLQuerierType *querier;
 
     BaseExtrapolator(bool random_b=true,
-                 bool invert_results=true, 
-                 bool store_depref=false, 
-                 std::string a=ANNOUNCEMENTS_TABLE,
-                 std::string r=RESULTS_TABLE, 
-                 std::string i=INVERSE_RESULTS_TABLE, 
-                 std::string d=DEPREF_RESULTS_TABLE, 
-                 uint32_t iteration_size=false) {
+                        bool invert_results=true, 
+                        bool store_depref=false, 
+                        std::string a=ANNOUNCEMENTS_TABLE,
+                        std::string r=RESULTS_TABLE, 
+                        std::string i=INVERSE_RESULTS_TABLE, 
+                        std::string d=DEPREF_RESULTS_TABLE, 
+                        uint32_t iteration_size=false) {
 
         random = random_b;                          // True to enable random tiebreaks
         invert = invert_results;                    // True to store the results inverted

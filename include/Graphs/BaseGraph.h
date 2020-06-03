@@ -39,8 +39,8 @@ class SQLQuerier;
 #include <dirent.h>
 #include <pqxx/pqxx>
 
-// #include "ASes/BaseAS.h"s
 #include "ASes/AS.h"
+#include "ASes/EZAS.h"
 #include "ASes/ROVppAS.h"
 
 #include "SQLQueriers/SQLQuerier.h"
