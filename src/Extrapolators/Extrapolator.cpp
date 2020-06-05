@@ -25,7 +25,7 @@
 
 Extrapolator::Extrapolator(bool random /* = true */,
                  bool invert_results /* = true */, 
-                 bool store_depref /* =false */, 
+                 bool store_depref /* = false */, 
                  std::string a /* = ANNOUNCEMENTS_TABLE */,
                  std::string r /* = RESULTS_TABLE */, 
                  std::string i /* = INVERSE_RESULTS_TABLE */, 

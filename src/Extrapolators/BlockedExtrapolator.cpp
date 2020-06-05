@@ -62,7 +62,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     
     // For each unprocessed subnet block  
     this->extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
-    
+
     auto ext_finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> e = ext_finish - ext_start;
     std::cout << "Block elapsed time: " << e.count() << std::endl;
@@ -76,9 +76,9 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::extrapolate_blocks(uint32_t &announcement_count, 
-                                      int &iteration, 
-                                      bool subnet, 
-                                      auto const& prefix_set) {
+                                                                                                    int &iteration, 
+                                                                                                    bool subnet, 
+                                                                                                    auto const& prefix_set) {
     // For each unprocessed block of announcements 
     for (Prefix<>* prefix : *prefix_set) {
         std::cout << "Selecting Announcements..." << std::endl;
@@ -342,13 +342,20 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             }
             uint32_t priority = 200 + path_len_weight;
             
+            AnnouncementType temp = AnnouncementType(ann.second);
+            temp.priority = priority;
+            temp.from_monitor = false;
+            temp.received_from_asn = asn;
+
             // Push announcement with new priority to ann vector
-            anns_to_providers.push_back(AnnouncementType(ann.second.origin,
-                                                     ann.second.prefix.addr,
-                                                     ann.second.prefix.netmask,
-                                                     priority,
-                                                     asn,
-                                                     ann.second.tstamp));
+            // anns_to_providers.push_back(AnnouncementType(ann.second.origin,
+            //                                          ann.second.prefix.addr,
+            //                                          ann.second.prefix.netmask,
+            //                                          priority,
+            //                                          asn,
+            //                                          ann.second.tstamp));
+
+            anns_to_providers.push_back(temp);
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
@@ -384,12 +391,19 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             }
             uint32_t priority = 100 + path_len_weight;
             
-            anns_to_peers.push_back(AnnouncementType(ann.second.origin,
-                                                        ann.second.prefix.addr,
-                                                        ann.second.prefix.netmask,
-                                                        priority,
-                                                        asn,
-                                                        ann.second.tstamp));
+            // anns_to_peers.push_back(AnnouncementType(ann.second.origin,
+            //                                             ann.second.prefix.addr,
+            //                                             ann.second.prefix.netmask,
+            //                                             priority,
+            //                                             asn,
+            //                                             ann.second.tstamp));
+
+            AnnouncementType temp = AnnouncementType(ann.second);
+            temp.priority = priority;
+            temp.from_monitor = false;
+            temp.received_from_asn = asn;
+
+            anns_to_peers.push_back(temp);
         }
         // Send the vector of assembled announcements
         for (uint32_t peer_asn : *source_as->peers) {
@@ -421,12 +435,20 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             }
             uint32_t priority = path_len_weight;
 
-            anns_to_customers.push_back(AnnouncementType(ann.second.origin,
-                                                            ann.second.prefix.addr,
-                                                            ann.second.prefix.netmask,
-                                                            priority,
-                                                            asn,
-                                                            ann.second.tstamp));
+            // anns_to_customers.push_back(AnnouncementType(ann.second.origin,
+            //                                                 ann.second.prefix.addr,
+            //                                                 ann.second.prefix.netmask,
+            //                                                 priority,
+            //                                                 asn,
+            //                                                 ann.second.tstamp));
+
+            //Use the copy constructor so that the inherited copy constructor will be called as well
+            AnnouncementType temp = AnnouncementType(ann.second);
+            temp.priority = priority;
+            temp.from_monitor = false;
+            temp.received_from_asn = asn;
+
+            anns_to_customers.push_back(temp);
         }
         // Send the vector of assembled announcements
         for (uint32_t customer_asn : *source_as->customers) {

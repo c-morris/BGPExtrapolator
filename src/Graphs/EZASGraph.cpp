@@ -1,15 +1,15 @@
 #include "Graphs/EZASGraph.h"
 
 EZASGraph::EZASGraph() : BaseGraph<EZAS>() {
-    attackers = new std::set<uint32_t>();
-    victims = new std::set<uint32_t>();
+    origin_victim_to_attacker = new std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>();
+    destination_victim_to_prefixes = new std::unordered_map<uint32_t, std::vector<Prefix<>>*>();
 }
 
 EZASGraph::~EZASGraph() {
-    delete attackers;
-    delete victims;
+    delete origin_victim_to_attacker;
+    delete destination_victim_to_prefixes;
 }
 
 EZAS* EZASGraph::createNew(uint32_t asn) {
-    return new EZAS(asn, attackers);
+    return new EZAS(asn);
 }

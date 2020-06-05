@@ -6,8 +6,8 @@
 
 class EZASGraph : public BaseGraph<EZAS> {
 public:
-    std::set<uint32_t> *attackers;
-    std::set<uint32_t> *victims;
+    std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> *origin_victim_to_attacker;
+    std::unordered_map<uint32_t, std::vector<Prefix<>>*> *destination_victim_to_prefixes;
 
     EZASGraph();
     ~EZASGraph();

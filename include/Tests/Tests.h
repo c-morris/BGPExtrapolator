@@ -121,6 +121,6 @@ bool test_withdrawal();
 bool test_tiny_hash();
 bool test_rovpp_full_path();
 
-// Prototypes for SQLQuerierTest.cpp
+bool testEZExtrapolator();
 
 #endif
