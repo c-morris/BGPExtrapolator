@@ -30,7 +30,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     }
 
     uint32_t attacker_asn = result->second.first;
-    uint32_t victim2_asn = result->second.first;
+    uint32_t victim2_asn = result->second.second;
 
     EZAS* victim1 = this->graph->ases->find(path_origin_asn)->second;
     EZAS* attacker = this->graph->ases->find(attacker_asn)->second;

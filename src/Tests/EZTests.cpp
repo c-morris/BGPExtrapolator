@@ -50,3 +50,42 @@ bool testEZExtrapolator() {
 
     return secondASN == 4 && from_attacker;
 }
+
+bool testDistributeAttackersVictims() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(3, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 3, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(4, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 4, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(5, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 5, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(6, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 6, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(7, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 7, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(8, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 8, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(9, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 9, AS_REL_CUSTOMER);
+
+    e.graph->distributeAttackersVictims(1);
+
+    if(e.graph->destination_victim_to_prefixes->size() != 2 || e.graph->origin_victim_to_attacker->size() != 2)
+        return false;
+
+    e.graph->distributeAttackersVictims(.5);
+
+    if(e.graph->destination_victim_to_prefixes->size() != 1 || e.graph->origin_victim_to_attacker->size() != 1)
+        return false;
+
+    return true;
+}

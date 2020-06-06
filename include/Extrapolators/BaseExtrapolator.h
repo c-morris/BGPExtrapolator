@@ -50,6 +50,58 @@
 #include "Announcements/EZAnnouncement.h"
 #include "ASes/EZAS.h"
 
+/** README. SERIOUSLY README
+ * Trust me you need to read this.
+ * 
+ * The Extrapolator family is heavily templated so we can give variables very specific types that we don't want to mix.
+ * The ROVppExtrapolator only deals with ROVppAnnouncements and ROVppASes. Thus, the type of those variables is templated.
+ * This makes putting ASes into data structures much easier and avoids constant casting.
+ * 
+ * The Base Extrapolator contains functionality that ALL extrapolators should have, and should be able to call. 
+ * For example, the ROVppExtrapolator should not be able to call extrapolate_blocks becuase it does not handle data in that way.
+ * 
+ * However, extrapolators all need (or can) call parse_path, find_loop, etc...
+ * In addition, DO NOT create an object of any base template  class!!! These template base classes are meant for inheritence ONLY!!!
+ * 
+ * Also, if you have never seen templating in c++ (or generic in Java -> the two are different but pretty similar in concept), you want to do a bit of research.
+ * Basically when you create a template class and ask it to create it with specified types (e.g. BaseExtrapolator<AS, Announcement, etc..>) you define a whole new
+ *      type at compile time. This means that BaseExtrapolator<AS, Announcement, ...> and BaseExtrapolaor<EZAS, EZAnnouncement, ...> are as different as int and double
+ * You CANNOT create a data structure with a template type and expect to start mixing types together
+ * Template types are a fancy copy and paste that occurs at compile time to generate new data types.
+ * 
+ * If you need to ADD ANOTHER EXTRAPOLATOR TYPE, here is what you need to do:
+ *  - Ideally, create new classes for the graph, announcement, querier, and as, that follow the instructions there
+ *  - Extend a template class (as of writing this that would be either the BaseExtrapolator or Blocked Extrapolator) with template types of the classes you just made
+ *  - write out the functions, etc...
+ *  - IMPORTANT: at the bottom of EACH PARENT template class .cpp file you need to put in this line (replace the tpyes with your new additions):
+ *      template class BaseExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
+ *      This is an odd nuance with c++ for when you want to have a .cpp file for your templated class
+ * 
+ * UNDEFINED REFRENCE
+ *      If you are getting this error, and it involves an extended type from one of the templated classes, 
+ *          you need to add the template class line of code above in the .cpp file of each parent template base classes (parents, grand parents, etc... All the way to the top).
+ * 
+ * If you need to ADD ANOTHER TEMPLATE EXTRAPOLATOR TYPE:
+ *  - It works just as you think, template the class with the generic types and extend another template class (using the template types)
+ *  - THE CONSTRUCTOR MUST BE DEFINED IN THE HEADER!!!! Yet another odd nuance with c++ inheritence with template classes (fix: define everything in the header, we ain't doing that)
+ *  - HOWEVER, A NUANCE is that in the .cpp file for this template class, if you want to refrence any member variables in the parent class, you HAVE TO use this-> to get to it
+ *      This is an odd nuance with c++ for making a template class that extends another template class, just roll with it, I have spent a bit of time trying to work
+ *      around this, there is nothing simple that would fix this unless we start implementing in the header file.
+ *  - An example of this is Blocked Extrapolator
+ *  - When writing this, USE THE TEMPLATE TYPES (AnnouncementType, ASType, etc...). This will make it so when you make a class that uses a version of the, for example, AS class
+ *      it will paste in the particular inherited class in compilation.
+ *  - When writing these template classes, you can assume that the type of classes (ASType, AnnouncementType) are at minimum the most basic version
+ * 
+ * On the off chance I missed something here, look that the classes that are already here. In terms of inheritence/family structure, what you want is probably here already
+ * 
+ * As of writing this, here is the family:
+ * 
+ *          Base
+ *        /      \
+ *      ROV      Blocked
+ *               /     \
+ *              EZ    Vanilla 
+ */
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 class BaseExtrapolator {
 public:
@@ -81,51 +133,48 @@ public:
 
     virtual ~BaseExtrapolator();
 
-    // Yes both versions use the same name for the function, but we DO NOT want the ROV version to call the 
-    // vanilla version (they have different parameters)! That would be bad. To prevent this, the function is just split down to the two
-    // versions
-    // void perform_propagation();
-    
-    void populate_blocks(Prefix<>*, 
-                         std::vector<Prefix<>*>*, 
-                         std::vector<Prefix<>*>*);
+    /** Parse array-like strings from db to get AS_PATH in a vector.
+     *
+     * libpqxx doesn't currently support returning arrays, so we need to do this. 
+     * path_as_string is passed in as a copy on purpose, since otherwise it would
+     * be destroyed.
+     *
+     * @param path_as_string the as_path as a string returned by libpqxx
+     * @return as_path The AS path as vector of integers
+     */
     std::vector<uint32_t>* parse_path(std::string path_as_string); 
 
-    // ROV version is not interested in using this function... Don't want this being called in the ROV version
-    // void extrapolate_blocks(uint32_t&, 
-    //                         int&, 
-    //                         bool subnet, 
-    //                         auto const& prefix_set);
-
+    /** Check for loops in the path and drop announcement if they exist
+    */
     bool find_loop(std::vector<uint32_t>*);
+
+    /** Propagate announcements from customers to peers and providers ASes.
+    */
     virtual void propagate_up();
+
+    /** Send "best" announces from providers to customer ASes. 
+    */
     virtual void propagate_down();
 
-    /** Seed announcement on all ASes on as_path. 
+    
+    /** Send all announcements kept by an AS to its neighbors. 
      *
-     * The from_monitor attribute is set to true on these announcements so they are
-     * not replaced later during propagation. 
-     * 
-     * Must be implemented by child class!
+     * This approximates the Adj-RIBs-out. 
      *
-     * @param as_path Vector of ASNs for this announcement.
-     * @param prefix The prefix this announcement is for.
+     * @param asn AS that is sending out announces
+     * @param to_providers Send to providers
+     * @param to_peers Send to peers
+     * @param to_customers Send to customers
      */
-    // The AS versions and the ROV versions have different perameters for this. 
-    // Inheritance is only harmful, as the ROV version would not want to call this, and it would be bad to do so
-    // virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, 
-    //                          Prefix<> prefix,
-    //                          int64_t timestamp = 0) = 0;
-
-    //Children need to handle this one
     virtual void send_all_announcements(uint32_t asn, 
                                 bool to_providers = false, 
                                 bool to_peers = false, 
                                 bool to_customers = false) = 0;
 
+    /** Save the results of a single iteration to a in-memory
+     *
+     * @param iteration The current iteration of the propagation
+     */
     virtual void save_results(int iteration);
-
-    //????
-    void invert_results(void);
 };
 #endif

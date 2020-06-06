@@ -30,6 +30,8 @@
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
 #include "Extrapolators/Extrapolator.h"
+#include "Extrapolators/ROVppExtrapolator.h"
+#include "Extrapolators/EZExtrapolator.h"
 #include "Tests/Tests.h"
 
 void intro() {
@@ -53,6 +55,9 @@ int main(int argc, char *argv[]) {
         ("rovpp,v", 
          po::value<bool>()->default_value(false), 
          "flag for rovpp run")
+        ("ezbgpsec,c", 
+         po::value<bool>()->default_value(false), 
+         "flag for ezbgpsec run")
         ("random,b", 
          po::value<bool>()->default_value(true), 
          "disables random tiebraking for testing")
@@ -135,6 +140,32 @@ int main(int argc, char *argv[]) {
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
         extrap->perform_propagation(prop_twice);
+        // Clean up
+        delete extrap;
+    } else if(vm["ezbgpsec"].as<bool>()) {
+        // Instantiate Extrapolator
+        EZExtrapolator *extrap = new EZExtrapolator(vm["random"].as<bool>(),
+            vm["invert-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+            
+        // Run propagation
+        extrap->perform_propagation();
+
+        std::cout << "Probability Successful Attacks (0 - 1): " << extrap->percentage_successful_attacks() << std::endl;
+
         // Clean up
         delete extrap;
     } else {

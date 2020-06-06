@@ -199,6 +199,10 @@ BOOST_AUTO_TEST_CASE( EZ_test_extrapolator ) {
         BOOST_CHECK( testEZExtrapolator() );
 }
 
+BOOST_AUTO_TEST_CASE( EZ_testDistributeAttackersVictims ) {
+        BOOST_CHECK( testDistributeAttackersVictims() );
+}
+
 #endif // RUN_TESTS
 
 

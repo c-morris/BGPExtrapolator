@@ -107,8 +107,8 @@ public:
     // Graph setup
     void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
     void process(); // Remove?
-    void process(SQLQuerier *querier); 
-    void create_graph_from_db(SQLQuerier *querier);
+    virtual void process(SQLQuerier *querier); 
+    virtual void create_graph_from_db(SQLQuerier *querier);
     void remove_stubs(SQLQuerier *querier);
     void save_stubs_to_db(SQLQuerier *querier);
     void save_non_stubs_to_db(SQLQuerier *querier);

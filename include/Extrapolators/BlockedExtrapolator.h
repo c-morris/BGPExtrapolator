@@ -23,19 +23,46 @@ public:
      *      1) A populated mrt_announcements table
      *      2) A populated customer_provider table
      *      3) A populated peers table
-     *
-     * @param test
-     * @param iteration_size number of rows to process each iteration, rounded down to the nearest full prefix
-     * @param max_total maximum number of rows to process, ignored if zero
      */
     void perform_propagation();
 
+    /** Recursive function to break the input mrt_announcements into manageable blocks.
+     *
+     * @param p The current subnet for checking announcement block size
+     * @param prefix_vector The vector of prefixes of appropriate size
+     */
+    void populate_blocks(Prefix<>*, 
+                            std::vector<Prefix<>*>*, 
+                            std::vector<Prefix<>*>*);
+
+    /** Process a set of prefix or subnet blocks in iterations.
+    */
     void extrapolate_blocks(uint32_t &announcement_count, 
                             int &iteration, 
                             bool subnet, 
                             auto const& prefix_set);
 
+    /** Seed announcement on all ASes on as_path. 
+     *
+     * The from_monitor attribute is set to true on these announcements so they are
+     * not replaced later during propagation. 
+     * 
+     * Must be implemented by child class!
+     *
+     * @param as_path Vector of ASNs for this announcement.
+     * @param prefix The prefix this announcement is for.
+     */
     virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
+
+    /** Send all announcements kept by an AS to its neighbors. 
+     *
+     * This approximates the Adj-RIBs-out. 
+     *
+     * @param asn AS that is sending out announces
+     * @param to_providers Send to providers
+     * @param to_peers Send to peers
+     * @param to_customers Send to customers
+     */
     void send_all_announcements(uint32_t asn, bool to_providers = false, bool to_peers = false, bool to_customers = false);
 };
 

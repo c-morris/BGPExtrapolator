@@ -46,14 +46,14 @@ struct ROVppExtrapolator: public BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph,
     uint32_t get_priority(ROVppAnnouncement const& ann, uint32_t i);
     bool is_filtered(ROVppAS *rovpp_as, ROVppAnnouncement const& ann);
 
+    void give_ann_to_as_path(std::vector<uint32_t>*, 
+                                Prefix<> prefix, 
+                                int64_t timestamp, 
+                                bool hijack);
+
     ////////////////////////////////////////////////////////////////////
     // Overidden Methods
     ////////////////////////////////////////////////////////////////////
-    
-    void give_ann_to_as_path(std::vector<uint32_t>*, 
-                             Prefix<> prefix, 
-                             int64_t timestamp, 
-                             bool hijack);
     void propagate_up();
     void propagate_down();
     void send_all_announcements(uint32_t asn,

@@ -8,7 +8,7 @@ BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::~Block
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::perform_propagation() {
     using namespace std;
-   
+
     // Make tmp directory if it does not exist
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
@@ -40,7 +40,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     
     // Generate the graph and populate the stubs & supernode tables
     this->graph->create_graph_from_db(this->querier);
-   
+
     std::cout << "Generating subnet blocks..." << std::endl;
     
     // Generate iteration blocks
@@ -49,7 +49,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
-   
+
     std::cout << "Beginning propagation..." << std::endl;
     
     // Seed MRT announcements and propagate
@@ -72,6 +72,63 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     delete subnet_blocks;
     
     std::cout << "Announcement count: " << announcement_count << std::endl;
+}
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::populate_blocks(Prefix<>* p,
+                                                                            std::vector<Prefix<>*>* prefix_vector,
+                                                                            std::vector<Prefix<>*>* bloc_vector) { 
+    // Find the number of announcements within the subnet
+    pqxx::result r = this->querier->select_subnet_count(p);
+    
+    /** DEBUG
+    std::cout << "Prefix: " << p->to_cidr() << std::endl;
+    std::cout << "Count: "<< r[0][0].as<int>() << std::endl;
+    */
+    
+    // If the subnet count is within size constraint
+    if (r[0][0].as<uint32_t>() < this->it_size) {
+        // Add to subnet block vector
+        if (r[0][0].as<uint32_t>() > 0) {
+            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask);
+            bloc_vector->push_back(p_copy);
+        }
+    } else {
+        // Store the prefix if there are announcements for it specifically
+        pqxx::result r2 = this->querier->select_prefix_count(p);
+        if (r2[0][0].as<uint32_t>() > 0) {
+            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask);
+            prefix_vector->push_back(p_copy);
+        }
+
+        // Split prefix
+        // First half: increase the prefix length by 1
+        uint32_t new_mask;
+        if (p->netmask == 0) {
+            new_mask = p->netmask | 0x80000000;
+        } else {
+            new_mask = (p->netmask >> 1) | p->netmask;
+        }
+        Prefix<>* p1 = new Prefix<>(p->addr, new_mask);
+        
+        // Second half: increase the prefix length by 1 and flip previous length bit
+        int8_t sz = 0;
+        uint32_t new_addr = p->addr;
+        for (int i = 0; i < 32; i++) {
+            if (p->netmask & (1 << i)) {
+                sz++;
+            }
+        }
+        new_addr |= 1UL << (32 - sz - 1);
+        Prefix<>* p2 = new Prefix<>(new_addr, new_mask);
+
+        // Recursive call on each new prefix subnet
+        populate_blocks(p1, prefix_vector, bloc_vector);
+        populate_blocks(p2, prefix_vector, bloc_vector);
+
+        delete p1;
+        delete p2;
+    }
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -301,20 +358,11 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
     }
 }
 
-/** Send all announcements kept by an AS to its neighbors. 
- *
- * This approximates the Adj-RIBs-out. 
- *
- * @param asn AS that is sending out announces
- * @param to_providers Send to providers
- * @param to_peers Send to peers
- * @param to_customers Send to customers
- */
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::send_all_announcements(uint32_t asn, 
-                                          bool to_providers, 
-                                          bool to_peers, 
-                                          bool to_customers) {
+                                                                                                        bool to_providers, 
+                                                                                                        bool to_peers, 
+                                                                                                        bool to_customers) {
     // Get the AS that is sending it's announcements
     auto *source_as = this->graph->ases->find(asn)->second; 
     // If we are sending to providers
