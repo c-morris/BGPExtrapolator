@@ -10,7 +10,7 @@ EZExtrapolator::EZExtrapolator(bool random /* = true */,
                  uint32_t iteration_size /* = false */) : BlockedExtrapolator(random, invert_results, store_depref, a, r, i, d, iteration_size) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier();
+    querier = new EZSQLQuerier(a, r, i, d);
 }
 
 EZExtrapolator::~EZExtrapolator() {

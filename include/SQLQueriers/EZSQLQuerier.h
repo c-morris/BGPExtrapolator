@@ -5,7 +5,10 @@
 
 class EZSQLQuerier : public SQLQuerier {
 public:
-    EZSQLQuerier();
+    EZSQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, 
+                    std::string r=RESULTS_TABLE,
+                    std::string i=INVERSE_RESULTS_TABLE,
+                    std::string d=DEPREF_RESULTS_TABLE);
     ~EZSQLQuerier();
 };
 

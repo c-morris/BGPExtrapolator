@@ -38,9 +38,12 @@ void EZASGraph::distributeAttackersVictims(double percentage) {
         
         destination_victim_to_prefixes->insert(std::make_pair(victim2, new std::vector<Prefix<>>));
     }
+
+    std::cout << origin_victim_to_attacker->size() << std::endl;
+    std::cout << destination_victim_to_prefixes->size() << std::endl;
 }
 
-void EZASGraph::process(EZSQLQuerier* querier) {
+void EZASGraph::process(SQLQuerier* querier) {
     //We definately want stubs/edge ASes
     distributeAttackersVictims(0.25);
     tarjan();
