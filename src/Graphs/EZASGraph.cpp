@@ -30,22 +30,20 @@ void EZASGraph::distributeAttackersVictims(double percentage) {
     std::random_shuffle(edge_ases_to_shuffle.begin(), edge_ases_to_shuffle.end());
 
     for(int i = 0; i < amount_to_pick - (amount_to_pick % 3); i += 3) {
+        uint32_t victim1 = edge_ases_to_shuffle.at(i);
+        uint32_t attacker = edge_ases_to_shuffle.at(i + 1);
         uint32_t victim2 = edge_ases_to_shuffle.at(i + 2);
 
         origin_victim_to_attacker->insert(std::pair<uint32_t, std::pair<uint32_t, uint32_t>>
-            (edge_ases_to_shuffle.at(i), std::make_pair
-            (edge_ases_to_shuffle.at(i + 1), victim2)));
+            (victim1, std::make_pair(attacker, victim2)));
         
-        destination_victim_to_prefixes->insert(std::make_pair(victim2, new std::vector<Prefix<>>));
+        destination_victim_to_prefixes->insert({ victim2, new std::vector<Prefix<>> });
     }
-
-    std::cout << origin_victim_to_attacker->size() << std::endl;
-    std::cout << destination_victim_to_prefixes->size() << std::endl;
 }
 
 void EZASGraph::process(SQLQuerier* querier) {
     //We definately want stubs/edge ASes
-    distributeAttackersVictims(0.25);
+    distributeAttackersVictims(1);
     tarjan();
     combine_components();
     save_supernodes_to_db(querier);

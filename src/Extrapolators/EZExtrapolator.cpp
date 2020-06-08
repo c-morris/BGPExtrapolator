@@ -11,6 +11,9 @@ EZExtrapolator::EZExtrapolator(bool random /* = true */,
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(a, r, i, d);
+
+    total_attacks = 0;
+    successful_attacks = 0;
 }
 
 EZExtrapolator::~EZExtrapolator() {
@@ -18,7 +21,7 @@ EZExtrapolator::~EZExtrapolator() {
 }
 
 void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp /* = 0 */) {
-    uint32_t path_origin_asn = as_path->at(0);
+    uint32_t path_origin_asn = as_path->at(as_path->size() - 1);
 
     auto result = graph->origin_victim_to_attacker->find(path_origin_asn);
 
@@ -55,10 +58,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     graph->destination_victim_to_prefixes->find(victim2_asn)->second->push_back(prefix);
 }
 
-double EZExtrapolator::percentage_successful_attacks() {
-    double successes = 0;
-    double total = 0;
-
+void EZExtrapolator::percentage_successful_attacks() {
     for(auto& it : *graph->destination_victim_to_prefixes) {
         uint32_t asn = it.first;
         EZAS* as = graph->ases->find(asn)->second;
@@ -67,16 +67,18 @@ double EZExtrapolator::percentage_successful_attacks() {
             auto result = as->all_anns->find(p);
 
             if(result == as->all_anns->end()) {
-                total++;
                 continue;
             }
 
             if(result->second.from_attacker)
-                successes++;
+                successful_attacks++;
 
-            total++;
+            total_attacks++;
         }
     }
+}
 
-    return successes / total;
+void EZExtrapolator::save_results(int iteration) {
+    BaseExtrapolator::save_results(iteration);
+    percentage_successful_attacks();
 }

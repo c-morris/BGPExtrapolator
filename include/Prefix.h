@@ -40,12 +40,17 @@ public:
     /** Default constructor
      */
     Prefix() {}
-   
+
     /** Integer input constructor
      */
     Prefix(uint32_t addr_in, uint32_t mask_in) {
         addr = addr_in;
         netmask = mask_in;
+    }
+
+    Prefix(const Prefix &p2) {
+        this->addr = p2.addr;
+        this->netmask = p2.netmask;
     }
         
     /** Priority constructor

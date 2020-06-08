@@ -10,6 +10,9 @@
 
 class EZExtrapolator : public BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS> {
 public:
+    uint32_t total_attacks;
+    uint32_t successful_attacks;
+
     EZExtrapolator(bool random = true,
                     bool invert_results = true, 
                     bool store_depref = false, 
@@ -22,7 +25,8 @@ public:
     ~EZExtrapolator();
 
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
-    double percentage_successful_attacks();
+    void percentage_successful_attacks();
+    void save_results(int iteration);
 };
 
 #endif

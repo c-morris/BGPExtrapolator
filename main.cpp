@@ -164,7 +164,10 @@ int main(int argc, char *argv[]) {
         // Run propagation
         extrap->perform_propagation();
 
-        std::cout << "Probability Successful Attacks (0 - 1): " << extrap->percentage_successful_attacks() << std::endl;
+        std::cout << "Successful Attacks: " << extrap->successful_attacks << std::endl;
+        std::cout << "Total Attacks: " << extrap->total_attacks << std::endl;
+
+        std::cout << "Probability Successful Attacks (0 - 1): " << (double) extrap->successful_attacks / (double) extrap->total_attacks << std::endl;
 
         // Clean up
         delete extrap;
