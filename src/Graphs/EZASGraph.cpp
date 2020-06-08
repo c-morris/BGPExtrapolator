@@ -29,6 +29,8 @@ void EZASGraph::distributeAttackersVictims(double percentage) {
     std::size_t amount_to_pick = edge_ases_to_shuffle.size() * percentage;
     std::random_shuffle(edge_ases_to_shuffle.begin(), edge_ases_to_shuffle.end());
 
+    uint32_t num_attackers = 0;
+
     for(int i = 0; i < amount_to_pick - (amount_to_pick % 3); i += 3) {
         uint32_t victim1 = edge_ases_to_shuffle.at(i);
         uint32_t attacker = edge_ases_to_shuffle.at(i + 1);
@@ -38,7 +40,11 @@ void EZASGraph::distributeAttackersVictims(double percentage) {
             (victim1, std::make_pair(attacker, victim2)));
         
         destination_victim_to_prefixes->insert({ victim2, new std::vector<Prefix<>> });
+
+        num_attackers++;
     }
+
+    std::cout << "Number of attackers: " << num_attackers << std::endl;
 }
 
 void EZASGraph::process(SQLQuerier* querier) {
