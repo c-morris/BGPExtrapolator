@@ -25,7 +25,7 @@ public:
     ~EZExtrapolator();
 
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
-    void percentage_successful_attacks();
+    void calculate_sum_successful_attacks();
     void save_results(int iteration);
 };
 

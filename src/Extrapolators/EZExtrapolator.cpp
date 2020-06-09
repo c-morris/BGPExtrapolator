@@ -35,6 +35,14 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     uint32_t attacker_asn = result->second.first;
     uint32_t victim2_asn = result->second.second;
 
+    if(graph->destination_victim_to_prefixes->find(victim2_asn) != graph->destination_victim_to_prefixes->end()) {
+        //only one attacking announcement per attacker, this way the metric is the percent of successful and *unique* attacks
+        BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
+        return;
+    }
+
+    graph->destination_victim_to_prefixes->insert({ victim2_asn, prefix });
+
     EZAS* victim1 = this->graph->ases->find(path_origin_asn)->second;
     EZAS* attacker = this->graph->ases->find(attacker_asn)->second;
 
@@ -45,40 +53,34 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     //Check if already recieved?
     victim1->process_announcement(realAnnouncement, this->random);
     attacker->process_announcement(attackAnnouncement, this->random);
-
-    if (this->graph->inverse_results != NULL) {
-        auto set = this->graph->inverse_results->find(std::pair<Prefix<>,uint32_t>(realAnnouncement.prefix, realAnnouncement.origin));
-        // Remove the AS from the prefix's inverse results
-        if (set != this->graph->inverse_results->end()) {
-            set->second->erase(path_origin_asn);
-            set->second->erase(attacker_asn);
-        }
-    }
-
-    graph->destination_victim_to_prefixes->find(victim2_asn)->second->push_back(prefix);
 }
 
-void EZExtrapolator::percentage_successful_attacks() {
+/*
+ * This will update the global variables thatrepresent the statistical information
+ * This runs at the end of every iteration
+ */
+void EZExtrapolator::calculate_sum_successful_attacks() {
     for(auto& it : *graph->destination_victim_to_prefixes) {
         uint32_t asn = it.first;
         EZAS* as = graph->ases->find(asn)->second;
 
-        for(Prefix<> p : *it.second) {
-            auto result = as->all_anns->find(p);
+        auto result = as->all_anns->find(it.second);
 
-            if(result == as->all_anns->end()) {
-                continue;
-            }
-
-            if(result->second.from_attacker)
-                successful_attacks++;
-
-            total_attacks++;
+        if(result == as->all_anns->end()) {
+            continue;
         }
+
+        if(result->second.from_attacker)
+            successful_attacks++;
+
+        total_attacks++;
     }
+
+    graph->destination_victim_to_prefixes->clear();
 }
 
 void EZExtrapolator::save_results(int iteration) {
-    BaseExtrapolator::save_results(iteration);
-    percentage_successful_attacks();
+    //Only interested in the probibility
+    // BaseExtrapolator::save_results(iteration);
+    calculate_sum_successful_attacks();
 }
