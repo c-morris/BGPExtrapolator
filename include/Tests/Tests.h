@@ -121,8 +121,4 @@ bool test_withdrawal();
 bool test_tiny_hash();
 bool test_rovpp_full_path();
 
-//Tests for ezBGPsec
-bool testEZExtrapolator();
-bool testDistributeAttackersVictims();
-
 #endif

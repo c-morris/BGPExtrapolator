@@ -24,23 +24,23 @@ public:
      *      2) A populated customer_provider table
      *      3) A populated peers table
      */
-    void perform_propagation();
+    virtual void perform_propagation();
 
     /** Recursive function to break the input mrt_announcements into manageable blocks.
      *
      * @param p The current subnet for checking announcement block size
      * @param prefix_vector The vector of prefixes of appropriate size
      */
-    void populate_blocks(Prefix<>*, 
-                            std::vector<Prefix<>*>*, 
-                            std::vector<Prefix<>*>*);
+    virtual void populate_blocks(Prefix<>*, 
+                                    std::vector<Prefix<>*>*, 
+                                    std::vector<Prefix<>*>*);
 
     /** Process a set of prefix or subnet blocks in iterations.
     */
     void extrapolate_blocks(uint32_t &announcement_count, 
-                            int &iteration, 
-                            bool subnet, 
-                            auto const& prefix_set);
+                                    int &iteration, 
+                                    bool subnet, 
+                                    auto const& prefix_set);
 
     /** Seed announcement on all ASes on as_path. 
      *
@@ -63,7 +63,7 @@ public:
      * @param to_peers Send to peers
      * @param to_customers Send to customers
      */
-    void send_all_announcements(uint32_t asn, bool to_providers = false, bool to_peers = false, bool to_customers = false);
+    virtual void send_all_announcements(uint32_t asn, bool to_providers = false, bool to_peers = false, bool to_customers = false);
 };
 
 #endif

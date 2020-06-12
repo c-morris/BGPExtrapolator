@@ -18,7 +18,7 @@ public:
 
     EZAS* createNew(uint32_t asn);
 
-    void distributeAttackersVictims(double percentage);
+    void distributeAttackersVictims(SQLQuerier* querier);
     void process(SQLQuerier* querier);
 };
 

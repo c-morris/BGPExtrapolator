@@ -8,6 +8,28 @@
 #include "Announcements/EZAnnouncement.h"
 #include "ASes/EZAS.h"
 
+/**
+ * The idea here is to estimate the probability that an "edge" AS can pull off an attacck
+ * 
+ * "Edge" AS: an AS with at least one provider and no customers.
+ * 
+ * Optimization: don't save results to the db, we aren't interested in them
+ * 
+ * The attack:
+ *      Origin: The AS that is the origin to the prefix 
+ *      Attacker: sends an announcement that it is the provider of the origin, for this prefix  
+ *      Victim: This AS is used at the end to see what path it chose, and whether is contains the attacker
+ *  
+ * Trace back:
+ *      The EZAnnnouncement has a flag for whether the announcement is from an attacker. This is carried
+ *          over in the copy constructor. 
+ *      Then, after propagation, all we have to do is chack if the announcement the victim AS has
+ *          for the prefix is from an attacker
+ * 
+ * IMPORTANT: This extrapolator eats RAM like it is going out of style. Run on low iteration sizes
+ *      That is if the iterations contain a dense amount of announcements from the origin.
+ *      Because we have to save the prefix it announces to "trace back" later.
+ */
 class EZExtrapolator : public BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS> {
 public:
     uint32_t total_attacks;
