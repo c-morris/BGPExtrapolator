@@ -499,17 +499,28 @@ void ROVppAS::process_announcements(bool ran) {
      // Create an ultimate list of good candidate announcemnts (ribs_in)
      std::vector<Announcement> candidates;
      std::set<Announcement> baddies = *failed_rov;
+     uint32_t policy = policy_vector.at(0);
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
-        if (pass_rov(candidate_ann) && !candidate_ann.withdraw && 
-            candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
-           candidates.push_back(candidate_ann);
+        if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
+            if (policy != ROVPPAS_TYPE_ROVPP_LITE || 
+                policy != ROVPPAS_TYPE_ROVPPB_LITE ||
+                policy != ROVPPAS_TYPE_ROVPPBP_LITE ||
+                policy != ROVPPAS_TYPE_ROVPPBIS_LITE) {
+                if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
+                    candidates.push_back(candidate_ann);
+                }
+            } 
         } else {
            baddies.insert(candidate_ann);
         }
-     }
-     // Find the best alternative to ann
-     for (auto &candidate : candidates) {
+    }
+    // Find the best alternative to ann
+    if (policy != ROVPPAS_TYPE_ROVPP_LITE || 
+        policy != ROVPPAS_TYPE_ROVPPB_LITE ||
+        policy != ROVPPAS_TYPE_ROVPPBP_LITE ||
+        policy != ROVPPAS_TYPE_ROVPPBIS_LITE) {
+        for (auto &candidate : candidates) {
          // Is there a valid alternative?
          if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
              // Is the candidate safe?
@@ -532,6 +543,12 @@ void ROVppAS::process_announcements(bool ran) {
                  }
              }
          }
+    }
+    } else {
+        // Just pick one of the candidates (in this case the first one)
+        // TODO: If needed we can randomize this, but for now this is sufficient
+        // because it's deterministic.
+        best_alternative_ann = candidates.at(0);
     }
     return best_alternative_ann;
 }
