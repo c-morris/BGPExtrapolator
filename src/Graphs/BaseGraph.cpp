@@ -32,7 +32,6 @@
 #include "Graphs/ASGraph.h"
 #include "ASes/AS.h"
 
-
 /** Clear all announcements in AS.
  */
 template <class ASType>
@@ -260,6 +259,8 @@ void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
  */
 template <class ASType>
 void BaseGraph<ASType>::decide_ranks() {
+    ases_by_rank->clear();
+
     // Initial set of customer ASes at the bottom of the DAG
     ases_by_rank->push_back(new std::set<uint32_t>());
     // For ASes with no customers

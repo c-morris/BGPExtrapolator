@@ -19,12 +19,16 @@ public:
     
     virtual ~BlockedExtrapolator();
 
+    virtual void init();
+
     /** Performs all tasks necessary to propagate a set of announcements given:
      *      1) A populated mrt_announcements table
      *      2) A populated customer_provider table
      *      3) A populated peers table
      */
     virtual void perform_propagation();
+
+    virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
 
     /** Recursive function to break the input mrt_announcements into manageable blocks.
      *

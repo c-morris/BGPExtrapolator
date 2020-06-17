@@ -6,10 +6,8 @@ BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::~Block
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::perform_propagation() {
-    using namespace std;
-
-    // Make tmp directory if it does not exist
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::init() {
+        // Make tmp directory if it does not exist
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
         mkdir("/dev/shm/bgp", 0777); 
@@ -40,6 +38,11 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     
     // Generate the graph and populate the stubs & supernode tables
     this->graph->create_graph_from_db(this->querier);
+}
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::perform_propagation() {
+    init();
 
     std::cout << "Generating subnet blocks..." << std::endl;
     
@@ -50,6 +53,15 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
 
+    extrapolate(prefix_blocks, subnet_blocks);
+    
+    // Cleanup
+    delete prefix_blocks;
+    delete subnet_blocks;
+}
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks) {
     std::cout << "Beginning propagation..." << std::endl;
     
     // Seed MRT announcements and propagate
@@ -66,11 +78,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     auto ext_finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> e = ext_finish - ext_start;
     std::cout << "Block elapsed time: " << e.count() << std::endl;
-    
-    // Cleanup
-    delete prefix_blocks;
-    delete subnet_blocks;
-    
     std::cout << "Announcement count: " << announcement_count << std::endl;
 }
 

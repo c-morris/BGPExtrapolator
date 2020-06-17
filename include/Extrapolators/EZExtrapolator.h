@@ -26,14 +26,22 @@
  *      Then, after propagation, all we have to do is chack if the announcement the victim AS has
  *          for the prefix is from an attacker
  * 
- * IMPORTANT: This extrapolator eats RAM like it is going out of style. Run on low iteration sizes
+ * Disconnections:
+ *      If an attack is successful, at the end of the round (where a round is a full propagation throughout the graph)
+ *      we disconnect the edge to the attack on the path. Imagine this as the neighbor detecting (through ezBGPsec) 
+ *      that it is connected to an attacker. It will disconnect then. 
+ * 
+ *      We then redo the propagation, but with those edges removed to see how many attacks presist as edges are removed
+ *      This is then repeated tuntil there are no more successful attacks (which is guaranteed to terminate)
+ * 
+ * IMPORTANT: This extrapolator eats RAM like it is going out of style. Run on low iteration sizes (4,000 at most)
  *      That is if the iterations contain a dense amount of announcements from the origin.
  *      Because we have to save the prefix it announces to "trace back" later.
  */
 class EZExtrapolator : public BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS> {
 public:
-    uint32_t total_attacks;
-    uint32_t successful_attacks;
+    double total_attacks;
+    double successful_attacks;
 
     EZExtrapolator(bool random = true,
                     bool invert_results = true, 
@@ -46,8 +54,14 @@ public:
                     
     ~EZExtrapolator();
 
+    void init();
+
+    void perform_propagation();
+    void propagation_drop_connections_helper(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
+
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
-    void calculate_sum_successful_attacks();
+    uint32_t getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn);
+    void calculate_successful_attacks();
     void save_results(int iteration);
 };
 

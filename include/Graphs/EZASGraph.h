@@ -13,11 +13,15 @@ public:
     //Victim 2, prefixes to check
     std::unordered_map<uint32_t, Prefix<>> *destination_victim_to_prefixes;
 
+    //Attacker, Provider
+    std::vector<std::pair<uint32_t, uint32_t>> *attacker_edges_removal;
+
     EZASGraph();
     ~EZASGraph();
 
     EZAS* createNew(uint32_t asn);
 
+    void disconnectAttackerEdges();
     void distributeAttackersVictims(SQLQuerier* querier);
     void process(SQLQuerier* querier);
 };
