@@ -338,7 +338,8 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 // ROV++ V0.1
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+              } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP ||
+                         policy_vector.at(0) == ROVPPAS_TYPE_ROVPP_LITE) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
                     if (pass_rov(ann)) {
@@ -361,7 +362,8 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 // ROV++ V0.2
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB ||
+                           policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB_LITE) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->insert(ann);
@@ -406,7 +408,8 @@ void ROVppAS::process_announcements(bool ran) {
                 
                  */
                 // New ROV++ V0.2bis (drops hijack announcements silently like v0.3)
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
+              } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS || 
+                         policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
                         passed_rov->insert(ann);
@@ -431,7 +434,8 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 // ROV++ V0.3 (atually this is 3bis [or experiment to get rid of loops])
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+              } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP || 
+                         policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rov(ann)) {
