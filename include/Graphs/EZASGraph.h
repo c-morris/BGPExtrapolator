@@ -8,13 +8,13 @@
 class EZASGraph : public BaseGraph<EZAS> {
 public:
     //Victim 1: attacker, victim2
-    std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> *origin_victim_to_attacker;
+    std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> *origin_to_attacker_victim;
 
     //Victim 2, prefixes to check
-    std::unordered_map<uint32_t, Prefix<>> *destination_victim_to_prefixes;
+    std::unordered_map<uint32_t, Prefix<>> *victim_to_prefixes;
 
     //Attacker, Provider
-    std::vector<std::pair<uint32_t, uint32_t>> *attacker_edges_removal;
+    std::vector<std::pair<uint32_t, uint32_t>> *attacker_edge_removal;
 
     EZASGraph();
     ~EZASGraph();

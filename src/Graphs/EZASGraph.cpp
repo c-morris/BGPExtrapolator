@@ -1,14 +1,15 @@
 #include "Graphs/EZASGraph.h"
 
 EZASGraph::EZASGraph() : BaseGraph<EZAS>() {
-    origin_victim_to_attacker = new std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>();
-    destination_victim_to_prefixes = new std::unordered_map<uint32_t, Prefix<>>();
-    attacker_edges_removal = new std::vector<std::pair<uint32_t, uint32_t>>();
+    origin_to_attacker_victim = new std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>();
+    victim_to_prefixes = new std::unordered_map<uint32_t, Prefix<>>();
+    attacker_edge_removal = new std::vector<std::pair<uint32_t, uint32_t>>();
 }
 
 EZASGraph::~EZASGraph() {
-    delete origin_victim_to_attacker;
-    delete destination_victim_to_prefixes;
+    delete origin_to_attacker_victim;
+    delete victim_to_prefixes;
+    delete attacker_edge_removal;
 }
 
 EZAS* EZASGraph::createNew(uint32_t asn) {
@@ -16,7 +17,7 @@ EZAS* EZASGraph::createNew(uint32_t asn) {
 }
 
 void EZASGraph::disconnectAttackerEdges() {
-    for(auto pair : *attacker_edges_removal) {
+    for(auto pair : *attacker_edge_removal) {
         EZAS* attacker = ases->find(pair.first)->second;
         EZAS* provider = ases->find(pair.second)->second;
 
@@ -31,25 +32,25 @@ void EZASGraph::disconnectAttackerEdges() {
         }
     }
 
-    attacker_edges_removal->clear();
+    attacker_edge_removal->clear();
 }
 
 void EZASGraph::distributeAttackersVictims(SQLQuerier* querier) {
-    origin_victim_to_attacker->clear();
-    destination_victim_to_prefixes->clear();
+    origin_to_attacker_victim->clear();
+    victim_to_prefixes->clear();
 
     pqxx::result triples = querier->execute("select * from good_customer_pairs");
 
-    for(int i = 0; i < triples.size(); i++) {
-        uint32_t victim1;
-        uint32_t attacker; 
-        uint32_t victim2;
+    uint32_t victim1;
+    uint32_t attacker; 
+    uint32_t victim2;
 
+    for(int i = 0; i < triples.size(); i++) {
         triples[i]["victim_1"].to(victim1);
         triples[i]["attacker"].to(attacker);
         triples[i]["victim_2"].to(victim2);
 
-        origin_victim_to_attacker->insert(std::pair<uint32_t, std::pair<uint32_t, uint32_t>>
+        origin_to_attacker_victim->insert(std::pair<uint32_t, std::pair<uint32_t, uint32_t>>
             (victim1, std::make_pair(attacker, victim2)));
     }
 }
@@ -59,6 +60,6 @@ void EZASGraph::process(SQLQuerier* querier) {
     distributeAttackersVictims(querier);
     tarjan();
     combine_components();
-    save_supernodes_to_db(querier);
+    //Don't need to save super nodes
     decide_ranks();
 }
