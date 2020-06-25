@@ -331,9 +331,7 @@ void ROVppAS::process_announcements(bool ran) {
                     } else {
                         failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
-                        if (best_alternative_ann == ann) { // If no alternative
-                            process_announcement(ann, false);
-                        } else {
+                        if (best_alternative_ann != ann) {  // alternative found
                             process_announcement(best_alternative_ann, false);
                         }
                     }
@@ -514,7 +512,9 @@ void ROVppAS::process_announcements(bool ran) {
                 if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
                     candidates.push_back(candidate_ann);
                 }
-            } 
+            } else {
+                candidates.push_back(candidate_ann);
+            }
         } else {
            baddies.insert(candidate_ann);
         }
