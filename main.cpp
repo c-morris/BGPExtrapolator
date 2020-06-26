@@ -55,9 +55,12 @@ int main(int argc, char *argv[]) {
         ("rovpp,v", 
          po::value<bool>()->default_value(false), 
          "flag for rovpp run")
-        ("ezbgpsec,c", 
-         po::value<bool>()->default_value(false), 
-         "flag for ezbgpsec run")
+        ("ezbgpsec,z", 
+         po::value<uint32_t>()->default_value(0), 
+         "number of rounds for ezbgpsec run")
+        ("num-in-between,n", 
+         po::value<uint32_t>()->default_value(0), 
+         "number of in between ASes for ezbgpsec run")
         ("random,b", 
          po::value<bool>()->default_value(true), 
          "disables random tiebraking for testing")
@@ -142,7 +145,7 @@ int main(int argc, char *argv[]) {
         extrap->perform_propagation(prop_twice);
         // Clean up
         delete extrap;
-    } else if(vm["ezbgpsec"].as<bool>()) {
+    } else if(vm["ezbgpsec"].as<uint32_t>()) {
         // Instantiate Extrapolator
         EZExtrapolator *extrap = new EZExtrapolator(vm["random"].as<bool>(),
             vm["invert-results"].as<bool>(),
@@ -159,7 +162,9 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
-            (vm["iteration-size"].as<uint32_t>()));
+            (vm["iteration-size"].as<uint32_t>()),
+            vm["ezbgpsec"].as<uint32_t>(),
+            vm["num-in-between"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();

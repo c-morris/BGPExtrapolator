@@ -10,13 +10,17 @@ EZExtrapolator::EZExtrapolator(bool random /* = true */,
                  std::string r /* = RESULTS_TABLE */, 
                  std::string i /* = INVERSE_RESULTS_TABLE */, 
                  std::string d /* = DEPREF_RESULTS_TABLE */, 
-                 uint32_t iteration_size /* = false */) : BlockedExtrapolator(random, invert_results, store_depref, a, r, i, d, iteration_size) {
+                 uint32_t iteration_size /* = false */,
+                 uint32_t num_rounds /* = 10 */,
+                 uint32_t num_between) : BlockedExtrapolator(random, invert_results, store_depref, a, r, i, d, iteration_size) {
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(a, r, i, d);
 
-    total_attacks = 0;
-    successful_attacks = 0;
+    this->total_attacks = 0;
+    this->successful_attacks = 0;
+    this->num_rounds = num_rounds;
+    this->num_between = num_between;
 }
 
 EZExtrapolator::~EZExtrapolator() {
@@ -26,8 +30,8 @@ EZExtrapolator::~EZExtrapolator() {
 void EZExtrapolator::init() {
     BlockedExtrapolator::init();
 
-    total_attacks = 0;
     successful_attacks = 0;
+    total_attacks = 0;
 }
 
 void EZExtrapolator::perform_propagation() {
@@ -50,8 +54,8 @@ void EZExtrapolator::perform_propagation() {
     do {
         round++;
 
-        total_attacks = 0;
         successful_attacks = 0;
+        total_attacks = 0;
 
         std::cout << "Round #" << round << std::endl;
 
@@ -68,7 +72,8 @@ void EZExtrapolator::perform_propagation() {
 
             //Disconnect attacker from provider
             //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
-            graph->disconnectAttackerEdges();
+            if(num_between == 0)
+                graph->disconnectAttackerEdges();
             graph->clear_announcements();
 
             for(auto element : *graph->ases) {
@@ -104,7 +109,7 @@ void EZExtrapolator::perform_propagation() {
         } else {
             std::cout << "Round #" << round << ": No more attacks" << std::endl;
         }
-    } while(successful_attacks > 0);
+    } while(successful_attacks > 0 && round <= num_rounds - 1);
     
     // Cleanup
     delete prefix_blocks;
@@ -125,27 +130,28 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
     auto result = graph->origin_to_attacker_victim->find(path_origin_asn);
 
-    //Test if this is an attack
+    //Test if this origin is the origin in an attack, if not, we don't need to seed the announcement
     if(result == graph->origin_to_attacker_victim->end()) {
+        // BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
         return;
     }
 
     uint32_t attacker_asn = result->second.first;
     uint32_t victim2_asn = result->second.second;
 
-    //only one attacking announcement per attacker, this way the metric is the percent of successful and *unique* attacks
+    //Check if we have a prefix set to attack already, don't announce or attack other prefixes
     if(graph->victim_to_prefixes->find(victim2_asn) != graph->victim_to_prefixes->end())
         return;
 
-    EZAS* attacker = this->graph->ases->find(attacker_asn)->second;
+    EZAS* attacker = graph->ases->find(attacker_asn)->second;
 
-    //Don't bother with the announcement if the attacker has no neighbors
+    //Don't bother with anything of this if the attacker can't show up to the party
     if(attacker->providers->size() == 0 && attacker->peers->size() == 0)
         return;
 
     graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
 
-    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299, path_origin_asn, timestamp, true, true);
+    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299 - num_between, path_origin_asn, timestamp, true, true);
     attacker->process_announcement(attackAnnouncement, this->random);
 }
 
@@ -185,10 +191,11 @@ void EZExtrapolator::calculate_successful_attacks() {
 
         //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
         if(result->second.from_attacker) {
-            uint32_t attacker_asn = graph->origin_to_attacker_victim->find(result->second.origin)->second.first;
-            uint32_t other_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
-
-            graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, other_asn));
+            if(this->num_between == 0) {
+                uint32_t attacker_asn = graph->origin_to_attacker_victim->find(result->second.origin)->second.first;
+                uint32_t other_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
+                graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, other_asn));
+            }
 
             successful_attacks++;
         }
