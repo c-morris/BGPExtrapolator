@@ -341,8 +341,9 @@ void ROVppAS::process_announcements(bool ran) {
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        } else {
+                          process_announcement(ann, false);
                         }
-                        process_announcement(ann, false);
                     } else {
                         failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -364,8 +365,9 @@ void ROVppAS::process_announcements(bool ran) {
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        } else {
+                          process_announcement(ann, false);
                         }
-                        process_announcement(ann, false);
                     } else {
                         failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -410,8 +412,9 @@ void ROVppAS::process_announcements(bool ran) {
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        } else {
+                          process_announcement(ann, false);
                         }
-                        process_announcement(ann, false);
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
@@ -437,8 +440,9 @@ void ROVppAS::process_announcements(bool ran) {
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        } else {
+                          process_announcement(ann, false);
                         }
-                        process_announcement(ann);
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
