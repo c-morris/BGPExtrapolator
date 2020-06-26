@@ -327,16 +327,12 @@ void ROVppAS::process_announcements(bool ran) {
                     // Just doesn't creat blackholes
                     if (pass_rov(ann)) {
                         passed_rov->insert(ann);
-                        process_announcement(ann, false);
-                    } else {
-                        failed_rov->insert(ann);
-                        Announcement best_alternative_ann = best_alternative_route(ann); 
-                        if (best_alternative_ann != ann) {  // alternative found
-                            process_announcement(best_alternative_ann, false);
+                        if (bad_neighbors->find(ann.received_from_asn) == bad_neighbors->end()) {
+                            process_announcement(ann, false);
                         }
                     }
                 // ROV++ V0.1
-              } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP ||
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP ||
                          policy_vector.at(0) == ROVPPAS_TYPE_ROVPP_LITE) {
                     // The policy for ROVpp 0.1 is similar to ROV in the extrapolator.
                     // Only in the data plane changes
@@ -406,7 +402,7 @@ void ROVppAS::process_announcements(bool ran) {
                 
                  */
                 // New ROV++ V0.2bis (drops hijack announcements silently like v0.3)
-              } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS || 
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS || 
                          policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rov(ann)) {
@@ -432,7 +428,7 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 // ROV++ V0.3 (atually this is 3bis [or experiment to get rid of loops])
-              } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP || 
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP || 
                          policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) {
                     // For ROVpp 0.3, forward a blackhole ann if there is no alt route.
                     // Also make a preventive announcement if there is an alt route.
@@ -525,8 +521,8 @@ void ROVppAS::process_announcements(bool ran) {
         policy != ROVPPAS_TYPE_ROVPPBP_LITE ||
         policy != ROVPPAS_TYPE_ROVPPBIS_LITE) {
         for (auto &candidate : candidates) {
-         // Is there a valid alternative?
-         if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
+          // Is there a valid alternative?
+          if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
              // Is the candidate safe?
              bool safe = true;
              for (auto &curr_bad_ann : baddies) {
@@ -546,13 +542,15 @@ void ROVppAS::process_announcements(bool ran) {
                      best_alternative_ann = candidate;
                  }
              }
-         }
-    }
+          }
+        }
     } else {
         // Just pick one of the candidates (in this case the first one)
         // TODO: If needed we can randomize this, but for now this is sufficient
         // because it's deterministic.
-        best_alternative_ann = candidates.at(0);
+        if (candidates.size() > 0) {
+          best_alternative_ann = candidates.at(0);
+        }
     }
     return best_alternative_ann;
 }
