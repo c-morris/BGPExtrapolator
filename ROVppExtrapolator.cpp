@@ -475,7 +475,9 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     bool filtered = (rovpp_as != NULL &&
                      rovpp_as->policy_vector.size() > 0 && 
                      (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-                      rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS));
+                      rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS ||
+                      rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE || 
+                      rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE ));
     
     // Process all other ann in loc_rib
     for (auto &ann : *source_as->loc_rib) {
@@ -483,7 +485,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         if (rovpp_as != NULL && 
             ann.second.origin == 64512 && 
             rovpp_as->policy_vector.size() > 0 &&
-            rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+            (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP ||
+             rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP_LITE)) {
             continue;
         }
 
@@ -593,7 +596,8 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         auto *recving_as = graph->ases->find(peer_asn)->second;
         recving_as->receive_announcements(anns_to_peers);
     }
-    if (rovpp_as != NULL && rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+    if (rovpp_as != NULL && (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP || 
+                             rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE)) {
         // For ROVPPBP v3.1 we want to keep track of which Customers
         // are receiving the preventive announcements, and be able to 
         // withdraw them if they send us the prefix. Moreover, not send it
