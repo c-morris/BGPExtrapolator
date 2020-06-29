@@ -323,13 +323,10 @@ void ROVppAS::process_announcements(bool ran) {
                         process_announcement(ann, false);
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP0) {
-                    // The policy for ROVpp 0 is similar to ROVpp 1 
-                    // Just doesn't creat blackholes
+                    // Made this equal to ROV to test that it should be the same
                     if (pass_rov(ann)) {
                         passed_rov->insert(ann);
-                        if (bad_neighbors->find(ann.received_from_asn) == bad_neighbors->end()) {
-                            process_announcement(ann, false);
-                        }
+                        process_announcement(ann, false);
                     }
                 // ROV++ V0.1
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP ||
