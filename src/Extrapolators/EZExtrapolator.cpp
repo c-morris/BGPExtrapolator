@@ -16,9 +16,11 @@ EZExtrapolator::EZExtrapolator(bool random /* = true */,
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(a, r, i, d);
-
-    this->total_attacks = 0;
+    
     this->successful_attacks = 0;
+    this->successful_connections = 0;
+    this->disconnections = 0;
+
     this->num_rounds = num_rounds;
     this->num_between = num_between;
 }
@@ -31,7 +33,8 @@ void EZExtrapolator::init() {
     BlockedExtrapolator::init();
 
     successful_attacks = 0;
-    total_attacks = 0;
+    successful_connections = 0;
+    disconnections = 0;
 }
 
 void EZExtrapolator::perform_propagation() {
@@ -47,6 +50,8 @@ void EZExtrapolator::perform_propagation() {
     delete cur_prefix;
     
     std::ofstream ezStatistics("EZStatistics.csv");
+    ezStatistics << "Round,Successful Attacks,Successful Connections,Disconnections,Total Attacks,Probability Successful Attack" << std::endl;
+
     int round = 0;
 
     //Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
@@ -55,20 +60,15 @@ void EZExtrapolator::perform_propagation() {
         round++;
 
         successful_attacks = 0;
-        total_attacks = 0;
+        successful_connections = 0;
+        disconnections = 0;
 
         std::cout << "Round #" << round << std::endl;
 
         extrapolate(prefix_blocks, subnet_blocks);
 
         if(successful_attacks > 0) {
-            std::cout << "Round #" << round << std::endl;
-
-            std::cout << "Successful Attacks " << successful_attacks << std::endl;
-            std::cout << "Total Attacks: " << total_attacks << std::endl;
-            std::cout << "Probability: " << (successful_attacks / total_attacks) << std::endl;
-
-            ezStatistics << round << "," << successful_attacks << "," << total_attacks << "," << (successful_attacks / total_attacks) << std::endl;
+            ezStatistics << round << "," << successful_attacks << "," << successful_connections << "," << disconnections << "," << graph->origin_to_attacker_victim->size() << "," << ((double) successful_attacks / (double) graph->origin_to_attacker_victim->size()) << std::endl;
 
             //Disconnect attacker from provider
             //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
@@ -130,7 +130,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
     auto result = graph->origin_to_attacker_victim->find(path_origin_asn);
 
-    //Test if this origin is the origin in an attack, if not, we don't need to seed the announcement
+    //Test if this origin is the origin in an attack, if not, don't attack
     if(result == graph->origin_to_attacker_victim->end()) {
         // BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
         return;
@@ -139,15 +139,15 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     uint32_t attacker_asn = result->second.first;
     uint32_t victim2_asn = result->second.second;
 
-    //Check if we have a prefix set to attack already, don't announce or attack other prefixes
+    //Check if we have a prefix set to attack already, don't announce attack
     if(graph->victim_to_prefixes->find(victim2_asn) != graph->victim_to_prefixes->end())
         return;
 
     EZAS* attacker = graph->ases->find(attacker_asn)->second;
 
     //Don't bother with anything of this if the attacker can't show up to the party
-    if(attacker->providers->size() == 0 && attacker->peers->size() == 0)
-        return;
+    // if(attacker->providers->size() == 0 && attacker->peers->size() == 0)
+    //     return;
 
     graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
 
@@ -186,8 +186,10 @@ void EZExtrapolator::calculate_successful_attacks() {
         auto result = victim->all_anns->find(it.second);
 
         //If there is no announcement for the prefix, move on
-        if(result == victim->all_anns->end())//the prefix never reached the victim
+        if(result == victim->all_anns->end()) { //the prefix never reached the victim
+            disconnections++;
             continue;
+        }
 
         //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
         if(result->second.from_attacker) {
@@ -198,9 +200,9 @@ void EZExtrapolator::calculate_successful_attacks() {
             }
 
             successful_attacks++;
+        } else {
+            successful_connections++;
         }
-
-        total_attacks++;
     }
 
     graph->victim_to_prefixes->clear();

@@ -322,7 +322,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
         uint32_t priority = received_from + path_len_weighted;
-       
+        
         uint32_t received_from_asn = 0;
         // If this AS is the origin
         if (it == as_path->rbegin()){

@@ -40,9 +40,17 @@
  */
 class EZExtrapolator : public BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS> {
 public:
-    double total_attacks;
-    double successful_attacks;
+    /*   - Attacker gets the traffic: successful attack
+     *   - Origin gets the traffic: successful connection
+     *   - Nobody gets the traffic: disconnection
+     */
+    uint32_t successful_attacks;
+    uint32_t successful_connections;
+    uint32_t disconnections;
+
     uint32_t num_rounds;
+
+    //Number of "ASes" between the attacker and the origin
     uint32_t num_between;
 
     EZExtrapolator(bool random = true,
