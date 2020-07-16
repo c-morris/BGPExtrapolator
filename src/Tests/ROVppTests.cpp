@@ -1349,14 +1349,10 @@ bool test_rovpp_full_path() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(5);
-
     
     e.give_ann_to_as_path(as_path, p, 1, 0);
-    std::cerr << "made it past give ann to as path" << std::endl;
     e.propagate_up();
-    std::cerr << "made it past propagate up" << std::endl;
     e.propagate_down();
-    
 
     // Check if seeded path is present
     if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path.size() != 1) {
