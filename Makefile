@@ -3,7 +3,7 @@ BIN_DIR := ./bin/
 HEADER_DIR := ./include/
 
 SOURCE_FILES := cpp
-HEADER_FILES := hpp
+HEADER_FILES := h
 OBJECT_FILES := o
 
 CC       := g++
@@ -23,7 +23,7 @@ MAIN_CPP := main.cpp
 all: $(OBJECTS) $(HEADERS)
 	$(CC) $(CPPFLAGS) $(MAIN_CPP) -o $(EXE_NAME) $(OBJECTS) $(LDFLAGS)
 
-test: CPPFLAGS+= -DRUN_TESTS=1
+test: CPPFLAGS+= -g -DRUN_TESTS=1
 
 test: $(OBJECTS) $(HEADERS)
 	$(CC) $(CPPFLAGS) $(MAIN_CPP) -o $(EXE_NAME) $(OBJECTS) $(LDFLAGS)

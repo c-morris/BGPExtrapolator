@@ -102,6 +102,9 @@ public:
     void withdraw(ROVppAnnouncement &ann, ROVppAS &neighbor);
     uint8_t tiny_hash(uint32_t);
     void check_preventives(ROVppAnnouncement ann);
+    void receive_announcements(std::vector<ROVppAnnouncement> &announcements);
+    bool already_received(ROVppAnnouncement &ann);
+    void clear_announcements();
     ROVppAnnouncement best_alternative_route(ROVppAnnouncement &ann);  // help find a good alternative route 
                                                         // (i.e. an ann from a neighbor which 
                                                         // didn't give you the attacker's announcement)
