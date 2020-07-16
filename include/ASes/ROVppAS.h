@@ -91,7 +91,8 @@ public:
     ~ROVppAS();
     
     // Overrided Methods
-    void process_announcement(ROVppAnnouncement &ann, bool ran=true, bool override=false);
+    // This works because the parent is templated for ROVppAnnouncements
+    void process_announcement(ROVppAnnouncement &ann, bool ran=true);
     void process_announcements(bool ran=true);
     
     // ROV Methods

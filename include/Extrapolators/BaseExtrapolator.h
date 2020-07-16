@@ -142,11 +142,11 @@ public:
      * @param path_as_string the as_path as a string returned by libpqxx
      * @return as_path The AS path as vector of integers
      */
-    std::vector<uint32_t>* parse_path(std::string path_as_string); 
+    virtual std::vector<uint32_t>* parse_path(std::string path_as_string); 
 
     /** Check for loops in the path and drop announcement if they exist
     */
-    bool find_loop(std::vector<uint32_t>*);
+    virtual bool find_loop(std::vector<uint32_t>*);
 
     /** Propagate announcements from customers to peers and providers ASes.
     */

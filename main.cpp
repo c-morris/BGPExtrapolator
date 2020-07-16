@@ -128,7 +128,6 @@ int main(int argc, char *argv[]) {
             (vm.count("policy-tables") ?
                 vm["policy-tables"].as< vector<string> >() : 
                 vector<string>()),
-            vm["random"].as<bool>(),
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 RESULTS_TABLE),

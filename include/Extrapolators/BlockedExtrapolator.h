@@ -5,6 +5,10 @@
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 class BlockedExtrapolator : public BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>  {
+protected:
+    virtual void init();
+    virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
+
 public:
     BlockedExtrapolator(bool random_b=true,
                         bool invert_results=true, 
@@ -19,16 +23,12 @@ public:
     
     virtual ~BlockedExtrapolator();
 
-    virtual void init();
-
     /** Performs all tasks necessary to propagate a set of announcements given:
      *      1) A populated mrt_announcements table
      *      2) A populated customer_provider table
      *      3) A populated peers table
      */
     virtual void perform_propagation();
-
-    virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
 
     /** Recursive function to break the input mrt_announcements into manageable blocks.
      *
@@ -41,10 +41,10 @@ public:
 
     /** Process a set of prefix or subnet blocks in iterations.
     */
-    void extrapolate_blocks(uint32_t &announcement_count, 
+    virtual void extrapolate_blocks(uint32_t &announcement_count, 
                                     int &iteration, 
                                     bool subnet, 
-                                    auto const& prefix_set);
+                                    std::vector<Prefix<>*> *prefix_set);
 
     /** Seed announcement on all ASes on as_path. 
      *

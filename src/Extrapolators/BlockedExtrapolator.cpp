@@ -142,7 +142,7 @@ template <class SQLQuerierType, class GraphType, class AnnouncementType, class A
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::extrapolate_blocks(uint32_t &announcement_count, 
                                                                                                     int &iteration, 
                                                                                                     bool subnet, 
-                                                                                                    auto const& prefix_set) {
+                                                                                                    std::vector<Prefix<>*> *prefix_set) {
     // For each unprocessed block of announcements 
     for (Prefix<>* prefix : *prefix_set) {
         std::cout << "Selecting Announcements..." << std::endl;

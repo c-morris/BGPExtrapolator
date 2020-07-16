@@ -27,22 +27,13 @@
 #include "ASes/ROVppAS.h"
 
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
-                                     bool random_b,
                                      std::string r,
                                      std::string e,
                                      std::string f,
                                      uint32_t iteration_size)
-    : BaseExtrapolator() {
-    // ROVpp specific functions should use the rovpp_graph variable
-    // The graph variable maintains backwards compatibility
+    : BaseExtrapolator(false) {
+        
     it_size = iteration_size;   // Number of prefix to be precessed per iteration (currently not being used)
-    random = random_b;          // Flag for using random tiebreaks
-    random = false;          // FIX ME
-    // TODO fix this memory leak
-    // graph = new ROVppASGraph();
-    // querier = new ROVppSQLQuerier(g, r, e, f);
-    // rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
-    // querier = dynamic_cast<ROVppSQLQuerier*>(querier);
 
     graph = new ROVppASGraph();
     querier = new ROVppSQLQuerier(g, r, e, f);

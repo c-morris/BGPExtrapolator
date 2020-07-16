@@ -115,26 +115,25 @@ public:
 
     virtual ~BaseAS();
     
-    bool get_random(); 
+    virtual bool get_random(); 
 
-    void add_neighbor(uint32_t asn, int relationship);
-    void remove_neighbor(uint32_t asn, int relationship);
+    virtual void add_neighbor(uint32_t asn, int relationship);
+    virtual void remove_neighbor(uint32_t asn, int relationship);
 
-    void receive_announcements(std::vector<AnnouncementType> &announcements);
+    virtual void receive_announcements(std::vector<AnnouncementType> &announcements);
     virtual void process_announcement(AnnouncementType &ann, bool ran=true);
     virtual void process_announcements(bool ran=true);
-    void clear_announcements();
+    virtual void clear_announcements();
 
-    bool already_received(AnnouncementType &ann);
-    void delete_ann(AnnouncementType &ann);
+    virtual bool already_received(AnnouncementType &ann);
+    virtual void delete_ann(AnnouncementType &ann);
 
-    void printDebug();
-    void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
-                             std::pair<Prefix<>,uint32_t> current);
+    virtual void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
+                                        std::pair<Prefix<>,uint32_t> current);
 
     template <class U>
     friend std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as);
-    std::ostream& stream_announcements(std:: ostream &os);
-    std::ostream& stream_depref(std:: ostream &os);
+    virtual std::ostream& stream_announcements(std:: ostream &os);
+    virtual std::ostream& stream_depref(std:: ostream &os);
 };
 #endif

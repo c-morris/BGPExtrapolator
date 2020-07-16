@@ -101,7 +101,7 @@ void ROVppAS::withdraw(ROVppAnnouncement &ann) {
  * 
  * @param ann The rovannouncement to be processed
  */ 
-void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran, bool override) {
+void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran) {
     std::cout << "ROV version" << std::endl;
 
     // Check for existing rovannouncement for prefix
@@ -119,20 +119,6 @@ void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran, bool overri
                 set->second->erase(asn);
             }
         }
-    // If overrid is true, the replace whatever is the current rovannouncement regardless
-    } else if (override) {
-      /*// Disabled this to get some runs to see if we get data plane loops (this block may need to be deleted)
-      // May 13, 2020: Reynaldo Morillo 
-      // Update inverse results
-      swap_inverse_result(
-          std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-          std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-      // Insert depref ann
-      depref_anns->insert(std::pair<Prefix<>, ROVppAnnouncement>(search->second.prefix, 
-                                                            search->second));
-      withdraw(search->second);
-      search->second = ann;
-      */
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
     } else if (ann.priority == search->second.priority && ann != search->second) {
         // Random tiebraker
@@ -466,7 +452,7 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(ann);
                         } else {
                             // Move entire prefix to alternative
-                            process_announcement(best_alternative_ann, false, true);
+                            process_announcement(best_alternative_ann, false);
                             // Make preventive rovannouncement
                             ROVppAnnouncement preventive_ann = best_alternative_ann;
                             preventive_ann.prefix = ann.prefix;
