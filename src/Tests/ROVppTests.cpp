@@ -345,16 +345,19 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path_b->push_back(4);
     as_path_b->push_back(4);
 
-    std::cout << "SStttttaaaarrrrttttt" << std::endl;
     e.give_ann_to_as_path(as_path_b, p, 1, 0);
 
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
-        return false;
-    }
+    // This value is supposed to be uniform random in the ROV++, so this is an invalid test here
+    //if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
+    //    return false;
+    //}
     
     // Test prepending calculation
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 298) {
-        std::cout << e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority << std::endl;
+    // Unlike the all_anns map, the loc_rib preserves the priority of the ribs_in
+    // Priority is decremented when the announcement is actually sent out
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299) {
+        std::cerr << "Priority calculation in loc_rib failed" << std::endl;
+        std::cerr << e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority << std::endl;
         return false;
     }
 
@@ -957,10 +960,12 @@ bool test_rovpp_clear_announcements(){
     ROVppAS as = ROVppAS(1);
     as.process_announcement(ann);
     if (as.loc_rib->size() != 1) {
+        std::cerr << "AS did not process announcement" << std::endl;
         return false;
     }
     as.clear_announcements();
     if (as.loc_rib->size() != 0) {
+        std::cerr << "AS did not clear announcement" << std::endl;
         return false;
     }
     return true;
@@ -974,7 +979,6 @@ bool test_rovpp_already_received(){
     ROVppAnnouncement ann1 = ROVppAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
     ROVppAnnouncement ann2 = ROVppAnnouncement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
     ROVppAS as = ROVppAS(1);
-    // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann1);
     if (as.already_received(ann1) && !as.already_received(ann2)) {
         return true;
@@ -1339,6 +1343,7 @@ bool test_rovpp_full_path() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+
 
     e.graph->decide_ranks();
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");

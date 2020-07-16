@@ -550,7 +550,7 @@ void ROVppAS::process_announcements(bool ran) {
 
 void ROVppAS::check_preventives(ROVppAnnouncement ann) {
     // ROV++ V0.3
-    if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+    if (policy_vector.size() > 0 && policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
         // note this only works for /24...
         if (ann.prefix.netmask == 0xffffff00) {
             // this is already a preventive
@@ -585,6 +585,30 @@ void ROVppAS::check_preventives(ROVppAnnouncement ann) {
             }
         }
     }
+}
+
+void ROVppAS::receive_announcements(std::vector<ROVppAnnouncement> &announcements) {
+    for (ROVppAnnouncement &ann : announcements) {
+        // push_back makes a copy of the announcement
+        ribs_in->push_back(ann);
+    }
+}
+
+/** Check if a monitor announcement is already recv'd by this AS. 
+ *
+ * @param ann Announcement to check for. 
+ * @return True if recv'd, false otherwise.
+ */
+bool ROVppAS::already_received(ROVppAnnouncement &ann) {
+    auto search = loc_rib->find(ann.prefix);
+    bool found = (search == loc_rib->end()) ? false : true;
+    return found;
+}
+
+void ROVppAS::clear_announcements() {
+    loc_rib->clear();
+    ribs_in->clear();
+    depref_anns->clear();
 }
 
 /** Tiny galois field hash with a fixed key of 3.
