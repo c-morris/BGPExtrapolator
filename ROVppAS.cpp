@@ -512,7 +512,6 @@ void ROVppAS::process_announcements(bool ran) {
         if (pass_rov(candidate_ann) && !candidate_ann.withdraw) {
             if (policy != ROVPPAS_TYPE_ROVPP_LITE || 
                 policy != ROVPPAS_TYPE_ROVPPB_LITE ||
-                policy != ROVPPAS_TYPE_ROVPPBP_LITE ||
                 policy != ROVPPAS_TYPE_ROVPPBIS_LITE) {
                 if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
                     candidates.push_back(candidate_ann);
