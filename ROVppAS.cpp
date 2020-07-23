@@ -566,7 +566,7 @@ void ROVppAS::process_announcements(bool ran) {
 
 void ROVppAS::check_preventives(Announcement ann) {
     // ROV++ V0.3
-    if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+    if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP || policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) {
         // note this only works for /24...
         if (ann.prefix.netmask == 0xffffff00) {
             // this is already a preventive
