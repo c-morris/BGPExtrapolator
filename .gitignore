@@ -39,3 +39,7 @@ graph.csv
 # Swap Files
 *.swp
 *.swo
+
+# IDE Setting Files
+.vscode/
+.vs/

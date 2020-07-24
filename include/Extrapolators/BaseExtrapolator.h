@@ -31,8 +31,6 @@
 #include <sys/types.h>
 #include <fstream>
 #include <stdio.h>
-#include <iostream>
-#include <thread>
 #include <dirent.h>
 
 #include "ASes/AS.h"
@@ -105,28 +103,23 @@
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 class BaseExtrapolator {
 public:
-    bool random;            // If randomness is enabled
-    bool invert;            // If inverted results are enabled
-    bool depref;            // If depref results are enabled
-    uint32_t it_size;       // # of announcements per iteration
     GraphType *graph;
     SQLQuerierType *querier;
 
-    BaseExtrapolator(bool random_b=true,
-                        bool invert_results=true, 
-                        bool store_depref=false, 
-                        std::string a=ANNOUNCEMENTS_TABLE,
-                        std::string r=RESULTS_TABLE, 
-                        std::string i=INVERSE_RESULTS_TABLE, 
-                        std::string d=DEPREF_RESULTS_TABLE, 
-                        uint32_t iteration_size=false) {
+    bool random_tiebraking;    // If randomness is enabled
+    bool store_invert_results; // If inverted results are enabled
+    bool store_depref_results; // If depref results are enabled
 
-        random = random_b;                          // True to enable random tiebreaks
-        invert = invert_results;                    // True to store the results inverted
-        depref = store_depref;                      // True to store the second best ann for depref
-        it_size = iteration_size;                   // Number of prefix to be precessed per iteration
+    BaseExtrapolator(bool random_tiebraking = true,
+                        bool store_invert_results = true, 
+                        bool store_depref_results = false) {
+
+        this->random_tiebraking = random_tiebraking;       // True to enable random tiebreaks
+        this->store_invert_results = store_invert_results; // True to store the results inverted
+        this->store_depref_results = store_depref_results; // True to store the second best ann for depref
         
         // The child will initialize these properly right after this constructor returns
+        //That way they can give the variable a proper type
         graph = NULL;
         querier = NULL;
     }
@@ -167,9 +160,9 @@ public:
      * @param to_customers Send to customers
      */
     virtual void send_all_announcements(uint32_t asn, 
-                                bool to_providers = false, 
-                                bool to_peers = false, 
-                                bool to_customers = false) = 0;
+                                        bool to_providers = false, 
+                                        bool to_peers = false, 
+                                        bool to_customers = false) = 0;
 
     /** Save the results of a single iteration to a in-memory
      *

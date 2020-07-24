@@ -32,16 +32,37 @@
 #include "Graphs/ASGraph.h"
 #include "ASes/AS.h"
 
+template <class ASType>
+BaseGraph<ASType>::~BaseGraph() {
+    for (auto const& as : *ases)
+        delete as.second;
+    delete ases;
+    
+    for (auto const& as : *ases_by_rank)
+        delete as;
+    delete ases_by_rank;
+
+    for (auto const& c : *components)
+        delete c;
+    delete components;
+
+    for (auto const& i : *inverse_results)
+        delete i.second;
+    delete inverse_results;
+
+    delete component_translation;
+    delete stubs_to_parents;
+    delete non_stubs;
+}
+
 /** Clear all announcements in AS.
  */
 template <class ASType>
 void BaseGraph<ASType>::clear_announcements() {
-    for (auto const& as : *ases){
+    for (auto const& as : *ases)
         as.second->clear_announcements();
-    }
-    for (auto const& i : *inverse_results) {
+    for (auto const& i : *inverse_results)
         delete i.second;
-    }
     inverse_results->clear();
 }
 
@@ -55,8 +76,8 @@ void BaseGraph<ASType>::clear_announcements() {
  */
 template <class ASType>
 void BaseGraph<ASType>::add_relationship(uint32_t asn, 
-                               uint32_t neighbor_asn, 
-                               int relation) {
+                                            uint32_t neighbor_asn, 
+                                            int relation) {
     auto search = ases->find(asn);
     if (search == ases->end()) {
         // if AS not yet in graph, create it
@@ -75,7 +96,7 @@ template <class ASType>
 uint32_t BaseGraph<ASType>::translate_asn(uint32_t asn) {
     auto search = component_translation->find(asn);
     if(search == component_translation->end())
-       return asn; 
+        return asn; 
     return search->second;
 }
 

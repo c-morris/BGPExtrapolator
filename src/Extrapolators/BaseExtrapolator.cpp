@@ -91,7 +91,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
+            search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
                 send_all_announcements(asn, true, false, false);
@@ -102,7 +102,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
+            search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
                 send_all_announcements(asn, false, true, false);
@@ -118,7 +118,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
-            search->second->process_announcements(random);
+            search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
                 send_all_announcements(asn, false, false, true);
@@ -134,7 +134,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     outfile.open(file_name);
     
     // Handle inverse results
-    if (invert) {
+    if (store_invert_results) {
         std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
         for (auto po : *graph->inverse_results){
             for (uint32_t asn : *po.second) {
@@ -159,7 +159,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     std::remove(file_name.c_str());
     
     // Handle depref results
-    if (depref) {
+    if (store_depref_results) {
         std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + ".csv";
         outfile.open(depref_name);
         std::cout << "Saving Depref From Iteration: " << iteration << std::endl;

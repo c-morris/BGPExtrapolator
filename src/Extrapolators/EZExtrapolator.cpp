@@ -3,19 +3,19 @@
 //Need to check if the origin can reach the victim!
 //Attacker is checked for this, the origin needs to as well
 
-EZExtrapolator::EZExtrapolator(bool random /* = true */,
-                 bool invert_results /* = true */, 
-                 bool store_depref /* = false */, 
-                 std::string a /* = ANNOUNCEMENTS_TABLE */,
-                 std::string r /* = RESULTS_TABLE */, 
-                 std::string i /* = INVERSE_RESULTS_TABLE */, 
-                 std::string d /* = DEPREF_RESULTS_TABLE */, 
-                 uint32_t iteration_size /* = false */,
+EZExtrapolator::EZExtrapolator(bool random_tiebraking /* = true */,
+                 bool store_invert_results /* = true */, 
+                 bool store_depref_results /* = false */, 
+                 std::string announcement_table /* = ANNOUNCEMENTS_TABLE */,
+                 std::string results_table /* = RESULTS_TABLE */, 
+                 std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
+                 std::string depref_results_table /* = DEPREF_RESULTS_TABLE */, 
+                 uint32_t iteration_size /* = 0 */,
                  uint32_t num_rounds /* = 10 */,
-                 uint32_t num_between) : BlockedExtrapolator(random, invert_results, store_depref, a, r, i, d, iteration_size) {
+                 uint32_t num_between /* = 0 */) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier(a, r, i, d);
+    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table);
     
     this->successful_attacks = 0;
     this->successful_connections = 0;
@@ -152,7 +152,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
 
     EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299 - num_between, path_origin_asn, timestamp, true, true);
-    attacker->process_announcement(attackAnnouncement, this->random);
+    attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
 }
 
 /*

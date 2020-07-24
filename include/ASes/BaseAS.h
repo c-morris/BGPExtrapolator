@@ -73,11 +73,7 @@ public:
     bool onStack;
     
     // Constructor
-    BaseAS(uint32_t myasn=0, 
-        std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv=NULL,
-        std::set<uint32_t> *prov=NULL, 
-        std::set<uint32_t> *peer=NULL,
-        std::set<uint32_t> *cust=NULL) : ran_bool(myasn) {
+    BaseAS(uint32_t myasn=0, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results=NULL) : ran_bool(myasn) {
 
         // Set ASN
         asn = myasn;
@@ -85,29 +81,15 @@ public:
         rank = -1;     
         
         // Create AS relationship sets
-        if (prov == NULL) {
-            providers = new std::set<uint32_t>;
-        } else {
-            providers = prov;
-        }
+        providers = new std::set<uint32_t>();
+        peers = new std::set<uint32_t>();
+        customers = new std::set<uint32_t>();
 
-        if (peer == NULL) {
-            peers = new std::set<uint32_t>;
-        } else {
-            peers = peer;
-        }
-
-        if (cust == NULL) {
-            customers = new std::set<uint32_t>;
-        } else {
-            customers = cust;
-        }
-
-        inverse_results = inv;                      // Inverted results map
-        member_ases = new std::vector<uint32_t>;    // Supernode members
-        incoming_announcements = new std::vector<AnnouncementType>;
-        all_anns = new std::map<Prefix<>, AnnouncementType>;
-        depref_anns = new std::map<Prefix<>, AnnouncementType>;
+        this->inverse_results = inverse_results;    // Inverted results map
+        member_ases = new std::vector<uint32_t>();    // Supernode members
+        incoming_announcements = new std::vector<AnnouncementType>();
+        all_anns = new std::map<Prefix<>, AnnouncementType>();
+        depref_anns = new std::map<Prefix<>, AnnouncementType>();
         // Tarjan variables
         index = -1;
         onStack = false;
@@ -133,7 +115,7 @@ public:
 
     template <class U>
     friend std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as);
-    virtual std::ostream& stream_announcements(std:: ostream &os);
-    virtual std::ostream& stream_depref(std:: ostream &os);
+    virtual std::ostream& stream_announcements(std::ostream &os);
+    virtual std::ostream& stream_depref(std::ostream &os);
 };
 #endif

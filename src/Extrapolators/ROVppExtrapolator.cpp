@@ -26,17 +26,14 @@
 #include "TableNames.h"
 #include "ASes/ROVppAS.h"
 
-ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
-                                     std::string r,
-                                     std::string e,
-                                     std::string f,
-                                     uint32_t iteration_size)
+ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_table,
+                                     std::string results_table,
+                                     std::string victim_table,
+                                     std::string attacker_table)
     : BaseExtrapolator(false) {
         
-    it_size = iteration_size;   // Number of prefix to be precessed per iteration (currently not being used)
-
     graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(g, r, e, f);
+    querier = new ROVppSQLQuerier(policy_table, results_table, victim_table, attacker_table);
 }
 
 ROVppExtrapolator::~ROVppExtrapolator() {}

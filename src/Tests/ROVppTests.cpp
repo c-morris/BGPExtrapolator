@@ -1138,7 +1138,7 @@ bool test_best_alternative_route() {
 bool test_rovpp_tiebreak_override() {
     ROVppExtrapolator e = ROVppExtrapolator();
     // disable random tiebreaks, instead use lowest ASN
-    e.random = false;
+    e.random_tiebraking = false;
     e.graph->add_relationship(1, 2, AS_REL_PROVIDER);
     e.graph->add_relationship(2, 1, AS_REL_CUSTOMER);
     e.graph->add_relationship(4, 1, AS_REL_PROVIDER);

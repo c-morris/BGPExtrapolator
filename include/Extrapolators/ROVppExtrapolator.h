@@ -30,10 +30,9 @@
 
 struct ROVppExtrapolator: public BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph, ROVppAnnouncement, ROVppAS> {
     ROVppExtrapolator(std::vector<std::string> g=std::vector<std::string>(),
-                      std::string r=RESULTS_TABLE,
-                      std::string e=VICTIM_TABLE,
-                      std::string f=ATTACKER_TABLE,
-                      uint32_t iteration_size=false);
+                      std::string results_table=RESULTS_TABLE,
+                      std::string victim_table=VICTIM_TABLE,
+                      std::string attacker_table=ATTACKER_TABLE);
     ~ROVppExtrapolator();
 
     void perform_propagation(bool propogate_twice);

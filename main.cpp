@@ -136,8 +136,7 @@ int main(int argc, char *argv[]) {
                 VICTIM_TABLE),
             (vm.count("attacker-table") ?
                 vm["attacker-table"].as<string>() : 
-                ATTACKER_TABLE),
-            (vm["iteration-size"].as<uint32_t>()));
+                ATTACKER_TABLE));
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();

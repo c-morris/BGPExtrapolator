@@ -16,7 +16,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::i
     }
 
     // Generate required tables
-    if (this->invert) {
+    if (this->store_invert_results) {
         this->querier->clear_inverse_from_db();
         this->querier->create_inverse_results_tbl();
     } else {
@@ -24,7 +24,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::i
         this->querier->create_results_tbl();
     }
 
-    if (this->depref) {
+    if (this->store_depref_results) {
         this->querier->clear_depref_from_db();
         this->querier->create_depref_tbl();
     }
@@ -94,7 +94,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     */
     
     // If the subnet count is within size constraint
-    if (r[0][0].as<uint32_t>() < this->it_size) {
+    if (r[0][0].as<uint32_t>() < this->iteration_size) {
         // Add to subnet block vector
         if (r[0][0].as<uint32_t>() > 0) {
             Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask);
@@ -264,19 +264,19 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                 continue;
             } else if (ann_to_check_for.tstamp == search->second.tstamp) {
                 // Tie breaker for equal timestamp
-                bool value = true;
+                bool keep_first = true;
                 // Random tiebreak if enabled
-                if (this->random == true) {
-                    value = as_on_path->get_random();
+                if (this->random_tiebraking) {
+                    keep_first = as_on_path->get_random();
                 }
 
                 // Log annoucements with equal timestamps 
                 Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << ann_to_check_for.prefix.to_cidr() << 
-                    ", rand value: " << value << ", tstamp on announcements: " << ann_to_check_for.tstamp << 
+                    ", rand value: " << keep_first << ", tstamp on announcements: " << ann_to_check_for.tstamp << 
                     ", origin on ann_to_check_for: " << ann_to_check_for.origin << ", origin on stored announcement: " << search->second.origin;
 
                 // First come, first saved if random is disabled
-                if (value) {
+                if (keep_first) {
                     continue;
                 } else {
                     // Position of previous AS on path
@@ -342,7 +342,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                                                     timestamp,
                                                     true);
             // Send the announcement to the current AS
-            as_on_path->process_announcement(ann, this->random);
+            as_on_path->process_announcement(ann, this->random_tiebraking);
             if (this->graph->inverse_results != NULL) {
                 auto set = this->graph->inverse_results->find(
                         std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));

@@ -53,14 +53,14 @@ public:
     //Number of "ASes" between the attacker and the origin
     uint32_t num_between;
 
-    EZExtrapolator(bool random = true,
-                    bool invert_results = true, 
-                    bool store_depref = false, 
-                    std::string a = ANNOUNCEMENTS_TABLE,
-                    std::string r = RESULTS_TABLE, 
-                    std::string i = INVERSE_RESULTS_TABLE, 
-                    std::string d = DEPREF_RESULTS_TABLE, 
-                    uint32_t iteration_size = false,
+    EZExtrapolator(bool random_tiebraking = true,
+                    bool store_invert_results = true, 
+                    bool store_depref_results = false, 
+                    std::string announcement_table = ANNOUNCEMENTS_TABLE,
+                    std::string results_table = RESULTS_TABLE, 
+                    std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
+                    std::string depref_results_table = DEPREF_RESULTS_TABLE, 
+                    uint32_t iteration_size = 0,
                     uint32_t num_rounds = 10,
                     uint32_t num_between = 0);
                     

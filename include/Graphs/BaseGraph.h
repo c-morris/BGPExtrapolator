@@ -72,31 +72,7 @@ public:
                                                 std::set<uint32_t>*>;
     }
 
-    virtual ~BaseGraph() {
-        for (auto const& as : *ases) {
-            delete as.second;
-        }
-        delete ases;
-        
-        for (auto const& as : *ases_by_rank) {
-            delete as;
-        }
-        delete ases_by_rank;
-
-        for (auto const& c : *components) {
-            delete c;
-        }
-        delete components;
-
-        for (auto const& i : *inverse_results) {
-            delete i.second;
-        }
-        delete inverse_results;
-
-        delete component_translation;
-        delete stubs_to_parents;
-        delete non_stubs;
-    }
+    virtual ~BaseGraph();
 
     //Creation of template type
     virtual ASType* createNew(uint32_t asn) = 0;

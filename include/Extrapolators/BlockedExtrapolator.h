@@ -6,19 +6,18 @@
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 class BlockedExtrapolator : public BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>  {
 protected:
+    uint32_t iteration_size;
+
     virtual void init();
     virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
 
 public:
-    BlockedExtrapolator(bool random_b=true,
-                        bool invert_results=true, 
-                        bool store_depref=false, 
-                        std::string a=ANNOUNCEMENTS_TABLE,
-                        std::string r=RESULTS_TABLE, 
-                        std::string i=INVERSE_RESULTS_TABLE, 
-                        std::string d=DEPREF_RESULTS_TABLE, 
-                        uint32_t iteration_size=false) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_b, invert_results, store_depref, a, r, i, d, iteration_size) {
+    BlockedExtrapolator(bool random_tiebraking = true,
+                        bool store_invert_results = true, 
+                        bool store_depref_results = false, 
+                        uint32_t iteration_size = 0) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_invert_results, store_depref_results) {
         
+        this->iteration_size = iteration_size;
     }
     
     virtual ~BlockedExtrapolator();

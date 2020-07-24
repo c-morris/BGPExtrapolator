@@ -32,10 +32,10 @@ public:
     std::string attack_table;
     std::vector<std::string> policy_tables;
     
-    ROVppSQLQuerier(std::vector<std::string> g,
-                    std::string r=RESULTS_TABLE,
-                    std::string e=VICTIM_TABLE,
-                    std::string f=ATTACKER_TABLE);
+    ROVppSQLQuerier(std::vector<std::string> policy_table,
+                    std::string results_table=RESULTS_TABLE,
+                    std::string victim_table=VICTIM_TABLE,
+                    std::string attacker_table=ATTACKER_TABLE);
     ~ROVppSQLQuerier();
 
     pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));

@@ -27,11 +27,8 @@ bool ROVppAS::graph_changed = false;
 
 ROVppAS::ROVppAS(uint32_t myasn,
                  std::set<uint32_t> *rovpp_attackers,
-                 std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inv,
-                 std::set<uint32_t> *prov,
-                 std::set<uint32_t> *peer,
-                 std::set<uint32_t> *cust)
-    : BaseAS(myasn, inv, prov, peer, cust)  {
+                 std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results)
+    : BaseAS(myasn, inverse_results)  {
     // Save reference to attackers
     attackers = rovpp_attackers;
     bad_neighbors = new std::set<uint32_t>;

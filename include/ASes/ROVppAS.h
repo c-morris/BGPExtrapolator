@@ -83,10 +83,7 @@ public:
     // Constructor
     ROVppAS(uint32_t myasn=0,
             std::set<uint32_t> *attackers=NULL,
-            std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL,
-            std::set<uint32_t> *prov=NULL, 
-            std::set<uint32_t> *peer=NULL,
-            std::set<uint32_t> *cust=NULL);
+            std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL);
 
     ~ROVppAS();
     
