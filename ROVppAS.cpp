@@ -441,8 +441,8 @@ void ROVppAS::process_announcements(bool ran) {
                     if (pass_rov(ann)) {
                         passed_rov->insert(ann);
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP &&
-                            policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE &&
+                        if ((policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
+                            policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) &&
                             bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
                             ann.alt = ATTACKER_ON_ROUTE_FLAG;
                         } else {
