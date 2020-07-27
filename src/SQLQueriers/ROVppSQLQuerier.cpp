@@ -26,18 +26,23 @@
 
 /** Constructor
  */
-ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> g,
-                                 std::string r,
-                                 std::string e, 
-                                 std::string f) 
-    : SQLQuerier() {
-    results_table = r;
-    victim_table = e;
-    attack_table = f;
-    policy_tables = g;
+ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> policy_tables /* = std::vector<std::string>() */,
+                                    std::string announcement_table /* = ROVPP_ANNOUNCEMENTS_TABLE */,
+                                    std::string results_table /* = ROVPP_RESULTS_TABLE */,
+                                    std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
+                                    std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
+                                    std::string victim_table /* = ROVPP_VICTIM_TABLE */,
+                                    std::string attacker_table /* = ROVPP_ATTACKER_TABLE */)
+    : SQLQuerier(announcements_table, results_table, inverse_results_table, depref_results_table) {
+    
+    this->policy_tables = policy_tables;
+    this->results_table = results_table;
+    this->victim_table = victim_table;
+    this->attack_table = attacker_table;
 }
 
 ROVppSQLQuerier::~ROVppSQLQuerier() {
+
 }
 
 

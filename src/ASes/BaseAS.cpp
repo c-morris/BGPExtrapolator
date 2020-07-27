@@ -160,28 +160,26 @@ void BaseAS<AnnouncementType>::process_announcement(AnnouncementType &ann, bool 
 
             // Defaults to first come, first kept if not random
             if (value) {
+                // Update inverse results
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+
                 // Use the new announcement
                 if (search_depref == depref_anns->end()) {
-                    // Update inverse results
-                    swap_inverse_result(
-                        std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                        std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                    
                     // Insert depref ann
                     depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(search->second.prefix, 
                                                                         search->second));
                     search->second = ann;
                 } else {
-                    swap_inverse_result(
-                        std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                        std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                     search_depref->second = search->second;
                     search->second = ann;
                 }
             } else {
                 // Use the old announcement
                 if (search_depref == depref_anns->end()) {
-                    depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(ann.prefix, 
-                                                                        ann));
+                    depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(ann.prefix, ann));
                 } else {
                     // Replace second best with the old priority announcement
                     search_depref->second = ann;

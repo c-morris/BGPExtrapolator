@@ -23,19 +23,20 @@
 
 #include "Extrapolators/Extrapolator.h"
 
-Extrapolator::Extrapolator(bool random_tiebraking /* = true */,
-                 bool store_invert_results /* = true */, 
-                 bool store_depref_results /* = false */, 
-                 std::string announcement_table /* = ANNOUNCEMENTS_TABLE */,
-                 std::string results_table /* = RESULTS_TABLE */, 
-                 std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
-                 std::string depref_results_table /* = DEPREF_RESULTS_TABLE */, 
-                 uint32_t iteration_size /* = false */) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
+Extrapolator::Extrapolator(bool random_tiebraking,
+                            bool store_invert_results, 
+                            bool store_depref_results, 
+                            std::string announcement_table,
+                            std::string results_table, 
+                            std::string inverse_results_table, 
+                            std::string depref_results_table, 
+                            uint32_t iteration_size) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
 
     graph = new ASGraph();
     querier = new SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table);
 }
 
-Extrapolator::~Extrapolator() {
-    
-}
+Extrapolator::Extrapolator() : Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE) { }
+
+Extrapolator::~Extrapolator() { }

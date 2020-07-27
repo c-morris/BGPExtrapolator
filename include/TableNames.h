@@ -24,24 +24,34 @@
 #ifndef TABLENAMES_H
 #define TABLENAMES_H
 
+//Vanilla Tables
 #define RESULTS_TABLE "extrapolation_results"
 #define DEPREF_RESULTS_TABLE "extrapolation_deprefer_results"
 #define INVERSE_RESULTS_TABLE "extrapolation_inverse_results"
 #define PEERS_TABLE "peers"
 #define CUSTOMER_PROVIDER_TABLE "provider_customers"
-#define ROAS_TABLE "roas"
 #define STUBS_TABLE "stubs"
 #define NON_STUBS_TABLE "non_stubs"
 #define SUPERNODES_TABLE "supernodes"
 #define ANNOUNCEMENTS_TABLE "mrt_w_roas"
 
 // ROV++ Tables
-#define POLICY_TABLE "rovpp_ases"
-#define TOP_TABLE "rovpp_top_100_ases"
-#define ETC_TABLE "rovpp_etc_ases"
-#define EDGE_TABLE "rovpp_edge_ases"
-#define VICTIM_TABLE "victims"
-#define ATTACKER_TABLE "attackers"
+#define ROVPP_POLICY_TABLE "rovpp_ases"
+#define ROVPP_TOP_TABLE "rovpp_top_100_ases"
+#define ROVPP_ETC_TABLE "rovpp_etc_ases"
+#define ROVPP_EDGE_TABLE "rovpp_edge_ases"
+#define ROVPP_VICTIM_TABLE "victims"
+#define ROVPP_ATTACKER_TABLE "attackers"
 #define ROVPP_BLACKHOLES_TABLE "rovpp_blackholes"
+#define ROVPP_ROAS_TABLE "roas"
+
+#define ROVPP_RESULTS_TABLE "rovpp_extrapolation_results"
+#define ROVPP_PEERS_TABLE "rovpp_peers"
+#define ROVPP_CUSTOMER_PROVIDER_TABLE "rovpp_customer_providers"
+#define ROVPP_ANNOUNCEMENTS_TABLE "mrt_w_roas"
+
+//EzBGPsec Tables
+#define EZBGPSEC_AS_CATAGORIES_TABLE "good_customer_pairs"
+#define EZBGPSEC_ANNOUNCEMENTS_TABLE "good_customer_pairs_ann"
 
 #endif

@@ -23,11 +23,14 @@
 
 #include "SQLQueriers/SQLQuerier.h"
 
-SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string d) {
-    announcements_table = a;
-    results_table = r;
-    depref_table = d;
-    inverse_results_table = i;
+SQLQuerier::SQLQuerier(std::string announcement_table /* = ANNOUNCEMENTS_TABLE */,
+                        std::string results_table /* = RESULTS_TABLE */, 
+                        std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
+                        std::string depref_results_table /* = DEPREF_RESULTS_TABLE */) {
+    this->announcements_table = announcements_table;
+    this->results_table = results_table;
+    this->depref_table = depref_results_table;
+    this->inverse_results_table = inverse_results_table;
     
     // Default host and port numbers
     // Strings for connection arg
@@ -38,7 +41,7 @@ SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string 
     open_connection();
 }
 
-SQLQuerier::~SQLQuerier(){
+SQLQuerier::~SQLQuerier() {
     C->disconnect();
     delete C;
 }
@@ -46,7 +49,7 @@ SQLQuerier::~SQLQuerier(){
 
 /** Reads credentials/connection info from .conf file
  */
-void SQLQuerier::read_config(){
+void SQLQuerier::read_config() {
     using namespace std;
     string file_location = "/etc/bgp/bgp.conf";
     ifstream cFile(file_location);
@@ -95,7 +98,7 @@ void SQLQuerier::read_config(){
 
 /** Opens a connection to the SQL database.
  */
-void SQLQuerier::open_connection(){
+void SQLQuerier::open_connection() {
     std::ostringstream stream;
     stream << "dbname = " << db_name;
     stream << " user = " << user;
@@ -120,7 +123,7 @@ void SQLQuerier::open_connection(){
 
 /** Closes the connection to the SQL database.
  */
-void SQLQuerier::close_connection(){
+void SQLQuerier::close_connection() {
     C->disconnect();
 }
 
@@ -130,7 +133,7 @@ void SQLQuerier::close_connection(){
  *  @param sql
  *  @param insert
  */
-pqxx::result SQLQuerier::execute(std::string sql, bool insert){
+pqxx::result SQLQuerier::execute(std::string sql, bool insert) {
     pqxx::result R;
     if(insert){
         //TODO maybe make one work object once on construction
@@ -161,7 +164,7 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert){
  *  @param table_name The name of the table to SELECT from
  *  @param limit The limit of the number of values to SELECT
  */
-pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
+pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit) {
     std::string sql = "SELECT * FROM " + table_name;
     if (limit) {
         sql += " LIMIT " + std::to_string(limit);
@@ -174,7 +177,7 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit){
  *
  * @param p The prefix for which we SELECT
  */
-pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
+pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
     sql += " WHERE prefix = \'" + cidr + "\';";
@@ -186,7 +189,7 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p){
  *
  * @param p The prefix for which we SELECT
  */
-pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p){
+pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
     sql += " WHERE prefix = \'" + cidr + "\';";
@@ -198,7 +201,7 @@ pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p){
  *
  * @param p The prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p){
+pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
@@ -210,7 +213,7 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p){
  *
  * @param p The prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
+pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
     sql += " WHERE prefix <<= \'" + cidr + "\';";
@@ -220,7 +223,7 @@ pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p){
 
 /** this should use the STUBS_TABLE macro
  */
-void SQLQuerier::clear_stubs_from_db(){
+void SQLQuerier::clear_stubs_from_db() {
     std::string sql = std::string("DROP TABLE IF EXISTS " STUBS_TABLE ";");
     execute(sql);
 }
@@ -228,7 +231,7 @@ void SQLQuerier::clear_stubs_from_db(){
 
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
-void SQLQuerier::clear_non_stubs_from_db(){
+void SQLQuerier::clear_non_stubs_from_db() {
     std::string sql = std::string("DROP TABLE IF EXISTS " NON_STUBS_TABLE ";");
     execute(sql);
 }
@@ -236,7 +239,7 @@ void SQLQuerier::clear_non_stubs_from_db(){
 
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
-void SQLQuerier::clear_supernodes_from_db(){
+void SQLQuerier::clear_supernodes_from_db() {
     std::string sql = std::string("DROP TABLE IF EXISTS " SUPERNODES_TABLE ";");
     execute(sql);
 }
@@ -244,7 +247,7 @@ void SQLQuerier::clear_supernodes_from_db(){
 
 /** Instantiates a new, empty stubs table in the database, if it doesn't exist.
  */
-void SQLQuerier::create_stubs_tbl(){
+void SQLQuerier::create_stubs_tbl() {
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " STUBS_TABLE " (stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint);");
     std::cout << "Creating stubs table..." << std::endl;
     execute(sql, false);
@@ -253,7 +256,7 @@ void SQLQuerier::create_stubs_tbl(){
 
 /** Instantiates a new, empty non_stubs table in the database, if it doesn't exist.
  */
-void SQLQuerier::create_non_stubs_tbl(){
+void SQLQuerier::create_non_stubs_tbl() {
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " NON_STUBS_TABLE " (non_stub_asn BIGSERIAL PRIMARY KEY);");
     std::cout << "Creating non_stubs table..." << std::endl;
     execute(sql, false);
@@ -262,7 +265,7 @@ void SQLQuerier::create_non_stubs_tbl(){
 
 /**  Instantiates a new, empty supernodes table in the database, if it doesn't exist.
  */
-void SQLQuerier::create_supernodes_tbl(){
+void SQLQuerier::create_supernodes_tbl() {
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " SUPERNODES_TABLE "(supernode_asn BIGSERIAL PRIMARY KEY, supernode_lowest_asn bigint)");
     std::cout << "Creating supernodes table..." << std::endl;
     execute(sql, false);
@@ -271,7 +274,7 @@ void SQLQuerier::create_supernodes_tbl(){
 
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
-void SQLQuerier::copy_stubs_to_db(std::string file_name){
+void SQLQuerier::copy_stubs_to_db(std::string file_name) {
     std::string sql = "COPY " STUBS_TABLE "(stub_asn,parent_asn) FROM '" +
                       file_name + "' WITH (FORMAT csv)";
     execute(sql);
@@ -280,7 +283,7 @@ void SQLQuerier::copy_stubs_to_db(std::string file_name){
 
 /** Takes a .csv filename and bulk copies all elements to the non-stubs table.
  */
-void SQLQuerier::copy_non_stubs_to_db(std::string file_name){
+void SQLQuerier::copy_non_stubs_to_db(std::string file_name) {
     std::string sql = "COPY " NON_STUBS_TABLE "(non_stub_asn) FROM '" +
                       file_name + "' WITH (FORMAT csv)";
     execute(sql);
@@ -289,7 +292,7 @@ void SQLQuerier::copy_non_stubs_to_db(std::string file_name){
 
 /** Takes a .csv filename and bulk copies all elements to the supernodes table.
  */
-void SQLQuerier::copy_supernodes_to_db(std::string file_name){
+void SQLQuerier::copy_supernodes_to_db(std::string file_name) {
     std::string sql = "COPY " SUPERNODES_TABLE "(supernode_asn,supernode_lowest_asn) FROM '" +
                       file_name + "' WITH (FORMAT csv)";
     execute(sql);
@@ -298,7 +301,7 @@ void SQLQuerier::copy_supernodes_to_db(std::string file_name){
 
 /** Drop the Querier's results table.
  */
-void SQLQuerier::clear_results_from_db(){
+void SQLQuerier::clear_results_from_db() {
     std::string sql = std::string("DROP TABLE IF EXISTS " + results_table + ";");
     execute(sql);
 }
@@ -306,7 +309,7 @@ void SQLQuerier::clear_results_from_db(){
 
 /** Drop the Querier's depref table.
  */
-void SQLQuerier::clear_depref_from_db(){
+void SQLQuerier::clear_depref_from_db() {
     std::string sql = std::string("DROP TABLE IF EXISTS " + depref_table + ";");
     execute(sql);
 }
@@ -314,7 +317,7 @@ void SQLQuerier::clear_depref_from_db(){
 
 /** Drop the Querier's inverse results table.
  */
-void SQLQuerier::clear_inverse_from_db(){
+void SQLQuerier::clear_inverse_from_db() {
     std::string sql = std::string("DROP TABLE IF EXISTS " + inverse_results_table + ";");
     execute(sql);
 }
@@ -322,7 +325,7 @@ void SQLQuerier::clear_inverse_from_db(){
 
 /** Instantiates a new, empty results table in the database, dropping the old table.
  */
-void SQLQuerier::create_results_tbl(){
+void SQLQuerier::create_results_tbl() {
     /**
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (ann_id serial PRIMARY KEY,\
     */
@@ -336,7 +339,7 @@ void SQLQuerier::create_results_tbl(){
 
 /** Instantiates a new, empty depref table in the database, dropping the old table.
  */
-void SQLQuerier::create_depref_tbl(){
+void SQLQuerier::create_depref_tbl() {
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint, time bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
@@ -347,7 +350,7 @@ void SQLQuerier::create_depref_tbl(){
 
 /** Instantiates a new, empty inverse results table in the database, dropping the old table.
  */
-void SQLQuerier::create_inverse_results_tbl(){
+void SQLQuerier::create_inverse_results_tbl() {
     std::string sql;
     sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS ") + inverse_results_table + 
     "(asn bigint,prefix cidr, origin bigint) ";
@@ -360,7 +363,7 @@ void SQLQuerier::create_inverse_results_tbl(){
 
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
-void SQLQuerier::copy_results_to_db(std::string file_name){
+void SQLQuerier::copy_results_to_db(std::string file_name) {
     std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn, time)") +
                                   "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
@@ -369,7 +372,7 @@ void SQLQuerier::copy_results_to_db(std::string file_name){
 
 /** Takes a .csv filename and bulk copies all elements to the depref table.
  */
-void SQLQuerier::copy_depref_to_db(std::string file_name){
+void SQLQuerier::copy_depref_to_db(std::string file_name) {
     std::string sql = std::string("COPY " + depref_table + "(asn, prefix, origin, received_from_asn, time)") +
                                   "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);
@@ -378,7 +381,7 @@ void SQLQuerier::copy_depref_to_db(std::string file_name){
 
 /** Takes a .csv filename and bulk copies all elements to the inverse results table.
  */
-void SQLQuerier::copy_inverse_results_to_db(std::string file_name){
+void SQLQuerier::copy_inverse_results_to_db(std::string file_name) {
     std::string sql = std::string("COPY " + inverse_results_table + "(asn, prefix, origin)") +
                                   "FROM '" + file_name + "' WITH (FORMAT csv)";
     execute(sql);

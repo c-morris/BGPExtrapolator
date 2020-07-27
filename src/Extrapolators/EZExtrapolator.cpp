@@ -3,16 +3,16 @@
 //Need to check if the origin can reach the victim!
 //Attacker is checked for this, the origin needs to as well
 
-EZExtrapolator::EZExtrapolator(bool random_tiebraking /* = true */,
-                 bool store_invert_results /* = true */, 
-                 bool store_depref_results /* = false */, 
-                 std::string announcement_table /* = ANNOUNCEMENTS_TABLE */,
-                 std::string results_table /* = RESULTS_TABLE */, 
-                 std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
-                 std::string depref_results_table /* = DEPREF_RESULTS_TABLE */, 
-                 uint32_t iteration_size /* = 0 */,
-                 uint32_t num_rounds /* = 10 */,
-                 uint32_t num_between /* = 0 */) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
+EZExtrapolator::EZExtrapolator(bool random_tiebraking,
+                                bool store_invert_results, 
+                                bool store_depref_results, 
+                                std::string announcement_table,
+                                std::string results_table, 
+                                std::string inverse_results_table, 
+                                std::string depref_results_table, 
+                                uint32_t iteration_size,
+                                uint32_t num_rounds,
+                                uint32_t num_between) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table);
@@ -25,9 +25,12 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking /* = true */,
     this->num_between = num_between;
 }
 
-EZExtrapolator::~EZExtrapolator() {
+EZExtrapolator::EZExtrapolator() 
+    : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE, 
+                        DEFAULT_NUM_ROUNDS, DEFAULT_NUM_ASES_BETWEEN_ATTACKER) { }
 
-}
+EZExtrapolator::~EZExtrapolator() { }
 
 void EZExtrapolator::init() {
     BlockedExtrapolator::init();

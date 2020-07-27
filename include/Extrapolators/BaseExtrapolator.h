@@ -24,6 +24,10 @@
 #ifndef BASE_EXTRAPOLATOR_H
 #define BASE_EXTRAPOLATOR_H
 
+#define DEFAULT_RANDOM_TIEBRAKING true
+#define DEFAULT_STORE_INVERT_RESULTS true
+#define DEFAULT_STORE_DEPREF_RESULTS false
+
 #include <vector>
 #include <bits/stdc++.h>
 #include <iostream>
@@ -110,19 +114,29 @@ public:
     bool store_invert_results; // If inverted results are enabled
     bool store_depref_results; // If depref results are enabled
 
-    BaseExtrapolator(bool random_tiebraking = true,
-                        bool store_invert_results = true, 
-                        bool store_depref_results = false) {
+    BaseExtrapolator(bool random_tiebraking,
+                        bool store_invert_results, 
+                        bool store_depref_results) {
 
         this->random_tiebraking = random_tiebraking;       // True to enable random tiebreaks
         this->store_invert_results = store_invert_results; // True to store the results inverted
         this->store_depref_results = store_depref_results; // True to store the second best ann for depref
         
         // The child will initialize these properly right after this constructor returns
-        //That way they can give the variable a proper type
+        // That way they can give the variable a proper type
         graph = NULL;
         querier = NULL;
     }
+
+    /**
+     * Default constructor. Leaves the graph and querier NULL to be created by the inherited child. 
+     * 
+     * Default Values:
+     *  - random_tiebraking = true
+     *  - store_invert_results = true
+     *  - store_depref_results = false
+     */
+    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS) { }
 
     virtual ~BaseExtrapolator();
 
@@ -139,7 +153,7 @@ public:
 
     /** Check for loops in the path and drop announcement if they exist
     */
-    virtual bool find_loop(std::vector<uint32_t>*);
+    virtual bool find_loop(std::vector<uint32_t>* as_path);
 
     /** Propagate announcements from customers to peers and providers ASes.
     */

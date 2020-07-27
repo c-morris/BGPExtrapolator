@@ -29,10 +29,15 @@
 #include "Announcements/ROVppAnnouncement.h"
 
 struct ROVppExtrapolator: public BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph, ROVppAnnouncement, ROVppAS> {
-    ROVppExtrapolator(std::vector<std::string> g=std::vector<std::string>(),
-                      std::string results_table=RESULTS_TABLE,
-                      std::string victim_table=VICTIM_TABLE,
-                      std::string attacker_table=ATTACKER_TABLE);
+    ROVppExtrapolator(std::vector<std::string> policy_tables,
+                        std::string announcement_table,
+                        std::string results_table,
+                        std::string inverse_results_table, 
+                        std::string depref_results_table,
+                        std::string victim_table,
+                        std::string attacker_table);
+
+    ROVppExtrapolator();
     ~ROVppExtrapolator();
 
     void perform_propagation(bool propogate_twice);

@@ -1,6 +1,8 @@
 #ifndef BLOCKED_EXTRAPOLATOR_H
 #define BLOCKED_EXTRAPOLATOR_H
 
+#define DEFAULT_ITERATION_SIZE 50000
+
 #include "Extrapolators/BaseExtrapolator.h"
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -12,13 +14,15 @@ protected:
     virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
 
 public:
-    BlockedExtrapolator(bool random_tiebraking = true,
-                        bool store_invert_results = true, 
-                        bool store_depref_results = false, 
-                        uint32_t iteration_size = 0) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_invert_results, store_depref_results) {
+    BlockedExtrapolator(bool random_tiebraking,
+                        bool store_invert_results, 
+                        bool store_depref_results,
+                        uint32_t iteration_size) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_invert_results, store_depref_results) {
         
         this->iteration_size = iteration_size;
     }
+
+    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE) { }
     
     virtual ~BlockedExtrapolator();
 

@@ -28,15 +28,16 @@
 
 class Extrapolator : public BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS> {
 public:
-    Extrapolator(bool random_tiebraking = true,
-                    bool store_invert_results = true, 
-                    bool store_depref_results = false, 
-                    std::string announcement_table = ANNOUNCEMENTS_TABLE,
-                    std::string results_table = RESULTS_TABLE, 
-                    std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
-                    std::string depref_results_table = DEPREF_RESULTS_TABLE, 
-                    uint32_t iteration_size = false);
+    Extrapolator(bool random_tiebraking,
+                    bool store_invert_results, 
+                    bool store_depref_results, 
+                    std::string announcement_table,
+                    std::string results_table, 
+                    std::string inverse_results_table, 
+                    std::string depref_results_table, 
+                    uint32_t iteration_size);
 
+    Extrapolator();
     ~Extrapolator();
 
 };

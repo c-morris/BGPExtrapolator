@@ -26,17 +26,22 @@
 #include "TableNames.h"
 #include "ASes/ROVppAS.h"
 
-ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_table,
-                                     std::string results_table,
-                                     std::string victim_table,
-                                     std::string attacker_table)
-    : BaseExtrapolator(false) {
+ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
+                                        std::string announcement_table,
+                                        std::string results_table,
+                                        std::string inverse_results_table, 
+                                        std::string depref_results_table,
+                                        std::string victim_table,
+                                        std::string attacker_table)
+    : BaseExtrapolator(false, false, false) {
         
     graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(policy_table, results_table, victim_table, attacker_table);
+    querier = new ROVppSQLQuerier(policy_tables, results_table, victim_table, attacker_table);
 }
 
-ROVppExtrapolator::~ROVppExtrapolator() {}
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, ROVPP_VICTIM_TABLE, ROVPP_ATTACKER_TABLE) { }
+
+ROVppExtrapolator::~ROVppExtrapolator() { }
 
 /** Performs propagation up and down twice. First once with the Victim prefix pairs,
  * then a second time once with the Attacker prefix pairs.

@@ -1,6 +1,9 @@
 #ifndef EZ_EXTRAPLATOR_H
 #define EZ_EXTRAPLATOR_H
 
+#define DEFAULT_NUM_ROUNDS 1
+#define DEFAULT_NUM_ASES_BETWEEN_ATTACKER 0
+
 #include "Extrapolators/BlockedExtrapolator.h"
 
 #include "SQLQueriers/EZSQLQuerier.h"
@@ -53,17 +56,18 @@ public:
     //Number of "ASes" between the attacker and the origin
     uint32_t num_between;
 
-    EZExtrapolator(bool random_tiebraking = true,
-                    bool store_invert_results = true, 
-                    bool store_depref_results = false, 
-                    std::string announcement_table = ANNOUNCEMENTS_TABLE,
-                    std::string results_table = RESULTS_TABLE, 
-                    std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
-                    std::string depref_results_table = DEPREF_RESULTS_TABLE, 
-                    uint32_t iteration_size = 0,
-                    uint32_t num_rounds = 10,
-                    uint32_t num_between = 0);
-                    
+    EZExtrapolator(bool random_tiebraking,
+                    bool store_invert_results, 
+                    bool store_depref_results, 
+                    std::string announcement_table,
+                    std::string results_table, 
+                    std::string inverse_results_table, 
+                    std::string depref_results_table, 
+                    uint32_t iteration_size,
+                    uint32_t num_rounds,
+                    uint32_t num_between);
+    
+    EZExtrapolator();
     ~EZExtrapolator();
 
     void init();

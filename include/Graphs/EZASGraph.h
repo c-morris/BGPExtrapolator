@@ -25,5 +25,4 @@ public:
     void distributeAttackersVictims(SQLQuerier* querier);
     void process(SQLQuerier* querier);
 };
-
 #endif
