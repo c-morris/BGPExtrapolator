@@ -134,12 +134,6 @@ int main(int argc, char *argv[]) {
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 ROVPP_RESULTS_TABLE),
-            (vm.count("inverse-results-table") ?
-                vm["inverse-results-table"].as<string>() : 
-                INVERSE_RESULTS_TABLE),
-            (vm.count("depref-table") ?
-                vm["depref-table"].as<string>() : 
-                DEPREF_RESULTS_TABLE),
             (vm.count("victim-table") ?
                 vm["victim-table"].as<string>() : 
                 ROVPP_VICTIM_TABLE),

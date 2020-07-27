@@ -29,8 +29,6 @@
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string announcement_table,
                                         std::string results_table,
-                                        std::string inverse_results_table, 
-                                        std::string depref_results_table,
                                         std::string victim_table,
                                         std::string attacker_table)
     : BaseExtrapolator(false, false, false) {
@@ -39,7 +37,7 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
     querier = new ROVppSQLQuerier(policy_tables, results_table, victim_table, attacker_table);
 }
 
-ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, ROVPP_VICTIM_TABLE, ROVPP_ATTACKER_TABLE) { }
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_VICTIM_TABLE, ROVPP_ATTACKER_TABLE) { }
 
 ROVppExtrapolator::~ROVppExtrapolator() { }
 
