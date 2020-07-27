@@ -31,10 +31,11 @@
 
 class AS : public BaseAS<Announcement> {
 public:
-    AS(uint32_t myasn=0, 
-        std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results=NULL) : BaseAS(myasn, inverse_results) {
+    AS(uint32_t asn, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
+    AS(uint32_t asn);
+    AS();
 
-    }
+    ~AS();
 };
 
 #endif

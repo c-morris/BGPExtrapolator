@@ -73,10 +73,10 @@ public:
     bool onStack;
     
     // Constructor
-    BaseAS(uint32_t myasn=0, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results=NULL) : ran_bool(myasn) {
+    BaseAS(uint32_t asn, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) : ran_bool(asn) {
 
         // Set ASN
-        asn = myasn;
+        this->asn = asn;
         // Initialize AS to invalid rank
         rank = -1;     
         
@@ -94,6 +94,10 @@ public:
         index = -1;
         onStack = false;
     }
+
+    BaseAS(uint32_t asn) : BaseAS(asn, NULL) { }
+
+    BaseAS() : BaseAS(0, NULL) { }
 
     virtual ~BaseAS();
     

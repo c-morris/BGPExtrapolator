@@ -45,7 +45,7 @@ void EZASGraph::distributeAttackersVictims(SQLQuerier* querier) {
     uint32_t attacker; 
     uint32_t victim2;
 
-    for(int i = 0; i < triples.size(); i++) {
+    for(unsigned int i = 0; i < triples.size(); i++) {
         triples[i]["victim_1"].to(victim1);
         triples[i]["attacker"].to(attacker);
         triples[i]["victim_2"].to(victim2);

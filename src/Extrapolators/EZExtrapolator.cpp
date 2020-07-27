@@ -55,7 +55,7 @@ void EZExtrapolator::perform_propagation() {
     std::ofstream ezStatistics("EZStatistics.csv");
     ezStatistics << "Round,Successful Attacks,Successful Connections,Disconnections,Total Attacks,Probability Successful Attack" << std::endl;
 
-    int round = 0;
+    uint32_t round = 0;
 
     //Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
     //Runs until no more attacks (guaranteed to terminate since the edge to the neighebor is removed after an attack)

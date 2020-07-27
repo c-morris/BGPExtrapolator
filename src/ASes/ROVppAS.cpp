@@ -25,22 +25,22 @@
 
 bool ROVppAS::graph_changed = false;
 
-ROVppAS::ROVppAS(uint32_t myasn,
-                 std::set<uint32_t> *rovpp_attackers,
-                 std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results)
-    : BaseAS(myasn, inverse_results)  {
+ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn)  {
     // Save reference to attackers
     attackers = rovpp_attackers;
-    bad_neighbors = new std::set<uint32_t>;
-    failed_rov = new std::set<ROVppAnnouncement>;
-    passed_rov = new std::set<ROVppAnnouncement>;
-    blackholes = new std::set<ROVppAnnouncement>;
-    preventive_anns = new std::set<std::pair<ROVppAnnouncement, ROVppAnnouncement>>;
+    bad_neighbors = new std::set<uint32_t>();
+    failed_rov = new std::set<ROVppAnnouncement>();
+    passed_rov = new std::set<ROVppAnnouncement>();
+    blackholes = new std::set<ROVppAnnouncement>();
+    preventive_anns = new std::set<std::pair<ROVppAnnouncement, ROVppAnnouncement>>();
 
-    ribs_in = new std::vector<ROVppAnnouncement>;
-    loc_rib = new std::map<Prefix<>, ROVppAnnouncement>;
-    withdrawals = new std::vector<ROVppAnnouncement>;
+    ribs_in = new std::vector<ROVppAnnouncement>();
+    loc_rib = new std::map<Prefix<>, ROVppAnnouncement>();
+    withdrawals = new std::vector<ROVppAnnouncement>();
 }
+
+ROVppAS::ROVppAS(uint32_t asn) : ROVppAS(asn, NULL) { }
+ROVppAS::ROVppAS() : ROVppAS(0, NULL) { }
 
 ROVppAS::~ROVppAS() { 
     delete bad_neighbors;

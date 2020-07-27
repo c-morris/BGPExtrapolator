@@ -6,8 +6,9 @@
 
 class EZAS : public BaseAS<EZAnnouncement> {
 public:
-    EZAS(uint32_t myasn = 0, 
-        std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results = NULL);
+    EZAS(uint32_t asn, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
+    EZAS(uint32_t asn);
+    EZAS();
 
     ~EZAS();
 };

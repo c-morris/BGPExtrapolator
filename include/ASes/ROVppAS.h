@@ -81,9 +81,9 @@ public:
     static bool graph_changed;
     
     // Constructor
-    ROVppAS(uint32_t myasn=0,
-            std::set<uint32_t> *attackers=NULL,
-            std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results=NULL);
+    ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers);
+    ROVppAS(uint32_t asn);
+    ROVppAS();
 
     ~ROVppAS();
     
