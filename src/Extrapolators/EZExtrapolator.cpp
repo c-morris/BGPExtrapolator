@@ -28,7 +28,7 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
 EZExtrapolator::EZExtrapolator() 
     : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                         ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE, 
-                        DEFAULT_NUM_ROUNDS, DEFAULT_NUM_ASES_BETWEEN_ATTACKER) { }
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER) { }
 
 EZExtrapolator::~EZExtrapolator() { }
 

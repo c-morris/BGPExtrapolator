@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
          po::value<bool>()->default_value(false), 
          "flag for rovpp run")
         ("ezbgpsec,z", 
-         po::value<uint32_t>()->default_value(DEFAULT_NUM_ROUNDS), 
+         po::value<uint32_t>()->default_value(0), 
          "number of rounds for ezbgpsec run")
         ("num-in-between,n", 
          po::value<uint32_t>()->default_value(DEFAULT_NUM_ASES_BETWEEN_ATTACKER), 

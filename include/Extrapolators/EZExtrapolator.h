@@ -1,7 +1,6 @@
 #ifndef EZ_EXTRAPLATOR_H
 #define EZ_EXTRAPLATOR_H
 
-#define DEFAULT_NUM_ROUNDS 1
 #define DEFAULT_NUM_ASES_BETWEEN_ATTACKER 0
 
 #include "Extrapolators/BlockedExtrapolator.h"

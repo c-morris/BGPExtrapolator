@@ -50,7 +50,7 @@ public:
     std::string port;
     pqxx::connection *C;
 
-    SQLQuerier(std::string announcement_table = ANNOUNCEMENTS_TABLE,
+    SQLQuerier(std::string announcements_table = ANNOUNCEMENTS_TABLE,
                 std::string results_table = RESULTS_TABLE, 
                 std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
                 std::string depref_results_table = DEPREF_RESULTS_TABLE);
