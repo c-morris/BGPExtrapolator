@@ -7,7 +7,7 @@
 
 class EZASGraph : public BaseGraph<EZAS> {
 public:
-    //Victim 1: attacker, victim2
+    //Victim 1 (origin): attacker, victim2
     std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> *origin_to_attacker_victim;
 
     //Victim 2, prefixes to check

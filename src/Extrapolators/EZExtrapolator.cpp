@@ -146,7 +146,11 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     if(graph->victim_to_prefixes->find(victim2_asn) != graph->victim_to_prefixes->end())
         return;
 
-    EZAS* attacker = graph->ases->find(attacker_asn)->second;
+    auto attacker_search = graph->ases->find(attacker_asn);
+    if(attacker_search == graph->ases->end())
+        return;
+    
+    EZAS* attacker = attacker_search->second;
 
     //Don't bother with anything of this if the attacker can't show up to the party
     // if(attacker->providers->size() == 0 && attacker->peers->size() == 0)
