@@ -188,20 +188,25 @@ void EZExtrapolator::calculate_successful_attacks() {
     //For every victim, prefix pair
     for(auto& it : *graph->victim_to_prefixes) {
         uint32_t victim_asn = it.first;
-        EZAS* victim = graph->ases->find(victim_asn)->second;
+        auto victim_search = graph->ases->find(victim_asn);
 
-        auto result = victim->all_anns->find(it.second);
+        if(victim_search == graph->ases->end())
+            continue;
+
+        EZAS* victim = victim_search->second;
+
+        auto announcement_search = victim->all_anns->find(it.second);
 
         //If there is no announcement for the prefix, move on
-        if(result == victim->all_anns->end()) { //the prefix never reached the victim
+        if(announcement_search == victim->all_anns->end()) { //the prefix never reached the victim
             disconnections++;
             continue;
         }
 
         //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
-        if(result->second.from_attacker) {
+        if(announcement_search->second.from_attacker) {
             if(this->num_between == 0) {
-                uint32_t attacker_asn = graph->origin_to_attacker_victim->find(result->second.origin)->second.first;
+                uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->second.origin)->second.first;
                 uint32_t other_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
                 graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, other_asn));
             }
