@@ -31,14 +31,12 @@ ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> policy_tables /* = std
                                     std::string results_table /* = ROVPP_RESULTS_TABLE */,
                                     std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                                     std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
-                                    std::string victim_table /* = ROVPP_VICTIM_TABLE */,
-                                    std::string attacker_table /* = ROVPP_ATTACKER_TABLE */)
+                                    std::string simulation_table /* = ROVPP_SIMULATION_TABLE */)
     : SQLQuerier(announcements_table, results_table, inverse_results_table, depref_results_table) {
     
     this->policy_tables = policy_tables;
     this->results_table = results_table;
-    this->victim_table = victim_table;
-    this->attack_table = attacker_table;
+    this->simulation_table = simulation_table;
 }
 
 ROVppSQLQuerier::~ROVppSQLQuerier() {
@@ -103,7 +101,7 @@ void ROVppSQLQuerier::create_results_tbl(){
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint, time bigint, alternate_as bigint, opt_flag int); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
-    std::cout << "Creating results table..." << std::endl;
+    std::cout << "Creating " << results_table << " table..." << std::endl;
     execute(sql, false);
 }
 

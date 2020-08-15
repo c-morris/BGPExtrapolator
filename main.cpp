@@ -36,9 +36,7 @@
 
 void intro() {
     // This needs to be finished
-    std::cout << "***** Routing Extrapolator v0.2 *****" << std::endl;
-    std::cout << "Copyright (C) someone, somewhere, probably." << std::endl;
-    std::cout << "License... is probably important." << std::endl;
+    std::cout << "***** Routing Extrapolator v0.4 *****" << std::endl;
     std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
     std::cout << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
 }
@@ -85,12 +83,9 @@ int main(int argc, char *argv[]) {
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
          "name of announcements table")
-        ("victim-table,e",
-         po::value<string>()->default_value(ROVPP_VICTIM_TABLE),
-         "name of victim table")
-        ("attacker-table,f",
-         po::value<string>()->default_value(ROVPP_ATTACKER_TABLE),
-         "name of attacker table")
+        ("simulation-table,f",
+         po::value<string>()->default_value(ROVPP_SIMULATION_TABLE),
+         "name of simulation announcements table")
         ("policy-tables,t",
          po::value<vector<string>>(),
          "space-separated names of ROVpp policy tables")
@@ -134,12 +129,9 @@ int main(int argc, char *argv[]) {
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 ROVPP_RESULTS_TABLE),
-            (vm.count("victim-table") ?
-                vm["victim-table"].as<string>() : 
-                ROVPP_VICTIM_TABLE),
-            (vm.count("attacker-table") ?
-                vm["attacker-table"].as<string>() : 
-                ROVPP_ATTACKER_TABLE));
+            (vm.count("simulation-table") ?
+                vm["simulation-table"].as<string>() : 
+                ROVPP_SIMULATION_TABLE));
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
