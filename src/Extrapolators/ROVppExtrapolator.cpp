@@ -237,7 +237,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             cur_path,
                                             true);
             // Send the announcement to the current AS
-            std::cout << "Process Announcement" << std::endl;
             as_on_path->BaseAS::process_announcement(ann, false);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
@@ -536,52 +535,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
     }
     
-    /**
-    // Trim provider and peer vectors of preventive and blackhole anns for 0.3 and 0.2bis
-    if (rovpp_as != NULL &&
-        rovpp_as->policy_vector.size() > 0 &&
-        (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-        rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS)) {
-        for (auto ann_pair : *rovpp_as->preventive_anns) {
-            for (auto it = anns_to_providers.begin(); it != anns_to_providers.end();) {
-                if (ann_pair.first.prefix == it->prefix &&
-                    ann_pair.first.origin == it->origin) {
-                    it = anns_to_providers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-            for (auto it = anns_to_peers.begin(); it != anns_to_peers.end();) {
-                if (ann_pair.first.prefix == it->prefix &&
-                    ann_pair.first.origin == it->origin) {
-                    it = anns_to_peers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
-        for (auto blackhole_ann : *rovpp_as->blackholes) {
-            for (auto it = anns_to_providers.begin(); it != anns_to_providers.end();) {
-                if (blackhole_ann.prefix == it->prefix &&
-                    blackhole_ann.origin == it->origin) {
-                    it = anns_to_providers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-            for (auto it = anns_to_peers.begin(); it != anns_to_peers.end();) {
-                if (blackhole_ann.prefix == it->prefix &&
-                    blackhole_ann.origin == it->origin) {
-                    it = anns_to_peers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
-        
-    }
-    */
-
     // Send the vectors of assembled announcements
     for (uint32_t provider_asn : *source_as->providers) {
         // For each provider, give the vector of announcements

@@ -36,6 +36,7 @@ ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn
 
     ribs_in = new std::vector<ROVppAnnouncement>();
     loc_rib = new std::map<Prefix<>, ROVppAnnouncement>();
+    all_anns = loc_rib;
     withdrawals = new std::vector<ROVppAnnouncement>();
 }
 
@@ -50,7 +51,6 @@ ROVppAS::~ROVppAS() {
     delete preventive_anns;
     
     delete ribs_in;
-    delete loc_rib;
     delete withdrawals;
 }
 
@@ -99,7 +99,6 @@ void ROVppAS::withdraw(ROVppAnnouncement &ann) {
  * @param ann The rovannouncement to be processed
  */ 
 void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran) {
-    std::cout << "ROV version" << std::endl;
 
     // Check for existing rovannouncement for prefix
     auto search = loc_rib->find(ann.prefix);
@@ -315,7 +314,7 @@ void ROVppAS::process_announcements(bool ran) {
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
                         passed_rov->insert(ann);
-                        process_announcement(ann, false);
+                        BaseAS::process_announcement(ann, false);
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP0) {
                     // The policy for ROVpp 0 is similar to ROVpp 1 

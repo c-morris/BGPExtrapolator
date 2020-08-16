@@ -58,6 +58,7 @@ public:
     std::vector<AnnouncementType> *incoming_announcements;
     // Maps of all announcements stored
     std::map<Prefix<>, AnnouncementType> *all_anns;
+    std::map<Prefix<>, AnnouncementType> *loc_rib;
     std::map<Prefix<>, AnnouncementType> *depref_anns;
     // Stores AS Relationships
     std::set<uint32_t> *providers; 
