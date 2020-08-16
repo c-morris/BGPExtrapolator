@@ -31,11 +31,13 @@ ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> policy_tables /* = std
                                     std::string results_table /* = ROVPP_RESULTS_TABLE */,
                                     std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                                     std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
+                                    std::string tracked_ases_table /* = TRACKED_ASES_TABLE */,
                                     std::string simulation_table /* = ROVPP_SIMULATION_TABLE */)
     : SQLQuerier(announcements_table, results_table, inverse_results_table, depref_results_table) {
     
     this->policy_tables = policy_tables;
     this->results_table = results_table;
+    this->tracked_ases_table = tracked_ases_table;
     this->simulation_table = simulation_table;
 }
 
@@ -86,6 +88,17 @@ pqxx::result ROVppSQLQuerier::select_all_pairs_from(std::string const& cur_table
     std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin FROM " + cur_table;
     return execute(sql);
 }
+
+/** Pulls list of attackers and victims from tracked_ases table.
+ *
+ * @param cur_table Tracked ASes table name
+ */
+pqxx::result ROVppSQLQuerier::select_tracked_ases(std::string const& cur_table){
+    std::string sql = "SELECT asn, attacker FROM " + cur_table;
+    return execute(sql);
+}
+
+
 
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */

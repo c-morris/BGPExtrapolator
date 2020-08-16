@@ -44,6 +44,10 @@
 #define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
 #define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
 #define ROVPPAS_TYPE_ROVPPBIS 5    // ROVpp 0.2bis (Blackhole Ann to Customers Only)
+#define ROVPPAS_TYPE_ASPA 1024    // ASPA
+#define ROVPPAS_TYPE_ASPA_ROV 1025   // ASPA
+#define ROVPPAS_TYPE_ASPA_ROVPP 1026   // ASPA
+#define ROVPPAS_TYPE_ASPA_ROVPPLITE 1027   // ASPA
 
 // Special Constants 
 // This is used for ROVpp 0.1+ to 
@@ -94,6 +98,7 @@ public:
     
     // ROV Methods
     bool pass_rov(ROVppAnnouncement &ann);
+    bool pass_aspa(ROVppAnnouncement &ann);
     void add_policy(uint32_t);
     // Helper functions
     void withdraw(ROVppAnnouncement &ann);

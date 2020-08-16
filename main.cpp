@@ -86,6 +86,9 @@ int main(int argc, char *argv[]) {
         ("simulation-table,f",
          po::value<string>()->default_value(ROVPP_SIMULATION_TABLE),
          "name of simulation announcements table")
+        ("tracked-ases-table,u",
+         po::value<string>()->default_value(TRACKED_ASES_TABLE),
+         "name of tracked ases table for attackers and victims")
         ("policy-tables,t",
          po::value<vector<string>>(),
          "space-separated names of ROVpp policy tables")
@@ -129,6 +132,9 @@ int main(int argc, char *argv[]) {
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 ROVPP_RESULTS_TABLE),
+            (vm.count("tracked-ases-table") ?
+                vm["tracked-ases-table"].as<string>() : 
+                TRACKED_ASES_TABLE),
             (vm.count("simulation-table") ?
                 vm["simulation-table"].as<string>() : 
                 ROVPP_SIMULATION_TABLE));

@@ -29,16 +29,17 @@
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string announcement_table,
                                         std::string results_table,
+                                        std::string tracked_ases_table,
                                         std::string simulation_table)
     : BaseExtrapolator(false, false, false) {
         
     graph = new ROVppASGraph();
     // fix rovpp extrapolation results table name, the default arg doesn't work right here
     results_table = results_table == RESULTS_TABLE ? ROVPP_RESULTS_TABLE : results_table;
-    querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, simulation_table);
+    querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, tracked_ases_table, simulation_table);
 }
 
-ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_SIMULATION_TABLE) { }
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE) { }
 
 ROVppExtrapolator::~ROVppExtrapolator() { }
 
@@ -93,17 +94,23 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
             Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
-            bool is_hijack = false; //table_name == querier->attack_table;
-            if (is_hijack) {
-                // Add origin to attackers
-                graph->attackers->insert(parsed_path->at(0));
-            }
             
+            bool is_hijack = false; //table_name == querier->attack_table;
             // Seed the announcement
             give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
     
             // Clean up
             delete parsed_path;
+        }
+    }
+    for (const string table_name: {querier->tracked_ases_table}) {
+        pqxx::result ases = querier->select_tracked_ases(table_name);
+        for (pqxx::result::const_iterator c = ases.begin(); c!=ases.end(); ++c) {
+            uint32_t asn = c["asn"].as<uint32_t>();
+            bool is_attacker = c["attacker"].as<bool>();
+            if (is_attacker) {
+                graph->attackers->insert(asn);
+            }
         }
     }
     
@@ -237,7 +244,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             cur_path,
                                             true);
             // Send the announcement to the current AS
-            as_on_path->BaseAS::process_announcement(ann, false);
+            as_on_path->process_announcement(ann, false);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
                         std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));

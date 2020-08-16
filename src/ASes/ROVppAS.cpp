@@ -80,6 +80,30 @@ bool ROVppAS::pass_rov(ROVppAnnouncement &ann) {
     }
 }
 
+/** Checks whether or not an rovppannouncement is ASPA valid/invalid
+ *
+ * Those aware of how ASPA works may notice this is nothing like how ASPA
+ * works. This is an approximation, assuming an attacker is not an authorized
+ * neighbor. This also does not support "unknown" or "unverifiable" paths.
+ * 
+ * @param  ann  rovannouncement to check if it passes ASPA
+ * @return bool  return false if from attacker, true otherwise
+ */
+bool ROVppAS::pass_aspa(ROVppAnnouncement &ann) {
+    bool skiporigin = true;
+    for (auto asn : ann.as_path) {
+        // skip origin---this will be caught by ROV policies
+        if (skiporigin) {
+            skiporigin = false;
+            continue;
+        }
+        if (attackers->find(asn) != attackers->end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Add the rovannouncement to the vector of withdrawals to be processed.
  *
  * Also remove it from the ribs_in.
@@ -314,7 +338,7 @@ void ROVppAS::process_announcements(bool ran) {
                 if (policy_vector.at(0) == ROVPPAS_TYPE_ROV) {
                     if (pass_rov(ann)) {
                         passed_rov->insert(ann);
-                        BaseAS::process_announcement(ann, false);
+                        process_announcement(ann, false);
                     }
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP0) {
                     // The policy for ROVpp 0 is similar to ROVpp 1 
@@ -457,6 +481,13 @@ void ROVppAS::process_announcements(bool ran) {
                             preventive_anns->insert(std::pair<ROVppAnnouncement,ROVppAnnouncement>(preventive_ann, best_alternative_ann));
                             process_announcement(preventive_ann);
                         }
+                    }
+                // note, to make aspa run at the same time as rovpp move this out of the if else block
+                // and put it *above* in an if
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ASPA) {
+                    // reject if the attacker is on the path at all
+                    if (pass_aspa(ann)) {
+                        process_announcement(ann);
                     }
                 } else { // Unrecognized policy defaults to bgp
                     process_announcement(ann, false);
