@@ -45,8 +45,8 @@
 #define ROVPP_ROAS_TABLE "roas"
 
 #define ROVPP_RESULTS_TABLE "rovpp_extrapolation_results"
-#define ROVPP_PEERS_TABLE "rovpp_peers"
-#define ROVPP_CUSTOMER_PROVIDER_TABLE "rovpp_customer_providers"
+#define ROVPP_PEERS_TABLE "peers"
+#define ROVPP_CUSTOMER_PROVIDER_TABLE "provider_customers"
 #define ROVPP_ANNOUNCEMENTS_TABLE "mrt_w_roas"
 #define TRACKED_ASES_TABLE "tracked_ases"
 
