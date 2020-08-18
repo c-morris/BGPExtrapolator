@@ -26,7 +26,10 @@ template <class AnnouncementType>
 BaseAS<AnnouncementType>::~BaseAS() {
     delete incoming_announcements;
     delete all_anns;
-    delete depref_anns;
+
+    if(depref_anns != NULL)
+        delete depref_anns;
+    
     delete peers;
     delete providers;
     delete customers;
@@ -127,7 +130,6 @@ template <class AnnouncementType>
 void BaseAS<AnnouncementType>::process_announcement(AnnouncementType &ann, bool ran) {
     // Check for existing announcement for prefix
     auto search = all_anns->find(ann.prefix);
-    auto search_depref = depref_anns->find(ann.prefix);
     
     // No announcement found for incoming announcement prefix
     if (search == all_anns->end()) {
@@ -161,24 +163,29 @@ void BaseAS<AnnouncementType>::process_announcement(AnnouncementType &ann, bool 
             // Defaults to first come, first kept if not random
             if (value) {
                 // Update inverse results
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                if(inverse_results != NULL) {
+                    swap_inverse_result(
+                        std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                        std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                }
 
                 // Use the new announcement
-                if (search_depref == depref_anns->end()) {
-                    
-                    // Insert depref ann
-                    depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(search->second.prefix, 
-                                                                        search->second));
-                    search->second = ann;
-                } else {
-                    search_depref->second = search->second;
-                    search->second = ann;
+                if(depref_anns != NULL) {
+                    auto search_depref = depref_anns->find(ann.prefix);
+                    if (search_depref == depref_anns->end())
+                        // Insert depref ann
+                        depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(search->second.prefix, search->second));
+                    else
+                        search_depref->second = search->second;
                 }
-            } else {
+
+                search->second = ann;
+            } else if(depref_anns != NULL) {
+                auto search_depref = depref_anns->find(ann.prefix);
+
                 // Use the old announcement
                 if (search_depref == depref_anns->end()) {
+                    // Insert new second best announcement
                     depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(ann.prefix, ann));
                 } else {
                     // Replace second best with the old priority announcement
@@ -187,29 +194,30 @@ void BaseAS<AnnouncementType>::process_announcement(AnnouncementType &ann, bool 
             }
         // Otherwise check new announcements priority for best path selection
         } else if (ann.priority > search->second.priority) {
-            if (search_depref == depref_anns->end()) {
+            if(inverse_results != NULL) {
                 // Update inverse results
                 swap_inverse_result(
                     std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                // Insert new second best announcement
-                depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(search->second.prefix, 
-                                                                    search->second));
-                // Replace the old announcement with the higher priority
-                search->second = ann;
-            } else {
-                // Update inverse results
-                swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-                // Replace second best with the old priority announcement
-                search_depref->second = search->second;
-                // Replace the old announcement with the higher priority
-                search->second = ann;
             }
+
+            if(depref_anns != NULL) {
+                auto search_depref = depref_anns->find(ann.prefix);
+                if (search_depref == depref_anns->end()) {
+                    // Insert new second best announcement
+                    depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(search->second.prefix, search->second));
+                } else {
+                    // Replace second best with the old priority announcement
+                    search_depref->second = search->second;
+                }
+            }
+
+            // Replace the old announcement with the higher priority
+            search->second = ann;
         // Old announcement was better
         // Check depref announcements priority for best path selection
-        } else {
+        } else if(depref_anns != NULL) {
+            auto search_depref = depref_anns->find(ann.prefix);
             if (search_depref == depref_anns->end()) {
                 // Insert new second best annoucement
                 depref_anns->insert(std::pair<Prefix<>, AnnouncementType>(ann.prefix, ann));
@@ -240,7 +248,9 @@ template <class AnnouncementType>
 void BaseAS<AnnouncementType>::clear_announcements() {
     all_anns->clear();
     incoming_announcements->clear();
-    depref_anns->clear();
+
+    if(depref_anns != NULL)
+        depref_anns->clear();
 }
 
 /** Check if a monitor announcement is already recv'd by this AS. 
@@ -260,6 +270,13 @@ bool BaseAS<AnnouncementType>::already_received(AnnouncementType &ann) {
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::delete_ann(AnnouncementType &ann) {
     all_anns->erase(ann.prefix);
+}
+
+/** Deletes the announcement of given prefix.
+ */
+template <class AnnouncementType>
+void BaseAS<AnnouncementType>::delete_ann(Prefix<> &prefix) {
+    all_anns->erase(prefix);
 }
 
 /** Insertion operator for AS class.
@@ -310,9 +327,11 @@ std::ostream& BaseAS<AnnouncementType>::stream_announcements(std::ostream &os) {
  */
 template <class AnnouncementType>
 std::ostream& BaseAS<AnnouncementType>::stream_depref(std::ostream &os) {
-    for (auto &ann : *depref_anns) {
-        os << asn << ',';
-        ann.second.to_csv(os);
+    if(depref_anns != NULL) {
+        for (auto &ann : *depref_anns) {
+            os << asn << ',';
+            ann.second.to_csv(os);
+        }
     }
     return os;
 }

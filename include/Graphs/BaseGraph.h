@@ -61,15 +61,18 @@ public:
     std::vector<uint32_t> *non_stubs;
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
 
-    BaseGraph() {
+    BaseGraph(bool store_inverse_results) {
         ases = new std::unordered_map<uint32_t, ASType*>;               // Map of all ASes
         ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
         components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
         component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode
         stubs_to_parents = new std::map<uint32_t, uint32_t>;        // Translace stub to parent
         non_stubs = new std::vector<uint32_t>;                      // All non-stubs in the graph
-        inverse_results = new std::map<std::pair<Prefix<>, uint32_t>,
-                                                std::set<uint32_t>*>;
+
+        if(store_inverse_results) 
+            inverse_results = new std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*>;
+        else 
+            inverse_results = NULL;
     }
 
     virtual ~BaseGraph();

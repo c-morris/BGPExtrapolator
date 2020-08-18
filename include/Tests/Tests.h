@@ -88,6 +88,7 @@ bool test_combine_components();
 bool test_Extrapolator_constructor();
 bool test_propagate_up();
 bool test_propagate_down();
+bool test_propagate_down2();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
 

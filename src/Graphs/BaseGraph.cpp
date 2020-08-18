@@ -46,9 +46,11 @@ BaseGraph<ASType>::~BaseGraph() {
         delete c;
     delete components;
 
-    for (auto const& i : *inverse_results)
-        delete i.second;
-    delete inverse_results;
+    if(inverse_results != NULL) {
+        for (auto const& i : *inverse_results)
+            delete i.second;
+        delete inverse_results;
+    }
 
     delete component_translation;
     delete stubs_to_parents;
@@ -61,9 +63,12 @@ template <class ASType>
 void BaseGraph<ASType>::clear_announcements() {
     for (auto const& as : *ases)
         as.second->clear_announcements();
-    for (auto const& i : *inverse_results)
-        delete i.second;
-    inverse_results->clear();
+
+    if(inverse_results != NULL) {
+        for (auto const& i : *inverse_results)
+            delete i.second;
+        inverse_results->clear();
+    }
 }
 
 /** Adds an AS relationship to the graph.
@@ -313,7 +318,7 @@ void BaseGraph<ASType>::decide_ranks() {
             }
         }
         i++;
-    } 
+    }
     return;
 }
 

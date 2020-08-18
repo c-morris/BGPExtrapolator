@@ -23,7 +23,7 @@
 
 #include "Graphs/ASGraph.h"
 
-ASGraph::ASGraph() {
+ASGraph::ASGraph(bool store_inverse_results) : BaseGraph(store_inverse_results) {
 
 }
 

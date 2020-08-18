@@ -113,6 +113,7 @@ public:
 
     virtual bool already_received(AnnouncementType &ann);
     virtual void delete_ann(AnnouncementType &ann);
+    virtual void delete_ann(Prefix<> &prefix);
 
     virtual void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
                                         std::pair<Prefix<>,uint32_t> current);

@@ -236,11 +236,11 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
     uint32_t path_l = as_path->size();
     
     // Announcement at origin for checking along the path
-    AnnouncementType ann_to_check_for(as_path->at(path_l-1),
-                                        prefix.addr,
-                                        prefix.netmask,
-                                        0,
-                                        timestamp); 
+    // AnnouncementType ann_to_check_for(as_path->at(path_l-1),
+    //                                     prefix.addr,
+    //                                     prefix.netmask,
+    //                                     0,
+    //                                     timestamp); 
     
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
@@ -254,15 +254,18 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         uint32_t asn_on_path = this->graph->translate_asn(*it);
         // Find the current AS on the path
         ASType *as_on_path = this->graph->ases->find(asn_on_path)->second;
+
+        auto announcement_search = as_on_path->all_anns->find(prefix);
+
         // Check if already received this prefix
-        if (as_on_path->already_received(ann_to_check_for)) {
-            // Find the already received announcement
-            auto search = as_on_path->all_anns->find(ann_to_check_for.prefix);
+        if (announcement_search != as_on_path->all_anns->end()) {
+            AnnouncementType& second_announcement = announcement_search->second;
+
             // If the current timestamp is newer (worse)
-            if (ann_to_check_for.tstamp > search->second.tstamp) {
+            if (timestamp > second_announcement.tstamp) {
                 // Skip it
                 continue;
-            } else if (ann_to_check_for.tstamp == search->second.tstamp) {
+            } else if (timestamp == second_announcement.tstamp) {
                 // Tie breaker for equal timestamp
                 bool keep_first = true;
                 // Random tiebreak if enabled
@@ -271,9 +274,9 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                 }
 
                 // Log annoucements with equal timestamps 
-                Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << ann_to_check_for.prefix.to_cidr() << 
-                    ", rand value: " << keep_first << ", tstamp on announcements: " << ann_to_check_for.tstamp << 
-                    ", origin on ann_to_check_for: " << ann_to_check_for.origin << ", origin on stored announcement: " << search->second.origin;
+                Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
+                    ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
+                    ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
 
                 // First come, first saved if random is disabled
                 if (keep_first) {
@@ -285,18 +288,18 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                     if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
                         continue;
                     }
-                    as_on_path->delete_ann(ann_to_check_for);
+                    as_on_path->delete_ann(prefix);
                 }
             } else {
                 // Log announcements that arent handled by sorting
                 Logger::getInstance().log("Unsorted_Announcements") 
                     << "This announcement is being deleted and is not handled by sorting." 
-                    << " Prefix: " << ann_to_check_for.prefix.to_cidr() 
-                    << ", tstamp: " << ann_to_check_for.tstamp 
-                    << ", origin: " << ann_to_check_for.origin;
+                    << " Prefix: " << prefix.to_cidr() 
+                    << ", tstamp: " << timestamp 
+                    << ", origin: " << as_path->at(path_l-1);
 
                 // Delete worse MRT announcement, proceed with seeding
-                as_on_path->delete_ann(ann_to_check_for);
+                as_on_path->delete_ann(prefix);
             }
         }
         

@@ -207,8 +207,8 @@ void EZExtrapolator::calculate_successful_attacks() {
         if(announcement_search->second.from_attacker) {
             if(this->num_between == 0) {
                 uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->second.origin)->second.first;
-                uint32_t other_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
-                graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, other_asn));
+                uint32_t neighbor_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
+                graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, neighbor_asn));
             }
 
             successful_attacks++;
