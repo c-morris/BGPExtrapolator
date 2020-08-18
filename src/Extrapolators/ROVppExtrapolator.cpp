@@ -33,10 +33,11 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string simulation_table)
     : BaseExtrapolator(false, false, false) {
         
-    graph = new ROVppASGraph();
+    this->graph = new ROVppASGraph();
+
     // fix rovpp extrapolation results table name, the default arg doesn't work right here
-    results_table = results_table == RESULTS_TABLE ? ROVPP_RESULTS_TABLE : results_table;
-    querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, tracked_ases_table, simulation_table);
+    results_table = !results_table.compare(RESULTS_TABLE) ? ROVPP_RESULTS_TABLE : results_table;
+    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, tracked_ases_table, simulation_table);
 }
 
 ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE) { }
@@ -168,7 +169,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     // Full path vector
     // TODO only handles seeding announcements at origin
     std::vector<uint32_t> cur_path;
-    cur_path.push_back(origin_asn);
   
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
@@ -207,6 +207,9 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             }
         }
 
+        // update path vector
+        cur_path.push_back(as_on_path->asn);
+
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
         uint32_t priority = received_from + path_len_weighted;
@@ -234,7 +237,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
         // No break in path so send the announcement
         if (!broken_path) {
-            ROVppAnnouncement ann = ROVppAnnouncement(*as_path->rbegin(),
+            ROVppAnnouncement ann = ROVppAnnouncement(as_on_path->asn,
                                             prefix.addr,
                                             prefix.netmask,
                                             priority,

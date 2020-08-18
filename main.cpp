@@ -36,7 +36,7 @@
 
 void intro() {
     // This needs to be finished
-    std::cout << "***** Routing Extrapolator v0.4 *****" << std::endl;
+    std::cout << "***** Routing Extrapolator v0.3 *****" << std::endl;
     std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
     std::cout << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
 }
