@@ -208,9 +208,10 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
 
         // update path vector
-        if (cur_path.back() != as_on_path->asn) {
-            cur_path.push_back(as_on_path->asn);
+        if (cur_path.back() == as_on_path->asn) {
+            continue;
         }
+            cur_path.push_back(as_on_path->asn);
 
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
