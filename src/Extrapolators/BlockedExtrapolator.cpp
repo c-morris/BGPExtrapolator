@@ -192,21 +192,24 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             // Get timestamp
             int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
 
-            // Assemble pair
-            auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
-            
-            // Insert the inverse results for this prefix
-            if (this->graph->inverse_results->find(prefix_origin) == this->graph->inverse_results->end()) {
-                // This is horrifying
-                this->graph->inverse_results->insert(std::pair<std::pair<Prefix<>, uint32_t>, 
-                                                        std::set<uint32_t>*>
-                                                        (prefix_origin, new std::set<uint32_t>()));
+            if(this->graph->inverse_results != NULL) {
+                // Assemble pair
+                auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
                 
-                // Put all non-stub ASNs in the set
-                for (uint32_t asn : *this->graph->non_stubs) {
-                    this->graph->inverse_results->find(prefix_origin)->second->insert(asn);
+                // Insert the inverse results for this prefix
+                if (this->graph->inverse_results->find(prefix_origin) == this->graph->inverse_results->end()) {
+                    // This is horrifying
+                    this->graph->inverse_results->insert(std::pair<std::pair<Prefix<>, uint32_t>, 
+                                                            std::set<uint32_t>*>
+                                                            (prefix_origin, new std::set<uint32_t>()));
+                    
+                    // Put all non-stub ASNs in the set
+                    for (uint32_t asn : *this->graph->non_stubs) {
+                        this->graph->inverse_results->find(prefix_origin)->second->insert(asn);
+                    }
                 }
             }
+
             // Seed announcements along AS path
             this->give_ann_to_as_path(as_path, cur_prefix, timestamp);
             delete as_path;
