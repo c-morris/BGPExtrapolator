@@ -240,7 +240,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
         // No break in path so send the announcement
         if (!broken_path) {
-            ROVppAnnouncement ann = ROVppAnnouncement(as_on_path->asn,
+            ROVppAnnouncement ann = ROVppAnnouncement(cur_path.back(),
                                             prefix.addr,
                                             prefix.netmask,
                                             priority,
