@@ -180,7 +180,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
-        cur_path.insert(0, asn_on_path);
+        cur_path.insert(cur_path.begin(), asn_on_path);
         // Find the current AS on the path
         ROVppAS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
