@@ -61,7 +61,9 @@ public:
     std::vector<uint32_t> *non_stubs;
     std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
 
-    BaseGraph(bool store_inverse_results) {
+    bool store_depref_results;
+
+    BaseGraph(bool store_inverse_results, bool store_depref_results) {
         ases = new std::unordered_map<uint32_t, ASType*>;               // Map of all ASes
         ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
         components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
@@ -73,6 +75,8 @@ public:
             inverse_results = new std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*>;
         else 
             inverse_results = NULL;
+        
+        this->store_depref_results = store_depref_results;
     }
 
     virtual ~BaseGraph();

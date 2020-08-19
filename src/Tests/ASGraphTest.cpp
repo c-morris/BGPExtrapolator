@@ -43,7 +43,7 @@
  * @return true if successful, otherwise false.
  */
 bool test_add_relationship(){
-    ASGraph graph = ASGraph(false);
+    ASGraph graph = ASGraph(false, false);
     graph.add_relationship(1, 2, AS_REL_PROVIDER);
     graph.add_relationship(2, 1, AS_REL_CUSTOMER);
     graph.add_relationship(1, 3, AS_REL_PEER);
@@ -68,7 +68,7 @@ bool test_add_relationship(){
  * @return true if successful, otherwise false.
  */
 bool test_translate_asn(){
-    ASGraph graph = ASGraph(false);
+    ASGraph graph = ASGraph(false, false);
     // add_relation(Target, Neighber, Relation of neighbor to target)
     // Cycle 
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
@@ -111,7 +111,7 @@ bool test_translate_asn(){
  * @return true if successful, otherwise false.
  */
 bool test_decide_ranks(){
-    ASGraph graph = ASGraph(false);
+    ASGraph graph = ASGraph(false, false);
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);
     graph.add_relationship(3, 1, AS_REL_PROVIDER);
@@ -154,7 +154,7 @@ bool test_decide_ranks(){
  * @return true if successful, otherwise false.
  */
 bool test_remove_stubs(){
-    ASGraph graph = ASGraph(false);
+    ASGraph graph = ASGraph(false, false);
     SQLQuerier *querier = new SQLQuerier("mrt_announcements", "test_results", "test_results", "test_results_d");
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);
@@ -197,7 +197,7 @@ bool test_remove_stubs(){
  * @return true if successful, otherwise false.
  */
 bool test_tarjan(){ // includes tarjan_helper()
-    ASGraph graph = ASGraph(false);
+    ASGraph graph = ASGraph(false, false);
     // Cycle 
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);
@@ -224,7 +224,7 @@ bool test_tarjan(){ // includes tarjan_helper()
     }   
      
     // Multi supernode test
-    ASGraph graph2 = ASGraph(false);
+    ASGraph graph2 = ASGraph(false, false);
     // Cycle 10->11->12->10
     graph2.add_relationship(11, 10, AS_REL_PROVIDER);
     graph2.add_relationship(10, 11, AS_REL_CUSTOMER);
@@ -293,7 +293,7 @@ bool test_tarjan(){ // includes tarjan_helper()
  * @return true if successful, otherwise false.
  */
 bool test_combine_components(){
-     ASGraph graph = ASGraph(false);
+    ASGraph graph = ASGraph(false, false);
     // Cycle 1->2->3->1
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);
@@ -360,7 +360,7 @@ bool test_combine_components(){
 
 
     // Multi supernode test
-    ASGraph graph2 = ASGraph(false);
+    ASGraph graph2 = ASGraph(false, false);
     // Cycle 10->11->12->10
     graph2.add_relationship(11, 10, AS_REL_PROVIDER);
     graph2.add_relationship(10, 11, AS_REL_CUSTOMER);

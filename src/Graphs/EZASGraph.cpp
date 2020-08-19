@@ -1,6 +1,6 @@
 #include "Graphs/EZASGraph.h"
 
-EZASGraph::EZASGraph() : BaseGraph<EZAS>(false) {
+EZASGraph::EZASGraph() : BaseGraph(false, false) {
     origin_to_attacker_victim = new std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>();
     victim_to_prefixes = new std::unordered_map<uint32_t, Prefix<>>();
     attacker_edge_removal = new std::vector<std::pair<uint32_t, uint32_t>>();

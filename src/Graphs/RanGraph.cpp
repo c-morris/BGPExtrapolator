@@ -23,7 +23,7 @@
 #include "Graphs/RanGraph.h"
 
 ASGraph* ran_graph(int num_edges, int num_vertices) {
-    ASGraph* graph = new ASGraph(false);
+    ASGraph* graph = new ASGraph(false, false);
     //srand(time(NULL));
     //v = 11+rand()%10;
     //e = rand()%((v*(v-1))/2);

@@ -73,7 +73,7 @@ public:
     bool onStack;
     
     // Constructor
-    BaseAS(uint32_t asn, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) : ran_bool(asn) {
+    BaseAS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) : ran_bool(asn) {
 
         // Set ASN
         this->asn = asn;
@@ -89,15 +89,20 @@ public:
         member_ases = new std::vector<uint32_t>();    // Supernode members
         incoming_announcements = new std::vector<AnnouncementType>();
         all_anns = new std::map<Prefix<>, AnnouncementType>();
-        depref_anns = new std::map<Prefix<>, AnnouncementType>();
+
+        if(store_depref_results)
+            depref_anns = new std::map<Prefix<>, AnnouncementType>();
+        else
+            depref_anns = NULL;
+
         // Tarjan variables
         index = -1;
         onStack = false;
     }
 
-    BaseAS(uint32_t asn) : BaseAS(asn, NULL) { }
+    BaseAS(uint32_t asn) : BaseAS(asn, false, NULL) { }
 
-    BaseAS() : BaseAS(0, NULL) { }
+    BaseAS() : BaseAS(0, false, NULL) { }
 
     virtual ~BaseAS();
     

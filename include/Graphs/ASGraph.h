@@ -28,7 +28,7 @@
 
 class ASGraph : public BaseGraph<AS> {
 public:
-    ASGraph(bool store_inverse_results);
+    ASGraph(bool store_inverse_results, bool store_depref_results);
     virtual ~ASGraph();
 
     virtual AS* createNew(uint32_t asn);

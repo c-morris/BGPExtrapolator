@@ -31,7 +31,8 @@
 
 class AS : public BaseAS<Announcement> {
 public:
-    AS(uint32_t asn, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
+    AS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
+    AS(uint32_t asn, bool store_depref_results);
     AS(uint32_t asn);
     AS();
 

@@ -23,7 +23,7 @@
 
 #include "Graphs/ROVppASGraph.h"
 
-ROVppASGraph::ROVppASGraph() : BaseGraph<ROVppAS>(false) {
+ROVppASGraph::ROVppASGraph() : BaseGraph(false, false) {
     attackers = new std::set<uint32_t>();
     victims = new std::set<uint32_t>();
 }

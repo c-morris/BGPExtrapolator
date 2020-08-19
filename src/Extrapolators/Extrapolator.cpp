@@ -32,7 +32,7 @@ Extrapolator::Extrapolator(bool random_tiebraking,
                             std::string depref_results_table, 
                             uint32_t iteration_size) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
 
-    graph = new ASGraph(store_invert_results);
+    graph = new ASGraph(store_invert_results, store_depref_results);
     querier = new SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table);
 }
 
