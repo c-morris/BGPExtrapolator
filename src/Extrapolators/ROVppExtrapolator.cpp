@@ -180,10 +180,15 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
+        cur_path.insert(0, asn_on_path);
         // Find the current AS on the path
         ROVppAS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
+            // update path vector
+            if (cur_path.back() == as_on_path->asn) {
+                continue;
+            }
             // Find the already received announcement and delete it
             as_on_path->delete_ann(ann_to_check_for);
         }
@@ -207,11 +212,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             }
         }
 
-        // update path vector
-        if (cur_path.back() == as_on_path->asn) {
-            continue;
-        }
-        cur_path.insert(0, as_on_path->asn);
 
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
