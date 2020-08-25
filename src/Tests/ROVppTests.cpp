@@ -353,9 +353,7 @@ bool test_rovpp_give_ann_to_as_path() {
     //}
     
     // Test prepending calculation
-    // Unlike the all_anns map, the loc_rib preserves the priority of the ribs_in
-    // Priority is decremented when the announcement is actually sent out
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299) {
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 298) {
         std::cerr << "Priority calculation in loc_rib failed" << std::endl;
         std::cerr << e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority << std::endl;
         return false;

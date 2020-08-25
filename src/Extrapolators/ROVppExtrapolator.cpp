@@ -29,15 +29,18 @@
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string announcement_table,
                                         std::string results_table,
-                                        std::string victim_table,
-                                        std::string attacker_table)
+                                        std::string tracked_ases_table,
+                                        std::string simulation_table)
     : BaseExtrapolator(false, false, false) {
         
-    graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(policy_tables, results_table, victim_table, attacker_table);
+    this->graph = new ROVppASGraph();
+
+    // fix rovpp extrapolation results table name, the default arg doesn't work right here
+    results_table = !results_table.compare(RESULTS_TABLE) ? ROVPP_RESULTS_TABLE : results_table;
+    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, tracked_ases_table, simulation_table);
 }
 
-ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_VICTIM_TABLE, ROVPP_ATTACKER_TABLE) { }
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE) { }
 
 ROVppExtrapolator::~ROVppExtrapolator() { }
 
@@ -83,7 +86,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
     int iter = 0;
-    for (const string table_name: {querier->victim_table, querier->attack_table}) {
+    for (const string table_name: {querier->simulation_table}) {
         // Get the prefix-origin pairs from the database
         pqxx::result prefix_origin_pairs = querier->select_all_pairs_from(table_name);
         // Seed each of the prefix-origin pairs
@@ -92,17 +95,23 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
             Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
-            bool is_hijack = table_name == querier->attack_table;
-            if (is_hijack) {
-                // Add origin to attackers
-                graph->attackers->insert(parsed_path->at(0));
-            }
             
+            bool is_hijack = false; //table_name == querier->attack_table;
             // Seed the announcement
             give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
     
             // Clean up
             delete parsed_path;
+        }
+    }
+    for (const string table_name: {querier->tracked_ases_table}) {
+        pqxx::result ases = querier->select_tracked_ases(table_name);
+        for (pqxx::result::const_iterator c = ases.begin(); c!=ases.end(); ++c) {
+            uint32_t asn = c["asn"].as<uint32_t>();
+            bool is_attacker = c["attacker"].as<bool>();
+            if (is_attacker) {
+                graph->attackers->insert(asn);
+            }
         }
     }
     
@@ -160,7 +169,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     // Full path vector
     // TODO only handles seeding announcements at origin
     std::vector<uint32_t> cur_path;
-    cur_path.push_back(origin_asn);
   
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
@@ -172,10 +180,15 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = graph->translate_asn(*it);
+        cur_path.insert(cur_path.begin(), asn_on_path);
         // Find the current AS on the path
         ROVppAS *as_on_path = graph->ases->find(asn_on_path)->second;
         // Check if already received this prefix
         if (as_on_path->already_received(ann_to_check_for)) {
+            // update path vector
+            if (cur_path.back() == as_on_path->asn) {
+                continue;
+            }
             // Find the already received announcement and delete it
             as_on_path->delete_ann(ann_to_check_for);
         }
@@ -198,6 +211,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                 broken_path = true;
             }
         }
+
 
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
@@ -226,7 +240,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         }
         // No break in path so send the announcement
         if (!broken_path) {
-            ROVppAnnouncement ann = ROVppAnnouncement(*as_path->rbegin(),
+            ROVppAnnouncement ann = ROVppAnnouncement(cur_path.back(),
                                             prefix.addr,
                                             prefix.netmask,
                                             priority,
@@ -236,7 +250,6 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             cur_path,
                                             true);
             // Send the announcement to the current AS
-            std::cout << "Process Announcement" << std::endl;
             as_on_path->process_announcement(ann, false);
             if (graph->inverse_results != NULL) {
                 auto set = graph->inverse_results->find(
@@ -535,52 +548,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
     }
     
-    /**
-    // Trim provider and peer vectors of preventive and blackhole anns for 0.3 and 0.2bis
-    if (rovpp_as != NULL &&
-        rovpp_as->policy_vector.size() > 0 &&
-        (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-        rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS)) {
-        for (auto ann_pair : *rovpp_as->preventive_anns) {
-            for (auto it = anns_to_providers.begin(); it != anns_to_providers.end();) {
-                if (ann_pair.first.prefix == it->prefix &&
-                    ann_pair.first.origin == it->origin) {
-                    it = anns_to_providers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-            for (auto it = anns_to_peers.begin(); it != anns_to_peers.end();) {
-                if (ann_pair.first.prefix == it->prefix &&
-                    ann_pair.first.origin == it->origin) {
-                    it = anns_to_peers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
-        for (auto blackhole_ann : *rovpp_as->blackholes) {
-            for (auto it = anns_to_providers.begin(); it != anns_to_providers.end();) {
-                if (blackhole_ann.prefix == it->prefix &&
-                    blackhole_ann.origin == it->origin) {
-                    it = anns_to_providers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-            for (auto it = anns_to_peers.begin(); it != anns_to_peers.end();) {
-                if (blackhole_ann.prefix == it->prefix &&
-                    blackhole_ann.origin == it->origin) {
-                    it = anns_to_peers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
-        
-    }
-    */
-
     // Send the vectors of assembled announcements
     for (uint32_t provider_asn : *source_as->providers) {
         // For each provider, give the vector of announcements

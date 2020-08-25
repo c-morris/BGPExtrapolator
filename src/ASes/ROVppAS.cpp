@@ -35,7 +35,7 @@ ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn
     preventive_anns = new std::set<std::pair<ROVppAnnouncement, ROVppAnnouncement>>();
 
     ribs_in = new std::vector<ROVppAnnouncement>();
-    loc_rib = new std::map<Prefix<>, ROVppAnnouncement>();
+    loc_rib = all_anns;
     withdrawals = new std::vector<ROVppAnnouncement>();
 }
 
@@ -50,7 +50,6 @@ ROVppAS::~ROVppAS() {
     delete preventive_anns;
     
     delete ribs_in;
-    delete loc_rib;
     delete withdrawals;
 }
 
@@ -80,6 +79,30 @@ bool ROVppAS::pass_rov(ROVppAnnouncement &ann) {
     }
 }
 
+/** Checks whether or not an rovppannouncement is ASPA valid/invalid
+ *
+ * Those aware of how ASPA works may notice this is nothing like how ASPA
+ * works. This is an approximation, assuming an attacker is not an authorized
+ * neighbor. This also does not support "unknown" or "unverifiable" paths.
+ * 
+ * @param  ann  rovannouncement to check if it passes ASPA
+ * @return bool  return false if from attacker, true otherwise
+ */
+bool ROVppAS::pass_aspa(ROVppAnnouncement &ann) {
+    bool skiporigin = true;
+    for (auto asn : ann.as_path) {
+        // skip origin---this will be caught by ROV policies
+        if (skiporigin) {
+            skiporigin = false;
+            continue;
+        }
+        if (attackers->find(asn) != attackers->end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /** Add the rovannouncement to the vector of withdrawals to be processed.
  *
  * Also remove it from the ribs_in.
@@ -99,7 +122,6 @@ void ROVppAS::withdraw(ROVppAnnouncement &ann) {
  * @param ann The rovannouncement to be processed
  */ 
 void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran) {
-    std::cout << "ROV version" << std::endl;
 
     // Check for existing rovannouncement for prefix
     auto search = loc_rib->find(ann.prefix);
@@ -458,6 +480,13 @@ void ROVppAS::process_announcements(bool ran) {
                             preventive_anns->insert(std::pair<ROVppAnnouncement,ROVppAnnouncement>(preventive_ann, best_alternative_ann));
                             process_announcement(preventive_ann);
                         }
+                    }
+                // note, to make aspa run at the same time as rovpp move this out of the if else block
+                // and put it *above* in an if
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ASPA) {
+                    // reject if the attacker is on the path at all
+                    if (pass_aspa(ann)) {
+                        process_announcement(ann);
                     }
                 } else { // Unrecognized policy defaults to bgp
                     process_announcement(ann, false);

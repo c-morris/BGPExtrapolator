@@ -40,15 +40,15 @@
 #define ROVPP_TOP_TABLE "rovpp_top_100_ases"
 #define ROVPP_ETC_TABLE "rovpp_etc_ases"
 #define ROVPP_EDGE_TABLE "rovpp_edge_ases"
-#define ROVPP_VICTIM_TABLE "victims"
-#define ROVPP_ATTACKER_TABLE "attackers"
+#define ROVPP_SIMULATION_TABLE "simulation_announcements"
 #define ROVPP_BLACKHOLES_TABLE "rovpp_blackholes"
 #define ROVPP_ROAS_TABLE "roas"
 
 #define ROVPP_RESULTS_TABLE "rovpp_extrapolation_results"
-#define ROVPP_PEERS_TABLE "rovpp_peers"
-#define ROVPP_CUSTOMER_PROVIDER_TABLE "rovpp_customer_providers"
+#define ROVPP_PEERS_TABLE "peers"
+#define ROVPP_CUSTOMER_PROVIDER_TABLE "provider_customers"
 #define ROVPP_ANNOUNCEMENTS_TABLE "mrt_w_roas"
+#define ROVPP_TRACKED_ASES_TABLE "tracked_ases"
 
 //EzBGPsec Tables
 #define EZBGPSEC_AS_CATAGORIES_TABLE "good_customer_pairs"

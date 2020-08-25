@@ -31,14 +31,14 @@ ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> policy_tables /* = std
                                     std::string results_table /* = ROVPP_RESULTS_TABLE */,
                                     std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                                     std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
-                                    std::string victim_table /* = ROVPP_VICTIM_TABLE */,
-                                    std::string attacker_table /* = ROVPP_ATTACKER_TABLE */)
-    : SQLQuerier(announcements_table, results_table, inverse_results_table, depref_results_table) {
+                                    std::string tracked_ases_table /* = TRACKED_ASES_TABLE */,
+                                    std::string simulation_table /* = ROVPP_SIMULATION_TABLE */)
+    : SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table) {
     
     this->policy_tables = policy_tables;
     this->results_table = results_table;
-    this->victim_table = victim_table;
-    this->attack_table = attacker_table;
+    this->tracked_ases_table = tracked_ases_table;
+    this->simulation_table = simulation_table;
 }
 
 ROVppSQLQuerier::~ROVppSQLQuerier() {
@@ -89,6 +89,17 @@ pqxx::result ROVppSQLQuerier::select_all_pairs_from(std::string const& cur_table
     return execute(sql);
 }
 
+/** Pulls list of attackers and victims from tracked_ases table.
+ *
+ * @param cur_table Tracked ASes table name
+ */
+pqxx::result ROVppSQLQuerier::select_tracked_ases(std::string const& cur_table){
+    std::string sql = "SELECT asn, attacker FROM " + cur_table;
+    return execute(sql);
+}
+
+
+
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
 void ROVppSQLQuerier::copy_results_to_db(std::string file_name){
@@ -103,7 +114,7 @@ void ROVppSQLQuerier::create_results_tbl(){
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint, time bigint, alternate_as bigint, opt_flag int); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
-    std::cout << "Creating results table..." << std::endl;
+    std::cout << "Creating " << results_table << " table..." << std::endl;
     execute(sql, false);
 }
 

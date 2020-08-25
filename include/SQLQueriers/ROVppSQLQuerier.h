@@ -28,8 +28,8 @@
 
 class ROVppSQLQuerier: public SQLQuerier {
 public:
-    std::string victim_table;
-    std::string attack_table;
+    std::string simulation_table;
+    std::string tracked_ases_table;
     std::vector<std::string> policy_tables;
     
     ROVppSQLQuerier(std::vector<std::string> policy_tables,
@@ -37,14 +37,15 @@ public:
                     std::string results_table = ROVPP_RESULTS_TABLE,
                     std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
                     std::string depref_results_table = DEPREF_RESULTS_TABLE,
-                    std::string victim_table = ROVPP_VICTIM_TABLE,
-                    std::string attacker_table = ROVPP_ATTACKER_TABLE);
+                    std::string tracked_ases_table = ROVPP_TRACKED_ASES_TABLE,
+                    std::string simulation_table = ROVPP_SIMULATION_TABLE);
     ~ROVppSQLQuerier();
 
     pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));
     pqxx::result select_prefix_pairs(Prefix<>* p, std::string const& cur_table);
     pqxx::result select_subnet_pairs(Prefix<>* p, std::string const& cur_table);
     pqxx::result select_all_pairs_from(std::string const& cur_table);
+    pqxx::result select_tracked_ases(std::string const& cur_table);
     
     void copy_results_to_db(std::string);
     void create_results_tbl();
