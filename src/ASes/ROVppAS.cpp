@@ -35,8 +35,7 @@ ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn
     preventive_anns = new std::set<std::pair<ROVppAnnouncement, ROVppAnnouncement>>();
 
     ribs_in = new std::vector<ROVppAnnouncement>();
-    loc_rib = new std::map<Prefix<>, ROVppAnnouncement>();
-    all_anns = loc_rib;
+    loc_rib = all_anns;
     withdrawals = new std::vector<ROVppAnnouncement>();
 }
 
