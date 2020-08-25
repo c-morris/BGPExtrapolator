@@ -48,7 +48,7 @@
 #define ROVPP_PEERS_TABLE "peers"
 #define ROVPP_CUSTOMER_PROVIDER_TABLE "provider_customers"
 #define ROVPP_ANNOUNCEMENTS_TABLE "mrt_w_roas"
-#define TRACKED_ASES_TABLE "tracked_ases"
+#define ROVPP_TRACKED_ASES_TABLE "tracked_ases"
 
 //EzBGPsec Tables
 #define EZBGPSEC_AS_CATAGORIES_TABLE "good_customer_pairs"
