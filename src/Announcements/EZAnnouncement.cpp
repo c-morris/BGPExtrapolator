@@ -20,4 +20,5 @@ EZAnnouncement::EZAnnouncement(uint32_t aorigin, uint32_t aprefix, uint32_t anet
  */
 EZAnnouncement::EZAnnouncement(const EZAnnouncement& ann) : Announcement(ann) {
     this->from_attacker = ann.from_attacker;
+    this->as_path = ann.as_path;
 }

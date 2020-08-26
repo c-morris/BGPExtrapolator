@@ -10,6 +10,8 @@ public:
     EZAS();
 
     ~EZAS();
+
+    virtual void process_announcement(EZAnnouncement &ann, bool ran=true);
 };
 
 #endif

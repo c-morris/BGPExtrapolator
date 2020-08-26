@@ -100,8 +100,8 @@ public:
         onStack = false;
     }
 
+    BaseAS(uint32_t asn, bool store_depref_results) : BaseAS(asn, store_depref_results, NULL) { }
     BaseAS(uint32_t asn) : BaseAS(asn, false, NULL) { }
-
     BaseAS() : BaseAS(0, false, NULL) { }
 
     virtual ~BaseAS();

@@ -5,6 +5,7 @@
 
 class EZAnnouncement : public Announcement {
 public:
+    std::vector<uint32_t> as_path;
     bool from_attacker;
 
     /** Default constructor

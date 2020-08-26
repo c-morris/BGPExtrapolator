@@ -853,8 +853,7 @@ bool test_rovpp_process_announcement(){
     ROVppAnnouncement a2 = ROVppAnnouncement(111, p.addr, p.netmask, 298, 223, 0, x);
     as.process_announcement(a1);
     as.process_announcement(a2);
-    if (as.loc_rib->find(p)->second.received_from_asn != 223 ||
-        as.depref_anns->find(p)->second.received_from_asn != 222) {
+    if (as.loc_rib->find(p)->second.received_from_asn != 223) {
         std::cerr << "Failed best path inference priority check." << std::endl;
         return false;
     }    
@@ -862,8 +861,7 @@ bool test_rovpp_process_announcement(){
     // Check new best announcement
     ROVppAnnouncement a3 = ROVppAnnouncement(111, p.addr, p.netmask, 299, 224, 0, x);
     as.process_announcement(a3);
-    if (as.loc_rib->find(p)->second.received_from_asn != 224 ||
-        as.depref_anns->find(p)->second.received_from_asn != 223) {
+    if (as.loc_rib->find(p)->second.received_from_asn != 224) {
         std::cerr << "Failed best path priority correction check." << std::endl;
         return false;
     } 
