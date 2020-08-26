@@ -24,39 +24,10 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
-    as_path->push_back(3);
-    as_path->push_back(2);
-    as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p, 2);
+    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 300, 5, 2, false, true);
 
-    // Test that monitor annoucements were received
-    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
-        std::cerr << "Monitor flag failed." << std::endl;
-        return false;
-    }
-    
-    // Test announcement priority calculation
-    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 &&
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400) {
-        std::cerr << "Priority calculation failed." << std::endl;
-        return false;
-    }
-
-    // Test that only path received the announcement
-    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
-        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
-        std::cerr << "MRT overseeding check failed." << std::endl;
-        return false;
-    }
+    e.graph->ases->find(5)->second->process_announcement(attack_announcement);
 
     e.propagate_up();
     e.propagate_down();
