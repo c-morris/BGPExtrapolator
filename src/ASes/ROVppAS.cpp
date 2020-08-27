@@ -53,23 +53,10 @@ ROVppAS::~ROVppAS() {
     delete withdrawals;
 }
 
-/** Adds a policy to the policy_vector
- *
- * This function allows you to specify the policies
- * that this AS implements. The different types of policies are listed in 
- * the header of this class. 
- * 
- * @param p The policy to add. For example, ROVPPAS_TYPE_BGP (defualt), and
- */
 void ROVppAS::add_policy(uint32_t p) {
     policy_vector.push_back(p);
 }
 
-/** Checks whether or not an rovannouncement is from an attacker
- * 
- * @param  ann  rovannouncement to check if it passes ROV
- * @return bool  return false if from attacker, true otherwise
- */
 bool ROVppAS::pass_rov(ROVppAnnouncement &ann) {
     if (ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) { return false; }
     if (attackers != NULL) {
@@ -79,15 +66,6 @@ bool ROVppAS::pass_rov(ROVppAnnouncement &ann) {
     }
 }
 
-/** Checks whether or not an rovppannouncement is ASPA valid/invalid
- *
- * Those aware of how ASPA works may notice this is nothing like how ASPA
- * works. This is an approximation, assuming an attacker is not an authorized
- * neighbor. This also does not support "unknown" or "unverifiable" paths.
- * 
- * @param  ann  rovannouncement to check if it passes ASPA
- * @return bool  return false if from attacker, true otherwise
- */
 bool ROVppAS::pass_aspa(ROVppAnnouncement &ann) {
     bool skiporigin = true;
     for (auto asn : ann.as_path) {
@@ -103,10 +81,6 @@ bool ROVppAS::pass_aspa(ROVppAnnouncement &ann) {
     return true;
 }
 
-/** Add the rovannouncement to the vector of withdrawals to be processed.
- *
- * Also remove it from the ribs_in.
- */
 void ROVppAS::withdraw(ROVppAnnouncement &ann) {
     ROVppAnnouncement copy = ann;
     copy.withdraw = true;
@@ -114,13 +88,6 @@ void ROVppAS::withdraw(ROVppAnnouncement &ann) {
     ROVppAS::graph_changed = true;  // This means we will need to do another propagation
 }
 
-/** Processes a single rovannouncement, adding it to the ASes set of announcements if appropriate.
- *
- * Approximates BGP best path selection based on rovannouncement priority.
- * Called by process_announcements and Extrapolator.give_ann_to_as_path()
- * 
- * @param ann The rovannouncement to be processed
- */ 
 void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran) {
 
     // Check for existing rovannouncement for prefix
@@ -217,8 +184,6 @@ void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran) {
     }
 }
 
-/** Iterate through ribs_in and keep only the best. 
- */
 void ROVppAS::process_announcements(bool ran) {
     // Filter ribs_in for loops, checking path for self
     for (auto it = ribs_in->begin(); it != ribs_in->end();) {
@@ -510,14 +475,7 @@ void ROVppAS::process_announcements(bool ran) {
     }
 }
 
-/** Will return the best alternative announcemnt if it exists. If it doesn't exist, it will return the 
- * rovannouncement it was given.
- * 
- * @param  ann An announcemnt you want to find an alternative for.
- * @return     The best alternative rovannouncement (i.e. an rovannouncement which came from a neighbor who hadn't shared
- *             an attacker announcemnt with us).
- */
- ROVppAnnouncement ROVppAS::best_alternative_route(ROVppAnnouncement &ann) {
+ROVppAnnouncement ROVppAS::best_alternative_route(ROVppAnnouncement &ann) {
      // Initialize the default answer of (No best alternative with the current given ann)
      // This variable will update with the best ann if it exists
      ROVppAnnouncement best_alternative_ann = ann;
@@ -607,11 +565,6 @@ void ROVppAS::receive_announcements(std::vector<ROVppAnnouncement> &announcement
     }
 }
 
-/** Check if a monitor announcement is already recv'd by this AS. 
- *
- * @param ann Announcement to check for. 
- * @return True if recv'd, false otherwise.
- */
 bool ROVppAS::already_received(ROVppAnnouncement &ann) {
     auto search = loc_rib->find(ann.prefix);
     bool found = (search == loc_rib->end()) ? false : true;
@@ -626,8 +579,6 @@ void ROVppAS::clear_announcements() {
         depref_anns->clear();
 }
 
-/** Tiny galois field hash with a fixed key of 3.
- */
 uint8_t ROVppAS::tiny_hash(uint32_t as_number) {
     uint8_t mask = 0xFF;
     uint8_t value = 0;
@@ -637,11 +588,7 @@ uint8_t ROVppAS::tiny_hash(uint32_t as_number) {
     return value;
 }
 
-/**
- * [ROVppAS::stream_blacklist description]
- * @param  os [description]
- * @return    [description]
- */
+
 std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
   for (ROVppAnnouncement ann : *blackholes) {
       os << asn << ",";

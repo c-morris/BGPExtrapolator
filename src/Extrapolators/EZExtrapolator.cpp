@@ -165,10 +165,6 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
 }
 
-/*
- * This will find the neighbor to the attacker on the AS path.
- * The initial call should have the as be the victim
- */
 uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn) {
     uint32_t from_asn = as->all_anns->find(prefix)->second.received_from_asn;
 
@@ -178,15 +174,6 @@ uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, u
     return getPathNeighborOfAttacker(graph->ases->find(from_asn)->second, prefix, attacker_asn);
 }
 
-/*
- * This runs at the end of every iteration
- * 
- * Baically, go to the victim and see if it chose the attacker route.
- * if the prefix didn't reach the victim (an odd edge case), then it does not count to the total
- * If the Victim chose the fake announcement path, then sucessful attack++
- * 
- * In addition, if there was a successful attack, record the edge (asn pair) from the attacker to the neighbor on the path
- */
 void EZExtrapolator::calculate_successful_attacks() {
     //For every victim, prefix pair
     for(auto& it : *graph->victim_to_prefixes) {
@@ -223,11 +210,6 @@ void EZExtrapolator::calculate_successful_attacks() {
     graph->victim_to_prefixes->clear();
 }
 
-/*
- * A quick overwrite that removes the saving functionality since we are 
- *  only interested in the probibilities, not so much the actual info the extrapolator dumps out
- * Comment out the first line if the output is needed 
- */
 void EZExtrapolator::save_results(int iteration) {
     // BaseExtrapolator::save_results(iteration);
     calculate_successful_attacks();

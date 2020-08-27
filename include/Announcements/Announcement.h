@@ -55,6 +55,8 @@ public:
      */
     Announcement(const Announcement& ann);
 
+    //****************** FILE I/O ******************//
+
     /** Defines the << operator for the Announcements
      *
      * For use in debugging, this operator prints an announcements to an output stream.
@@ -70,6 +72,6 @@ public:
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    std::ostream& to_csv(std::ostream &os);
+    virtual std::ostream& to_csv(std::ostream &os);
 };
 #endif

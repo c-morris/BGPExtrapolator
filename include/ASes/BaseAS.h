@@ -46,6 +46,7 @@
 template <class AnnouncementType>
 class BaseAS {
 
+//Ensure that the Announcement class passed in through the template extends the Announcement class.
 static_assert(std::is_base_of<Announcement, AnnouncementType>::value, "AnnouncementType must inherit from Announcement");
 
 public:
@@ -72,7 +73,7 @@ public:
     int lowlink;
     bool onStack;
     
-    // Constructor
+    // Constructor. Must be in header file.... We like C++ class templates. We like C++ class templates....
     BaseAS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) : ran_bool(asn) {
 
         // Set ASN
@@ -106,26 +107,99 @@ public:
 
     virtual ~BaseAS();
     
-    virtual bool get_random(); 
+    /** Generates a random boolean value.
+    */
+    virtual bool get_random();
 
+    //****************** Relationship Handling ******************//
+
+    /** Add neighbor AS to the appropriate set in this AS based on the relationship.
+     *
+     * @param asn ASN of neighbor.
+     * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
+     */
     virtual void add_neighbor(uint32_t asn, int relationship);
+
+    /** Remove neighbor AS from the appropriate set in this AS based on the relationship.
+     *
+     * @param asn ASN of neighbor.
+     * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
+     */
     virtual void remove_neighbor(uint32_t asn, int relationship);
 
-    virtual void receive_announcements(std::vector<AnnouncementType> &announcements);
-    virtual void process_announcement(AnnouncementType &ann, bool ran=true);
-    virtual void process_announcements(bool ran=true);
-    virtual void clear_announcements();
+    //****************** Announcement Handling ******************//
 
-    virtual bool already_received(AnnouncementType &ann);
-    virtual void delete_ann(AnnouncementType &ann);
-    virtual void delete_ann(Prefix<> &prefix);
-
+    /** Swap a pair of prefix/origins for this AS in the inverse results.
+     *
+     * @param old The prefix/origin to be inserted
+     * @param current The prefix/origin to be removed
+     */
     virtual void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
                                         std::pair<Prefix<>,uint32_t> current);
 
+    /** Push the incoming propagated announcements to the incoming_announcements vector.
+     *
+     * This is NOT called for seeded announcements.
+     *
+     * @param announcements The announcements to be pushed onto the incoming_announcements vector.
+     */
+    virtual void receive_announcements(std::vector<AnnouncementType> &announcements);
+
+    /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
+     *
+     * Approximates BGP best path selection based on announcement priority.
+     * Called by process_announcements and Extrapolator.give_ann_to_as_path()
+     * 
+     * @param ann The announcement to be processed
+     */ 
+    virtual void process_announcement(AnnouncementType &ann, bool ran=true);
+
+    /** Iterate through incoming_announcements and keep only the best. 
+    */
+    virtual void process_announcements(bool ran=true);
+
+    /** Clear all announcement collections. 
+    */
+    virtual void clear_announcements();
+
+    /** Check if a monitor announcement is already recv'd by this AS. 
+     *
+     * @param ann Announcement to check for. 
+     * @return True if recv'd, false otherwise.
+     */
+    virtual bool already_received(AnnouncementType &ann);
+
+    /** Deletes given announcement.
+    */
+    virtual void delete_ann(AnnouncementType &ann);
+
+    /** Deletes the announcement of given prefix.
+    */
+    virtual void delete_ann(Prefix<> &prefix);
+
+    //****************** FILE I/O ******************//
+
+    /** Insertion operator for AS class.
+     *
+     * @param os
+     * @param as
+     * @return os passed as parameter
+     */
     template <class U>
     friend std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as);
+
+    /** Streams announcements to an output stream in a .csv readable file format.
+     *
+     * @param os
+     * @return output stream into which is passed the .csv row formatted announcements
+     */
     virtual std::ostream& stream_announcements(std::ostream &os);
+
+    /** Streams depref announcements to an output stream in a .csv readable file format.
+     *
+     * @param os
+     * @return output stream into which is passed the .csv row formatted announcements
+     */
     virtual std::ostream& stream_depref(std::ostream &os);
 };
 #endif

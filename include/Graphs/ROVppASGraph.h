@@ -42,8 +42,19 @@ public:
 
     ROVppAS* createNew(uint32_t asn);
 
-    // Overriden Methods
+    //****************** Overiden Methods ******************//
+
+    /** Process the graph without removing stubs (needs querier to save them).
+    */
     void process(SQLQuerier *querier);
+
+    /** Generates an ASGraph from relationship data in an SQL database based upon:
+     *      1) A populated peers table
+     *      2) A populated customer_providers table
+     *      3) A populated rovpp_ases table
+     *
+     * @param querier
+     */
     void create_graph_from_db(ROVppSQLQuerier*);
 
     // Overloaded 

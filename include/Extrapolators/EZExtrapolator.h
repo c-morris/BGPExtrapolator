@@ -74,9 +74,35 @@ public:
     void perform_propagation();
     void propagation_drop_connections_helper(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
 
+    /**
+     * This is where the attacker announcement is sent out. All paths are seeded and if an origin of the path
+     *      is to be attacked, then have the attacker process a malicous announcement and send it out (muahahaa).
+     */
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
+
+    /**
+     * This will find the neighbor to the attacker on the AS path.
+     * The initial call should have the as be the victim.
+     * This fucntion will likely get removed in the future because of path propagation.
+     */
     uint32_t getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn);
+
+    /**
+     * This runs at the end of every iteration
+     * 
+     * Baically, go to the victim and see if it chose the attacker route.
+     * if the prefix didn't reach the victim (an odd edge case), then it does not count to the total
+     * If the Victim chose the fake announcement path, then sucessful attack++
+     * 
+     * In addition, if there was a successful attack, record the edge (asn pair) from the attacker to the neighbor on the path
+     */
     void calculate_successful_attacks();
+
+    /*
+    * A quick overwrite that removes the traditional saving functionality since we are 
+    *   only interested in the probibilities, not so much the actual info the extrapolator dumps out about the accepted announcements.
+    * Comment out the first line if the output is needed.
+    */
     void save_results(int iteration);
 };
 

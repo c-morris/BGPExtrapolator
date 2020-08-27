@@ -172,6 +172,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     }
 }
 
+//We love C++ class templating. Please find another way to do this. I want to be wrong.
 template class BaseExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
 template class BaseExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;
 template class BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph, ROVppAnnouncement, ROVppAS>;

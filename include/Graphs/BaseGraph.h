@@ -84,27 +84,106 @@ public:
     //Creation of template type
     virtual ASType* createNew(uint32_t asn) = 0;
 
-    // Propagation interaction 
-    void clear_announcements();
-    uint32_t translate_asn(uint32_t asn);
-    // Graph setup
-    void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
-    void process(); // Remove?
-    virtual void process(SQLQuerier *querier); 
-    virtual void create_graph_from_db(SQLQuerier *querier);
-    void remove_stubs(SQLQuerier *querier);
-    void save_stubs_to_db(SQLQuerier *querier);
-    void save_non_stubs_to_db(SQLQuerier *querier);
-    void save_supernodes_to_db(SQLQuerier *querier);
-    void decide_ranks();
-    // Supernode generation
-    void tarjan();
-    void tarjan_helper(ASType *as, int &index, std::stack<ASType*> &s);
-    void combine_components();
-    // Misc
-    void printDebug();
-    void to_graphviz(std::ostream &os);
+    //****************** Propagation Interaction ******************//
 
+    /** Clear all announcements in AS.
+    */
+    virtual void clear_announcements();
+
+    /** Translates asn to asn of component it belongs to in graph.
+     *
+     *  @param asn the asn to translate
+     *  @return 0 if asn isn't found, otherwise return identifying ASN
+     */
+    virtual uint32_t translate_asn(uint32_t asn);
+
+    //****************** Graph Setup ******************//
+
+    /** Adds an AS relationship to the graph.
+     *
+     * If the AS does not exist in the graph, it will be created.
+     *
+     * @param asn ASN of AS to add the relationship to
+     * @param neighbor_asn ASN of neighbor.
+     * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
+     */
+    void add_relationship(uint32_t asn, uint32_t neighbor_asn, int relation);
+
+    /** Process with removing stubs (needs querier to save them).
+    */
+    virtual void process(SQLQuerier *querier);
+
+    /** Generates an ASGraph from relationship data in an SQL database based upon:
+     *      1) A populated peers table
+     *      2) A populated customer_providers table
+     * 
+     * @param querier
+     */
+    virtual void create_graph_from_db(SQLQuerier *querier);
+
+    /** Remove the stub ASes from the graph.
+     *
+     * @param querier
+     */
+    virtual void remove_stubs(SQLQuerier *querier);
+
+    /** Saves the stub ASes to be removed to a table on the database.
+     *
+     * @param querier
+     */
+    virtual void save_stubs_to_db(SQLQuerier *querier);
+
+    /** Saves the non_stub ASes to a table on the database.
+     *
+     * @param querier
+     */
+    virtual void save_non_stubs_to_db(SQLQuerier *querier);
+
+    /** Generate a csv with all supernodes, then dump them to database.
+     *
+     * @param querier
+     */
+    virtual void save_supernodes_to_db(SQLQuerier *querier);
+
+    /** Decide and assign ranks to all the AS's in the graph. 
+     *
+     *  The rank of an AS one plus is the maximum level of the nodes it has below it. 
+     *  This means it is possible to have an AS of rank 0 directly below an AS of 
+     *  rank 4, but not possible to have an AS of rank 3 below one of rank 2. 
+     *
+     *  The bottom of the DAG is rank 0. 
+     */
+    virtual void decide_ranks();
+
+    //****************** Supernode Generation ******************//
+
+    /** Tarjan driver to detect strongly connected components in the ASGraph.
+     * 
+     * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+     */
+    virtual void tarjan();
+
+    /** Tarjan algorithm to detect strongly connected components in the ASGraph.
+    */
+    virtual void tarjan_helper(ASType *as, int &index, std::stack<ASType*> &s);
+
+    /** Combine providers, peers, and customers of ASes in a strongly connected component.
+     *  Also append to component_translation for future reference.
+     */
+    virtual void combine_components();
+
+    //****************** Misc. ******************//
+
+    /** Print all ASes for debug.
+    */
+    virtual void printDebug();
+
+    /** Output python code for making graphviz digraph.
+    */
+    virtual void to_graphviz(std::ostream &os);
+
+    /** Operation for debug printing AS
+    */
     template <class U>
     friend std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg);
 };

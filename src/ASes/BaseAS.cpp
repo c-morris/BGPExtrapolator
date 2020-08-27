@@ -36,20 +36,14 @@ BaseAS<AnnouncementType>::~BaseAS() {
     delete member_ases;
 }
 
-
-/** Generates a random boolean value.
- */
 template <class AnnouncementType>
 bool BaseAS<AnnouncementType>::get_random() {
     bool r = (ran_bool() % 2 == 0);
     return r;
 }
 
-/** Add neighbor AS to the appropriate set in this AS based on the relationship.
- *
- * @param asn ASN of neighbor.
- * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
- */
+//****************** Relationship Handling ******************//
+
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::add_neighbor(uint32_t asn, int relationship) {
     switch (relationship) {
@@ -65,11 +59,6 @@ void BaseAS<AnnouncementType>::add_neighbor(uint32_t asn, int relationship) {
     }
 }
 
-/** Remove neighbor AS from the appropriate set in this AS based on the relationship.
- *
- * @param asn ASN of neighbor.
- * @param relationship AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
- */
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::remove_neighbor(uint32_t asn, int relationship) {
     switch (relationship) {
@@ -85,11 +74,8 @@ void BaseAS<AnnouncementType>::remove_neighbor(uint32_t asn, int relationship) {
     }
 }
 
-/** Swap a pair of prefix/origins for this AS in the inverse results.
- *
- * @param old The prefix/origin to be inserted
- * @param current The prefix/origin to be removed
- */
+//****************** Announcement Handling ******************//
+
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::swap_inverse_result(std::pair<Prefix<>,uint32_t> old, std::pair<Prefix<>,uint32_t> current) {
     if (inverse_results != NULL) {
@@ -105,12 +91,6 @@ void BaseAS<AnnouncementType>::swap_inverse_result(std::pair<Prefix<>,uint32_t> 
     }
 }
 
-/** Push the incoming propagated announcements to the incoming_announcements vector.
- *
- * This is NOT called for seeded announcements.
- *
- * @param announcements The announcements to be pushed onto the incoming_announcements vector.
- */
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::receive_announcements(std::vector<AnnouncementType> &announcements) {
     for (AnnouncementType &ann : announcements) {
@@ -119,13 +99,6 @@ void BaseAS<AnnouncementType>::receive_announcements(std::vector<AnnouncementTyp
     }
 }
 
-/** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
- *
- * Approximates BGP best path selection based on announcement priority.
- * Called by process_announcements and Extrapolator.give_ann_to_as_path()
- * 
- * @param ann The announcement to be processed
- */ 
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::process_announcement(AnnouncementType &ann, bool ran) {
     // Check for existing announcement for prefix
@@ -229,8 +202,6 @@ void BaseAS<AnnouncementType>::process_announcement(AnnouncementType &ann, bool 
     }
 }
 
-/** Iterate through incoming_announcements and keep only the best. 
- */
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::process_announcements(bool ran) {
     for (auto &ann : *incoming_announcements) {
@@ -242,8 +213,6 @@ void BaseAS<AnnouncementType>::process_announcements(bool ran) {
     incoming_announcements->clear();
 }
 
-/** Clear all announcement collections. 
- */
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::clear_announcements() {
     all_anns->clear();
@@ -253,11 +222,6 @@ void BaseAS<AnnouncementType>::clear_announcements() {
         depref_anns->clear();
 }
 
-/** Check if a monitor announcement is already recv'd by this AS. 
- *
- * @param ann Announcement to check for. 
- * @return True if recv'd, false otherwise.
- */
 template <class AnnouncementType>
 bool BaseAS<AnnouncementType>::already_received(AnnouncementType &ann) {
     auto search = all_anns->find(ann.prefix);
@@ -265,26 +229,18 @@ bool BaseAS<AnnouncementType>::already_received(AnnouncementType &ann) {
     return found;
 }
 
-/** Deletes given announcement.
- */
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::delete_ann(AnnouncementType &ann) {
     all_anns->erase(ann.prefix);
 }
 
-/** Deletes the announcement of given prefix.
- */
 template <class AnnouncementType>
 void BaseAS<AnnouncementType>::delete_ann(Prefix<> &prefix) {
     all_anns->erase(prefix);
 }
 
-/** Insertion operator for AS class.
- *
- * @param os
- * @param as
- * @return os passed as parameter
- */
+//****************** FILE I/O ******************//
+
 template <class U>
 std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as) {
     os << "ASN: " << as.asn << std::endl << "Rank: " << as.rank
@@ -306,11 +262,6 @@ std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as) {
     return os;
 }
 
-/** Streams announcements to an output stream in a .csv readable file format.
- *
- * @param os
- * @return output stream into which is passed the .csv row formatted announcements
- */
 template <class AnnouncementType>
 std::ostream& BaseAS<AnnouncementType>::stream_announcements(std::ostream &os) {
     for (auto &ann : *all_anns) {
@@ -320,11 +271,6 @@ std::ostream& BaseAS<AnnouncementType>::stream_announcements(std::ostream &os) {
     return os;
 }
 
-/** Streams depref announcements to an output stream in a .csv readable file format.
- *
- * @param os
- * @return output stream into which is passed the .csv row formatted announcements
- */
 template <class AnnouncementType>
 std::ostream& BaseAS<AnnouncementType>::stream_depref(std::ostream &os) {
     if(depref_anns != NULL) {
@@ -336,6 +282,7 @@ std::ostream& BaseAS<AnnouncementType>::stream_depref(std::ostream &os) {
     return os;
 }
 
+//We love C++
 template class BaseAS<Announcement>;
 template class BaseAS<EZAnnouncement>;
 template class BaseAS<ROVppAnnouncement>;
