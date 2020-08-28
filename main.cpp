@@ -22,22 +22,21 @@
  ************************************************************************/
 
 #ifndef RUN_TESTS
-#include "Logger.h"
-
 #include <iostream>
 #include <boost/program_options.hpp>
 
-#include "AS.h"
-#include "ASGraph.h"
-#include "Announcement.h"
-#include "Extrapolator.h"
-#include "Tests.h"
+#include "Logger.h"
+#include "ASes/AS.h"
+#include "Graphs/ASGraph.h"
+#include "Announcements/Announcement.h"
+#include "Extrapolators/Extrapolator.h"
+#include "Extrapolators/ROVppExtrapolator.h"
+#include "Extrapolators/EZExtrapolator.h"
+#include "Tests/Tests.h"
 
 void intro() {
     // This needs to be finished
-    std::cout << "***** Routing Extrapolator v0.2 *****" << std::endl;
-    std::cout << "Copyright (C) someone, somewhere, probably." << std::endl;
-    std::cout << "License... is probably important." << std::endl;
+    std::cout << "***** Routing Extrapolator v0.3 *****" << std::endl;
     std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
     std::cout << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
 }
@@ -51,17 +50,26 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("rovpp,v", 
+         po::value<bool>()->default_value(false), 
+         "flag for rovpp run")
+        ("ezbgpsec,z", 
+         po::value<uint32_t>()->default_value(0), 
+         "number of rounds for ezbgpsec run")
+        ("num-in-between,n", 
+         po::value<uint32_t>()->default_value(DEFAULT_NUM_ASES_BETWEEN_ATTACKER), 
+         "number of in between ASes for ezbgpsec run")
         ("random,b", 
-         po::value<bool>()->default_value(true), 
+         po::value<bool>()->default_value(DEFAULT_RANDOM_TIEBRAKING), 
          "disables random tiebraking for testing")
         ("invert-results,i", 
-         po::value<bool>()->default_value(true), 
-         "record ASNs which do *not* have a route to a prefix-origin (smaller results size)")
+         po::value<bool>()->default_value(DEFAULT_STORE_INVERT_RESULTS), 
+         "record ASNs which do *not* have a route to a prefix-origin")
         ("store-depref,d", 
-         po::value<bool>()->default_value(false), 
+         po::value<bool>()->default_value(DEFAULT_STORE_DEPREF_RESULTS), 
          "store depref results")
         ("iteration-size,s", 
-         po::value<uint32_t>()->default_value(50000), 
+         po::value<uint32_t>()->default_value(DEFAULT_ITERATION_SIZE), 
          "number of prefixes to be used in one iteration cycle")
         ("results-table,r",
          po::value<string>()->default_value(RESULTS_TABLE),
@@ -75,14 +83,26 @@ int main(int argc, char *argv[]) {
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
          "name of announcements table")
+        ("simulation-table,f",
+         po::value<string>()->default_value(ROVPP_SIMULATION_TABLE),
+         "name of simulation announcements table")
+        ("tracked-ases-table,u",
+         po::value<string>()->default_value(ROVPP_TRACKED_ASES_TABLE),
+         "name of tracked ases table for attackers and victims")
+        ("policy-tables,t",
+         po::value<vector<string>>(),
+         "space-separated names of ROVpp policy tables")
+        ("prop-twice,k",
+         po::value<bool>()->default_value(true),
+         "flag whether or not to propagate twice")
         ("log-folder,l",
          po::value<string>()->default_value(""),
          "enables the use of logging, best used for debugging only");
-    ;
+
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
     po::notify(vm);
-    if (vm.count("help")){
+    if (vm.count("help")) {
         cout << desc << endl;
         exit(0);
     }
@@ -100,20 +120,82 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Instantiate Extrapolator
-    Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
-        vm["invert-results"].as<bool>(),
-        vm["store-depref"].as<bool>(),
-        (vm.count("announcements-table") ? vm["announcements-table"].as<string>() : ANNOUNCEMENTS_TABLE),
-        (vm.count("results-table") ? vm["results-table"].as<string>() : RESULTS_TABLE),
-        (vm.count("inverse-results-table") ? vm["inverse-results-table"].as<string>() : INVERSE_RESULTS_TABLE),
-        (vm.count("depref-table") ? vm["depref-table"].as<string>() : DEPREF_RESULTS_TABLE),
-        (vm["iteration-size"].as<uint32_t>()));
-    
-    // Run propagation
-    extrap->perform_propagation();
+    // Check for ROV++ mode
+    if (vm["rovpp"].as<bool>()) {
+         ROVppExtrapolator *extrap = new ROVppExtrapolator(
+            (vm.count("policy-tables") ?
+                vm["policy-tables"].as<vector<string>>() : 
+                vector<string>()),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ROVPP_ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                ROVPP_RESULTS_TABLE),
+            (vm.count("tracked-ases-table") ?
+                vm["tracked-ases-table"].as<string>() : 
+                ROVPP_TRACKED_ASES_TABLE),
+            (vm.count("simulation-table") ?
+                vm["simulation-table"].as<string>() : 
+                ROVPP_SIMULATION_TABLE));
+            
+        // Run propagation
+        bool prop_twice = vm["prop-twice"].as<bool>();
+        extrap->perform_propagation(prop_twice);
+        // Clean up
+        delete extrap;
+    } else if(vm["ezbgpsec"].as<uint32_t>()) {
+        // Instantiate Extrapolator
+        EZExtrapolator *extrap = new EZExtrapolator(
+            vm["random"].as<bool>(),
+            vm["invert-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            vm["iteration-size"].as<uint32_t>(),
+            vm["ezbgpsec"].as<uint32_t>(),
+            vm["num-in-between"].as<uint32_t>());
+            
+        // Run propagation
+        extrap->perform_propagation();
 
-    delete extrap;
+        // Clean up
+        delete extrap;
+    } else {
+        // Instantiate Extrapolator
+        Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
+            vm["invert-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm["iteration-size"].as<uint32_t>()));
+            
+        // Run propagation
+        extrap->perform_propagation();
+        // Clean up
+        delete extrap;
+    }
+
     return 0;
 }
 #endif // RUN_TESTS

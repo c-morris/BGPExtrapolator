@@ -7,6 +7,7 @@
 *.o
 *.obj
 bgp-extrapolator
+bin/
 
 # Unit Test files
 graph.csv
@@ -38,3 +39,7 @@ graph.csv
 # Swap Files
 *.swp
 *.swo
+
+# IDE Setting Files
+.vscode/
+.vs/
