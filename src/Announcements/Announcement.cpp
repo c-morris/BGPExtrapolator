@@ -53,6 +53,8 @@ Announcement::Announcement(const Announcement& ann) {
     policy_index = ann.policy_index;     
 }
 
+//****************** FILE I/O ******************//
+
 std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
     os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
         ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin

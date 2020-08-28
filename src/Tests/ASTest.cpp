@@ -128,7 +128,7 @@ bool test_process_announcement(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
-    AS as = AS();
+    AS as = AS(0, true);
     as.process_announcement(ann, true);
     Prefix<> old_prefix = ann.prefix;
     ann.prefix.addr = 0x321C9F00;

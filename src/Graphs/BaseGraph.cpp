@@ -46,34 +46,29 @@ BaseGraph<ASType>::~BaseGraph() {
         delete c;
     delete components;
 
-    for (auto const& i : *inverse_results)
-        delete i.second;
-    delete inverse_results;
+    if(inverse_results != NULL) {
+        for (auto const& i : *inverse_results)
+            delete i.second;
+        delete inverse_results;
+    }
 
     delete component_translation;
     delete stubs_to_parents;
     delete non_stubs;
 }
 
-/** Clear all announcements in AS.
- */
 template <class ASType>
 void BaseGraph<ASType>::clear_announcements() {
     for (auto const& as : *ases)
         as.second->clear_announcements();
-    for (auto const& i : *inverse_results)
-        delete i.second;
-    inverse_results->clear();
+
+    if(inverse_results != NULL) {
+        for (auto const& i : *inverse_results)
+            delete i.second;
+        inverse_results->clear();
+    }
 }
 
-/** Adds an AS relationship to the graph.
- *
- * If the AS does not exist in the graph, it will be created.
- *
- * @param asn ASN of AS to add the relationship to
- * @param neighbor_asn ASN of neighbor.
- * @param relation AS_REL_PROVIDER, AS_REL_PEER, or AS_REL_CUSTOMER.
- */
 template <class ASType>
 void BaseGraph<ASType>::add_relationship(uint32_t asn, 
                                             uint32_t neighbor_asn, 
@@ -88,10 +83,6 @@ void BaseGraph<ASType>::add_relationship(uint32_t asn,
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
-/** Translates asn to asn of component it belongs to in graph.
- *
- * @return 0 if asn isn't found, otherwise return identifying ASN
- */
 template <class ASType>
 uint32_t BaseGraph<ASType>::translate_asn(uint32_t asn) {
     auto search = component_translation->find(asn);
@@ -100,8 +91,6 @@ uint32_t BaseGraph<ASType>::translate_asn(uint32_t asn) {
     return search->second;
 }
 
-/** Process with removing stubs (needs querier to save them).
- */
 template <class ASType>
 void BaseGraph<ASType>::process(SQLQuerier *querier) {
     remove_stubs(querier);
@@ -111,12 +100,6 @@ void BaseGraph<ASType>::process(SQLQuerier *querier) {
     decide_ranks();
 }
 
-/** Generates an ASGraph from relationship data in an SQL database based upon:
- *      1) A populated peers table
- *      2) A populated customer_providers table
- * 
- * @param querier
- */
 template <class ASType>
 void BaseGraph<ASType>::create_graph_from_db(SQLQuerier *querier) {
     // Assemble Peers
@@ -140,10 +123,6 @@ void BaseGraph<ASType>::create_graph_from_db(SQLQuerier *querier) {
     process(querier);
 }
 
-/** Remove the stub ASes from the graph.
- *
- * @param querier
- */
 template <class ASType>
 void BaseGraph<ASType>::remove_stubs(SQLQuerier *querier) {
     std::vector<ASType*> to_remove;
@@ -182,10 +161,6 @@ void BaseGraph<ASType>::remove_stubs(SQLQuerier *querier) {
     save_non_stubs_to_db(querier);
 }
 
-/** Saves the stub ASes to be removed to a table on the database.
- *
- * @param querier
- */
 template <class ASType>
 void BaseGraph<ASType>::save_stubs_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
@@ -207,10 +182,6 @@ void BaseGraph<ASType>::save_stubs_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
-/** Saves the non_stub ASes to a table on the database.
- *
- * @param querier
- */
 template <class ASType>
 void BaseGraph<ASType>::save_non_stubs_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
@@ -232,10 +203,6 @@ void BaseGraph<ASType>::save_non_stubs_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
-/** Generate a csv with all supernodes, then dump them to database.
- *
- * @param querier
- */
 template <class ASType>
 void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
@@ -270,14 +237,6 @@ void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
-/** Decide and assign ranks to all the AS's in the graph. 
- *
- *  The rank of an AS one plus is the maximum level of the nodes it has below it. 
- *  This means it is possible to have an AS of rank 0 directly below an AS of 
- *  rank 4, but not possible to have an AS of rank 3 below one of rank 2. 
- *
- *  The bottom of the DAG is rank 0. 
- */
 template <class ASType>
 void BaseGraph<ASType>::decide_ranks() {
     ases_by_rank->clear();
@@ -313,14 +272,10 @@ void BaseGraph<ASType>::decide_ranks() {
             }
         }
         i++;
-    } 
+    }
     return;
 }
 
-/** Tarjan driver to detect strongly connected components in the ASGraph.
- * 
- * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
- */
 template <class ASType>
 void BaseGraph<ASType>::tarjan() {
     int index = 0;
@@ -332,8 +287,6 @@ void BaseGraph<ASType>::tarjan() {
     return;
 }
 
-/** Tarjan algorithm to detect strongly connected components in the ASGraph.
- */
 template <class ASType>
 void BaseGraph<ASType>::tarjan_helper(ASType *as, int &index, std::stack<ASType*> &s) {
     as->index = index;
@@ -369,9 +322,6 @@ void BaseGraph<ASType>::tarjan_helper(ASType *as, int &index, std::stack<ASType*
     }
 }
 
-/** Combine providers, peers, and customers of ASes in a strongly connected component.
- *  Also append to component_translation for future reference.
- */
 template <class ASType>
 void BaseGraph<ASType>::combine_components() {
     
@@ -477,9 +427,6 @@ void BaseGraph<ASType>::combine_components() {
     return;
 }
 
-
-/** Print all ASes for debug.
- */
 template <class ASType>
 void BaseGraph<ASType>::printDebug() {
     for (auto const& as : *ases)
@@ -487,9 +434,6 @@ void BaseGraph<ASType>::printDebug() {
     return; 
 }
 
-
-/** Output python code for making graphviz digraph.
- */
 template <class ASType>
 void BaseGraph<ASType>::to_graphviz(std::ostream &os) {
     std::string id = "";
@@ -501,9 +445,6 @@ void BaseGraph<ASType>::to_graphviz(std::ostream &os) {
     }
 }
 
-
-/** Operation for debug printing AS
- */
 template <class U>
 std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg) {
     os << "AS's" << std::endl;
@@ -512,6 +453,7 @@ std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg) {
     return os;
 }
 
+//We love C++
 template class BaseGraph<AS>;
 template class BaseGraph<EZAS>;
 template class BaseGraph<ROVppAS>;

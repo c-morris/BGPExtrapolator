@@ -91,28 +91,93 @@ public:
 
     ~ROVppAS();
     
-    // Overrided Methods
-    // This works because the parent is templated for ROVppAnnouncements
+    //****************** Announcement Handling ******************//
+
+    /** Processes a single rovannouncement, adding it to the ASes set of announcements if appropriate.
+     *
+     * Approximates BGP best path selection based on rovannouncement priority.
+     * Called by process_announcements and Extrapolator.give_ann_to_as_path()
+     * 
+     * @param ann The rovannouncement to be processed
+     */ 
     void process_announcement(ROVppAnnouncement &ann, bool ran=true);
+
+    /** Iterate through ribs_in and keep only the best. 
+    */
     void process_announcements(bool ran=true);
     
-    // ROV Methods
+    //****************** ROV Methods ******************//
+
+    /** Checks whether or not an rovannouncement is from an attacker
+     * 
+     * @param  ann  rovannouncement to check if it passes ROV
+     * @return bool  return false if from attacker, true otherwise
+     */
     bool pass_rov(ROVppAnnouncement &ann);
+
+    /** Checks whether or not an rovppannouncement is ASPA valid/invalid
+     *
+     * Those aware of how ASPA works may notice this is nothing like how ASPA
+     * works. This is an approximation, assuming an attacker is not an authorized
+     * neighbor. This also does not support "unknown" or "unverifiable" paths.
+     * 
+     * @param  ann  rovannouncement to check if it passes ASPA
+     * @return bool  return false if from attacker, true otherwise
+     */
     bool pass_aspa(ROVppAnnouncement &ann);
+
+    /** Adds a policy to the policy_vector
+     *
+     * This function allows you to specify the policies
+     * that this AS implements. The different types of policies are listed in 
+     * the header of this class. 
+     * 
+     * @param p The policy to add. For example, ROVPPAS_TYPE_BGP (defualt), and
+     */
     void add_policy(uint32_t);
-    // Helper functions
+
+    //****************** Helper Functions ******************//
+
+    /** Add the rovannouncement to the vector of withdrawals to be processed.
+     *
+     *  Also remove it from the ribs_in.
+     */
     void withdraw(ROVppAnnouncement &ann);
     void withdraw(ROVppAnnouncement &ann, ROVppAS &neighbor);
+
+    /** Tiny galois field hash with a fixed key of 3.
+    */
     uint8_t tiny_hash(uint32_t);
+
     void check_preventives(ROVppAnnouncement ann);
     void receive_announcements(std::vector<ROVppAnnouncement> &announcements);
+
+    /** Check if a monitor announcement is already recv'd by this AS. 
+     *
+     * @param ann Announcement to check for. 
+     * @return True if recv'd, false otherwise.
+     */
     bool already_received(ROVppAnnouncement &ann);
     void clear_announcements();
+
+    /** Will return the best alternative announcemnt if it exists. If it doesn't exist, it will return the 
+     * rovannouncement it was given.
+     * 
+     * @param  ann An announcemnt you want to find an alternative for.
+     * @return     The best alternative rovannouncement (i.e. an rovannouncement which came from a neighbor who hadn't shared
+     *             an attacker announcemnt with us).
+     */
     ROVppAnnouncement best_alternative_route(ROVppAnnouncement &ann);  // help find a good alternative route 
                                                         // (i.e. an ann from a neighbor which 
                                                         // didn't give you the attacker's announcement)
                                                         // Will return the same given ann if there is
                                                         // no better alternative
+    
+    /**
+     * [ROVppAS::stream_blacklist description]
+     * @param  os [description]
+     * @return    [description]
+     */
     std::ostream& stream_blackholes(std:: ostream &os);
 };
 #endif

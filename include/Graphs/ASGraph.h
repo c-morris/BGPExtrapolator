@@ -28,10 +28,10 @@
 
 class ASGraph : public BaseGraph<AS> {
 public:
-    ASGraph();
-    ~ASGraph();
+    ASGraph(bool store_inverse_results, bool store_depref_results);
+    virtual ~ASGraph();
 
-    AS* createNew(uint32_t asn);
+    virtual AS* createNew(uint32_t asn);
 };
 
 #endif

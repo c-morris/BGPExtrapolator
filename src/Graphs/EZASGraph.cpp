@@ -1,6 +1,6 @@
 #include "Graphs/EZASGraph.h"
 
-EZASGraph::EZASGraph() : BaseGraph<EZAS>() {
+EZASGraph::EZASGraph() : BaseGraph(false, false) {
     origin_to_attacker_victim = new std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>>();
     victim_to_prefixes = new std::unordered_map<uint32_t, Prefix<>>();
     attacker_edge_removal = new std::vector<std::pair<uint32_t, uint32_t>>();
@@ -41,17 +41,26 @@ void EZASGraph::distributeAttackersVictims(SQLQuerier* querier) {
 
     pqxx::result triples = querier->execute("select * from good_customer_pairs");
 
-    uint32_t victim1;
-    uint32_t attacker; 
-    uint32_t victim2;
+    uint32_t origin_asn;
+    uint32_t attacker_asn; 
+    uint32_t victim_asn;
 
     for(unsigned int i = 0; i < triples.size(); i++) {
-        triples[i]["victim_1"].to(victim1);
-        triples[i]["attacker"].to(attacker);
-        triples[i]["victim_2"].to(victim2);
+        triples[i]["victim_1"].to(origin_asn);
+        triples[i]["attacker"].to(attacker_asn);
+        triples[i]["victim_2"].to(victim_asn);
+
+        auto origin_search = ases->find(origin_asn);
+        auto attacker_search = ases->find(attacker_asn);
+        auto victim_search = ases->find(victim_asn);
+
+        //Only add if all three ASes exist
+        //In addition, this ensures that none of them are in a component
+        if(origin_search == ases->end() || attacker_search == ases->end() || victim_search == ases->end())
+            continue;
 
         origin_to_attacker_victim->insert(std::pair<uint32_t, std::pair<uint32_t, uint32_t>>
-            (victim1, std::make_pair(attacker, victim2)));
+            (origin_asn, std::make_pair(attacker_asn, victim_asn)));
     }
 }
 

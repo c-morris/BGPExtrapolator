@@ -109,6 +109,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down ) {
         BOOST_CHECK( test_propagate_down() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down2 ) {
+        BOOST_CHECK( test_propagate_down2() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );
 }
@@ -192,6 +195,12 @@ BOOST_AUTO_TEST_CASE( ROVpp_test_tiny_hash ) {
 }
 BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
         BOOST_CHECK( test_rovpp_full_path() );
+}
+
+//EZBGPsec Tests
+
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
+        BOOST_CHECK( ezbgpsec_test_path_propagation() );
 }
 
 #endif // RUN_TESTS

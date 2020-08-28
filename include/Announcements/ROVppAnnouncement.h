@@ -38,31 +38,31 @@ public:
     /** Default constructor
      */
     ROVppAnnouncement(uint32_t aorigin, 
-                 uint32_t aprefix, 
-                 uint32_t anetmask,
-                 uint32_t from_asn, 
-                 int64_t timestamp = 0);
+                        uint32_t aprefix, 
+                        uint32_t anetmask,
+                        uint32_t from_asn, 
+                        int64_t timestamp = 0);
     
     /** Priority constructor
      */
     ROVppAnnouncement(uint32_t aorigin, 
-                 uint32_t aprefix, 
-                 uint32_t anetmask,
-                 uint32_t pr, 
-                 uint32_t from_asn, 
-                 int64_t timestamp, 
-                 const std::vector<uint32_t> &path,
-                 bool a_from_monitor = false);
+                        uint32_t aprefix, 
+                        uint32_t anetmask,
+                        uint32_t pr, 
+                        uint32_t from_asn, 
+                        int64_t timestamp, 
+                        const std::vector<uint32_t> &path,
+                        bool a_from_monitor = false);
 
     ROVppAnnouncement(uint32_t aorigin, 
-                 uint32_t aprefix, 
-                 uint32_t anetmask,
-                 uint32_t pr, 
-                 uint32_t from_asn, 
-                 int64_t timestamp,
-                 uint32_t policy, 
-                 const std::vector<uint32_t> &path,
-                 bool a_from_monitor = false);
+                        uint32_t aprefix, 
+                        uint32_t anetmask,
+                        uint32_t pr, 
+                        uint32_t from_asn, 
+                        int64_t timestamp,
+                        uint32_t policy, 
+                        const std::vector<uint32_t> &path,
+                        bool a_from_monitor = false);
 
     /** Copy constructor
      */

@@ -23,7 +23,7 @@
 
 #include "Graphs/ASGraph.h"
 
-ASGraph::ASGraph() {
+ASGraph::ASGraph(bool store_inverse_results, bool store_depref_results) : BaseGraph(store_inverse_results, store_depref_results) {
 
 }
 
@@ -32,5 +32,5 @@ ASGraph::~ASGraph() {
 }
 
 AS* ASGraph::createNew(uint32_t asn) {
-    return new AS(asn, inverse_results);
+    return new AS(asn, store_depref_results, inverse_results);
 }

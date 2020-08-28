@@ -10,7 +10,16 @@ class BlockedExtrapolator : public BaseExtrapolator<SQLQuerierType, GraphType, A
 protected:
     uint32_t iteration_size;
 
+    /**
+     *  Overrwritable function that is first called in the preform_propagation function.
+     *  Purely here for inheritance reasons 
+     */
     virtual void init();
+
+    /**
+     *  Overrwritable function that is called after populate_blocks in the preform_propagation function.
+     *  Purely here for inheritance reasons.
+     */
     virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
 
 public:

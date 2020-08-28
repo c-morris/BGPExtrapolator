@@ -20,16 +20,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
-
-#include <stdlib.h>
-#include <iostream>
-#include <time.h>
-
-#include "ASes/AS.h"
-#include "Graphs/ASGraph.h"
+#include "Graphs/RanGraph.h"
 
 ASGraph* ran_graph(int num_edges, int num_vertices) {
-    ASGraph* graph = new ASGraph;
+    ASGraph* graph = new ASGraph(false, false);
     //srand(time(NULL));
     //v = 11+rand()%10;
     //e = rand()%((v*(v-1))/2);
