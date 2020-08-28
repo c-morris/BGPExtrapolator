@@ -185,7 +185,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             } else if (as_on_path->customers->find(*(it - 1)) != as_on_path->customers->end()) {
                 received_from = AS_REL_CUSTOMER;
             } else {
-                broken_path = true;
+                // broken path checking is disabled in ROV++
             }
         }
 
@@ -216,28 +216,24 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             received_from_asn = *(it-1);
         }
         // No break in path so send the announcement
-        if (!broken_path) {
-            ROVppAnnouncement ann = ROVppAnnouncement(cur_path.back(),
-                                            prefix.addr,
-                                            prefix.netmask,
-                                            priority,
-                                            received_from_asn,
-                                            timestamp,
-                                            0, // policy defaults to BGP
-                                            cur_path,
-                                            true);
-            // Send the announcement to the current AS
-            as_on_path->process_announcement(ann, false);
-            if (graph->inverse_results != NULL) {
-                auto set = graph->inverse_results->find(
-                        std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
-                // Remove the AS from the prefix's inverse results
-                if (set != graph->inverse_results->end()) {
-                    set->second->erase(as_on_path->asn);
-                }
+        ROVppAnnouncement ann = ROVppAnnouncement(cur_path.back(),
+                                        prefix.addr,
+                                        prefix.netmask,
+                                        priority,
+                                        received_from_asn,
+                                        timestamp,
+                                        0, // policy defaults to BGP
+                                        cur_path,
+                                        true);
+        // Send the announcement to the current AS
+        as_on_path->process_announcement(ann, false);
+        if (graph->inverse_results != NULL) {
+            auto set = graph->inverse_results->find(
+                    std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+            // Remove the AS from the prefix's inverse results
+            if (set != graph->inverse_results->end()) {
+                set->second->erase(as_on_path->asn);
             }
-        } else {
-            // Report the broken path if desired
         }
     }
 }
