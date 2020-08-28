@@ -37,9 +37,9 @@
 
 // ROV++ Tables
 #define ROVPP_POLICY_TABLE "rovpp_ases"
-#define ROVPP_TOP_TABLE "rovpp_top_100_ases"
-#define ROVPP_ETC_TABLE "rovpp_etc_ases"
-#define ROVPP_EDGE_TABLE "rovpp_edge_ases"
+#define ROVPP_TOP_TABLE "top_100_ases"
+#define ROVPP_ETC_TABLE "etc_ases"
+#define ROVPP_EDGE_TABLE "edge_ases"
 #define ROVPP_SIMULATION_TABLE "simulation_announcements"
 #define ROVPP_BLACKHOLES_TABLE "rovpp_blackholes"
 #define ROVPP_ROAS_TABLE "roas"
