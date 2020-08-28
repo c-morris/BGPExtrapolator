@@ -79,6 +79,14 @@ Optional arguments:
 
 | Parameter | Default   | Description |
 | :--- | :---: | :--- |
+| -v --rovpp-run | false | flag for rovpp run
+| -f --rovpp-simulation-table | simulation_announcements | name of simulation announcements table
+| -u --rovpp-tracked-ases-table | tracked_ases | name of tracked ases table for attackers and victims
+| -t --rovpp-policy-tables | vector<string>>() | space-separated names of ROVpp policy tables
+| -k --rovpp-prop-twice | true | flag whether or not to propagate twice
+| -z --ezBGPsec-run-rounds | 0 | a dual purpose integer that tells how many ezBGPsec rounds to simulate (0 means it will not run ezBGPsec at all)
+| -n --ezBGPsec-intermediate | 0 | the constant for the number of "in-between" ASes an attacker will fabricate between it and the origin
+| -b --random-tiebraking | true | a flag for random tiebraking for choosing announcements. True is a closer approximation, false is for testing
 | -i --invert-results | true | record ASNs without route to a prefix-origin (smaller results)
 | -d --store-depref | false | record announcements for depreference policy (doubles normal results)
 | -s --iteration-size | 50000 | max number of announcements per iteration (higher = more memory use)
@@ -87,6 +95,32 @@ Optional arguments:
 | -d --depref-table | depref-results | name of the depref results table (if -d 1)
 | -o --inverse-results-table | extrapolation-inverse-results | name of the inverse results table
 | -l --log-folder | disabled | enables the logger and specifies a folder to save log files
+
+**-v**
+This tells whether or not to run the ROV version of the extrapolator. There can only be one of these flags out of the different versions of the extrapolator built in this framework,
+
+**-f**
+Allows specification of the name of the simulation announcements table
+
+**-u**
+
+Allows specification of the name of the tracked ases table for attackers and victims
+
+**-t**
+
+A list of space-separated names of ROVpp policy tables.
+
+**-z**
+
+This constant has two purposes, specify the number of ezBGPsec rounds and enable the EZBGPsec portion of the project. If the round number is equal to 0, then EZBGPsec will not run.
+
+**-n**
+
+This is for intermediate attacks in EZBGPsec. This specifies how many ASes an attacker will make up between it and the origin (the intent is to shift the blame and avoid Community Detection). This only modifies the priority of the announcement.
+
+**-b**
+
+Sometimes an AS has a tie between two different announcements for the same prefix. This field decides whether the tiebrake is random or not. The random tiebrake is probably closer to reality, but unhelpful during testing when consistent results are desired.
 
 **-i**
 
