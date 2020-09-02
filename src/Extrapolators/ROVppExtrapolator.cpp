@@ -226,7 +226,10 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                         cur_path,
                                         true);
         // Send the announcement to the current AS
-        as_on_path->process_announcement(ann, false);
+        // if no path prepending
+        if (as_on_path->asn != received_from_asn) {
+            as_on_path->process_announcement(ann, false);
+        }
         if (graph->inverse_results != NULL) {
             auto set = graph->inverse_results->find(
                     std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
