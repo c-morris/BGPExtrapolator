@@ -9,6 +9,7 @@
 #include "Graphs/EZASGraph.h"
 #include "Announcements/EZAnnouncement.h"
 #include "ASes/EZAS.h"
+#include "CommunityDetection.h"
 
 /**
  * The idea here is to estimate the probability that an "edge" AS can pull off an attacck
@@ -42,6 +43,8 @@
  */
 class EZExtrapolator : public BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS> {
 public:
+    CommunityDetection *communityDetection;
+
     /*   - Attacker gets the traffic: successful attack
      *   - Origin gets the traffic: successful connection
      *   - Nobody gets the traffic: disconnection
@@ -71,8 +74,12 @@ public:
 
     void init();
 
+    /**
+     *  Every iteration, the ASes make their reports and those reports are gathered
+     */
+    void gather_community_detection_reports();
+
     void perform_propagation();
-    void propagation_drop_connections_helper(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
 
     /**
      * This is where the attacker announcement is sent out. All paths are seeded and if an origin of the path

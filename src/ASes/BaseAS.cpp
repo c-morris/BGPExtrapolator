@@ -74,6 +74,22 @@ void BaseAS<AnnouncementType>::remove_neighbor(uint32_t asn, int relationship) {
     }
 }
 
+template <class AnnouncementType>
+bool BaseAS<AnnouncementType>::has_neighbor(uint32_t asn) {
+    auto provider_search = providers->find(asn);
+    if(provider_search != providers->end())
+        return true;
+
+    auto peer_search = peers->find(asn);
+    if(peer_search != peers->end())
+        return true;
+
+    auto customer_search = customers->find(asn);
+    if(customer_search != customers->end())
+        return true;
+    return false;
+}
+
 //****************** Announcement Handling ******************//
 
 template <class AnnouncementType>

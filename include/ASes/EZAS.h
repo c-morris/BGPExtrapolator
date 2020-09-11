@@ -6,6 +6,9 @@
 
 class EZAS : public BaseAS<EZAnnouncement> {
 public:
+    bool attacker;
+    bool adopter;
+
     EZAS(uint32_t asn);
     EZAS();
 

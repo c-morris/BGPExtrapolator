@@ -127,6 +127,14 @@ public:
      */
     virtual void remove_neighbor(uint32_t asn, int relationship);
 
+    /**
+     * Checks to see if the given asn is a neighbor
+     * 
+     * @param asn The neighbor to look for
+     * @return true if the asn is a neighbor, false otherwise
+     */
+    virtual bool has_neighbor(uint32_t asn);
+
     //****************** Announcement Handling ******************//
 
     /** Swap a pair of prefix/origins for this AS in the inverse results.

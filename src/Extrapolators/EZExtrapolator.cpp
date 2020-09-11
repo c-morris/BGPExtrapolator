@@ -40,6 +40,26 @@ void EZExtrapolator::init() {
     disconnections = 0;
 }
 
+void EZExtrapolator::gather_community_detection_reports() {
+    //Go through all of the adoptors and see if there are any attacking announcements
+    //send them to the community detection
+    for(uint32_t adopter_asn : *graph->adopters) {
+        auto as_search = graph->ases->find(adopter_asn);
+        if(as_search == graph->ases->end())
+            continue;
+        
+        EZAS *as = as_search->second;
+
+        for(auto victim_prefix_pair : *graph->victim_to_prefixes) {
+            auto announcement_search = as->all_anns->find(victim_prefix_pair.second);
+            if(announcement_search == as->all_anns->end())
+                continue;
+            
+            communityDetection->add_report(announcement_search->second);
+        }
+    }
+}
+
 void EZExtrapolator::perform_propagation() {
     init();
 
@@ -73,10 +93,10 @@ void EZExtrapolator::perform_propagation() {
         if(successful_attacks > 0) {
             ezStatistics << round << "," << successful_attacks << "," << successful_connections << "," << disconnections << "," << graph->origin_to_attacker_victim->size() << "," << ((double) successful_attacks / (double) graph->origin_to_attacker_victim->size()) << std::endl;
 
-            //Disconnect attacker from provider
+            //Disconnect attacker from provider (if community detection added anything)
             //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
-            if(num_between == 0)
-                graph->disconnectAttackerEdges();
+            // graph->disconnectAttackerEdges();
+            communityDetection->do_real_disconnections(graph);
             graph->clear_announcements();
 
             for(auto element : *graph->ases) {
@@ -107,7 +127,7 @@ void EZExtrapolator::perform_propagation() {
             graph->stubs_to_parents->clear();
             graph->non_stubs->clear();
 
-            //Re calculate the components with these new relationships
+            //Re-calculate the components with these new relationships
             graph->process(querier);
         } else {
             std::cout << "Round #" << round << ": No more attacks" << std::endl;
@@ -195,11 +215,13 @@ void EZExtrapolator::calculate_successful_attacks() {
 
         //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
         if(announcement_search->second.from_attacker) {
-            if(this->num_between == 0) {
-                uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->second.origin)->second.first;
-                uint32_t neighbor_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
-                graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, neighbor_asn));
-            }
+            // if(this->num_between == 0) {
+            //     uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->second.origin)->second.first;
+            //     uint32_t neighbor_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
+            //     graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, neighbor_asn));
+            // }
+
+            // communityDetection->add_report(announcement_search->second);
 
             successful_attacks++;
         } else {
