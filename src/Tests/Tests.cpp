@@ -203,6 +203,10 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
         BOOST_CHECK( ezbgpsec_test_path_propagation() );
 }
 
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports ) {
+        BOOST_CHECK( ezbgpsec_test_gather_reports() );
+}
+
 #endif // RUN_TESTS
 
 

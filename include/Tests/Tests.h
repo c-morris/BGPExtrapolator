@@ -124,5 +124,6 @@ bool test_rovpp_full_path();
 
 //EZBGPsec
 bool ezbgpsec_test_path_propagation();
+bool ezbgpsec_test_gather_reports();
 
 #endif

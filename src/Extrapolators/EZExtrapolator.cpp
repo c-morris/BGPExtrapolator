@@ -16,7 +16,8 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table);
-    
+    communityDetection = new CommunityDetection();
+
     this->successful_attacks = 0;
     this->successful_connections = 0;
     this->disconnections = 0;
@@ -235,4 +236,5 @@ void EZExtrapolator::calculate_successful_attacks() {
 void EZExtrapolator::save_results(int iteration) {
     // BaseExtrapolator::save_results(iteration);
     calculate_successful_attacks();
+    gather_community_detection_reports();
 }

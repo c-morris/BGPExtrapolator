@@ -78,3 +78,49 @@ bool ezbgpsec_test_path_propagation() {
 
     return true;
 }
+
+/** Test path seeding the graph with announcements from monitors. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ */
+bool ezbgpsec_test_gather_reports() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    e.graph->adopters->push_back(4);
+    e.graph->adopters->push_back(2);
+    e.graph->adopters->push_back(3);
+    e.graph->adopters->push_back(1);
+    e.graph->adopters->push_back(6);
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+
+    //Doesn't really matter, just need the prefix to be in here
+    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
+
+    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 300, 5, 2, false, true);
+
+    e.graph->ases->find(5)->second->process_announcement(attack_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+
+    e.gather_community_detection_reports();
+
+    return true;
+}
