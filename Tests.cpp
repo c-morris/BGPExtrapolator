@@ -80,6 +80,12 @@ BOOST_AUTO_TEST_CASE( ASGraph_translate_asn ) {
 BOOST_AUTO_TEST_CASE( ASGraph_decide_ranks ) {
         BOOST_CHECK( test_decide_ranks() );
 }
+BOOST_AUTO_TEST_CASE( ASGraph_remove_stubs ) {
+        BOOST_CHECK( test_remove_stubs() );
+}
+BOOST_AUTO_TEST_CASE( ASGraph_process_multihome ) {
+        BOOST_CHECK( test_process_multihome() );
+}
 BOOST_AUTO_TEST_CASE( ASGraph_tarjan_test ) {
         BOOST_CHECK( test_tarjan() );
 }

@@ -135,6 +135,12 @@ void Extrapolator::perform_propagation(bool test, size_t max_total){
     std::cout << "Block elapsed time: " << e.count() << std::endl;
     
     // Cleanup
+    for (auto p : *prefix_blocks) {
+        delete p;
+    }
+    for (auto p : *subnet_blocks) {
+        delete p;
+    }
     delete prefix_blocks;
     delete subnet_blocks;
     
@@ -375,18 +381,26 @@ void Extrapolator::fix_path(AS* cur_as, std::vector<uint32_t> const& as_path, An
         // For each provider, fix path
         
         // Get the neighbor
-        AS *neighbor = graph->ases->find(provider_asn)->second;
+        auto neighbor = graph->ases->find(provider_asn);
 
-        // Get the neighbors announcement
-        auto neighbor_ann = neighbor->all_anns->find(ann_to_check_for.prefix);
-        
-        // If neighbors announcement came from cur_as
-        if (neighbor_ann->second.received_from_asn == cur_as->asn) {
-            std::vector<uint32_t> new_path = as_path;
-            new_path.push_back(provider_asn);
-            neighbor_ann->second.as_path = new_path;
-            // Recursively fix path at neighbor
-            fix_path(neighbor, new_path, ann_to_check_for);
+        // Ensure the neighbor exists
+        if (neighbor != graph->ases->end()) {
+            // Get the neighbors announcement
+            auto neighbor_ann = neighbor->second->all_anns->find(ann_to_check_for.prefix);
+            
+            // If neighbors ann exists
+            if (neighbor_ann != neighbor->second->all_anns->end()) { 
+                // If neighbors announcement came from cur_as
+                if (neighbor_ann->second.received_from_asn == cur_as->asn) {
+                    std::vector<uint32_t> new_path = as_path;
+                    new_path.push_back(provider_asn);
+                    neighbor_ann->second.as_path = new_path;
+                    // Recursively fix path at neighbor
+                    fix_path(neighbor->second, new_path, ann_to_check_for);
+                }
+            }
+        } else {
+            std::cout << "Provider doesn't exist!?" << std::endl;
         }
     }
     
@@ -395,18 +409,26 @@ void Extrapolator::fix_path(AS* cur_as, std::vector<uint32_t> const& as_path, An
         // For each provider, fix path
         
         // Get the neighbor
-        AS *neighbor = graph->ases->find(customer_asn)->second;
-
-        // Get the neighbors announcement
-        auto neighbor_ann = neighbor->all_anns->find(ann_to_check_for.prefix);
+        auto neighbor = graph->ases->find(customer_asn);
         
-        // If neighbors announcement came from cur_as
-        if (neighbor_ann->second.received_from_asn == cur_as->asn) {
-            std::vector<uint32_t> new_path = as_path;
-            new_path.push_back(customer_asn);
-            neighbor_ann->second.as_path = new_path;
-            // Recursively fix path at neighbor
-            fix_path(neighbor, new_path, ann_to_check_for);
+        // If neighbor exists
+        if (neighbor != graph->ases->end()) {
+            // Get the neighbors announcement
+            auto neighbor_ann = neighbor->second->all_anns->find(ann_to_check_for.prefix);
+            
+            // If neighbors ann exists
+            if (neighbor_ann != neighbor->second->all_anns->end()) { 
+                // If neighbors announcement came from cur_as
+                if (neighbor_ann->second.received_from_asn == cur_as->asn) {
+                    std::vector<uint32_t> new_path = as_path;
+                    new_path.push_back(customer_asn);
+                    neighbor_ann->second.as_path = new_path;
+                    // Recursively fix path at neighbor
+                    fix_path(neighbor->second, new_path, ann_to_check_for);
+                }
+            }
+        } else {
+            std::cout << "Customer doesn't exist!?" << std::endl;
         }
     }
 
@@ -415,18 +437,26 @@ void Extrapolator::fix_path(AS* cur_as, std::vector<uint32_t> const& as_path, An
         // For each provider, fix path
         
         // Get the neighbor
-        AS *neighbor = graph->ases->find(peer_asn)->second;
+        auto neighbor = graph->ases->find(peer_asn);
 
-        // Get the neighbors announcement
-        auto neighbor_ann = neighbor->all_anns->find(ann_to_check_for.prefix);
-        
-        // If neighbors announcement came from cur_as
-        if (neighbor_ann->second.received_from_asn == cur_as->asn) {
-            std::vector<uint32_t> new_path = as_path;
-            new_path.push_back(peer_asn);
-            neighbor_ann->second.as_path = new_path;
-            // Recursively fix path at neighbor
-            fix_path(neighbor, new_path, ann_to_check_for);
+        // If neighbor exists
+        if (neighbor != graph->ases->end()) {
+            // Get the neighbors announcement
+            auto neighbor_ann = neighbor->second->all_anns->find(ann_to_check_for.prefix);
+            
+            // If neighbors ann exists
+            if (neighbor_ann != neighbor->second->all_anns->end()) { 
+                // If neighbors announcement came from cur_as
+                if (neighbor_ann->second.received_from_asn == cur_as->asn) {
+                    std::vector<uint32_t> new_path = as_path;
+                    new_path.push_back(peer_asn);
+                    neighbor_ann->second.as_path = new_path;
+                    // Recursively fix path at neighbor
+                    fix_path(neighbor->second, new_path, ann_to_check_for);
+                }
+            }
+        } else {
+            std::cout << "Peer doesn't exist!?" << std::endl;
         }
     }
 }
@@ -658,8 +688,11 @@ void Extrapolator::propagate_up() {
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_mh = search->second->multihome;
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_mh && !is_empty) {
                 send_all_announcements(asn, true, false, false);
             }
         }
@@ -667,8 +700,11 @@ void Extrapolator::propagate_up() {
     // Propagate to peers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_mh = search->second->multihome;
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_mh && !is_empty) {
                 send_all_announcements(asn, false, true, false);
             }
         }
@@ -681,8 +717,11 @@ void Extrapolator::propagate_down() {
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            graph->ases->find(asn)->second->process_announcements();
-            if (!graph->ases->find(asn)->second->all_anns->empty()) {
+            auto search = graph->ases->find(asn);
+            search->second->process_announcements();
+            bool is_mh = search->second->multihome;
+            bool is_empty = search->second->all_anns->empty();
+            if (!is_mh && !is_empty) {
                 send_all_announcements(asn, false, false, true);
             }
         }

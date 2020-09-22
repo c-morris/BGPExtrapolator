@@ -151,11 +151,50 @@ bool test_remove_stubs(){
         std::cerr << "Failed stubs removal check." << std::endl;
         return false;
     }
-    // Stub translation
-    if (graph.translate_asn(2) != 1 ||
-        graph.translate_asn(5) != 3 ||
-        graph.translate_asn(6) != 3) {
-        std::cerr << "Failed stubs translation check." << std::endl;
+    return true;
+}
+
+/** Test processing multihome and stub ASes in the graph. 
+ * 
+ *    1
+ *   / \
+ *  2   3---4
+ *     / \ /
+ *    5   6
+ *
+ * @return true if successful, otherwise false.
+ */
+bool test_process_multihome(){
+    ASGraph graph = ASGraph();
+    SQLQuerier *querier = new SQLQuerier("mrt_announcements", "test_results", "test_results", "test_results_d");
+    graph.add_relationship(2, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 2, AS_REL_CUSTOMER);
+    graph.add_relationship(3, 1, AS_REL_PROVIDER);
+    graph.add_relationship(1, 3, AS_REL_CUSTOMER);
+    graph.add_relationship(5, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 5, AS_REL_CUSTOMER);
+    graph.add_relationship(6, 3, AS_REL_PROVIDER);
+    graph.add_relationship(3, 6, AS_REL_CUSTOMER);
+    graph.add_relationship(4, 3, AS_REL_PEER);
+    graph.add_relationship(3, 4, AS_REL_PEER);
+    graph.add_relationship(6, 4, AS_REL_PROVIDER);
+    graph.add_relationship(4, 6, AS_REL_CUSTOMER);
+    graph.process_multihome(querier);
+    delete querier;
+    // Stub removal
+    if (graph.ases->find(2) != graph.ases->end() ||
+        graph.ases->find(5) != graph.ases->end()) {
+        std::cerr << "Failed stub removal check." << std::endl;
+        return false;
+    }
+    // Multihome catch
+    if (graph.ases->find(6) == graph.ases->end()) {
+        std::cerr << "Failed multihome inclusion check." << std::endl;
+        return false;
+    }
+    // Multihome flag
+    if (!graph.ases->find(6)->second->multihome) {
+        std::cerr << "Failed multihome flag check." << std::endl;
         return false;
     }
     return true;

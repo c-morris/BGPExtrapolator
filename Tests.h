@@ -42,6 +42,7 @@ bool test_add_relationship();
 bool test_translate_asn();
 bool test_decide_ranks();
 bool test_remove_stubs();
+bool test_process_multihome();
 bool test_tarjan();
 bool test_combine_components();
 

@@ -2,14 +2,20 @@
 #
 echo Running $0
 #
-collectors=(24961 23673 29222 25160 64475 15605 56730 61597 1798 9304 29140 49697 30132 49673 6720 35369 8492 2895 37239 39533 42541 25220 50629 327960 5769)
-#
-for var in ${collectors[@]}
+collectors_a=(24961 23673 29222 25160 64475 15605 56730 61597 1798 9304 29140 49697 30132 49673 6720 35369 8492 2895 37239 39533 42541 25220 50629 327960 5769)
+collectors_b=(20562 35266 6079 28571 31424 49709 1798 35369 52091 52873 25227 25152 29140 5645 4181 59689 41722 11039 14361 20080 29222 52320 31742 263508 24441)
+collectors_c=(262612 264911 25160 41722 28260 31019 49697 1798 5602 8492 39821 38001 31424 397143 20080 56730 6079 50629 198385 28917 263508 34019 49037 8222 207044)
+collectors_d=(31424 49697 205206 30132 264268 8222 29222 42541 16347 680 41695 327960 28260 29686 58299 39821 6079 38001 12350 50629 61597 15435 50304 4181 198385)
+collectors_e=(327983 42541 264911 41811 23673 34019 24441 39821 50629 262612 24961 51907 7660 64475 49037 35369 35266 32354 34177 5396 8896 14537 38001 27446 3402)
+collectors_f=(34019 29222 49673 31019 5392 327960 49709 24961 25160 41327 3333 41695 58299 5602 397143 41722 34177 264268 6894 11039 8492 327983 28917 49697 15435)
+collectors_g=(1798 28329 39821 49515 24961 2895 12350 23106 12637 51907 51088 41811 39351 9304 28220 34019 25227 207044 14361 31019 31742 5602 3333 263047 31424)
+collectors_h=(206499 42541 31742 15605 6079 49709 52873 50877 25227 29222 11039 58299 9304 3267 5602 51907 24441 1798 31424 39821 32354 25220 35369 2895 28329)
+for var in ${collectors_h[@]}
 do
-    echo Running bgp-extrapolator -i 0 -a mrt_small -v $var -r verify_data_$var -f verify_ctrl_$var
-    time ./bgp-extrapolator -i 0 -a mrt_small -v $var -r verify_data_$var -f verify_ctrl_$var
-    echo Running bgp-extrapolator -i 0 -l 1 -a mrt_small -v $var -r verify_data_$var\_oo -f verify_ctrl_$var
-    time ./bgp-extrapolator -i 0 -l 1 -a mrt_small -v $var -r verify_data_$var\_oo -f verify_ctrl_$var
-    echo Running bgp-extrapolator -i 0 -m 1 -a mrt_small -v $var -r verify_data_$var\_mo -f verify_ctrl_$var
-    time ./bgp-extrapolator -i 0 -m 1 -a mrt_small -v $var -r verify_data_$var\_mo -f verify_ctrl_$var
+    echo time ./bgp-extrapolator -i 0 -a mrt_small_f_r2 -v $var -r verify_data_$var\_f -f verify_ctrl_$var\_f
+    time ./bgp-extrapolator -i 0 -a mrt_small_h_r2 -v $var -r verify_data_$var\_h -f verify_ctrl_$var\_h
+    echo time ./bgp-extrapolator -i 0 -l 1 -a mrt_small_f_r2 -v $var -r verify_data_$var\_oo_f -f verify_ctrl_$var\_f
+    time ./bgp-extrapolator -i 0 -l 1 -a mrt_small_h_r2 -v $var -r verify_data_$var\_oo_h -f verify_ctrl_$var\_h
+    echo time ./bgp-extrapolator -i 0 -m 1 -a mrt_small_f_r2 -v $var -r verify_data_$var\_mo_f -f verify_ctrl_$var\_f
+    time ./bgp-extrapolator -i 0 -m 1 -a mrt_small_h_r2 -v $var -r verify_data_$var\_mo_h -f verify_ctrl_$var\_h
 done

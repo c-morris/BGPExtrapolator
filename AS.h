@@ -42,6 +42,7 @@ class AS {
 public:
     uint32_t asn;       // Autonomous System Number
     bool visited;       // Marks something
+    bool multihome;       // Marks multihome
     int rank;           // Rank in ASGraph heirarchy for propagation
     
     // Defer processing of incoming announcements for efficiency

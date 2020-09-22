@@ -250,7 +250,7 @@ void SQLQuerier::clear_supernodes_from_db(){
 /** Clears all rows from the verification control table. 
  */
 void SQLQuerier::clear_vf_from_db(){
-    std::string sql = std::string("DELETE FROM IF EXISTS " + verification_table + ";");
+    std::string sql = std::string("DELETE FROM " + verification_table + ";");
     execute(sql);
 }
 

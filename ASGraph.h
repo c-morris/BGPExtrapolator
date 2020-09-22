@@ -64,6 +64,7 @@ public:
     void process(SQLQuerier *querier); 
     void create_graph_from_db(SQLQuerier *querier);
     void remove_stubs(SQLQuerier *querier);
+    void process_multihome(SQLQuerier *querier);
     void save_stubs_to_db(SQLQuerier *querier);
     void save_non_stubs_to_db(SQLQuerier *querier);
     void save_supernodes_to_db(SQLQuerier *querier);
