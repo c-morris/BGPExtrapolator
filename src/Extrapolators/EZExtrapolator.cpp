@@ -51,12 +51,18 @@ void EZExtrapolator::gather_community_detection_reports() {
         
         EZAS *as = as_search->second;
 
+        //For all of the prefixes that are being attacked, report the path if it was from an attacker
+        //This is not cheating since a non-attacking announcement is guarenteed to not have an invalid make 
+        //and would not get reported
         for(auto victim_prefix_pair : *graph->victim_to_prefixes) {
             auto announcement_search = as->all_anns->find(victim_prefix_pair.second);
             if(announcement_search == as->all_anns->end())
                 continue;
             
-            communityDetection->add_report(announcement_search->second);
+            //Non attacking announcement will not have an invalid MAC
+            //An attacking announcement will, and community detection will check if it is visible
+            if(announcement_search->second.from_attacker)
+                communityDetection->add_report(announcement_search->second, graph);
         }
     }
 }

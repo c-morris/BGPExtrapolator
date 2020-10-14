@@ -79,8 +79,12 @@ bool ezbgpsec_test_path_propagation() {
     return true;
 }
 
-/** Test path seeding the graph with announcements from monitors. 
+/** Test 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *  3 - origin
+ *  5 - attacker
+ *  4 - victim
  * 
  *    1
  *    |
@@ -102,18 +106,28 @@ bool ezbgpsec_test_gather_reports() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    e.graph->adopters->push_back(4);
+    //2 is the first so it will be the first to report
     e.graph->adopters->push_back(2);
+    e.graph->adopters->push_back(4);
     e.graph->adopters->push_back(3);
     e.graph->adopters->push_back(1);
-    e.graph->adopters->push_back(6);
+
+    //Set them to locally know that they are an adopter
+    for(uint32_t asn : *e.graph->adopters) {
+        e.graph->ases->find(asn)->second->adopter = true;
+    }
+
+    // e.graph->adopters->push_back(6);
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
 
-    //Doesn't really matter, just need the prefix to be in here
+    //4 being the victim doesn't really matter, just need the prefix to be in here
     e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
 
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 300, 5, 2, false, true);
+    //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
+    EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
+    //The supposed path thus far
+    attack_announcement.as_path.push_back(3);
 
     e.graph->ases->find(5)->second->process_announcement(attack_announcement);
 
@@ -121,6 +135,25 @@ bool ezbgpsec_test_gather_reports() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+
+    CommunityDetection *community_detection = e.communityDetection;
+    if(community_detection->identifier_to_component.size() != 1) {
+        std::cerr << "Component was not created properly!" << std::endl;
+        return false;
+    }
+
+    //2 should be the identifier since it will be the first adopter to report the invalid MAC
+    auto compnent_search = community_detection->identifier_to_component.find(2);
+    if(compnent_search == community_detection->identifier_to_component.end()) {
+        std::cerr << "Unique identifier is not correct!" << std::endl;
+        return false;
+    }
+
+    CommunityDetection::Component *component = compnent_search->second;
+    if(component->hyper_edges.size() != 1) {
+        std::cerr << "The hyper edge was not added to the component properly!" << std::endl;
+        return false;
+    }
 
     return true;
 }

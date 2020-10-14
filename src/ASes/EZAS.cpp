@@ -1,7 +1,7 @@
 #include "ASes/EZAS.h"
 
 EZAS::EZAS(uint32_t asn) : BaseAS<EZAnnouncement>(asn, false, NULL) {
-    adopter = true;
+    adopter = false;
 }
 
 EZAS::EZAS() : EZAS(0) { }
