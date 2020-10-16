@@ -18,6 +18,8 @@ bool CommunityDetection::Component::contains_hyper_edge(std::vector<uint32_t> &h
 }
 
 void CommunityDetection::Component::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
+    Logger::getInstance().log("Debug") << "Hyper edge: " << hyper_edge << " is being added to the hyper graph";
+
     hyper_edges.push_back(hyper_edge);
 
     // auto it = degree_sets.insert(std::make_pair(1, std::set<uint32_t>()));
@@ -36,14 +38,18 @@ void CommunityDetection::Component::add_hyper_edge(std::vector<uint32_t> &hyper_
                 std::set<uint32_t> &degree_set = (*it.first).second;
 
                 degree_set.insert(asn);
-            } 
+            } else {
+                std::set<uint32_t> &degree_set = degree_set_search->second;
+                degree_set.insert(asn);
+            }
         } else {
-            uint32_t &current_degree_count = as_to_degree_count_search->second;
+            uint32_t current_degree_count = as_to_degree_count_search->second;
 
             std::set<uint32_t> &initial_degree_set = degree_sets.find(current_degree_count)->second;
             initial_degree_set.erase(asn);
 
             current_degree_count++;
+            as_to_degree_count_search->second = current_degree_count;
 
             auto final_degree_set_search = degree_sets.find(current_degree_count);
             if(final_degree_set_search == degree_sets.end()) {

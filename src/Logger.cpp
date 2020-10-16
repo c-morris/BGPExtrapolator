@@ -24,8 +24,11 @@
 #include "Logger.h"
 
 std::string Logger::folder = "";
+boost::shared_ptr<multifile_sink> Logger::multifile = boost::make_shared<multifile_sink>();
 
 Logger::Logger() {
+    std::cout << "Logger Created" << std::endl;
+
     /* 
     *   Remove any logs that already exist, and send the possible output to the void
     *   if statement to remove warning of not checking the return value
@@ -43,14 +46,11 @@ Logger::Logger() {
     //Adds the time-stamp attribute
     boost::log::add_common_attributes();
 
-    typedef boost::log::sinks::synchronous_sink<boost::log::sinks::text_multifile_backend> multifile_sink;
-    boost::shared_ptr<multifile_sink> multifile = boost::make_shared<multifile_sink>();
-
     //sets up the multi-file sink based on the name of the channel
     multifile->locked_backend()->set_file_name_composer(
         boost::log::sinks::file::as_file_name_composer(
         boost::log::expressions::stream << folder << channel << ".log"));
-  
+    
     //Describes the format of the output files (this format applies to all files generated)
     //Format: [TimeStamp] Messege
     multifile->set_formatter(
@@ -62,8 +62,12 @@ Logger::Logger() {
     boost::log::core::get()->add_sink(multifile);
 }
 
-void Logger::initialize(std::string& f) {
-    Logger::folder = f;
+void Logger::setFolder(std::string f) {
+    folder = f;
+
+    multifile->locked_backend()->set_file_name_composer(
+        boost::log::sinks::file::as_file_name_composer(
+        boost::log::expressions::stream << folder << channel << ".log"));
 }
 
 Logger Logger::getInstance() {

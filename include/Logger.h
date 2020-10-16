@@ -46,6 +46,8 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 *
 *   #include "Logger.h"
 *
+*   Logger::setFolder
+*
 *   ....
 *
 *   Logger::getInstance().log("filename") << "Some Messege " << num;
@@ -70,9 +72,12 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 *       Because of the above, make sure Logger::getInstance() is guaranteed to be called at least once.
 *           The concequence would be log files from a previous run that someone may assume is from the current run (assuming the current run generated no logs).
 */
+typedef boost::log::sinks::synchronous_sink<boost::log::sinks::text_multifile_backend> multifile_sink;
+
 class Logger {
 private:
     static std::string folder;
+    static boost::shared_ptr<multifile_sink> multifile;
 
     boost::log::sources::channel_logger<> channel_lg;
 
@@ -88,7 +93,7 @@ public:
     */
     static Logger getInstance();
 
-    static void initialize(std::string& folder);
+    static void setFolder(std::string folder);
 
     /**
     *   This is an interesting solution to overloading the << operator.
@@ -117,6 +122,9 @@ public:
 
         template<typename T>
         StreamBuff& operator<<(const T& output);
+
+        template<typename T>
+        StreamBuff& operator<<(const std::vector<T>& output);
     };
 
     /**
@@ -146,4 +154,21 @@ Logger::StreamBuff& Logger::StreamBuff::operator<<(const T& output) {
         stringStreamer << output;//add to the string stream
     return *this;
 }
+
+template<typename T>
+Logger::StreamBuff& Logger::StreamBuff::operator<<(const std::vector<T>& output) {
+    if(Logger::folder != "") {
+        // stringStreamer << output;//add to the string stream
+        stringStreamer << "{ ";
+        for(size_t i = 0; i < output.size(); i++) {
+            if(i < output.size() - 1)
+                stringStreamer << output.at(i) << ", ";
+            else
+                stringStreamer << output.at(i);
+        }
+        stringStreamer << " }";
+    }
+    return *this;
+}
+
 #endif

@@ -61,8 +61,10 @@ void EZExtrapolator::gather_community_detection_reports() {
             
             //Non attacking announcement will not have an invalid MAC
             //An attacking announcement will, and community detection will check if it is visible
-            if(announcement_search->second.from_attacker)
+            if(announcement_search->second.from_attacker) {
+                Logger::getInstance().log("Debug") << "Announcement with path: " << announcement_search->second.as_path << " is being sent to CD";
                 communityDetection->add_report(announcement_search->second, graph);
+            }
         }
     }
 }

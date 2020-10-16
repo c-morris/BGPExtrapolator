@@ -43,3 +43,6 @@ graph.csv
 # IDE Setting Files
 .vscode/
 .vs/
+
+#Log folder
+Logs/

@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     std::string loggingFolder = vm.count("log-folder") ? vm["log-folder"].as<string>() : "";
     if(loggingFolder != "") {
         if(loggingFolder.back() == '/') {
-            Logger::initialize(loggingFolder);
+            Logger::setFolder(loggingFolder);
             Logger::getInstance();
         } else {
             std::cerr << "ERROR: Logger Folder must be a directory" << endl;
