@@ -120,19 +120,25 @@ void CommunityDetection::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
         identifier_to_component.find((*(components_to_merge.begin()++)))->second->add_hyper_edge(hyper_edge);
     } else {//An AS cannot be in more than one component. So if this report connects two or more components, then they need to merge
         //What is going to happen here is that the first component will absorb all of the information from the rest of the components
-        auto iterator = components_to_merge.begin()++;
+        auto iterator = components_to_merge.begin();
         Component *first = identifier_to_component.find(*iterator)->second;
 
         //For all components, other than the first of course hece the ;, add all information to the first component
         //Then delete the component since its information has been recorded
-        for(; iterator != components_to_merge.end(); ++iterator) {
+        iterator++;
+        while(iterator != components_to_merge.end()) {
             auto component_search_result = identifier_to_component.find(*iterator);
 
             Component *to_merge = component_search_result->second;
+
+            Logger::getInstance().log("Debug") << "Merging components " << first->unique_identifier << " and " << to_merge->unique_identifier; 
+
             first->merge(to_merge);
             
             delete to_merge;
             identifier_to_component.erase(component_search_result);
+
+            iterator++;
         }
 
         //Add in the hyper edge that caused all of this nonsense

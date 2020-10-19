@@ -207,6 +207,10 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports ) {
         BOOST_CHECK( ezbgpsec_test_gather_reports() );
 }
 
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports_merge ) {
+        BOOST_CHECK( ezbgpsec_test_gather_reports_merge() );
+}
+
 #endif // RUN_TESTS
 
 

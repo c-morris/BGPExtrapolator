@@ -68,6 +68,14 @@ void Logger::setFolder(std::string f) {
     multifile->locked_backend()->set_file_name_composer(
         boost::log::sinks::file::as_file_name_composer(
         boost::log::expressions::stream << folder << channel << ".log"));
+
+    if(folder != "") {
+        std::string rmCommand = "rm ";
+        rmCommand.append(folder);
+        rmCommand.append("*.log > /dev/null 2>&1");
+
+        if(system(rmCommand.c_str())) {}
+    }
 }
 
 Logger Logger::getInstance() {
