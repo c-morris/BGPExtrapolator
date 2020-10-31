@@ -205,7 +205,7 @@ void ROVppAS::process_announcements(bool ran) {
     do {
         something_removed = false;
         auto ribs_in_copy = *ribs_in;
-        int i = 0;
+        size_t i = 0;
         for (auto it = ribs_in_copy.begin(); it != ribs_in_copy.end(); ++it) {
             bool should_cancel = false;
             // For each withdrawal
