@@ -245,7 +245,7 @@ public:
      * @return true If the operation holds, otherwise false
      */
     bool operator<(const Prefix &b) const {
-	uint64_t combined = 0;
+        uint64_t combined = 0;
         combined |= addr;
         combined = combined << 32;
         combined |= netmask; 
