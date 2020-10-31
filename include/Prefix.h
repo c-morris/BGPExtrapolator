@@ -245,7 +245,15 @@ public:
      * @return true If the operation holds, otherwise false
      */
     bool operator<(const Prefix &b) const {
-        return addr < b.addr || (addr == b.addr && netmask < b.netmask);
+	uint64_t combined = 0;
+        combined |= addr;
+        combined = combined << 32;
+        combined |= netmask; 
+        uint64_t combined_b = 0;
+        combined_b |= b.addr;
+        combined_b = combined_b << 32;
+        combined_b |= b.netmask; 
+        return combined < combined_b;
     }
     bool operator==(const Prefix &b) const {
         return !(*this < b || b < *this);
