@@ -24,6 +24,8 @@
 #ifndef RUN_TESTS
 #include <iostream>
 #include <boost/program_options.hpp>
+#include <thread>
+#include <semaphore.h>
 
 #include "Logger.h"
 #include "ASes/AS.h"
@@ -43,7 +45,7 @@ void intro() {
 
 int main(int argc, char *argv[]) {
     using namespace std;   
-    // don't sync iostreams with printf
+    // Don't sync iostreams with printf
     ios_base::sync_with_stdio(false);
     namespace po = boost::program_options;
     // Handle parameters
@@ -195,7 +197,6 @@ int main(int argc, char *argv[]) {
         // Clean up
         delete extrap;
     }
-
     return 0;
 }
 #endif // RUN_TESTS

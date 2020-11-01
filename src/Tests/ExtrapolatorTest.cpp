@@ -403,3 +403,44 @@ bool test_send_all_announcements() {
 
     return true;
 }
+
+/** Test saving results in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Starting propagation at 1, everyone should see the announcement.
+ */
+bool test_save_results_parallel() {
+    Extrapolator e = Extrapolator(false, false, false, "ignored", "test_extrapolation_results", "unused", "unused", 10000);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    ann.from_monitor = true;
+    ann.priority = 290;
+    e.graph->ases->find(1)->second->process_announcement(ann, true);
+    e.propagate_down();
+    // No need to propagate up, the announcement started at the top
+
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    e.save_results_parallel(0);
+
+    return true;
+}

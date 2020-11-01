@@ -113,6 +113,8 @@ public:
     bool random_tiebraking;    // If randomness is enabled
     bool store_invert_results; // If inverted results are enabled
     bool store_depref_results; // If depref results are enabled
+    sem_t worker_thread_count; // Worker thread semaphore
+    int max_workers;           // Max number of worker threads that can run concurrently
 
     BaseExtrapolator(bool random_tiebraking,
                         bool store_invert_results, 
@@ -121,6 +123,11 @@ public:
         this->random_tiebraking = random_tiebraking;       // True to enable random tiebreaks
         this->store_invert_results = store_invert_results; // True to store the results inverted
         this->store_depref_results = store_depref_results; // True to store the second best ann for depref
+
+        // Init worker thread semaphore to one minus the number of CPU cores available
+        int cpus = std::thread::hardware_concurrency();
+        max_workers = cpus > 1 ? cpus - 1 : 1;
+        sem_init(&worker_thread_count, 0, max_workers);
         
         // The child will initialize these properly right after this constructor returns
         // That way they can give the variable a proper type
@@ -183,5 +190,18 @@ public:
      * @param iteration The current iteration of the propagation
      */
     virtual void save_results(int iteration);
+
+    /** Same as save_results, but designed to run in a separate thread
+     *
+     * @param iteration The current iteration of the propagation
+     */
+    virtual void save_results_thread(int iteration, int thread_num, int num_threads);
+
+    /** Coordinates threads running save_result_thread
+     *
+     * @param iteration The current iteration of the propagation
+     */
+    virtual void save_results_parallel(int iteration);
+
 };
 #endif

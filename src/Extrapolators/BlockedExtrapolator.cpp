@@ -218,7 +218,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
         std::cout << "Propagating..." << std::endl;
         this->propagate_up();
         this->propagate_down();
-        this->save_results(iteration);
+        //this->save_results(iteration);
+        this->save_results_parallel(iteration);
         this->graph->clear_announcements();
         iteration++;
         
