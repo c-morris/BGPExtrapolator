@@ -2,6 +2,7 @@
 #define EZ_EXTRAPLATOR_H
 
 #define DEFAULT_NUM_ASES_BETWEEN_ATTACKER 0
+#define DEFAULT_COMMUNITY_DETECTION_THRESHOLD 0
 
 #include "Extrapolators/BlockedExtrapolator.h"
 
@@ -67,8 +68,11 @@ public:
                     std::string depref_results_table, 
                     uint32_t iteration_size,
                     uint32_t num_rounds,
-                    uint32_t num_between);
+                    uint32_t num_between,
+                    uint32_t community_detection_threshold);
     
+    EZExtrapolator(uint32_t community_detection_threshold);
+
     EZExtrapolator();
     ~EZExtrapolator();
 

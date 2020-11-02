@@ -12,11 +12,12 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
                                 std::string depref_results_table, 
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
-                                uint32_t num_between) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
+                                uint32_t num_between,
+                                uint32_t community_detection_threshold) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table);
-    communityDetection = new CommunityDetection();
+    communityDetection = new CommunityDetection(community_detection_threshold);
 
     this->successful_attacks = 0;
     this->successful_connections = 0;
@@ -26,10 +27,16 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
     this->num_between = num_between;
 }
 
+EZExtrapolator::EZExtrapolator(uint32_t community_detection_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE, 
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, community_detection_threshold) {
+
+}
+
 EZExtrapolator::EZExtrapolator() 
     : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                         ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER) { }
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, DEFAULT_COMMUNITY_DETECTION_THRESHOLD) { }
 
 EZExtrapolator::~EZExtrapolator() { }
 
@@ -105,7 +112,7 @@ void EZExtrapolator::perform_propagation() {
             //Disconnect attacker from provider (if community detection added anything)
             //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
             // graph->disconnectAttackerEdges();
-            communityDetection->do_real_disconnections(graph);
+            // communityDetection->do_real_disconnections(graph);
             graph->clear_announcements();
 
             for(auto element : *graph->ases) {

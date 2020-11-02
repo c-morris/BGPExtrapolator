@@ -39,6 +39,8 @@ public:
          */
         bool contains_hyper_edge(std::vector<uint32_t> &hyper_edge);
 
+        void change_degree(uint32_t asn, bool increment);
+
         /**
          *  Given the hyper edge, this function will add it to the component.
          *  This will increment the degree count of the asn's in this hyper edge and move them to the appropriate 
@@ -53,14 +55,21 @@ public:
          *  This will not alter the other component, nor will its memory be freed or deleted.
          */
         void merge(Component *other);
+
+        void remove_hyper_edge(std::vector<uint32_t> &hyper_edge);
+
+        void remove_AS(uint32_t asn_to_remove);
+
+        void threshold_filtering(CommunityDetection *community_detection, EZASGraph *graph);
+
+        void virtual_pair_removal(CommunityDetection *community_detection, EZASGraph *graph);
     };
 
 public:
+    uint32_t threshold;
     std::unordered_map<uint32_t, Component*> identifier_to_component;
 
-    int threshold;
-
-    CommunityDetection();
+    CommunityDetection(uint32_t threshold);
     virtual ~CommunityDetection();
 
     /**
@@ -114,12 +123,10 @@ public:
     void add_report(EZAnnouncement &announcement, EZASGraph *graph);
 
     /**
-     *  We have deduced the attackers. Exterminate!
-     *  This will take the deductions made from community detection and make adopting neighbors 
-     *      disconnect from the AS
-     * 
-     *  @param graph -> The EZASGraph
+     * This will simply go through the components of the hyper graph and remove amy AS that has a degree above the threshold.
      */
-    void do_real_disconnections(EZASGraph *graph);
+    void threshold_filtering(EZASGraph *graph);
+
+    void virtual_pair_removal(EZASGraph *graph);
 };
 #endif

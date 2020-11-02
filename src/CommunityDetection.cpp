@@ -17,52 +17,51 @@ bool CommunityDetection::Component::contains_hyper_edge(std::vector<uint32_t> &h
     return false;
 }
 
+void CommunityDetection::Component::change_degree(uint32_t asn, bool increment) {
+    auto initial_degree_count_search = as_to_degree_count.find(asn);
+
+    uint32_t degree_count = 0;
+    if(initial_degree_count_search != as_to_degree_count.end()) {
+        degree_count = initial_degree_count_search->second;
+        as_to_degree_count.erase(initial_degree_count_search);
+    }
+
+    auto initial_degree_set_search  = degree_sets.find(degree_count);
+    if(initial_degree_set_search != degree_sets.end()) {
+        std::set<uint32_t> &degree_set = initial_degree_set_search->second;
+        degree_set.erase(asn);
+
+        if(degree_set.size() == 0)
+            degree_sets.erase(initial_degree_set_search);
+    }
+
+    if(increment)
+        degree_count++;
+    else
+        degree_count--;
+
+    if(degree_count > 0) {
+        as_to_degree_count.insert(std::make_pair(asn, degree_count));
+
+        auto degree_set_search = degree_sets.find(degree_count);
+        if(degree_set_search == degree_sets.end()) {
+            auto it = degree_sets.insert(std::make_pair(degree_count, std::set<uint32_t>()));
+            std::set<uint32_t> &final_degree_set = (*it.first).second;
+
+            final_degree_set.insert(asn);
+        } else {
+            std::set<uint32_t> &final_degree_set = degree_set_search->second;
+            final_degree_set.insert(asn);
+        }
+    }
+}
+
 void CommunityDetection::Component::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
     Logger::getInstance().log("Debug") << "Hyper edge: " << hyper_edge << " is being added to the hyper graph";
 
     hyper_edges.push_back(hyper_edge);
-
-    // auto it = degree_sets.insert(std::make_pair(1, std::set<uint32_t>()));
-    // std::set<uint32_t> &degree_set = (*it.first).second;
-
-    // All ASes for the first report will have a single degree
-    for(uint32_t asn : hyper_edge) {
-        auto as_to_degree_count_search = as_to_degree_count.find(asn);
-
-        if(as_to_degree_count_search == as_to_degree_count.end()) {
-            as_to_degree_count.insert(std::make_pair(asn, 1));
-            auto degree_set_search = degree_sets.find(1);
-
-            if(degree_set_search == degree_sets.end()) {
-                auto it = degree_sets.insert(std::make_pair(1, std::set<uint32_t>()));
-                std::set<uint32_t> &degree_set = (*it.first).second;
-
-                degree_set.insert(asn);
-            } else {
-                std::set<uint32_t> &degree_set = degree_set_search->second;
-                degree_set.insert(asn);
-            }
-        } else {
-            uint32_t current_degree_count = as_to_degree_count_search->second;
-
-            std::set<uint32_t> &initial_degree_set = degree_sets.find(current_degree_count)->second;
-            initial_degree_set.erase(asn);
-
-            current_degree_count++;
-            as_to_degree_count_search->second = current_degree_count;
-
-            auto final_degree_set_search = degree_sets.find(current_degree_count);
-            if(final_degree_set_search == degree_sets.end()) {
-                auto it = degree_sets.insert(std::make_pair(current_degree_count, std::set<uint32_t>()));
-                std::set<uint32_t> &final_degree_set = (*it.first).second;
-
-                final_degree_set.insert(asn);
-            } else {
-                std::set<uint32_t> &final_degree_set = final_degree_set_search->second;
-                final_degree_set.insert(asn);
-            }
-        }
-    }
+    for(uint32_t asn : hyper_edge)
+        change_degree(asn, true);
 }
 
 void CommunityDetection::Component::merge(Component *other) {
@@ -72,13 +71,71 @@ void CommunityDetection::Component::merge(Component *other) {
         add_hyper_edge(hyper_edge);
 }
 
-//**************** Community Detection ****************//
+void CommunityDetection::Component::remove_hyper_edge(std::vector<uint32_t> &hyper_edge) {
+    auto it = std::find(hyper_edges.begin(), hyper_edges.end(), hyper_edge);
 
-CommunityDetection::CommunityDetection() {
-    threshold = 2;
+    if(it == hyper_edges.end()) {
 
+        return;
+    }
+
+    for(uint32_t asn : hyper_edge)
+        change_degree(asn, false);
+    
+    hyper_edges.erase(it);
 }
 
+void CommunityDetection::Component::remove_AS(uint32_t asn_to_remove) {
+    //Erase hyper edges containing this AS
+    for(auto it = hyper_edges.begin(); it != hyper_edges.end(); ++it)
+        if(std::find(it->begin(), it->end(), asn_to_remove) != it->end())
+            remove_hyper_edge(*it);
+}
+
+void CommunityDetection::Component::threshold_filtering(CommunityDetection *community_detection, EZASGraph *graph) {
+    if(community_detection->threshold == 0)
+        return;
+
+    bool changed = true;
+    while(changed && community_detection->threshold > 0) {
+        //find the highest degree in the graph
+        uint32_t highest_degree = 0;
+        for(auto &p : degree_sets) {
+            if(p.first > highest_degree)
+                highest_degree = p.first;
+        }
+
+        //if there is an AS with a degree higher than the threshold, remove the AS and decrement threshold
+        //Check that it is also greater than or equal to 2
+        if(highest_degree >= 2 && highest_degree >= community_detection->threshold) {
+            uint32_t asn = *degree_sets.find(highest_degree)->second.begin();
+            remove_AS(asn);
+        } else {
+            changed = false;
+        }
+    }
+}
+
+void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *community_detection, EZASGraph *graph) {
+    threshold_filtering(community_detection, graph);
+
+    //For all removal sequences...
+    for(size_t i = 0; i < hyper_edges.size(); i++) {
+        CommunityDetection temp_community_detection(community_detection->threshold - 1);
+
+        for(size_t j = 0; j < hyper_edges.size(); j++) {
+            if(i == j) continue;
+            temp_community_detection.add_hyper_edge(hyper_edges.at(j));
+        }
+
+        //Do community detection on that 
+        temp_community_detection.virtual_pair_removal(graph);
+    }
+}
+
+//**************** Community Detection ****************//
+
+CommunityDetection::CommunityDetection(uint32_t threshold) : threshold(threshold) { }
 CommunityDetection::~CommunityDetection() {
     clear();
 }
@@ -254,6 +311,15 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
     }
 }
 
-void CommunityDetection::do_real_disconnections(EZASGraph* graph) {
+void CommunityDetection::threshold_filtering(EZASGraph *graph) {
+    for(auto &p : identifier_to_component)
+        p.second->threshold_filtering(this, graph);
+}
 
+void CommunityDetection::virtual_pair_removal(EZASGraph *graph) {
+    if(threshold == 0)
+        return;
+
+    for(auto &p : identifier_to_component)
+        p.second->virtual_pair_removal(this, graph);
 }
