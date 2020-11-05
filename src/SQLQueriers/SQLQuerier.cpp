@@ -109,7 +109,6 @@ void SQLQuerier::open_connection() {
     try {
         pqxx::connection *conn = new pqxx::connection(stream.str());
         if (conn->is_open()) {
-            std::cout << "Connected to database: " << db_name <<std::endl;
             C = conn;
         } else {
             std::cerr << "Failed to connect to database : " << db_name <<std::endl;

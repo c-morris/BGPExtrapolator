@@ -178,9 +178,10 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread(int iteration, int thread_num, int num_threads){
+    // Decrement semaphore to limit the number of concurrent threads
     sem_wait(&worker_thread_count);
     int counter = thread_num;
-    // Need a copy of the querier to make a new db connection 
+    // Need a copy of the querier to make a new db connection to avoid resource conflicts 
     SQLQuerierType querier_copy(*querier);
     querier_copy.open_connection();
     std::ofstream outfile;
@@ -190,7 +191,9 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     // Handle inverse results
     if (store_invert_results) {
         for (auto po : *graph->inverse_results){
-            if ((counter = (counter + 1) % num_threads) == 0) {
+            // The results are divided into num_threads CSVs. For example, with 
+            // four threads, this loop will save every fourth item in the loop.
+            if (counter++ % num_threads == 0) {
                 for (uint32_t asn : *po.second) {
                     outfile << asn << ','
                             << po.first.first.to_cidr() << ','
@@ -243,11 +246,17 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     }
     std::vector<std::thread> threads;
     int cpus = std::thread::hardware_concurrency();
+    // Ensure we have at least one worker even when only one cpu core is avaliable
     int max_workers = cpus > 1 ? cpus - 1 : 1;
     for (int i = 0; i < max_workers; i++) {
+        // Start the worker threads
         threads.push_back(std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread, this, iteration, i, max_workers));
     }
     for (int i = 0; i < threads.size(); i++) {
+        // Note, this could be done slightly faster, technically we can start
+        // propagating the next iteration once the CSVs are saved, we don't
+        // need to wait for the database insertion, but the speedup likely
+        // isn't worth the added complexity at this point.
         threads[i].join();
     }
 }
