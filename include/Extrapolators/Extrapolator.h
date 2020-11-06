@@ -39,7 +39,7 @@ public:
 
     Extrapolator();
     ~Extrapolator();
-
+    void save_results(int iteration);
 };
 
 #endif

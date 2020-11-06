@@ -40,3 +40,7 @@ Extrapolator::Extrapolator() : Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_S
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE) { }
 
 Extrapolator::~Extrapolator() { }
+
+void Extrapolator::save_results(int iteration) {
+    save_results_parallel(iteration);
+}

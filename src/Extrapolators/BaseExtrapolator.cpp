@@ -252,7 +252,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         // Start the worker threads
         threads.push_back(std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread, this, iteration, i, max_workers));
     }
-    for (int i = 0; i < threads.size(); i++) {
+    for (size_t i = 0; i < threads.size(); i++) {
         // Note, this could be done slightly faster, technically we can start
         // propagating the next iteration once the CSVs are saved, we don't
         // need to wait for the database insertion, but the speedup likely
