@@ -53,11 +53,12 @@ public:
     SQLQuerier(std::string announcements_table = ANNOUNCEMENTS_TABLE,
                 std::string results_table = RESULTS_TABLE, 
                 std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
-                std::string depref_results_table = DEPREF_RESULTS_TABLE);
+                std::string depref_results_table = DEPREF_RESULTS_TABLE,
+                std::string config_section = "bgp");
     virtual ~SQLQuerier();
     
     // Setup
-    void read_config();
+    void read_config(std::string config_section);
     void open_connection();
     void close_connection();
     pqxx::result execute(std::string sql, bool insert = false);

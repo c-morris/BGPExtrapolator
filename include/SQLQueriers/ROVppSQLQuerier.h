@@ -38,7 +38,8 @@ public:
                     std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
                     std::string depref_results_table = DEPREF_RESULTS_TABLE,
                     std::string tracked_ases_table = ROVPP_TRACKED_ASES_TABLE,
-                    std::string simulation_table = ROVPP_SIMULATION_TABLE);
+                    std::string simulation_table = ROVPP_SIMULATION_TABLE,
+                    std::string config_section = "bgp");
     ~ROVppSQLQuerier();
 
     pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));

@@ -26,7 +26,8 @@
 SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE */,
                         std::string results_table /* = RESULTS_TABLE */, 
                         std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
-                        std::string depref_results_table /* = DEPREF_RESULTS_TABLE */) {
+                        std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
+                        std::string config_section) {
     this->announcements_table = announcements_table;
     this->results_table = results_table;
     this->depref_table = depref_results_table;
@@ -37,7 +38,7 @@ SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE 
     host = "127.0.0.1";
     port = "5432";
 
-    read_config();
+    read_config(config_section);
     open_connection();
 }
 
@@ -49,8 +50,9 @@ SQLQuerier::~SQLQuerier() {
 
 /** Reads credentials/connection info from .conf file
  */
-void SQLQuerier::read_config() {
+void SQLQuerier::read_config(std::string config_section) {
     using namespace std;
+    
     string file_location = "/etc/bgp/bgp.conf";
     ifstream cFile(file_location);
     if (cFile.is_open()) {
