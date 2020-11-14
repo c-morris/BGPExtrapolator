@@ -52,6 +52,8 @@ SQLQuerier::~SQLQuerier() {
  */
 void SQLQuerier::read_config(std::string config_section) {
     using namespace std;
+
+    cout << config_section << std::endl;
     
     string file_location = "/etc/bgp/bgp.conf";
     ifstream cFile(file_location);
