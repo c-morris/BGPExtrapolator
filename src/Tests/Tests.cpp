@@ -27,6 +27,17 @@
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
 
+struct Config {
+        Config() {
+                Logger::init_logger(true, "", 0);
+
+                //Enable and disable in desired test functions
+                boost::log::core::get()->set_logging_enabled(false);
+        }
+};
+
+BOOST_GLOBAL_FIXTURE( Config );
+
 // Prefix.h
 BOOST_AUTO_TEST_CASE( Prefix_constructor ) {
         BOOST_CHECK( test_prefix() );

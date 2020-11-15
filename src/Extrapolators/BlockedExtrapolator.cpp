@@ -183,7 +183,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             if (loop) {
                 static int g_loop = 1;
                 
-                Logger::getInstance().log("Loops") << "AS path loop #" << g_loop << ", Origin: " << origin << ", Prefix: " << cur_prefix.to_cidr() << ", Path: " << path_as_string;
+                // Logger::getInstance().log("Loops") << "AS path loop #" << g_loop << ", Origin: " << origin << ", Prefix: " << cur_prefix.to_cidr() << ", Path: " << path_as_string;
 
                 g_loop++;
                 continue;
@@ -277,9 +277,9 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                 }
 
                 // Log annoucements with equal timestamps 
-                Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
-                    ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
-                    ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
+                // Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
+                //     ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
+                //     ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
 
                 // First come, first saved if random is disabled
                 if (keep_first) {
@@ -295,11 +295,11 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                 }
             } else {
                 // Log announcements that arent handled by sorting
-                Logger::getInstance().log("Unsorted_Announcements") 
-                    << "This announcement is being deleted and is not handled by sorting." 
-                    << " Prefix: " << prefix.to_cidr() 
-                    << ", tstamp: " << timestamp 
-                    << ", origin: " << as_path->at(path_l-1);
+                // Logger::getInstance().log("Unsorted_Announcements") 
+                //     << "This announcement is being deleted and is not handled by sorting." 
+                //     << " Prefix: " << prefix.to_cidr() 
+                //     << ", tstamp: " << timestamp 
+                //     << ", origin: " << as_path->at(path_l-1);
 
                 // Delete worse MRT announcement, proceed with seeding
                 as_on_path->delete_ann(prefix);
@@ -364,7 +364,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
             static int g_broken_path = 0;
 
             // Log the part of path where break takes place
-            Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
+            // Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
 
             g_broken_path++;
         }

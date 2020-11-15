@@ -49,6 +49,7 @@
 #include "Extrapolators/ROVppExtrapolator.h"
 
 #include "Prefix.h"
+#include "Logger.h"
 
 // Prototypes for PrefixTest.cpp
 bool test_prefix();

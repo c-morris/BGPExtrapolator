@@ -26,6 +26,7 @@
 #include <boost/program_options.hpp>
 
 #include "Logger.h"
+
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
@@ -33,6 +34,17 @@
 #include "Extrapolators/ROVppExtrapolator.h"
 #include "Extrapolators/EZExtrapolator.h"
 #include "Tests/Tests.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
+// #include <boost/log/sources/global_logger_storage.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+
 
 void intro() {
     // This needs to be finished
@@ -42,7 +54,7 @@ void intro() {
 }
 
 int main(int argc, char *argv[]) {
-    using namespace std;   
+    using namespace std;
     // don't sync iostreams with printf
     ios_base::sync_with_stdio(false);
     namespace po = boost::program_options;
@@ -106,20 +118,13 @@ int main(int argc, char *argv[]) {
         cout << desc << endl;
         exit(0);
     }
-    
+
+    // TODO: replace this with command line parsing and such
+    // Logger::init_logger(true, "", 0);
+
     // Handle intro information
     intro();
     
-    std::string loggingFolder = vm.count("log-folder") ? vm["log-folder"].as<string>() : "";
-    if(loggingFolder != "") {
-        if(loggingFolder.back() == '/') {
-            Logger::initialize(loggingFolder);
-            Logger::getInstance();
-        } else {
-            std::cerr << "ERROR: Logger Folder must be a directory" << endl;
-        }
-    }
-
     // Check for ROV++ mode
     if (vm["rovpp"].as<bool>()) {
          ROVppExtrapolator *extrap = new ROVppExtrapolator(
