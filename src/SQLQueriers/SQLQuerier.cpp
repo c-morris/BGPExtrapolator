@@ -74,14 +74,23 @@ void SQLQuerier::read_config(std::string config_section) {
         program_options::store(program_options::parse_config_file(cFile, file_options, true), var_map);
 
         user = var_map[config_section + ".username"].as<string>();
+        cout << "User: " << user << std::endl;
+
         pass = var_map[config_section + ".password"].as<string>();
+        cout << "Password: " << pass << std::endl;
+
         db_name = var_map[config_section + ".database"].as<string>();
+        cout << "DB name: " << db_name << std::endl;
+
         if (var_map[config_section + ".host"].as<string>() == "localhost") {
             host = "127.0.0.1";
         } else {
             host = var_map[config_section + ".host"].as<string>();
         }
+        cout << "Host: " << host << std::endl;
+
         port = var_map[config_section + ".port"].as<string>();
+        cout << "Port: " << port << std::endl;
 
         // // Map config variables to settings in file
         // map<string,string> config;
