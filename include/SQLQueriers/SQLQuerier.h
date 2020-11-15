@@ -37,6 +37,9 @@
 #include "Prefix.h"
 #include "TableNames.h"
 
+#include <boost/program_options.hpp>
+namespace program_options = boost::program_options;
+
 class SQLQuerier {
 public:
     std::string results_table;
