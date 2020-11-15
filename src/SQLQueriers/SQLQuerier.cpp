@@ -59,7 +59,7 @@ void SQLQuerier::read_config(std::string config_section) {
 
     program_options::options_description file_options("File options");
     file_options.add_options()
-        ((config_section + ".username").c_str(), program_options::value<string>(), "username")
+        ((config_section + ".user").c_str(), program_options::value<string>(), "username")
         ((config_section + ".password").c_str(), program_options::value<string>(), "password")
         ((config_section + ".database").c_str(), program_options::value<string>(), "db")
         ((config_section + ".host").c_str(), program_options::value<string>(), "host")
