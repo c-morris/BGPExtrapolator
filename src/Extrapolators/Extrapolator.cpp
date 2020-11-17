@@ -41,6 +41,3 @@ Extrapolator::Extrapolator() : Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_S
 
 Extrapolator::~Extrapolator() { }
 
-void Extrapolator::save_results(int iteration) {
-    save_results_parallel(iteration);
-}

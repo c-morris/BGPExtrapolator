@@ -191,17 +191,11 @@ public:
      */
     virtual void save_results(int iteration);
 
-    /** Same as save_results, but designed to run in a separate thread
+    /** Thread function to save results
      *
      * @param iteration The current iteration of the propagation
      */
     virtual void save_results_thread(int iteration, int thread_num, int num_threads);
-
-    /** Coordinates threads running save_result_thread
-     *
-     * @param iteration The current iteration of the propagation
-     */
-    virtual void save_results_parallel(int iteration);
 
 };
 #endif

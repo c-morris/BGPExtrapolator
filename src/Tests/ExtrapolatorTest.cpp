@@ -440,7 +440,7 @@ bool test_save_results_parallel() {
 
     e.querier->clear_results_from_db();
     e.querier->create_results_tbl();
-    e.save_results_parallel(0);
+    e.save_results(0);
 
     return true;
 }

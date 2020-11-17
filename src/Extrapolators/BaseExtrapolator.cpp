@@ -132,51 +132,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
-    std::ofstream outfile;
-    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
-    outfile.open(file_name);
-    
-    // Handle inverse results
-    if (store_invert_results) {
-        std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
-        for (auto po : *graph->inverse_results){
-            for (uint32_t asn : *po.second) {
-                outfile << asn << ','
-                        << po.first.first.to_cidr() << ','
-                        << po.first.second << '\n';
-            }
-        }
-        outfile.close();
-        querier->copy_inverse_results_to_db(file_name);
-    
-    // Handle standard results
-    } else {
-        std::cout << "Saving Results From Iteration: " << iteration << std::endl;
-        for (auto &as : *graph->ases){
-            as.second->stream_announcements(outfile);
-        }
-        outfile.close();
-        querier->copy_results_to_db(file_name);
-
-    }
-    std::remove(file_name.c_str());
-    
-    // Handle depref results
-    if (store_depref_results) {
-        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + ".csv";
-        outfile.open(depref_name);
-        std::cout << "Saving Depref From Iteration: " << iteration << std::endl;
-        for (auto &as : *graph->ases) {
-            as.second->stream_depref(outfile);
-        }
-        outfile.close();
-        querier->copy_depref_to_db(depref_name);
-        std::remove(depref_name.c_str());
-    }
-}
-
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread(int iteration, int thread_num, int num_threads){
     // Decrement semaphore to limit the number of concurrent threads
     sem_wait(&worker_thread_count);
@@ -235,7 +190,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_parallel(int iteration){
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
     if (store_invert_results) {
         std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
     } else {
@@ -248,16 +203,20 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     int cpus = std::thread::hardware_concurrency();
     // Ensure we have at least one worker even when only one cpu core is avaliable
     int max_workers = cpus > 1 ? cpus - 1 : 1;
-    for (int i = 0; i < max_workers; i++) {
-        // Start the worker threads
-        threads.push_back(std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread, this, iteration, i, max_workers));
-    }
-    for (size_t i = 0; i < threads.size(); i++) {
-        // Note, this could be done slightly faster, technically we can start
-        // propagating the next iteration once the CSVs are saved, we don't
-        // need to wait for the database insertion, but the speedup likely
-        // isn't worth the added complexity at this point.
-        threads[i].join();
+    if (max_workers > 1) {
+        for (int i = 0; i < max_workers; i++) {
+            // Start the worker threads
+            threads.push_back(std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread, this, iteration, i, max_workers));
+        }
+        for (size_t i = 0; i < threads.size(); i++) {
+            // Note, this could be done slightly faster, technically we can start
+            // propagating the next iteration once the CSVs are saved, we don't
+            // need to wait for the database insertion, but the speedup likely
+            // isn't worth the added complexity at this point.
+            threads[i].join();
+        }
+    } else {
+        this->save_results_thread(iteration, 0, 1);
     }
 }
 
