@@ -225,8 +225,7 @@ void BaseAS<AnnouncementType>::clear_announcements() {
 template <class AnnouncementType>
 bool BaseAS<AnnouncementType>::already_received(AnnouncementType &ann) {
     auto search = all_anns->find(ann.prefix);
-    bool found = (search == all_anns->end()) ? false : true;
-    return found;
+    return !(search == all_anns->end());
 }
 
 template <class AnnouncementType>
