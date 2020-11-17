@@ -228,12 +228,12 @@ bool test_rovpp_find_loop() {
     return true;
 }
 
-/** Test pass_rov which should fail if the origin of the announcement is an
+/** Test pass_rovpp which should fail if the origin of the announcement is an
  *  attacker. 
  *
  * @return True if successful, otherwise false
  */
-bool test_rovpp_pass_rov() {
+bool test_rovpp_pass_rovpp() {
     ROVppASGraph graph = ROVppASGraph();
     graph.add_relationship(1, 2, AS_REL_PROVIDER);
     graph.add_relationship(2, 1, AS_REL_CUSTOMER);
@@ -241,19 +241,19 @@ bool test_rovpp_pass_rov() {
     Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
 
     // no attackers should pass all announcements
-    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rov(ann) != true) {
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann) != true) {
         return false;
     }
 
     // not an attacker, should pass
     graph.attackers->insert(666);
-    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rov(ann) != true) {
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann) != true) {
         return false;
     }
 
     // 13796 is attacker, should fail
     graph.attackers->insert(13796);
-    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rov(ann) != false) {
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann) != false) {
         return false;
     }
     return true;

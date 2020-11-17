@@ -145,8 +145,8 @@ BOOST_AUTO_TEST_CASE( ROVppASGraph_decide_ranks ) {
 BOOST_AUTO_TEST_CASE( ROVppAS_get_random ) {
         BOOST_CHECK( test_rovpp_get_random() );
 }
-BOOST_AUTO_TEST_CASE( ROVppAS_pass_rov ) {
-        BOOST_CHECK( test_rovpp_pass_rov() );
+BOOST_AUTO_TEST_CASE( ROVppAS_pass_rovpp ) {
+        BOOST_CHECK( test_rovpp_pass_rovpp() );
 }
 BOOST_AUTO_TEST_CASE( ROVppAS_add_neighbor ) {
         BOOST_CHECK( test_rovpp_add_neighbor() );

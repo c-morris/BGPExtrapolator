@@ -44,7 +44,7 @@
 // Special Constants 
 // This is used for ROVpp 0.1+ to 
 // identify blackhole announcements in the dataplane.
-// We're also using this in contrl plane in pass_rov
+// We're also using this in contrl plane in pass_rovpp
 // Constant was agreed upon with Simulation code.
 #define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  
 // This flag is used to denote that along this
@@ -78,6 +78,7 @@ struct ROVppAS : public AS {
     
     // ROV Methods
     bool pass_rov(Announcement &ann);
+    bool pass_rovpp(Announcement &ann);
     void add_policy(uint32_t);
     // Helper functions
     void withdraw(Announcement &ann);

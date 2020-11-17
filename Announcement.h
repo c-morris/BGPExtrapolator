@@ -30,6 +30,11 @@
 
 #include "Prefix.h"
 
+#define ROA_VALID 1
+#define ROA_UNKNOWN 2
+#define ROA_INVALID 3
+#define ROA_BOTH 4
+
 class Announcement {
 public:
     Prefix<> prefix;            // encoded with subnet mask
@@ -45,6 +50,7 @@ public:
     uint32_t sent_to_asn;       // ASN this ann is being sent to
     bool withdraw;              // if this is a withdrawn route
     std::vector<uint32_t> as_path; // stores full as path
+    uint8_t roa_validity;       // Inidicates the validity of the announcement (valid = 1; unknown = 2; invalid = 3; both = 4)
 
     /** Default constructor
      */
@@ -169,6 +175,7 @@ public:
      * @return The output stream parameter for reuse/recursion.
      */ 
     virtual std::ostream& to_blackholes_csv(std::ostream &os) {
+        // TODO: Add roa_validity to output CSV
         os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
         return os;
     }
