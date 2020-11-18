@@ -50,7 +50,7 @@ public:
     uint32_t sent_to_asn;       // ASN this ann is being sent to
     bool withdraw;              // if this is a withdrawn route
     std::vector<uint32_t> as_path; // stores full as path
-    uint8_t roa_validity;       // Inidicates the validity of the announcement (valid = 1; unknown = 2; invalid = 3; both = 4)
+    uint32_t roa_validity;       // Inidicates the validity of the announcement (valid = 1; unknown = 2; invalid = 3; both = 4)
 
     /** Default constructor
      */
@@ -58,7 +58,8 @@ public:
                  uint32_t aprefix, 
                  uint32_t anetmask,
                  uint32_t from_asn, 
-                 int64_t timestamp = 0) {
+                 int64_t timestamp = 0,
+                 uint32_t roa_validity = 2) {
         prefix.addr = aprefix;
         prefix.netmask = anetmask;
         origin = aorigin;
@@ -71,6 +72,7 @@ public:
         tiebreak_override = 0;
         sent_to_asn = 0;
         withdraw = false;
+        this->roa_validity = roa_validity;
     }
     
     /** Priority constructor
@@ -80,10 +82,11 @@ public:
                  uint32_t anetmask,
                  uint32_t pr, 
                  uint32_t from_asn, 
-                 int64_t timestamp, 
+                 int64_t timestamp,
+                 uint32_t roa_validity,
                  const std::vector<uint32_t> &path,
                  bool a_from_monitor = false) 
-        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
+        : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp, roa_validity) {
         priority = pr; 
         from_monitor = a_from_monitor;
         as_path = path;
@@ -97,7 +100,8 @@ public:
         priority = ann.priority;         
         received_from_asn = ann.received_from_asn;
         from_monitor = ann.from_monitor; 
-        tstamp = ann.tstamp;            
+        tstamp = ann.tstamp;
+        roa_validity = ann.roa_validity;            
         alt = ann.alt;              
         policy_index = ann.policy_index;     
         tiebreak_override = ann.tiebreak_override;
@@ -125,6 +129,7 @@ public:
         std::swap(a.received_from_asn, b.received_from_asn);
         std::swap(a.from_monitor, b.from_monitor);
         std::swap(a.tstamp, b.tstamp);
+        std::swap(a.roa_validity, b.roa_validity);
         std::swap(a.alt, b.alt);
         std::swap(a.policy_index, b.policy_index);
         std::swap(a.tiebreak_override, b.tiebreak_override);
@@ -146,6 +151,7 @@ public:
         os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
             ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
             << std::endl << "Priority:\t" << ann.priority << std::endl 
+            << "ROA Validity:\t" << ann.roa_validity << std::endl
             << "Recv'd from:\t" << std::dec << ann.received_from_asn << std::endl
             << "Sent to:\t" << std::dec << ann.sent_to_asn << std::endl
             << "Alt:\t\t" << std::dec << ann.alt << std::endl
@@ -164,7 +170,7 @@ public:
      * @return The output stream parameter for reuse/recursion.
      */ 
     virtual std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << alt << '\n';
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << alt << ',' << roa_validity << '\n';
         return os;
     }
 
@@ -175,8 +181,7 @@ public:
      * @return The output stream parameter for reuse/recursion.
      */ 
     virtual std::ostream& to_blackholes_csv(std::ostream &os) {
-        // TODO: Add roa_validity to output CSV
-        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << roa_validity << '\n';
         return os;
     }
     
@@ -187,7 +192,8 @@ public:
                (priority == b.priority) &&
                (sent_to_asn == b.sent_to_asn) &&
                (alt == b.alt) &&
-               (received_from_asn == b.received_from_asn);
+               (received_from_asn == b.received_from_asn) &&
+               (roa_validity == b.roa_validity);
     }
     
     bool operator!=(const Announcement &b) const {

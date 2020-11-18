@@ -80,7 +80,8 @@ public:
     virtual void propagate_down();
     void give_ann_to_as_path(std::vector<uint32_t>* as_path,
                              Prefix<> prefix,
-                             int64_t timestamp = 0);
+                             int64_t timestamp = 0,
+                             uint32_t roa_validity = 2);
     virtual void send_all_announcements(uint32_t asn,
                                 bool to_providers = false,
                                 bool to_peers = false,

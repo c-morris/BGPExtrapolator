@@ -51,7 +51,8 @@ struct ROVppExtrapolator: public Extrapolator {
     void give_ann_to_as_path(std::vector<uint32_t>*, 
                              Prefix<> prefix, 
                              int64_t timestamp, 
-                             bool hijack);
+                             bool hijack,
+                             uint32_t roa_validity);
     void propagate_up();
     void propagate_down();
     uint32_t get_priority(Announcement const& ann, uint32_t i);

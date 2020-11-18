@@ -99,6 +99,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
             Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
+            uint32_t roa_validity = c["roa_validity"].as<uint32_t>();
             bool is_hijack = table_name == rovpp_querier->attack_table;
             if (is_hijack) {
                 // Add origin to attackers
@@ -106,7 +107,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             }
             
             // Seed the announcement
-            give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack);
+            give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack, roa_validity);
     
             // Clean up
             delete parsed_path;
@@ -148,7 +149,8 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
 void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
                                             Prefix<> prefix, 
                                             int64_t timestamp, 
-                                            bool hijack) {
+                                            bool hijack,
+                                            uint32_t roa_validity) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -162,7 +164,8 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                   prefix.addr,
                                   prefix.netmask,
                                   0,
-                                  timestamp); 
+                                  timestamp,
+                                  roa_validity); 
     
     // Full path vector
     // TODO only handles seeding announcements at origin
@@ -239,7 +242,8 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
                                             priority,
                                             received_from_asn,
                                             timestamp,
-                                            0, // policy defaults to BGP
+                                            0, // policy defaults to BGP,
+                                            roa_validity,
                                             cur_path,
                                             true);
             // Send the announcement to the current AS

@@ -311,7 +311,9 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
 
                 // Get timestamp
                 int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
-
+                // Get ROA Validity
+                uint32_t roa_validity = ann_block[i]["as_path"].as<std::uint32_t>();
+                
                 // Assemble pair
                 auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
                 
@@ -328,7 +330,7 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                     }
                 }
                 // Seed announcements along AS path
-                give_ann_to_as_path(as_path, cur_prefix, timestamp);
+                give_ann_to_as_path(as_path, cur_prefix, timestamp, roa_validity);
                 delete as_path;
             }
             // Propagate for this subnet
@@ -353,7 +355,7 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
  * @param as_path Vector of ASNs for this announcement.
  * @param prefix The prefix this announcement is for.
  */
-void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp) {
+void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp, uint32_t roa_validity) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -368,7 +370,8 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                   prefix.addr,
                                   prefix.netmask,
                                   0,
-                                  timestamp); 
+                                  timestamp,
+                                  roa_validity); 
     
     // Full path pointer
     // TODO only handles announcements at origin
@@ -462,6 +465,7 @@ void Extrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> 
                                             priority,
                                             received_from_asn,
                                             timestamp,
+                                            roa_validity,
                                             cur_path,
                                             true);
             // Send the announcement to the current AS

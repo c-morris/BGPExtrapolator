@@ -75,7 +75,7 @@ bool test_remove_neighbor(){
  * @return true if successful.
  */
 bool test_receive_announcements(){
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742, 1);
     std::vector<Announcement> vect = std::vector<Announcement>();
     vect.push_back(ann);
     // this function should make a copy of the announcement
@@ -102,7 +102,7 @@ bool test_receive_announcements(){
  * @return true if successful.
  */
 bool test_process_announcement(){
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742, 1);
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
     AS as = AS();
@@ -120,8 +120,8 @@ bool test_process_announcement(){
     // Check priority
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
     std::vector<uint32_t> x; 
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, 0, x);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, 0, x);
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, 0, 1, x);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, 0, 1, x);
     as.process_announcement(a1, true);
     as.process_announcement(a2, true);
     if (as.loc_rib->find(p)->second.received_from_asn != 223 ||
@@ -131,7 +131,7 @@ bool test_process_announcement(){
     }    
 
     // Check new best announcement
-    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, 0, x);
+    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, 0, 1, x);
     as.process_announcement(a3, true);
     if (as.loc_rib->find(p)->second.received_from_asn != 224 ||
         as.depref_anns->find(p)->second.received_from_asn != 223) {
@@ -152,9 +152,9 @@ bool test_process_announcement(){
  * Item three requires the from_monitor attribute to work. 
  */
 bool test_process_announcements(){
-    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742, 1);
     Prefix<> ann1_prefix = ann1.prefix;
-    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
+    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742, 1);
     Prefix<> ann2_prefix = ann2.prefix;
     AS as = AS();
     // build a vector of announcements
@@ -224,7 +224,7 @@ bool test_process_announcements(){
  * @return true if successful.
  */
 bool test_clear_announcements(){
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742, 1);
     AS as = AS();
     // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann, true);
@@ -243,8 +243,8 @@ bool test_clear_announcements(){
  * @return true if successful.
  */
 bool test_already_received(){
-    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
-    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
+    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742, 1);
+    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742, 1);
     AS as = AS();
     // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann1, true);

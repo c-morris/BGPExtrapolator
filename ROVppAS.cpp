@@ -66,7 +66,7 @@ void ROVppAS::add_policy(uint32_t p) {
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
     if (ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) { return false; }
-    if (ann.roa_validity == ROA_VALID) {
+    if (ann.roa_validity == ROA_VALID || ann.roa_validity == ROA_UNKNOWN) {
       return true;
     } else {
       return false;

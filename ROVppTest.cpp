@@ -289,7 +289,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path->push_back(2);
     as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p, 2, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0, 1);
 
     // Test that monitor annoucements were received
     if(!(e.graph->ases->find(2)->second->loc_rib->find(p)->second.from_monitor &&
@@ -324,7 +324,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path_b->push_back(2);
     as_path_b->push_back(4);
     as_path_b->push_back(4);
-    e.give_ann_to_as_path(as_path_b, p, 1, 0);
+    e.give_ann_to_as_path(as_path_b, p, 1, 0, 1);
 
     if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
         return false;
@@ -484,7 +484,7 @@ bool test_rovpp_send_all_announcements() {
     as_path->push_back(2);
     as_path->push_back(4);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p, 0, 0);
+    e.give_ann_to_as_path(as_path, p, 0, 0, 1);
     delete as_path;
 
     // Check to providers
@@ -826,8 +826,8 @@ bool test_rovpp_process_announcement(){
     // Check priority
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
     std::vector<uint32_t> x;
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, 0, x);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, 0, x);
+    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, 0, 1, x);
+    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, 0, 1, x);
     as.process_announcement(a1);
     as.process_announcement(a2);
     if (as.loc_rib->find(p)->second.received_from_asn != 223 ||
@@ -837,7 +837,7 @@ bool test_rovpp_process_announcement(){
     }    
 
     // Check new best announcement
-    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, 0, x);
+    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, 0, 1, x);
     as.process_announcement(a3);
     if (as.loc_rib->find(p)->second.received_from_asn != 224 ||
         as.depref_anns->find(p)->second.received_from_asn != 223) {
@@ -966,7 +966,7 @@ bool test_rovpp_already_received(){
  */
 bool test_rovpp_announcement(){
     std::vector<uint32_t> x;
-    ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 0, 222, 100, 1, x);
+    ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 0, 222, 100, 1, 1, x);
     if (ann.origin != 111 
         || ann.prefix.addr != 0x01010101 
         || ann.prefix.netmask != 0xffffff00 
@@ -978,7 +978,7 @@ bool test_rovpp_announcement(){
         return false;
     }
     
-    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1, x, true);
+    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1, 1, x, true);
     if (ann.origin != 111 
         || ann.prefix.addr != 0x01010101 
         || ann.prefix.netmask != 0xffffff00 
@@ -1018,19 +1018,19 @@ bool test_best_alternative_route_chosen() {
     // Notice the priorities
     // The Announcements will be handled in this order
     std::vector<uint32_t> x;
-    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, x);  // If done incorrectly it will end up with this one
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, 1, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, x);  // or this one
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, 1, x);  // or this one
     a2.priority = 292;
-    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, x);  // It should end up with this one if done correctly
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, 1, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
     Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
     // The difference between the following is the received_from_asn
-    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, 1, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, 1, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
@@ -1071,19 +1071,19 @@ bool test_best_alternative_route() {
     // Notice the priorities
     // The Announcements will be handled in this order
     std::vector<uint32_t> x;
-    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, x);  // If done incorrectly it will end up with this one
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, 1, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, x);  // or this one
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, 1, x);  // or this one
     a2.priority = 292;
-    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, x);  // It should end up with this one if done correctly
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, 1, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
     Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
     // The difference between the following is the received_from_asn
-    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, 1, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, 1, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
@@ -1128,8 +1128,8 @@ bool test_rovpp_tiebreak_override() {
     std::vector<uint32_t> *as_path2 = new std::vector<uint32_t>();
     as_path2->push_back(3);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path1, p, 2, 0);
-    e.give_ann_to_as_path(as_path2, p, 2, 0);
+    e.give_ann_to_as_path(as_path1, p, 2, 0, 1);
+    e.give_ann_to_as_path(as_path2, p, 2, 0, 1);
 
     e.propagate_up();
     e.propagate_down();
@@ -1183,7 +1183,7 @@ bool test_withdrawal() {
     as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
    // e.graph->ases->find(5)->second->process_announcement(ann);
-    e.give_ann_to_as_path(as_path, p, 2, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0, 1);
     e.propagate_up();
     e.propagate_down();
 
@@ -1323,7 +1323,7 @@ bool test_rovpp_full_path() {
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(5);
     
-    e.give_ann_to_as_path(as_path, p, 1, 0);
+    e.give_ann_to_as_path(as_path, p, 1, 0, 1);
     e.propagate_up();
     e.propagate_down();
 

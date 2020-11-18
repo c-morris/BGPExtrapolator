@@ -12,12 +12,14 @@ struct ROVppAnnouncement : public Announcement {
                       uint32_t anetmask,
                       uint32_t from_asn,
                       int64_t timestamp = 0, 
-                      uint32_t policy = 0)
+                      uint32_t policy = 0,
+                      uint32_t roa_validity = 2)
                       : Announcement(aorigin, 
                                      aprefix, 
                                      anetmask, 
                                      from_asn, 
-                                     timestamp) {
+                                     timestamp,
+                                     roa_validity) {
         policy_index = policy;
         opt_flag = 0;
     }
@@ -29,6 +31,7 @@ struct ROVppAnnouncement : public Announcement {
                       uint32_t from_asn, 
                       int64_t timestamp,
                       uint32_t policy,
+                      uint32_t roa_validity,
                       const std::vector<uint32_t> &path,
                       bool a_from_monitor = false)
                       : Announcement(aorigin,
@@ -37,6 +40,7 @@ struct ROVppAnnouncement : public Announcement {
                                      pr,
                                      from_asn,
                                      timestamp,
+                                     roa_validity,
                                      path,
                                      a_from_monitor) {
         policy_index = policy;
@@ -51,7 +55,7 @@ struct ROVppAnnouncement : public Announcement {
      * @return The output stream parameter for reuse/recursion.
      */ 
     std::ostream& to_csv(std::ostream &os){
-        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << opt_flag << '\n';
+        os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << opt_flag << ',' << roa_validity << '\n';
         return os;
     }
 };
