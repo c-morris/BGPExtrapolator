@@ -343,7 +343,7 @@ bool ezbgpsec_test_gather_reports() {
  * This will merge the components IN THE HYPERGRAPH.
  */
 bool ezbgpsec_test_gather_reports_merge() {
-    Logger::setFolder("./Logs/");
+    // Logger::setFolder("./Logs/");
 
     EZExtrapolator e = EZExtrapolator();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);

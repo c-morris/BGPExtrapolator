@@ -15,7 +15,22 @@
  */
 class CommunityDetection {
 public:
+    class Component;
+
+    class Node {
+    public:
+        std::vector<uint32_t> neighbors;
+        uint32_t asn;
+
+        Node(uint32_t asn);
+        
+        uint32_t minimum_vertex_cover_helper(std::vector<std::vector<uint32_t>> hyper_edges_to_find, std::unordered_set<uint32_t> visited, Component *component);
+    };
+
     class Component {
+    private:
+        void remove_node(uint32_t asn);
+
     public:
         std::vector<std::vector<uint32_t>> hyper_edges;
 
@@ -24,6 +39,8 @@ public:
 
         //Search for all ASes with a certain degree count
         std::unordered_map<uint32_t, std::set<uint32_t>> degree_sets;
+
+        std::unordered_map<uint32_t, Node*> nodes;
 
         //Since an AS can only be in one component, the unique identifier will be one of the ASns
         uint32_t unique_identifier;
@@ -55,6 +72,16 @@ public:
          *  This will not alter the other component, nor will its memory be freed or deleted.
          */
         void merge(Component *other);
+
+        /**
+         * Given an ASN, calculate the minimum number of nodes it must use to cover all of the hyper edges that it is in
+         * 
+         * The smallest amount of nodes needed to cover the hyper edges that this node is in, however this node is not allowed to be used.
+         * 
+         * @param asn -> The AS to start from
+         * @return -> The minimum nodes to cover all hyperedges that the AS is in. 0 If the AS is not in the component
+         */
+        uint32_t minimum_vertex_cover(uint32_t asn);
 
         void remove_hyper_edge(std::vector<uint32_t> &hyper_edge);
 

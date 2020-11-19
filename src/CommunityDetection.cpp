@@ -1,5 +1,44 @@
 #include "CommunityDetection.h"
 
+//**************** Node ****************//
+
+CommunityDetection::Node::Node(uint32_t asn) : asn(asn) {
+
+}
+
+uint32_t CommunityDetection::Node::minimum_vertex_cover_helper(std::vector<std::vector<uint32_t>> hyper_edges_to_find, std::unordered_set<uint32_t> visited, Component *component) {
+    if(hyper_edges_to_find.size() == 0)
+        return 0;
+
+    for(auto it = hyper_edges_to_find.begin(); it != hyper_edges_to_find.end(); ++it) {
+        if(std::find(it->begin(), it->end(), asn) != it->end()) {
+            hyper_edges_to_find.erase(it);
+        }
+    }
+
+    visited.insert(asn);
+
+    bool first_result = true;
+    uint32_t min_result = 0;
+    for(uint32_t neighbor : neighbors) {
+        if(visited.find(neighbor) != visited.end())
+            continue;
+
+        uint32_t result = component->nodes.find(neighbor)->second->minimum_vertex_cover_helper(hyper_edges_to_find, visited, component);
+
+        if(first_result) {
+            first_result = false;
+            min_result = result;
+        } else if(result < min_result) {
+            min_result = result;
+        }
+    }
+
+    if(first_result)
+        return 0;
+    return 1 + min_result;
+}
+
 //**************** Component ****************//
 CommunityDetection::Component::Component(std::vector<uint32_t> &hyper_edge) {
     unique_identifier = hyper_edge.at(0);
@@ -8,6 +47,21 @@ CommunityDetection::Component::Component(std::vector<uint32_t> &hyper_edge) {
 
 CommunityDetection::Component::~Component() {
 
+}
+
+void CommunityDetection::Component::remove_node(uint32_t asn) {
+    auto node_search = nodes.find(asn);
+    if(node_search == nodes.end())
+        return;
+
+    Node *node = node_search->second;
+    for(uint32_t neighbor : node->neighbors) {
+        Node *neighbor_node = nodes.find(neighbor)->second;
+        neighbor_node->neighbors.erase(std::find(neighbor_node->neighbors.begin(), neighbor_node->neighbors.end(), asn));
+    }
+
+    delete node;
+    nodes.erase(node_search);
 }
 
 bool CommunityDetection::Component::contains_hyper_edge(std::vector<uint32_t> &hyper_edge) {
@@ -40,6 +94,9 @@ void CommunityDetection::Component::change_degree(uint32_t asn, bool increment) 
     else
         degree_count--;
 
+    if(degree_count == 0)
+        remove_node(asn);
+
     if(degree_count > 0) {
         as_to_degree_count.insert(std::make_pair(asn, degree_count));
 
@@ -60,8 +117,18 @@ void CommunityDetection::Component::add_hyper_edge(std::vector<uint32_t> &hyper_
     Logger::getInstance().log("Debug") << "Hyper edge: " << hyper_edge << " is being added to the hyper graph";
 
     hyper_edges.push_back(hyper_edge);
-    for(uint32_t asn : hyper_edge)
-        change_degree(asn, true);
+    for(size_t i = 0; i < hyper_edge.size(); i++) {
+        change_degree(hyper_edge.at(i), true);
+
+        auto node_search = nodes.find(hyper_edge.at(i));
+        if(node_search == nodes.end())
+            nodes.insert(std::make_pair(hyper_edge.at(i), new Node(hyper_edge.at(i))));
+
+        if(i > 0) {
+            nodes.find(hyper_edge.at(i - 1))->second->neighbors.push_back(hyper_edge.at(i));
+            nodes.find(hyper_edge.at(i))->second->neighbors.push_back(hyper_edge.at(i - 1));
+        }
+    }
 }
 
 void CommunityDetection::Component::merge(Component *other) {
@@ -71,13 +138,26 @@ void CommunityDetection::Component::merge(Component *other) {
         add_hyper_edge(hyper_edge);
 }
 
+uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn) {
+    std::vector<std::vector<uint32_t>> hyper_edges_to_find;
+
+    for(auto &edge : this->hyper_edges)
+        if(std::find(edge.begin(), edge.end(), asn) != edge.end())
+            hyper_edges_to_find.push_back(edge);
+
+    auto node_search = nodes.find(asn);
+    if(node_search == nodes.end())
+        return 0;
+    
+    // -1 to get rid of the +1 from the root node adding to the findings of its neighbors  
+    return node_search->second->minimum_vertex_cover_helper(hyper_edges_to_find, std::unordered_set<uint32_t>(), this) - 1;
+}
+
 void CommunityDetection::Component::remove_hyper_edge(std::vector<uint32_t> &hyper_edge) {
     auto it = std::find(hyper_edges.begin(), hyper_edges.end(), hyper_edge);
 
-    if(it == hyper_edges.end()) {
-
+    if(it == hyper_edges.end())
         return;
-    }
 
     for(uint32_t asn : hyper_edge)
         change_degree(asn, false);
@@ -99,20 +179,23 @@ void CommunityDetection::Component::threshold_filtering(CommunityDetection *comm
     bool changed = true;
     while(changed && community_detection->threshold > 0) {
         //find the highest degree in the graph
-        uint32_t highest_degree = 0;
-        for(auto &p : degree_sets) {
-            if(p.first > highest_degree)
-                highest_degree = p.first;
+        uint32_t highest_mvc = 0;
+        uint32_t highest_mvc_asn = 0;
+        for(auto pair : nodes) {
+            uint32_t mvc = minimum_vertex_cover(pair.first);
+
+            if(mvc > highest_mvc) {
+                highest_mvc = mvc;
+                highest_mvc_asn = pair.first;
+            }
         }
 
-        //if there is an AS with a degree higher than the threshold, remove the AS and decrement threshold
-        //Check that it is also greater than or equal to 2
-        if(highest_degree >= 2 && highest_degree >= community_detection->threshold) {
-            uint32_t asn = *degree_sets.find(highest_degree)->second.begin();
-            remove_AS(asn);
-        } else {
+        //if there is an AS with an mvc higher than the threshold, remove the AS and decrement threshold
+        //Check that it is also greater than or equal to 2 (don't remove something with an mvc of 1)
+        if(highest_mvc >= 2 && highest_mvc >= community_detection->threshold)
+            remove_AS(highest_mvc_asn);
+        else
             changed = false;
-        }
     }
 }
 
@@ -265,7 +348,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
     //We will keep track of the adopters until we hit a non adopter or invalid MAC
     bool stop_tracking_adopter = false;
 
-    for(int i = 1; i < as_path.size(); i++) {// Starts at 1 because we need to check if the "previous" AS is a real neighbor
+    for(size_t i = 1; i < as_path.size(); i++) {// Starts at 1 because we need to check if the "previous" AS is a real neighbor
         uint32_t asn = as_path.at(i);
         auto as_search = graph->ases->find(asn);
         if(as_search == graph->ases->end()) {
@@ -278,7 +361,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         //Can't track over a non-adopter
         if(!as->adopter) {
             stop_tracking_adopter = true;
-        } 
+        }
 
         //Found invalid MAC
         if(as->adopter && !as->has_neighbor(as_path.at(i - 1))) {
