@@ -125,4 +125,7 @@ bool test_rovpp_full_path();
 //EZBGPsec
 bool ezbgpsec_test_path_propagation();
 
+//SQLQuerier
+bool test_read_config_bgpdb();
+
 #endif
