@@ -129,6 +129,5 @@ bool ezbgpsec_test_path_propagation();
 bool test_parse_config_buildup();
 bool test_parse_config_teardown();
 bool test_parse_config();
-bool test_open_connection_bgp();
 
 #endif
