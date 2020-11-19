@@ -60,5 +60,5 @@ bool test_parse_config() {
         return false;
     }
 
-    return failed;
+    return !failed;
 }
