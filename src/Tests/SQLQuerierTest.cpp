@@ -49,7 +49,7 @@ bool test_parse_config() {
             std::cerr << "Failed to parse username" << std::endl;
             failed = true;
         }
-        if (querier->db_name != "test4") {
+        if (querier->port != "test4") {
             std::cerr << "Failed to parse port" << std::endl;
             failed = true;
         }
