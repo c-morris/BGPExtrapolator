@@ -30,10 +30,11 @@
 
 #include "Prefix.h"
 
-#define ROA_VALID 1
-#define ROA_UNKNOWN 2
-#define ROA_INVALID 3
-#define ROA_BOTH 4
+#define ROA_VALID 0
+#define ROA_UNKNOWN 1
+#define ROA_INVALID_1 2
+#define ROA_INVALID_2 3
+#define ROA_INVALID_3 4 
 
 class Announcement {
 public:

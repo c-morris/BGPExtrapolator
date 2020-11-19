@@ -100,7 +100,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
             uint32_t roa_validity = c["roa_validity"].as<uint32_t>();
-            bool is_hijack = roa_validity == ROA_INVALID;
+            bool is_hijack = roa_validity == ROA_INVALID_1 || roa_validity == ROA_INVALID_2 || roa_validity == ROA_INVALID_3;
             if (is_hijack) {
                 // Add origin to attackers
                 rovpp_graph->attackers->insert(parsed_path->at(0));
@@ -224,7 +224,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // If this AS is the origin
         if (it == as_path->rbegin()){
             // ROVpp: Set the recv_from to proper flag
-            if (roa_validity == ROA_INVALID) {
+            if (roa_validity == ROA_INVALID_1 || roa_validity == ROA_INVALID_2 || roa_validity == ROA_INVALID_3) {
                 received_from_asn = 64513;
             } else {
                 received_from_asn = 64514;
