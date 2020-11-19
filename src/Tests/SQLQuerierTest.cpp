@@ -62,3 +62,36 @@ bool test_parse_config() {
 
     return !failed;
 }
+
+// Test open connection
+bool test_open_connection_bgp() {
+    SQLQuerier *querier;
+    try {
+        querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "test", "bgp-test.conf", false); //"bgp", "/etc/bgp/bgp.conf", false);
+    }
+    catch (const std::exception &e) {
+        std::cerr << "bgp.conf parsing failed (section bgp)" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+
+    try {
+        querier->open_connection();
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Database open connection failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+
+    try {
+        querier->close_connection();
+    }
+    catch (const std::exception &e) {
+        std::cerr << "Database close connection failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+
+    return true;
+}
