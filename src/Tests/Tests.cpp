@@ -204,9 +204,10 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
 }
 
 //SQLQuerier Tests
-BOOST_AUTO_TEST_CASE( SQLQuerier_test_parse_config) {
-        //BOOST_CHECK (test_parse_config_buildup());
-        BOOST_CHECK (test_parse_config_teardown());
+BOOST_AUTO_TEST_CASE( SQLQuerier_test_parse_config ) {
+        BOOST_CHECK ( test_parse_config_buildup() );
+        BOOST_CHECK( test_parse_config() );
+        BOOST_CHECK ( test_parse_config_teardown() );
 }
 
 #endif // RUN_TESTS
