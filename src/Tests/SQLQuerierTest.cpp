@@ -7,7 +7,7 @@
 bool test_parse_config_buildup() {
     try {
         std::ofstream config("bgp-test.conf");
-        config << "[test]\nhost = localhost\ndatabase = test1\npassword = test2\nuser = test3\nport = 5432\nram = test\nrestart_postgres_cmd = test";
+        config << "[test]\nhost = test0\ndatabase = test1\npassword = test2\nuser = test3\nport = test4\nram = test\nrestart_postgres_cmd = test";
         config.close();
         return true;
     }
@@ -67,10 +67,10 @@ bool test_parse_config() {
 bool test_open_connection_bgp() {
     SQLQuerier *querier;
     try {
-        querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "test", "bgp-test.conf", false); //"bgp", "/etc/bgp/bgp.conf", false);
+        querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "unexistent", "/etc/bgp/bgp-test.conf", false);
     }
     catch (const std::exception &e) {
-        std::cerr << "bgp.conf parsing failed (section bgp)" << std::endl;
+        std::cerr << "bgp-test.conf parsing failed (section bgp)" << std::endl;
         std::cerr << e.what() << std::endl;
         return false;
     }
