@@ -27,19 +27,26 @@ SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE 
                         std::string results_table /* = RESULTS_TABLE */, 
                         std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                         std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
-                        std::string config_section) {
+                        std::string config_section,
+                        std::string config_path,
+                        bool create_connection) {
     this->announcements_table = announcements_table;
     this->results_table = results_table;
     this->depref_table = depref_results_table;
     this->inverse_results_table = inverse_results_table;
+    this->config_section = config_section;
+    this->config_path = config_path;
     
     // Default host and port numbers
     // Strings for connection arg
     host = "127.0.0.1";
     port = "5432";
 
-    read_config(config_section);
-    open_connection();
+    read_config();
+
+    if (create_connection){
+        open_connection();
+    }
 }
 
 SQLQuerier::~SQLQuerier() {
@@ -50,7 +57,7 @@ SQLQuerier::~SQLQuerier() {
 
 /** Reads credentials/connection info from .conf file
  */
-void SQLQuerier::read_config(std::string config_section) {
+void SQLQuerier::read_config() {
     using namespace std;
 
     cout << "Config section: " << config_section << std::endl;
@@ -69,8 +76,7 @@ void SQLQuerier::read_config(std::string config_section) {
 
     program_options::notify(var_map);
 
-    string file_location = "/etc/bgp/bgp.conf";
-    ifstream cFile(file_location);
+    ifstream cFile(config_path);
     if (cFile.is_open()) {
         // Map config variables to settings in file
         program_options::store(program_options::parse_config_file(cFile, file_options, true), var_map);
@@ -99,7 +105,7 @@ void SQLQuerier::read_config(std::string config_section) {
             port = var_map[config_section + ".port"].as<string>();
         }
     } else {
-        std::cerr << "Error loading config file \"" << file_location << "\"" << std::endl;
+        std::cerr << "Error loading config file \"" << config_path << "\"" << std::endl;
     }
 }
 
