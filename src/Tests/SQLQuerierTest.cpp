@@ -7,7 +7,7 @@
 bool test_parse_config_buildup() {
     try {
         std::ofstream config("bgp-test.conf");
-        config << "[test]\nhost = test0\ndatabase = test1\npassword = test2\nuser = test3\nport = test4\nram = test\nrestart_postgres_cmd = test";
+        config << "[test]\nhost = localhost\ndatabase = test1\npassword = test2\nuser = test3\nport = 5432\nram = test\nrestart_postgres_cmd = test";
         config.close();
         return true;
     }
