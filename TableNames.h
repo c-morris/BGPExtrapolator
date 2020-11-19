@@ -14,6 +14,7 @@
 
 // ROV++ Tables
 #define POLICY_TABLE "rovpp_ases"
+#define ROVPP_ANNOUNCEMENTS_TABLE "mrt_w_metadata"
 #define TOP_TABLE "rovpp_top_100_ases"
 #define ETC_TABLE "rovpp_etc_ases"
 #define EDGE_TABLE "rovpp_edge_ases"

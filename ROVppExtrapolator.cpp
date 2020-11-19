@@ -90,7 +90,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
     int iter = 0;
-    for (const string table_name: {rovpp_querier->victim_table, rovpp_querier->attack_table}) {
+    for (const string table_name: {ROVPP_ANNOUNCEMENTS_TABLE}) {
         // Get the prefix-origin pairs from the database
         pqxx::result prefix_origin_pairs = rovpp_querier->select_all_pairs_from(table_name);
         // Seed each of the prefix-origin pairs
@@ -100,14 +100,14 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
             uint32_t roa_validity = c["roa_validity"].as<uint32_t>();
-            bool is_hijack = table_name == rovpp_querier->attack_table;
+            bool is_hijack = roa_validity == ROA_INVALID;
             if (is_hijack) {
                 // Add origin to attackers
                 rovpp_graph->attackers->insert(parsed_path->at(0));
             }
             
             // Seed the announcement
-            give_ann_to_as_path(parsed_path, the_prefix, timestamp, is_hijack, roa_validity);
+            give_ann_to_as_path(parsed_path, the_prefix, timestamp, roa_validity);
     
             // Clean up
             delete parsed_path;
@@ -149,7 +149,6 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
 void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
                                             Prefix<> prefix, 
                                             int64_t timestamp, 
-                                            bool hijack,
                                             uint32_t roa_validity) {
     // Handle empty as_path
     if (as_path->empty()) { 
@@ -225,7 +224,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // If this AS is the origin
         if (it == as_path->rbegin()){
             // ROVpp: Set the recv_from to proper flag
-            if (hijack) {
+            if (roa_validity == ROA_INVALID) {
                 received_from_asn = 64513;
             } else {
                 received_from_asn = 64514;

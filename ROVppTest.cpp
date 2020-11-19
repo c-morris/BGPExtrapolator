@@ -101,6 +101,7 @@ bool check_infected_vector(ASGraph * as_graph, std::vector<uint32_t> asns, Prefi
  */
 ROVppASGraph figure_1_graph(uint32_t policy_type) {
     // TODO: function is incomplete needs
+    // TODO: We no longer use the victims and attackers variables, now we use roa_validity as part of the announcement
     ROVppASGraph graph = ROVppASGraph();
     uint32_t attacker_asn = 666;
     uint32_t victim_asn = 99;
@@ -289,7 +290,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path->push_back(2);
     as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p, 2, 0, 1);
+    e.give_ann_to_as_path(as_path, p, 2, 1);
 
     // Test that monitor annoucements were received
     if(!(e.graph->ases->find(2)->second->loc_rib->find(p)->second.from_monitor &&
@@ -324,7 +325,7 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path_b->push_back(2);
     as_path_b->push_back(4);
     as_path_b->push_back(4);
-    e.give_ann_to_as_path(as_path_b, p, 1, 0, 1);
+    e.give_ann_to_as_path(as_path_b, p, 1, 1);
 
     if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
         return false;
@@ -484,7 +485,7 @@ bool test_rovpp_send_all_announcements() {
     as_path->push_back(2);
     as_path->push_back(4);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path, p, 0, 0, 1);
+    e.give_ann_to_as_path(as_path, p, 0, 1);
     delete as_path;
 
     // Check to providers
@@ -1128,8 +1129,8 @@ bool test_rovpp_tiebreak_override() {
     std::vector<uint32_t> *as_path2 = new std::vector<uint32_t>();
     as_path2->push_back(3);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    e.give_ann_to_as_path(as_path1, p, 2, 0, 1);
-    e.give_ann_to_as_path(as_path2, p, 2, 0, 1);
+    e.give_ann_to_as_path(as_path1, p, 2, 1);
+    e.give_ann_to_as_path(as_path2, p, 2, 1);
 
     e.propagate_up();
     e.propagate_down();
@@ -1183,7 +1184,7 @@ bool test_withdrawal() {
     as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
    // e.graph->ases->find(5)->second->process_announcement(ann);
-    e.give_ann_to_as_path(as_path, p, 2, 0, 1);
+    e.give_ann_to_as_path(as_path, p, 2, 1);
     e.propagate_up();
     e.propagate_down();
 
@@ -1323,7 +1324,7 @@ bool test_rovpp_full_path() {
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(5);
     
-    e.give_ann_to_as_path(as_path, p, 1, 0, 1);
+    e.give_ann_to_as_path(as_path, p, 1, 1);
     e.propagate_up();
     e.propagate_down();
 
