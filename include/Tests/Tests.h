@@ -126,8 +126,8 @@ bool test_rovpp_full_path();
 bool ezbgpsec_test_path_propagation();
 
 //SQLQuerier
-void test_parse_config_buildup();
-void test_parse_config_teardown();
-bool test_parse_config()
+bool test_parse_config_buildup();
+bool test_parse_config_teardown();
+bool test_parse_config();
 
 #endif
