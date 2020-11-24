@@ -126,5 +126,6 @@ bool test_rovpp_full_path();
 bool ezbgpsec_test_path_propagation();
 bool ezbgpsec_test_gather_reports();
 bool ezbgpsec_test_gather_reports_merge();
+bool ezbgpsec_test_mvc();
 
 #endif

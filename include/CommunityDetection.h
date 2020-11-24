@@ -15,21 +15,9 @@
  */
 class CommunityDetection {
 public:
-    class Component;
-
-    class Node {
-    public:
-        std::vector<uint32_t> neighbors;
-        uint32_t asn;
-
-        Node(uint32_t asn);
-        
-        uint32_t minimum_vertex_cover_helper(std::vector<std::vector<uint32_t>> hyper_edges_to_find, std::unordered_set<uint32_t> visited, Component *component);
-    };
-
     class Component {
-    private:
-        void remove_node(uint32_t asn);
+    private: 
+        uint32_t minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find);
 
     public:
         std::vector<std::vector<uint32_t>> hyper_edges;
@@ -39,8 +27,6 @@ public:
 
         //Search for all ASes with a certain degree count
         std::unordered_map<uint32_t, std::set<uint32_t>> degree_sets;
-
-        std::unordered_map<uint32_t, Node*> nodes;
 
         //Since an AS can only be in one component, the unique identifier will be one of the ASns
         uint32_t unique_identifier;

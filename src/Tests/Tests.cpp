@@ -198,7 +198,6 @@ BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
 }
 
 //EZBGPsec Tests
-
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
         BOOST_CHECK( ezbgpsec_test_path_propagation() );
 }
@@ -211,6 +210,9 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports_merge ) {
         BOOST_CHECK( ezbgpsec_test_gather_reports_merge() );
 }
 
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_mvc ) {
+        BOOST_CHECK( ezbgpsec_test_mvc() );
+}
 #endif // RUN_TESTS
 
 
