@@ -40,6 +40,7 @@
 #define ROVPPAS_TYPE_ROVPPB_LITE 9     // ROVpp 0.2 (Blackhole Announcements)
 #define ROVPPAS_TYPE_ROVPPBP_LITE 10    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
 #define ROVPPAS_TYPE_ROVPPBIS_LITE 11    // ROVpp 0.2bis (Blackhole Ann to Customers Only)
+#define ROVPPAS_TYPE_ROVPPBS 12 //v2s
 
 // Special Constants 
 // This is used for ROVpp 0.1+ to 

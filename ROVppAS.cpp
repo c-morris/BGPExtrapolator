@@ -398,6 +398,35 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, false);
                         }
                     }
+				//v2s
+                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBS) {
+                    // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
+                    if (pass_rovpp(ann)) {
+                        passed_rov->insert(ann);
+                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        } else {
+                          process_announcement(ann, false);
+                        }   
+                    } else {
+						//shorten path
+						ann.as_path = {ann.origin};
+						//change priority to be a path length of 1 by changing last two digits to be 99
+						ann.priority = ann.priority - (ann.priority % 100) + 99;
+                        failed_rov->insert(ann);
+                        Announcement best_alternative_ann = best_alternative_route(ann); 
+                        if (best_alternative_ann == ann) { // If no alternative
+                            // Mark as blackholed and accept this announcement
+                            blackholes->insert(ann);
+                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            process_announcement(ann, false);
+                        } else {
+                            process_announcement(best_alternative_ann, false);
+                        }
+                    }
+
                 /* // Temporarily comment out to test out new v0.2bis   
                 // ROV++ V0.2bis
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
