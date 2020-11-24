@@ -1,3 +1,6 @@
+#ifndef LOGGER_H
+#define LOGGER_H
+
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
@@ -47,3 +50,4 @@ public:
      */
     static void init_logger(bool std_out, std::string folder, unsigned int severity_level);
 };
+#endif
