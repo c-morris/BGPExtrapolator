@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
         ("prop-twice,k",
          po::value<bool>()->default_value(true),
          "flag whether or not to propagate twice")
-        ("log-output,l",
+        ("log-std-out,l",
          po::value<bool>()->default_value(true),
          "enables logging into the console, best used for debugging only")
         ("log-folder,g",
@@ -127,15 +127,15 @@ int main(int argc, char *argv[]) {
 
     // Logging
     unsigned int severity_level = vm["severity-level"].as<unsigned int>();
-    bool log_output = vm["log-output"].as<bool>();
+    bool log_std_out = vm["log-std-out"].as<bool>();
     string log_folder = vm["log-folder"].as<string>();
     if (log_folder != "") {
         cout << "Logs saved to: " << log_folder << endl;
     }
     if ((severity_level < 0) || (severity_level > 5)) {
-       Logger::init_logger(log_output, log_folder, 0);
+       Logger::init_logger(log_std_out, log_folder, 0);
     } else {
-       Logger::init_logger(log_output, log_folder, severity_level);
+       Logger::init_logger(log_std_out, log_folder, severity_level);
     }
 
     // Handle intro information
