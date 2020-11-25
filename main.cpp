@@ -109,7 +109,8 @@ int main(int argc, char *argv[]) {
          "flag whether or not to propagate twice")
         ("log-folder,l",
          po::value<string>()->default_value(""),
-         "enables the use of logging, best used for debugging only");
+         "enables the use of logging, best used for debugging only")
+        ("config-section", po::value<string>(), "section of the config file");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -142,7 +143,8 @@ int main(int argc, char *argv[]) {
                 ROVPP_TRACKED_ASES_TABLE),
             (vm.count("simulation-table") ?
                 vm["simulation-table"].as<string>() : 
-                ROVPP_SIMULATION_TABLE));
+                ROVPP_SIMULATION_TABLE),
+            vm["config-section"].as<string>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -167,6 +169,7 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
+            vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
             vm["ezbgpsec"].as<uint32_t>(),
             vm["num-in-between"].as<uint32_t>());
@@ -193,7 +196,8 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
-            (vm["iteration-size"].as<uint32_t>()));
+            vm["config-section"].as<string>(),
+            vm["iteration-size"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();

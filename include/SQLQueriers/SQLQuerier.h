@@ -27,6 +27,8 @@
 #define IPV4 4
 #define IPV6 6
 
+#define DEFAULT_QUERIER_CONFIG_SECTION "bgp"
+
 #include <pqxx/pqxx>
 #include <iostream>
 #include <string>
@@ -36,6 +38,9 @@
 
 #include "Prefix.h"
 #include "TableNames.h"
+
+#include <boost/program_options.hpp>
+namespace program_options = boost::program_options;
 
 class SQLQuerier {
 public:
@@ -48,12 +53,17 @@ public:
     std::string db_name;
     std::string host;
     std::string port;
+    std::string config_section;
+    std::string config_path;
     pqxx::connection *C;
 
     SQLQuerier(std::string announcements_table = ANNOUNCEMENTS_TABLE,
                 std::string results_table = RESULTS_TABLE, 
                 std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
-                std::string depref_results_table = DEPREF_RESULTS_TABLE);
+                std::string depref_results_table = DEPREF_RESULTS_TABLE,
+                std::string config_section = DEFAULT_QUERIER_CONFIG_SECTION,
+                std::string config_path = "/etc/bgp/bgp.conf",
+                bool create_connection = true);
     virtual ~SQLQuerier();
     
     // Setup

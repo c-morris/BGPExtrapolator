@@ -62,6 +62,7 @@ public:
                     std::string results_table, 
                     std::string inverse_results_table, 
                     std::string depref_results_table, 
+                    std::string config_section,
                     uint32_t iteration_size,
                     uint32_t num_rounds,
                     uint32_t num_between);
