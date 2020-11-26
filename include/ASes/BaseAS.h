@@ -107,6 +107,10 @@ public:
 
     virtual ~BaseAS();
     
+    /** Tiny galois field hash with a fixed key of 3.
+    */
+    virtual uint8_t tiny_hash(uint32_t as_number);
+
     /** Generates a random boolean value.
     */
     virtual bool get_random();
