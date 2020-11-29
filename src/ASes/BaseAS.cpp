@@ -40,7 +40,7 @@ template <class AnnouncementType>
 uint8_t BaseAS<AnnouncementType>::tiny_hash(uint32_t as_number) {
     uint8_t mask = 0xFF;
     uint8_t value = 0;
-    for (size_t i = 0; i < sizeof(asn); i++) {
+    for (size_t i = 0; i < sizeof(as_number); i++) {
         value = (value ^ (mask & (as_number>>(i * 8)))) * 3;
     }
     return value;
