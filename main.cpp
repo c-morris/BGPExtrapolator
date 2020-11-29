@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
         ("log-folder,l",
          po::value<string>()->default_value(""),
          "enables the use of logging, best used for debugging only")
-        ("config-section", po::value<string>(), "section of the config file");
+        ("config-section", po::value<string>()->default_value("bgp"), "section of the config file");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
