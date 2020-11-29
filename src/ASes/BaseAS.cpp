@@ -48,7 +48,6 @@ uint8_t BaseAS<AnnouncementType>::tiny_hash(uint32_t as_number) {
 
 template <class AnnouncementType>
 bool BaseAS<AnnouncementType>::get_random() {
-    //bool r = (ran_bool() % 2 == 0);
     bool r = (tiny_hash(asn) % 2 == 0);
     return r;
 }
