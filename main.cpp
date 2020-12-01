@@ -116,6 +116,7 @@ int main(int argc, char *argv[]) {
         ("severity-level,c",
          po::value<unsigned int>()->default_value(0),
          "severity of errors to be logged, from 0 (trace) to 5 (fatal)");
+        ("config-section", po::value<string>(), "section of the config file");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -158,7 +159,8 @@ int main(int argc, char *argv[]) {
                 ROVPP_TRACKED_ASES_TABLE),
             (vm.count("simulation-table") ?
                 vm["simulation-table"].as<string>() : 
-                ROVPP_SIMULATION_TABLE));
+                ROVPP_SIMULATION_TABLE),
+            vm["config-section"].as<string>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -183,6 +185,7 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
+            vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
             vm["ezbgpsec"].as<uint32_t>(),
             vm["num-in-between"].as<uint32_t>());
@@ -209,7 +212,8 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
-            (vm["iteration-size"].as<uint32_t>()));
+            vm["config-section"].as<string>(),
+            vm["iteration-size"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
