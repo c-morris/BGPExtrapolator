@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
          "path to a log folder, enables logging into a file, best used for debugging only")
         ("severity-level,c",
          po::value<unsigned int>()->default_value(0),
-         "severity of errors to be logged, from 0 (trace) to 5 (fatal)");
+         "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
         ("config-section", po::value<string>(), "section of the config file");
 
     po::variables_map vm;
