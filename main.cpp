@@ -130,9 +130,6 @@ int main(int argc, char *argv[]) {
     unsigned int severity_level = vm["severity-level"].as<unsigned int>();
     bool log_std_out = vm["log-std-out"].as<bool>();
     string log_folder = vm["log-folder"].as<string>();
-    if (log_folder != "") {
-        cout << "Logs saved to: " << log_folder << endl;
-    }
     if ((severity_level < 0) || (severity_level > 5)) {
        Logger::init_logger(log_std_out, log_folder, 0);
     } else {
