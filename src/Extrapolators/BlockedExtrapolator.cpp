@@ -377,7 +377,28 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
                                                                                                         bool to_peers, 
                                                                                                         bool to_customers) {
     // Get the AS that is sending it's announcements
-    auto *source_as = this->graph->ases->find(asn)->second; 
+    auto *source_as = this->graph->ases->find(asn)->second;
+
+    std::cout << "--------------------" << std::endl;
+    std::cout << "As number: " << asn << std::endl;
+    for (uint32_t customer_asn : *source_as->customers) {
+            //auto *recving_as = this->graph->ases->find(customer_asn)->second;
+            std::cout << "Customer: " << customer_asn << std::endl;
+    }
+    for (uint32_t peer_asn : *source_as->peers) {
+            //auto *recving_as = this->graph->ases->find(customer_asn)->second;
+            std::cout << "Peer: " << peer_asn << std::endl;
+    }
+
+    // Check if AS is multihomed
+    // if (!source_as->customers || source_as->customers->empty()) {
+    //         std::cout << "***NO***" << std::endl;
+    //     return;
+    // }
+
+    // std::cout << "Didn't return " << std::endl;
+    // std::cout << "Customer size " << source_as->customers->size() << std::endl;
+
     // If we are sending to providers
     if (to_providers) {
         // Assemble the list of announcements to send to providers

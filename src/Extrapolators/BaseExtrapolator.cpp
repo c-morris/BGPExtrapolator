@@ -104,6 +104,15 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
+
+            std::cout << "*Propagating to peers from AS# " << asn << "*" << std::endl;
+            std::cout << "*is_empty: " << is_empty << "*" << std::endl;
+            for (uint32_t peer_asn : *search->second->peers) {
+            //auto *recving_as = this->graph->ases->find(customer_asn)->second;
+                std::cout << "Peer: " << peer_asn << std::endl;
+            }
+
+
             if (!is_empty) {
                 send_all_announcements(asn, false, true, false);
             }
