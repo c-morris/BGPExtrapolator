@@ -579,16 +579,6 @@ void ROVppAS::clear_announcements() {
         depref_anns->clear();
 }
 
-uint8_t ROVppAS::tiny_hash(uint32_t as_number) {
-    uint8_t mask = 0xFF;
-    uint8_t value = 0;
-    for (size_t i = 0; i < sizeof(asn); i++) {
-        value = (value ^ (mask & (as_number>>(i * 8)))) * 3;
-    }
-    return value;
-}
-
-
 std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
   for (ROVppAnnouncement ann : *blackholes) {
       os << asn << ",";

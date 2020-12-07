@@ -144,11 +144,7 @@ public:
      */
     void withdraw(ROVppAnnouncement &ann);
     void withdraw(ROVppAnnouncement &ann, ROVppAS &neighbor);
-
-    /** Tiny galois field hash with a fixed key of 3.
-    */
-    uint8_t tiny_hash(uint32_t);
-
+    
     void check_preventives(ROVppAnnouncement ann);
     void receive_announcements(std::vector<ROVppAnnouncement> &announcements);
 
