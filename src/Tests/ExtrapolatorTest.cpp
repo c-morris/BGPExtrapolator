@@ -417,6 +417,10 @@ bool test_send_all_announcements() {
  */
 bool test_save_results_parallel() {
     Extrapolator e = Extrapolator(false, false, false, "ignored", "test_extrapolation_results", "unused", "unused", "bgp", 10000);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
     e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
     e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
     e.graph->add_relationship(2, 3, AS_REL_PEER);
