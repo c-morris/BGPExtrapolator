@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
         ("severity-level,c",
          po::value<unsigned int>()->default_value(0),
          "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
-        ("config-section", po::value<string>(), "section of the config file");
+        ("config-section", po::value<string>()->default_value("bgp"), "section of the config file");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
