@@ -107,9 +107,15 @@ int main(int argc, char *argv[]) {
         ("prop-twice,k",
          po::value<bool>()->default_value(true),
          "flag whether or not to propagate twice")
-        ("log-folder,l",
+        ("log-std-out,l",
+         po::value<bool>()->default_value(true),
+         "enables logging into the console, best used for debugging only")
+        ("log-folder,g",
          po::value<string>()->default_value(""),
-         "enables the use of logging, best used for debugging only")
+         "path to a log folder, enables logging into a file, best used for debugging only")
+        ("severity-level,c",
+         po::value<unsigned int>()->default_value(0),
+         "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
         ("config-section", po::value<string>(), "section of the config file");
 
     po::variables_map vm;
@@ -120,8 +126,15 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    // TODO: replace this with command line parsing and such
-    // Logger::init_logger(true, "", 0);
+    // Logging
+    unsigned int severity_level = vm["severity-level"].as<unsigned int>();
+    bool log_std_out = vm["log-std-out"].as<bool>();
+    string log_folder = vm["log-folder"].as<string>();
+    if ((severity_level < 0) || (severity_level > 5)) {
+       Logger::init_logger(log_std_out, log_folder, 0);
+    } else {
+       Logger::init_logger(log_std_out, log_folder, severity_level);
+    }
 
     // Handle intro information
     intro();
