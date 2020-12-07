@@ -6,3 +6,26 @@ AS::AS(uint32_t asn) : AS(asn, false, NULL) { }
 AS::AS() : AS(0, false, NULL) { }
 
 AS::~AS() { }
+
+template<>
+std::ostream& operator<< <Announcement>(std::ostream &os, const BaseAS<Announcement>& as) {
+    os << "ASN: " << as.asn << std::endl << "Rank: " << as.rank
+        << std::endl << "Providers: ";
+    for (auto &provider : *as.providers) {
+        os << provider << ' ';
+    }
+    os << '\n';
+    os << "Peers: ";
+    for (auto &peer : *as.peers) {
+        os << peer << ' ';
+    }
+    os << '\n';
+    os << "Customers: ";
+    for (auto &customer : *as.customers) {
+        os << customer << ' ';
+    }
+    os << '\n';
+    return os;
+}
+
+
