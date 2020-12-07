@@ -123,6 +123,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down2 ) {
         BOOST_CHECK( test_propagate_down2() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_save_results_parallel ) {
+        BOOST_CHECK( test_save_results_parallel() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );
 }
