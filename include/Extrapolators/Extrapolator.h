@@ -34,7 +34,8 @@ public:
                     std::string announcement_table,
                     std::string results_table, 
                     std::string inverse_results_table, 
-                    std::string depref_results_table, 
+                    std::string depref_results_table,
+                    std::string config_section, 
                     uint32_t iteration_size);
 
     Extrapolator();

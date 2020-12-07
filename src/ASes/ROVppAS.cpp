@@ -205,7 +205,7 @@ void ROVppAS::process_announcements(bool ran) {
     do {
         something_removed = false;
         auto ribs_in_copy = *ribs_in;
-        int i = 0;
+        size_t i = 0;
         for (auto it = ribs_in_copy.begin(); it != ribs_in_copy.end(); ++it) {
             bool should_cancel = false;
             // For each withdrawal
@@ -578,16 +578,6 @@ void ROVppAS::clear_announcements() {
     if(depref_anns != NULL)
         depref_anns->clear();
 }
-
-uint8_t ROVppAS::tiny_hash(uint32_t as_number) {
-    uint8_t mask = 0xFF;
-    uint8_t value = 0;
-    for (size_t i = 0; i < sizeof(asn); i++) {
-        value = (value ^ (mask & (as_number>>(i * 8)))) * 3;
-    }
-    return value;
-}
-
 
 std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
   for (ROVppAnnouncement ann : *blackholes) {

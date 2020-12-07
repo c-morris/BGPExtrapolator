@@ -29,6 +29,7 @@
 #define AS_REL_CUSTOMER 200
 
 #include <type_traits>
+#include <algorithm>  
 #include <string>
 #include <set>
 #include <map>
@@ -36,7 +37,6 @@
 #include <random>
 #include <iostream>
 
-#include "Logger.h"
 #include "Prefix.h"
 
 #include "Announcements/Announcement.h"
@@ -53,8 +53,6 @@ public:
     uint32_t asn;       // Autonomous System Number
     bool visited;       // Marks something
     int rank;           // Rank in ASGraph heirarchy for propagation 
-    // Random Number Generator
-    std::minstd_rand ran_bool;
     // Defer processing of incoming announcements for efficiency
     std::vector<AnnouncementType> *incoming_announcements;
     // Maps of all announcements stored
@@ -74,7 +72,7 @@ public:
     bool onStack;
     
     // Constructor. Must be in header file.... We like C++ class templates. We like C++ class templates....
-    BaseAS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) : ran_bool(asn) {
+    BaseAS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) {
 
         // Set ASN
         this->asn = asn;
@@ -107,6 +105,10 @@ public:
 
     virtual ~BaseAS();
     
+    /** Tiny galois field hash with a fixed key of 3.
+    */
+    virtual uint8_t tiny_hash(uint32_t as_number);
+
     /** Generates a random boolean value.
     */
     virtual bool get_random();
