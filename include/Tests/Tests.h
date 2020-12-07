@@ -92,6 +92,7 @@ bool test_propagate_down();
 bool test_propagate_down2();
 bool test_propagate_down_multihomed();
 bool test_propagate_up_multihomed();
+bool test_save_results_parallel();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
 
