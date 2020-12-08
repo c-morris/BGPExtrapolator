@@ -6,3 +6,4 @@ AS::AS(uint32_t asn) : AS(asn, false, NULL) { }
 AS::AS() : AS(0, false, NULL) { }
 
 AS::~AS() { }
+
