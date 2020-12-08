@@ -34,8 +34,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fstream>
+#include <thread>
 #include <stdio.h>
 #include <dirent.h>
+#include <semaphore.h>
 
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
