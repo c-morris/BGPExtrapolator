@@ -117,17 +117,23 @@ BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up ) {
         BOOST_CHECK( test_propagate_up() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up_multihomed_standard ) {
+        BOOST_CHECK( test_propagate_up_multihomed_standard() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up_multihomed_peer_mode ) {
+        BOOST_CHECK( test_propagate_up_multihomed_peer_mode() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down ) {
         BOOST_CHECK( test_propagate_down() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down2 ) {
         BOOST_CHECK( test_propagate_down2() );
 }
-BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down_multihomed ) {
-        BOOST_CHECK( test_propagate_down_multihomed() );
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down_multihomed_standard ) {
+        BOOST_CHECK( test_propagate_down_multihomed_standard() );
 }
-BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up_multihomed ) {
-        BOOST_CHECK( test_propagate_up_multihomed() );
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down_multihomed_peer_mode ) {
+        BOOST_CHECK( test_propagate_down_multihomed_peer_mode() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_save_results_parallel ) {
         BOOST_CHECK( test_save_results_parallel() );

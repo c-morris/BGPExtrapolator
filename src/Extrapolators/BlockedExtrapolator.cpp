@@ -390,14 +390,27 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             std::cout << "Peer: " << peer_asn << std::endl;
     }
 
-    // Check if AS is multihomed
-    // if (!source_as->customers || source_as->customers->empty()) {
-    //         std::cout << "***NO***" << std::endl;
-    //     return;
-    // }
+    if (mh_mode == 1){
+        // Check if AS is multihomed
+        if (!source_as->customers || source_as->customers->empty()) {
+            //std::cout << "***NO***" << std::endl;
+        return;
+        }
+    }
 
-    // std::cout << "Didn't return " << std::endl;
-    // std::cout << "Customer size " << source_as->customers->size() << std::endl;
+    if (mh_mode == 2) {
+            // Check if AS is multihomed
+            if (!source_as->customers || source_as->customers->empty()) {
+                if (to_peers){
+                    to_providers = false;
+                    to_customers = false;
+                } else {
+                    //std::cout << "***NO***" << std::endl;
+                    return;
+                }
+                
+            }
+    }
 
     // If we are sending to providers
     if (to_providers) {
