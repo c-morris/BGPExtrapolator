@@ -98,7 +98,7 @@ bool test_remove_neighbor(){
  * @return true if successful.
  */
 bool test_receive_announcements(){
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann = Announcement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     std::vector<Announcement> vect = std::vector<Announcement>();
     vect.push_back(ann);
     // this function should make a copy of the announcement
@@ -106,6 +106,8 @@ bool test_receive_announcements(){
     Prefix<> old_prefix = ann.prefix;
     ann.prefix.addr = 0x321C9F00;
     ann.prefix.netmask = 0xFFFFFF00;
+    ann.prefix.id = 1;
+    ann.prefix.block_id = 1;
     Prefix<> new_prefix = ann.prefix;
     vect.push_back(ann);
     AS as = AS();
@@ -125,38 +127,43 @@ bool test_receive_announcements(){
  * @return true if successful.
  */
 bool test_process_announcement(){
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann = Announcement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
     AS as = AS(0, true);
     as.process_announcement(ann, true);
+
     Prefix<> old_prefix = ann.prefix;
     ann.prefix.addr = 0x321C9F00;
     ann.prefix.netmask = 0xFFFFFF00;
+    ann.prefix.id = 1;
+    ann.prefix.block_id = 1;
+
     Prefix<> new_prefix = ann.prefix;
+
     as.process_announcement(ann, true);
-    if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
-        old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
+    if (new_prefix != as.all_anns->find(ann.prefix).prefix ||
+        old_prefix != as.all_anns->find(old_prefix).prefix) {
         return false;
     }
 
     // Check priority
-    Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
-    Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, false);
-    Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, false);
+    Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0", 2, 2);
+    Announcement a1 = Announcement(111, p, 199, 222, false);
+    Announcement a2 = Announcement(111, p, 298, 223, false);
     as.process_announcement(a1, true);
     as.process_announcement(a2, true);
-    if (as.all_anns->find(p)->second.received_from_asn != 223 ||
-        as.depref_anns->find(p)->second.received_from_asn != 222) {
+    if (as.all_anns->find(p).received_from_asn != 223 ||
+        as.depref_anns->find(p).received_from_asn != 222) {
         std::cerr << "Failed best path inference priority check." << std::endl;
         return false;
     }    
 
     // Check new best announcement
-    Announcement a3 = Announcement(111, p.addr, p.netmask, 299, 224, false);
+    Announcement a3 = Announcement(111, p, 299, 224, false);
     as.process_announcement(a3, true);
-    if (as.all_anns->find(p)->second.received_from_asn != 224 ||
-        as.depref_anns->find(p)->second.received_from_asn != 223) {
+    if (as.all_anns->find(p).received_from_asn != 224 ||
+        as.depref_anns->find(p).received_from_asn != 223) {
         std::cerr << "Failed best path priority correction check." << std::endl;
         return false;
     } 
@@ -174,10 +181,12 @@ bool test_process_announcement(){
  * Item three requires the from_monitor attribute to work. 
  */
 bool test_process_announcements(){
-    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
-    Prefix<> ann1_prefix = ann1.prefix;
-    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
-    Prefix<> ann2_prefix = ann2.prefix;
+    Prefix<> ann1_prefix(0x89630000, 0xFFFF0000, 0, 0);
+    Prefix<> ann2_prefix(0x321C9F00, 0xFFFFFF00, 1, 1);
+
+    Announcement ann1 = Announcement(13796, ann1_prefix, 22742);
+    Announcement ann2 = Announcement(13796, ann2_prefix, 22742);
+    
     AS as = AS();
     // build a vector of announcements
     std::vector<Announcement> vect = std::vector<Announcement>();
@@ -190,8 +199,8 @@ bool test_process_announcements(){
     // does it work if all_anns is empty?
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 100) {
-        std::cerr << "Failed to add an announcement to an empty map" << std::endl;
+    if (as.all_anns->find(ann1_prefix).priority != 100) {
+        std::cerr << "Failed to add an announcement to an empty map " << as.all_anns->find(ann1_prefix).priority << std::endl;
         return false;
     }
     
@@ -201,7 +210,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
+    if (as.all_anns->find(ann1_prefix).priority != 290) {
         std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
     }
@@ -212,7 +221,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 290) {
+    if (as.all_anns->find(ann1_prefix).priority != 290) {
         std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
     }
@@ -223,7 +232,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != 299) {
+    if (as.all_anns->find(ann1_prefix).priority != 299) {
         std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
     }
@@ -234,7 +243,7 @@ bool test_process_announcements(){
     vect.push_back(ann2);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann2_prefix)->second.priority != 200) {
+    if (as.all_anns->find(ann2_prefix).priority != 200) {
         std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
     }
@@ -246,15 +255,15 @@ bool test_process_announcements(){
  * @return true if successful.
  */
 bool test_clear_announcements(){
-    Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
+    Announcement ann = Announcement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     AS as = AS();
     // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann, true);
-    if (as.all_anns->size() != 1) {
+    if (as.all_anns->num_filled() != 1) {
         return false;
     }
     as.clear_announcements();
-    if (as.all_anns->size() != 0) {
+    if (as.all_anns->num_filled() != 0) {
         return false;
     }
     return true;
@@ -265,8 +274,8 @@ bool test_clear_announcements(){
  * @return true if successful.
  */
 bool test_already_received(){
-    Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
-    Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
+    Announcement ann1 = Announcement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
+    Announcement ann2 = Announcement(13796, Prefix<>(0x321C9F00, 0xFFFFFF00, 1, 1), 22742);
     AS as = AS();
     // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann1, true);

@@ -38,6 +38,7 @@
 #include <iostream>
 
 #include "Prefix.h"
+#include "PrefixAnnouncementMap.h"
 
 #include "Announcements/Announcement.h"
 #include "Announcements/EZAnnouncement.h"
@@ -56,8 +57,9 @@ public:
     // Defer processing of incoming announcements for efficiency
     std::vector<AnnouncementType> *incoming_announcements;
     // Maps of all announcements stored
-    std::map<Prefix<>, AnnouncementType> *all_anns;
-    std::map<Prefix<>, AnnouncementType> *depref_anns;
+    PrefixAnnouncementMap<AnnouncementType> *all_anns;
+    PrefixAnnouncementMap<AnnouncementType> *depref_anns;
+
     // Stores AS Relationships
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 
@@ -87,10 +89,11 @@ public:
         this->inverse_results = inverse_results;    // Inverted results map
         member_ases = new std::vector<uint32_t>();    // Supernode members
         incoming_announcements = new std::vector<AnnouncementType>();
-        all_anns = new std::map<Prefix<>, AnnouncementType>();
+
+        all_anns = new PrefixAnnouncementMap<AnnouncementType>(20);
 
         if(store_depref_results)
-            depref_anns = new std::map<Prefix<>, AnnouncementType>();
+            depref_anns = new PrefixAnnouncementMap<AnnouncementType>(20);
         else
             depref_anns = NULL;
 

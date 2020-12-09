@@ -80,7 +80,11 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         for (pqxx::result::const_iterator c = prefix_origin_pairs.begin(); c!=prefix_origin_pairs.end(); ++c) {
             // Extract Arguments needed for give_ann_to_as_path
             std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
-            Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>());
+
+            uint32_t prefix_id;
+            c["prefix_id"].to(prefix_id);
+
+            Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>(), prefix_id);
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
             
             bool is_hijack = false; //table_name == querier->attack_table;
@@ -139,10 +143,9 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     
     // Announcement at origin for checking along the path
     ROVppAnnouncement ann_to_check_for(origin_asn,
-                                  prefix.addr,
-                                  prefix.netmask,
-                                  0,
-                                  timestamp); 
+                                        prefix,
+                                        0,
+                                        timestamp); 
     
     // Full path vector
     // TODO only handles seeding announcements at origin
@@ -219,14 +222,13 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // No break in path so send the announcement
         if (!broken_path) {
             ROVppAnnouncement ann = ROVppAnnouncement(cur_path.back(),
-                                            prefix.addr,
-                                            prefix.netmask,
-                                            priority,
-                                            received_from_asn,
-                                            timestamp,
-                                            0, // policy defaults to BGP
-                                            cur_path,
-                                            true);
+                                                        prefix,
+                                                        priority,
+                                                        received_from_asn,
+                                                        timestamp,
+                                                        0, // policy defaults to BGP
+                                                        cur_path,
+                                                        true);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann, false);
             if (graph->inverse_results != NULL) {

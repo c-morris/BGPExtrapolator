@@ -20,7 +20,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
-
 #ifndef PREFIX_H
 #define PREFIX_H
 
@@ -29,28 +28,34 @@
 #include <string>
 #include <iostream>
 
-
 // Use uint32_t for IPv4, unsigned __int128 for IPv6
 template <typename Integer = uint32_t>
 class Prefix {
 public:
     Integer addr;
     Integer netmask;
+
+    uint32_t id;
+    uint32_t block_id;
     
     /** Default constructor
      */
-    Prefix() {}
+    // Prefix() {}
 
     /** Integer input constructor
      */
-    Prefix(uint32_t addr_in, uint32_t mask_in) {
-        addr = addr_in;
-        netmask = mask_in;
+    Prefix(uint32_t addr, uint32_t mask, uint32_t id, uint32_t block_id) {
+        this->addr = addr;
+        this->netmask = mask;
+        this->id = id;
+        this->block_id = block_id;
     }
 
     Prefix(const Prefix &p2) {
         this->addr = p2.addr;
         this->netmask = p2.netmask;
+        this->id = p2.id;
+        this->block_id = p2.block_id;
     }
         
     /** Priority constructor
@@ -59,14 +64,17 @@ public:
      *
      * @param addr_str The IP address as a string.
      * @param mask_str The subnet mask/length as a string.
+     * @param id The prefix_id of the prefix from the database
+     * @param block_id The prefix_block_id of the prefix from the database. The index of the prefix in the iteration. Default to 0 for non iterative extrapolators
      */ 
-    Prefix(std::string addr_str, std::string mask_str) {
+    Prefix(std::string addr_str, std::string mask_str, uint32_t id, uint32_t block_id = 0) {
         // IPv4 Address Parsing
-        addr = addr_to_int(addr_str);  
-        netmask = mask_to_int(mask_str);  
+        this->addr = addr_to_int(addr_str);
+        this->netmask = mask_to_int(mask_str);
+        this->id = id;
+        this->block_id = block_id;
     }
-    
-    
+
     /** Converts a IPv4 address as a string into a integer.
      *
      *  This is IPv4 only.
@@ -80,7 +88,7 @@ public:
         std::string token;              // Buffer subseciton of addr
         std::string delimiter = ".";    // String dilimiter
         bool error_f = false;           // Error flag, drops malformed input
-       
+
         // Create a copy of address string
         std::string s = addr_str;
         if (s.empty()) {

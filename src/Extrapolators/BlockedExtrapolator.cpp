@@ -49,7 +49,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>; // Subnet blocks
-    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
+    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0", 0, 0); // Start at 0.0.0.0/0
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
 
@@ -97,14 +97,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     if (r[0][0].as<uint32_t>() < this->iteration_size) {
         // Add to subnet block vector
         if (r[0][0].as<uint32_t>() > 0) {
-            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask);
+            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask, 0, 0);
             bloc_vector->push_back(p_copy);
         }
     } else {
         // Store the prefix if there are announcements for it specifically
         pqxx::result r2 = this->querier->select_prefix_count(p);
         if (r2[0][0].as<uint32_t>() > 0) {
-            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask);
+            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask, 0, 0);
             prefix_vector->push_back(p_copy);
         }
 
@@ -116,7 +116,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
         } else {
             new_mask = (p->netmask >> 1) | p->netmask;
         }
-        Prefix<>* p1 = new Prefix<>(p->addr, new_mask);
+        Prefix<>* p1 = new Prefix<>(p->addr, new_mask, 0, 0);
         
         // Second half: increase the prefix length by 1 and flip previous length bit
         int8_t sz = 0;
@@ -127,7 +127,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
             }
         }
         new_addr |= 1UL << (32 - sz - 1);
-        Prefix<>* p2 = new Prefix<>(new_addr, new_mask);
+        Prefix<>* p2 = new Prefix<>(new_addr, new_mask, 0, 0);
 
         // Recursive call on each new prefix subnet
         populate_blocks(p1, prefix_vector, bloc_vector);
@@ -173,7 +173,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             // Get row prefix
             std::string ip = ann_block[i]["host"].c_str();
             std::string mask = ann_block[i]["netmask"].c_str();
-            Prefix<> cur_prefix(ip, mask);
+
+            uint32_t prefix_id;
+            uint32_t prefix_block_id;
+
+            ann_block[i]["prefix_id"].to(prefix_id);
+            ann_block[i]["prefix_block_id"].to(prefix_block_id);
+
+            Prefix<> cur_prefix(ip, mask, prefix_id, prefix_block_id);
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = this->parse_path(path_as_string);
@@ -258,12 +265,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         // Find the current AS on the path
         ASType *as_on_path = this->graph->ases->find(asn_on_path)->second;
 
-        auto announcement_search = as_on_path->all_anns->find(prefix);
+        AnnouncementType &second_announcement = as_on_path->all_anns->find(prefix);
 
         // Check if already received this prefix
-        if (announcement_search != as_on_path->all_anns->end()) {
-            AnnouncementType& second_announcement = announcement_search->second;
-
+        if (as_on_path->all_anns->filled(second_announcement)) {
             // If the current timestamp is newer (worse)
             if (timestamp > second_announcement.tstamp) {
                 // Skip it
@@ -341,8 +346,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         // No break in path so send the announcement
         if (!broken_path) {
             AnnouncementType ann = AnnouncementType(*as_path->rbegin(),
-                                                    prefix.addr,
-                                                    prefix.netmask,
+                                                    prefix,
                                                     priority,
                                                     received_from_asn,
                                                     timestamp,
@@ -383,16 +387,19 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
         // Assemble the list of announcements to send to providers
         std::vector<AnnouncementType> anns_to_providers;
         for (auto &ann : *source_as->all_anns) {
+            if(!source_as->all_anns->filled(ann))
+                continue;
+
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 200 for customer to provider
             // Ignore announcements not from a customer
-            if (ann.second.priority < 200) {
+            if (ann.priority < 200) {
                 continue;
             }
             
             // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
+            uint32_t old_priority = ann.priority;
             uint32_t path_len_weight = old_priority % 100;
             if (path_len_weight == 0) {
                 // For MRT ann at origin: old_priority = 400
@@ -403,7 +410,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             }
             uint32_t priority = 200 + path_len_weight;
             
-            AnnouncementType temp = AnnouncementType(ann.second);
+            AnnouncementType temp = AnnouncementType(ann);
             temp.priority = priority;
             temp.from_monitor = false;
             temp.received_from_asn = asn;
@@ -431,17 +438,20 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
         // Assemble vector of announcement to send to peers
         std::vector<AnnouncementType> anns_to_peers;
         for (auto &ann : *source_as->all_anns) {
+            if(!source_as->all_anns->filled(ann))
+                continue;
+
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
             // Base priority is 100 for peers to peers
 
             // Ignore announcements not from a customer
-            if (ann.second.priority < 200) {
+            if (ann.priority < 200) {
                 continue;
             }
 
             // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
+            uint32_t old_priority = ann.priority;
             uint32_t path_len_weight = old_priority % 100;
             if (path_len_weight == 0) {
                 // For MRT ann at origin: old_priority = 400
@@ -459,7 +469,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             //                                             asn,
             //                                             ann.second.tstamp));
 
-            AnnouncementType temp = AnnouncementType(ann.second);
+            AnnouncementType temp = AnnouncementType(ann);
             temp.priority = priority;
             temp.from_monitor = false;
             temp.received_from_asn = asn;
@@ -479,13 +489,15 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
         // Assemble the vector of announcement for customers
         std::vector<AnnouncementType> anns_to_customers;
         for (auto &ann : *source_as->all_anns) {
+            if(!source_as->all_anns->filled(ann))
+                continue;
+
             // Propagate all announcements to customers
             // Priority is reduced by 1 per path length
             // Base priority is 0 for provider to customers
             
-            
             // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
+            uint32_t old_priority = ann.priority;
             uint32_t path_len_weight = old_priority % 100;
             if (path_len_weight == 0) {
                 // For MRT ann at origin: old_priority = 400
@@ -504,7 +516,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             //                                                 ann.second.tstamp));
 
             //Use the copy constructor so that the inherited copy constructor will be called as well
-            AnnouncementType temp = AnnouncementType(ann.second);
+            AnnouncementType temp = AnnouncementType(ann);
             temp.priority = priority;
             temp.from_monitor = false;
             temp.received_from_asn = asn;
