@@ -382,7 +382,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
     // Don't propagate from multihomed
     if (mh_mode == 1){
         // Check if AS is multihomed
-        if (!source_as->customers || source_as->customers->empty()) {
+        if (source_as->customers->empty()) {
         return;
         }
     }
@@ -390,7 +390,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
     // Only propagate to peers from multihomed
     if (mh_mode == 2) {
             // Check if AS is multihomed
-            if (!source_as->customers || source_as->customers->empty()) {
+            if (source_as->customers->empty()) {
                 if (to_peers){
                     to_providers = false;
                     to_customers = false;
