@@ -110,6 +110,13 @@ bool test_give_ann_to_as_path() {
         return false;
     }
     
+    std::cerr << e.graph->ases->find(1)->second->all_anns->find(p)->second.priority << std::endl;
+    std::cerr << e.graph->ases->find(2)->second->all_anns->find(p)->second.priority << std::endl;
+    std::cerr << e.graph->ases->find(3)->second->all_anns->find(p)->second.priority << std::endl;
+    std::cerr << e.graph->ases->find(4)->second->all_anns->find(p)->second.priority << std::endl;
+    std::cerr << e.graph->ases->find(5)->second->all_anns->find(p)->second.priority << std::endl;
+    std::cerr << e.graph->ases->find(6)->second->all_anns->find(p)->second.priority << std::endl;
+
     // Test announcement priority calculation
     if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 &&
         e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
