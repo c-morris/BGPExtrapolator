@@ -379,17 +379,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
     // Get the AS that is sending it's announcements
     auto *source_as = this->graph->ases->find(asn)->second;
 
-    std::cout << "--------------------" << std::endl;
-    std::cout << "As number: " << asn << std::endl;
-    for (uint32_t customer_asn : *source_as->customers) {
-            //auto *recving_as = this->graph->ases->find(customer_asn)->second;
-            std::cout << "Customer: " << customer_asn << std::endl;
-    }
-    for (uint32_t peer_asn : *source_as->peers) {
-            //auto *recving_as = this->graph->ases->find(customer_asn)->second;
-            std::cout << "Peer: " << peer_asn << std::endl;
-    }
-
     // Don't propagate from multihomed
     if (mh_mode == 1){
         // Check if AS is multihomed
@@ -456,19 +445,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
         for (uint32_t provider_asn : *source_as->providers) {
             // For each provider, give the vector of announcements
             auto *recving_as = this->graph->ases->find(provider_asn)->second;
-
-            Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-            std::cout << "***" << std::endl;
-            std::cout << p.addr << std::endl;
-            std::cout << p.netmask << std::endl;
-            for (auto ann : anns_to_providers) {
-                std::cout << ann.priority << std::endl;
-                std::cout << ann.prefix.addr << std::endl;
-                std::cout << ann.prefix.netmask << std::endl;
-            }
-            std::cout << this->graph->ases->find(provider_asn)->second->all_anns->find(p)->second.priority << std::endl;
-            std::cout << "***" << std::endl;
-
             recving_as->receive_announcements(anns_to_providers);
         }
     }
@@ -517,19 +493,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
         for (uint32_t peer_asn : *source_as->peers) {
             // For each provider, give the vector of announcements
             auto *recving_as = this->graph->ases->find(peer_asn)->second;
-
-            Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-            std::cout << "***" << std::endl;
-            std::cout << p.addr << std::endl;
-            std::cout << p.netmask << std::endl;
-            for (auto ann : anns_to_peers) {
-                std::cout << ann.priority << std::endl;
-                std::cout << ann.prefix.addr << std::endl;
-                std::cout << ann.prefix.netmask << std::endl;
-            }
-            std::cout << this->graph->ases->find(peer_asn)->second->all_anns->find(p)->second.priority << std::endl;
-            std::cout << "***" << std::endl;
-
             recving_as->receive_announcements(anns_to_peers);
         }
     }
@@ -575,19 +538,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
         for (uint32_t customer_asn : *source_as->customers) {
             // For each customer, give the vector of announcements
             auto *recving_as = this->graph->ases->find(customer_asn)->second;
-
-            Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-            std::cout << "***" << std::endl;
-            std::cout << p.addr << std::endl;
-            std::cout << p.netmask << std::endl;
-            for (auto ann : anns_to_customers) {
-                std::cout << ann.priority << std::endl;
-                std::cout << ann.prefix.addr << std::endl;
-                std::cout << ann.prefix.netmask << std::endl;
-            }
-            std::cout << this->graph->ases->find(customer_asn)->second->all_anns->find(p)->second.priority << std::endl;
-            std::cout << "***" << std::endl;
-
             recving_as->receive_announcements(anns_to_customers);
         }
     }

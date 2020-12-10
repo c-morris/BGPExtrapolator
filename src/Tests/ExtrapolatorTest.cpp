@@ -256,12 +256,10 @@ bool test_propagate_up_multihomed_standard() {
         return false;
     }
     
-    // if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
-    //     e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
-    //     e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
-    //     std::cerr << "Propagted priority calculation failed." << std::endl;
-    //     return false;
-    // }
+    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 290) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
     return true;
 }
 
@@ -310,12 +308,11 @@ bool test_propagate_up_multihomed_peer_mode() {
         return false;
     }
     
-    // if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
-    //     e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
-    //     e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
-    //     std::cerr << "Propagted priority calculation failed." << std::endl;
-    //     return false;
-    // }
+    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 290 ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 189) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
     return true;
 }
 
@@ -471,12 +468,13 @@ bool test_propagate_down_multihomed_standard() {
         return false;
     }
     
-    // if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
-    //     e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
-    //     e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
-    //     std::cerr << "Propagted priority calculation failed." << std::endl;
-    //     return false;
-    // }
+    if (e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 290 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 89 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 88) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
     return true;
 }
 
@@ -647,16 +645,18 @@ bool test_send_all_announcements_multihomed_standard1() {
         return false;
     }
     
-    std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second.priority << std::endl;
-    std::cout << e.graph->ases->find(1)->second->all_anns->find(p)->second.priority << std::endl;
-    std::cout << e.graph->ases->find(3)->second->all_anns->find(p)->second.priority << std::endl;
-    std::cout << e.graph->ases->find(5)->second->all_anns->find(p)->second.priority << std::endl;
+
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(1)->second->process_announcements(true);
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(5)->second->process_announcements(true);
 
     // Check priority calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 98) {
         std::cerr << "send_all_announcements_multihomed_standard1 priority calculation failed." << std::endl;
         return false;
     }
@@ -823,11 +823,17 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
         return false;
     }
     
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(1)->second->process_announcements(true);
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(5)->second->process_announcements(true);
+
     // Check priority calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 98) {
         std::cerr << "send_all_announcements_multihomed_peer_mode1 priority calculation failed." << std::endl;
         return false;
     }
@@ -897,9 +903,6 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
         return false;
     }
 
-    std::cout << e.graph->ases->find(5)->second->all_anns->find(p)->second.priority << std::endl;
-    std::cout << e.graph->ases->find(6)->second->all_anns->find(p)->second.priority << std::endl;
-
     // Check to customers
     e.send_all_announcements(5, false, false, true);
     if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
@@ -913,12 +916,12 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
         return false;
     }
     
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(5)->second->process_announcements(true);
     e.graph->ases->find(6)->second->process_announcements(true);
-    std::cout << e.graph->ases->find(5)->second->all_anns->find(p)->second.priority << std::endl;
-    std::cout << e.graph->ases->find(6)->second->all_anns->find(p)->second.priority << std::endl;
 
     // Check priority calculation
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 &&
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
         e.graph->ases->find(6)->second->all_anns->find(p)->second.priority != 199) {
         std::cerr << "send_all_announcements_multihomed_peer_mode2 priority calculation failed." << std::endl;
         return false;
