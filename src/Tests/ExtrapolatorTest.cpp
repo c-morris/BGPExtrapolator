@@ -109,10 +109,10 @@ bool test_give_ann_to_as_path() {
         std::cerr << "Monitor flag failed." << std::endl;
         return false;
     }
-    
+
     // Test announcement priority calculation
-    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 &&
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
+    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
         e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400) {
         std::cerr << "Priority calculation failed." << std::endl;
         return false;
@@ -198,12 +198,12 @@ bool test_propagate_up() {
         std::cerr << "Propagate up failed." << std::endl;
         return false;
     }
-    
+
     // Check propagation priority calculation
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 290 &&
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(6)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 288 &&
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 290 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 289 ||
+        e.graph->ases->find(6)->second->all_anns->find(p)->second.priority != 189 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 288 ||
         e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 188) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
@@ -362,8 +362,8 @@ bool test_propagate_down() {
         return false;
     }
     
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 ||
         e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
@@ -415,7 +415,7 @@ bool test_propagate_down2() {
         std::cerr << "test_propagate_down2 failed... Not all ASes have refrence when they should.." << std::endl;
         return false;
     }
-    
+
     // if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
     //     e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
     //     e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
@@ -554,11 +554,17 @@ bool test_send_all_announcements() {
         return false;
     }
 
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(1)->second->process_announcements(true);
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(5)->second->process_announcements(true);
+
     // Check priority calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 98) {
         std::cerr << "Send all announcement priority calculation failed." << std::endl;
         return false;
     }
