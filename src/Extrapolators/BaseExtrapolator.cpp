@@ -103,6 +103,9 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
         }
     }
     // Propagate to peers
+    // When propagating to peers,
+    // all ASes may not have processed all incoming announcements after the function completes.
+    // Those announcements will be processed after propagate_down()
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
