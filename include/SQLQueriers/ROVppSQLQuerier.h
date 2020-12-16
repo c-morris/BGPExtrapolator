@@ -39,6 +39,7 @@ public:
                     std::string depref_results_table = DEPREF_RESULTS_TABLE,
                     std::string tracked_ases_table = ROVPP_TRACKED_ASES_TABLE,
                     std::string simulation_table = ROVPP_SIMULATION_TABLE,
+                    int exclude_as_number = -1,
                     std::string config_section = DEFAULT_QUERIER_CONFIG_SECTION);
     ~ROVppSQLQuerier();
 

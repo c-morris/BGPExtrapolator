@@ -31,14 +31,15 @@ Extrapolator::Extrapolator(bool random_tiebraking,
                             std::string inverse_results_table, 
                             std::string depref_results_table,
                             std::string config_section, 
-                            uint32_t iteration_size) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
+                            uint32_t iteration_size,
+                            int exclude_as_number) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
 
     graph = new ASGraph(store_invert_results, store_depref_results);
-    querier = new SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, config_section);
+    querier = new SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, exclude_as_number, config_section);
 }
 
 Extrapolator::Extrapolator() : Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE) { }
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1) { }
 
 Extrapolator::~Extrapolator() { }
 

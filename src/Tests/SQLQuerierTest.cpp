@@ -31,7 +31,7 @@ bool test_parse_config_teardown() {
 bool test_parse_config() {
     bool failed = false;
     try {
-        SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "test", "bgp-test.conf", false);
+        SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", -1, "test", "bgp-test.conf", false);
 
         if (querier->host != "test0"){
             std::cerr << "Failed to parse password" << std::endl;

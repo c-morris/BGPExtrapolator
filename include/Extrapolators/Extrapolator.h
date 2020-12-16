@@ -36,7 +36,8 @@ public:
                     std::string inverse_results_table, 
                     std::string depref_results_table,
                     std::string config_section, 
-                    uint32_t iteration_size);
+                    uint32_t iteration_size,
+                    int exclude_as_number);
 
     Extrapolator();
     ~Extrapolator();
