@@ -18,6 +18,7 @@ public:
     class Component {
     private: 
         uint32_t minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find);
+        uint32_t local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find);
 
     public:
         std::vector<std::vector<uint32_t>> hyper_edges;
@@ -68,6 +69,15 @@ public:
          * @return -> The minimum nodes to cover all hyperedges that the AS is in. 0 If the AS is not in the component
          */
         uint32_t minimum_vertex_cover(uint32_t asn);
+
+        /**
+         * Given an ASN, calculate the minimum vertex cover similar to minimum_vertex_cover. 
+         * However, the only difference here is that the ASN's that can be eliminated here are *neighbors* of the AS being measured
+         * 
+         * @param asn -> The AS to measure and to take the neighbors of
+         * @return -> The minimum amount of neighbors that have to be malicious in order for the reports to have occured.
+         */
+        uint32_t local_minimum_vertex_cover(uint32_t asn);
 
         void remove_hyper_edge(std::vector<uint32_t> &hyper_edge);
 

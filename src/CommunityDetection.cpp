@@ -2,6 +2,7 @@
 
 //**************** Component ****************//
 CommunityDetection::Component::Component(std::vector<uint32_t> &hyper_edge) {
+    //TODO: This will break if an AS is removed and then added to another component
     unique_identifier = hyper_edge.at(0);
     add_hyper_edge(hyper_edge);
 }
@@ -71,53 +72,111 @@ void CommunityDetection::Component::merge(Component *other) {
         add_hyper_edge(hyper_edge);
 }
 
+uint32_t CommunityDetection::Component::local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find) {
+    if(hyper_edges_to_find.size() == 0)
+        return 0;
+
+    std::unordered_set<uint32_t> asns_to_attempt;
+    for(auto &edge : hyper_edges_to_find) {
+        for(size_t i = 0; i < edge.size(); i++) {
+            if(edge.at(i) != root_asn)
+                continue;
+            
+            if(i != 0)
+                asns_to_attempt.insert(edge.at(i - 1));
+            else if(i != edge.size() - 1)
+                asns_to_attempt.insert(edge.at(i + 1));
+        }
+
+        for(uint32_t asn : edge) {
+            if(asn == root_asn)
+                continue;
+
+            asns_to_attempt.insert(asn);
+        }
+    }
+
+    bool assigned = false;
+    uint32_t mvc = 0;
+    for(uint32_t asn : asns_to_attempt) {
+        std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
+
+        for(auto edge : hyper_edges_to_find) {
+            //Eliminate any edge containing this ASN
+            if(std::find(edge.begin(), edge.end(), asn) == edge.end())
+                next_hyper_edges_to_find.push_back(edge);
+        }
+
+        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find);
+
+        if(!assigned) {
+            mvc = result;
+            assigned = true;
+        } else if(result < mvc) {
+            mvc = result;
+        }
+    }
+
+    return 1 + mvc;
+}
+
 uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find) {
     if(hyper_edges_to_find.size() == 0)
         return 0;
 
-    std::unordered_map<uint32_t, uint32_t> asn_to_occurences;
-
+    std::unordered_set<uint32_t> asns_to_attempt;
     for(auto &edge : hyper_edges_to_find) {
-        for(auto asn : edge) {
+        for(uint32_t asn : edge) {
             if(asn == root_asn)
                 continue;
-            
-            auto occurence_search = asn_to_occurences.find(asn);
-            if(occurence_search == asn_to_occurences.end()) {
-                asn_to_occurences.insert(std::make_pair(asn, 1));
-            } else {
-                occurence_search->second++;
-            }
+
+            asns_to_attempt.insert(asn);
         }
     }
 
-    uint32_t highest_occurence = 0;
-    uint32_t highest_occurence_asn = 0;
+    bool assigned = false;
+    uint32_t mvc = 0;
+    for(uint32_t asn : asns_to_attempt) {
+        std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
 
-    for(auto p : asn_to_occurences) {
-        if(p.second > highest_occurence) {
-            highest_occurence = p.second;
-            highest_occurence_asn = p.first;
+        for(auto edge : hyper_edges_to_find) {
+            //Eliminate any edge containing this ASN
+            if(std::find(edge.begin(), edge.end(), asn) == edge.end())
+                next_hyper_edges_to_find.push_back(edge);
+        }
+
+        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find);
+
+        if(!assigned) {
+            mvc = result;
+            assigned = true;
+        } else if(result < mvc) {
+            mvc = result;
         }
     }
 
-    std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
-
-    for(auto &edge : hyper_edges_to_find)
-        if(std::find(edge.begin(), edge.end(), highest_occurence_asn) == edge.end())
-            next_hyper_edges_to_find.push_back(edge);
-
-    return 1 + minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find);
+    return 1 + mvc;
 }
 
 uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn) {
+    std::vector<std::vector<uint32_t>> hyper_edges_to_find;
+
+    //TODO we need a data structure to supply the hyper edges that an AS is in
+    for(auto &edge : this->hyper_edges)
+        if(std::find(edge.begin(), edge.end(), asn) != edge.end())
+            hyper_edges_to_find.push_back(edge);
+
+    return minimum_vertex_cover_helper(asn, hyper_edges_to_find);
+}
+
+uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn) {
     std::vector<std::vector<uint32_t>> hyper_edges_to_find;
 
     for(auto &edge : this->hyper_edges)
         if(std::find(edge.begin(), edge.end(), asn) != edge.end())
             hyper_edges_to_find.push_back(edge);
 
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find);
+    return local_minimum_vertex_cover_helper(asn, hyper_edges_to_find);
 }
 
 void CommunityDetection::Component::remove_hyper_edge(std::vector<uint32_t> &hyper_edge) {
@@ -159,7 +218,7 @@ void CommunityDetection::Component::threshold_filtering(CommunityDetection *comm
 
         //if there is an AS with an mvc higher than the threshold, remove the AS and decrement threshold
         //Check that it is also greater than or equal to 2 (don't remove something with an mvc of 1)
-        if(highest_mvc >= 2 && highest_mvc >= community_detection->threshold)
+        if(highest_mvc > community_detection->threshold)
             remove_AS(highest_mvc_asn);
         else
             changed = false;

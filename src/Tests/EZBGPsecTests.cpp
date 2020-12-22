@@ -641,6 +641,11 @@ bool ezbgpsec_test_gather_reports_merge() {
  *    2--3
  *   /|   
  *  4 5--6 
+ * 
+ *  5 is claiming that 3 is its origin
+ *  1 is claiming that 4 is its origin
+ * 
+ *  2, 4, and 3 are adoptors
  */
 bool ezbgpsec_test_mvc() {
     EZExtrapolator e = EZExtrapolator();
@@ -704,35 +709,266 @@ bool ezbgpsec_test_mvc() {
     }
 
     CommunityDetection::Component *component = compnent_search->second;
+
+    //*************************************************************************
     uint32_t mvc = component->minimum_vertex_cover(2);
     if(mvc != 2) {
-        std::cerr << "Minimum vertext cover on AS 2 is " << mvc << ", rather than 2" << std::endl; 
+        std::cerr << "Global Minimum vertex cover on AS 2 is " << mvc << ", rather than 2" << std::endl; 
         return false;
     }
 
+    mvc = component->local_minimum_vertex_cover(2);
+    if(mvc != 2) {
+        std::cerr << "Local Minimum vertex cover on AS 2 is " << mvc << ", rather than 2" << std::endl; 
+        return false;
+    }
+
+    //*************************************************************************
     mvc = component->minimum_vertex_cover(5);
     if(mvc != 1) {
-        std::cerr << "Minimum vertext cover on AS 5 is " << mvc << ", rather than 1" << std::endl; 
+        std::cerr << "Minimum vertex cover on AS 5 is " << mvc << ", rather than 1" << std::endl; 
         return false;
     }
 
+    mvc = component->local_minimum_vertex_cover(5);
+    if(mvc != 1) {
+        std::cerr << "Local Minimum vertex cover on AS 5 is " << mvc << ", rather than 1" << std::endl; 
+        return false;
+    }
+
+    //*************************************************************************
     mvc = component->minimum_vertex_cover(1);
     if(mvc != 1) {
-        std::cerr << "Minimum vertext cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
+        std::cerr << "Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
         return false;
     }
 
+    mvc = component->local_minimum_vertex_cover(1);
+    if(mvc != 1) {
+        std::cerr << "Local Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
+        return false;
+    }
+
+    //*************************************************************************
     mvc = component->minimum_vertex_cover(3);
     if(mvc != 1) {
-        std::cerr << "Minimum vertext cover on AS 3 is " << mvc << ", rather than 1" << std::endl; 
+        std::cerr << "Minimum vertex cover on AS 3 is " << mvc << ", rather than 1" << std::endl; 
         return false;
     }
 
-    mvc = component->minimum_vertex_cover(4);
+    mvc = component->local_minimum_vertex_cover(3);
     if(mvc != 1) {
-        std::cerr << "Minimum vertext cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
+        std::cerr << "Local Minimum vertex cover on AS 3 is " << mvc << ", rather than 1" << std::endl; 
         return false;
     }
+
+    //*************************************************************************
+    mvc = component->minimum_vertex_cover(4);
+    if(mvc != 1) {
+        std::cerr << "Minimum vertex cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
+        return false;
+    }
+
+    mvc = component->local_minimum_vertex_cover(4);
+    if(mvc != 1) {
+        std::cerr << "Local Minimum vertex cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
+        return false;
+    }
+
+    return true;
+}
+
+/** Test if the local mvc differs from the global mvc
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *     1        5 
+ *    / \
+ *   2   3
+ *    \ /    
+ *     4
+ * 
+ * Yes, 5 has no neighbors. This just makes the test easier. 1 will see the invalid MAC between 4 and 5.
+ * 
+ * Here, 4 is the attacker claiming to have 5 as the origin for the prefix
+ * 2 and 3 are non adopting
+ * 5 and 1 are adopting
+ * 
+ * The local mvc for 1 will be 2
+ * The global mvc for 1 will be 1
+ */
+bool ezbgpsec_test_local_mvc() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(3, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 3, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
+
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+
+    e.graph->ases->insert(std::pair<uint32_t, EZAS*>(5, new EZAS(5)));
+
+    e.graph->decide_ranks();
+
+    //2 is the first so it will be the first to report
+    e.graph->adopters->push_back(5);
+    e.graph->adopters->push_back(1);
+    // e.graph->adopters->push_back(1);
+
+    //Set them to locally know that they are an adopter
+    for(uint32_t asn : *e.graph->adopters) {
+        e.graph->ases->find(asn)->second->adopter = true;
+    }
+
+    // e.graph->adopters->push_back(6);
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+
+    //4 being the victim doesn't really matter, just need the prefix to be in here
+    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
+
+    //Make an announcement that states 4 and 5 are neighbors. This will create an invalid MAC
+    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 299, 5, 2, false, true);
+
+    //The supposed path thus far
+    attack_announcement.as_path.push_back(5);
+
+    e.graph->ases->find(4)->second->process_announcement(attack_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+
+    e.gather_community_detection_reports();
+
+    if(e.communityDetection->identifier_to_component.size() != 1) {
+        std::cerr << "Local MVC test has " << e.communityDetection->identifier_to_component.size() << " component(s) rather than 1 component" << std::endl;
+        return false;
+    }
+
+    CommunityDetection::Component *component = (e.communityDetection->identifier_to_component.begin()++)->second;
+
+    if(component->hyper_edges.size() != 2) {
+        std::cerr << "Local MVC test has a component with " << component->hyper_edges.size() << " hyper edge(s) rather than 2" << std::endl;
+        return false;
+    }
+
+    //*************************************************************************
+    uint32_t mvc = component->minimum_vertex_cover(1);
+    if(mvc != 1) {
+        std::cerr << "In the local mvc test, Global Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
+        return false;
+    }
+
+    mvc = component->local_minimum_vertex_cover(1);
+    if(mvc != 2) {
+        std::cerr << "In the local mvc test, Local Minimum vertex cover on AS 1 is " << mvc << ", rather than 2" << std::endl; 
+        return false;
+    }
+
+    return true;
+}
+
+bool ezbgpsec_test_threshold_filtering() {
+    // EZExtrapolator e = EZExtrapolator();
+    // e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    // e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    // e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    // e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    // e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    // e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    // e.graph->add_relationship(2, 3, AS_REL_PEER);
+    // e.graph->add_relationship(3, 2, AS_REL_PEER);
+    // e.graph->add_relationship(5, 6, AS_REL_PEER);
+    // e.graph->add_relationship(6, 5, AS_REL_PEER);
+    // e.graph->decide_ranks();
+
+    // e.communityDetection->threshold = 2;
+
+    // //2 is the first so it will be the first to report
+    // e.graph->adopters->push_back(2);
+    // e.graph->adopters->push_back(4);
+    // e.graph->adopters->push_back(3);
+    // // e.graph->adopters->push_back(1);
+
+    // //Set them to locally know that they are an adopter
+    // for(uint32_t asn : *e.graph->adopters) {
+    //     e.graph->ases->find(asn)->second->adopter = true;
+    // }
+
+    // // e.graph->adopters->push_back(6);
+
+    // Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+
+    // //4 being the victim doesn't really matter, just need the prefix to be in here
+    // e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
+
+    // //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
+    // EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
+
+    // //The supposed path thus far
+    // attack_announcement.as_path.push_back(3);
+
+    // e.graph->ases->find(5)->second->process_announcement(attack_announcement);
+
+    // Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
+
+    // //Prefixes need not compete for 2's favor, thus they both need to be checked
+    // e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
+
+    // EZAnnouncement attack_announcement2(4, p2.addr, p2.netmask, 299, 4, 2, false, true);
+    // attack_announcement2.as_path.push_back(4);//Make the origin on the path
+
+    // e.graph->ases->find(1)->second->process_announcement(attack_announcement2);
+
+    // e.propagate_up();
+    // e.propagate_down();
+
+    // e.gather_community_detection_reports();
+
+    // auto compnent_search = e.communityDetection->identifier_to_component.find(2);
+    // if(compnent_search == e.communityDetection->identifier_to_component.end()) {
+    //     std::cerr << "Unique identifier is not correct! In threshold filtering" << std::endl;
+    //     return false;
+    // }
+
+    // CommunityDetection::Component *component = compnent_search->second;
+    // //Nothing should change here since there is no mvc that is greater than the threshold
+    // e.communityDetection->threshold_filtering(e.graph);
+
+    // //TODO: replace all of this with degree checks rather than mvc
+    // uint32_t mvc = component->minimum_vertex_cover(2);
+    // if(mvc != 2) {
+    //     std::cerr << "Minimum vertex cover on AS 2 is " << mvc << ", rather than 2" << std::endl; 
+    //     return false;
+    // }
+
+    // mvc = component->minimum_vertex_cover(5);
+    // if(mvc != 1) {
+    //     std::cerr << "Minimum vertex cover on AS 5 is " << mvc << ", rather than 1" << std::endl; 
+    //     return false;
+    // }
+
+    // mvc = component->minimum_vertex_cover(1);
+    // if(mvc != 1) {
+    //     std::cerr << "Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
+    //     return false;
+    // }
+
+    // mvc = component->minimum_vertex_cover(3);
+    // if(mvc != 1) {
+    //     std::cerr << "Minimum vertex cover on AS 3 is " << mvc << ", rather than 1" << std::endl; 
+    //     return false;
+    // }
+
+    // mvc = component->minimum_vertex_cover(4);
+    // if(mvc != 1) {
+    //     std::cerr << "Minimum vertex cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
+    //     return false;
+    // }
 
     return true;
 }

@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
                 DEPREF_RESULTS_TABLE),
             vm["iteration-size"].as<uint32_t>(),
             vm["ezbgpsec"].as<uint32_t>(),
-            vm["num-in-between"].as<uint32_t>());
+            vm["num-in-between"].as<uint32_t>(), 2);//TODO put a command line arguement for threshold
             
         // Run propagation
         extrap->perform_propagation();
