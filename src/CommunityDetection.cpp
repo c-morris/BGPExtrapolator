@@ -72,20 +72,65 @@ void CommunityDetection::Component::merge(Component *other) {
         add_hyper_edge(hyper_edge);
 }
 
-uint32_t CommunityDetection::Component::local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find) {
+// uint32_t CommunityDetection::Component::local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find) {
+//     if(hyper_edges_to_find.size() == 0)
+//         return 0;
+
+//     std::unordered_set<uint32_t> asns_to_attempt;
+//     for(auto &edge : hyper_edges_to_find) {
+//         for(size_t i = 0; i < edge.size(); i++) {
+//             if(edge.at(i) != root_asn)
+//                 continue;
+            
+            
+//         }
+//     }
+
+//     bool assigned = false;
+//     uint32_t mvc = 0;
+//     for(uint32_t asn : asns_to_attempt) {
+//         std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
+
+//         for(auto edge : hyper_edges_to_find) {
+//             //Eliminate any edge containing this ASN
+//             if(std::find(edge.begin(), edge.end(), asn) == edge.end())
+//                 next_hyper_edges_to_find.push_back(edge);
+//         }
+
+//         uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find);
+
+//         if(!assigned) {
+//             mvc = result;
+//             assigned = true;
+//         } else if(result < mvc) {
+//             mvc = result;
+//         }
+//     }
+
+//     return 1 + mvc;
+// }
+
+uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local) {
     if(hyper_edges_to_find.size() == 0)
         return 0;
 
     std::unordered_set<uint32_t> asns_to_attempt;
     for(auto &edge : hyper_edges_to_find) {
         for(size_t i = 0; i < edge.size(); i++) {
-            if(edge.at(i) != root_asn)
-                continue;
-            
-            if(i != 0)
-                asns_to_attempt.insert(edge.at(i - 1));
-            else if(i != edge.size() - 1)
-                asns_to_attempt.insert(edge.at(i + 1));
+            if(local) {//Trial remove only neighbors and not the root
+                if(edge.at(i) != root_asn)
+                    continue;
+
+                if(i != 0)
+                    asns_to_attempt.insert(edge.at(i - 1));
+                else if(i != edge.size() - 1)
+                    asns_to_attempt.insert(edge.at(i + 1));
+            } else {//Trial remove all but the root AS
+                if(edge.at(i) == root_asn)
+                    continue;
+
+                asns_to_attempt.insert(edge.at(i));
+            }
         }
     }
 
@@ -100,45 +145,7 @@ uint32_t CommunityDetection::Component::local_minimum_vertex_cover_helper(uint32
                 next_hyper_edges_to_find.push_back(edge);
         }
 
-        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find);
-
-        if(!assigned) {
-            mvc = result;
-            assigned = true;
-        } else if(result < mvc) {
-            mvc = result;
-        }
-    }
-
-    return 1 + mvc;
-}
-
-uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find) {
-    if(hyper_edges_to_find.size() == 0)
-        return 0;
-
-    std::unordered_set<uint32_t> asns_to_attempt;
-    for(auto &edge : hyper_edges_to_find) {
-        for(uint32_t asn : edge) {
-            if(asn == root_asn)
-                continue;
-
-            asns_to_attempt.insert(asn);
-        }
-    }
-
-    bool assigned = false;
-    uint32_t mvc = 0;
-    for(uint32_t asn : asns_to_attempt) {
-        std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
-
-        for(auto edge : hyper_edges_to_find) {
-            //Eliminate any edge containing this ASN
-            if(std::find(edge.begin(), edge.end(), asn) == edge.end())
-                next_hyper_edges_to_find.push_back(edge);
-        }
-
-        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find);
+        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find, local);
 
         if(!assigned) {
             mvc = result;
@@ -159,7 +166,7 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn) {
         if(std::find(edge.begin(), edge.end(), asn) != edge.end())
             hyper_edges_to_find.push_back(edge);
 
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find);
+    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, false);
 }
 
 uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn) {
@@ -169,7 +176,7 @@ uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn)
         if(std::find(edge.begin(), edge.end(), asn) != edge.end())
             hyper_edges_to_find.push_back(edge);
 
-    return local_minimum_vertex_cover_helper(asn, hyper_edges_to_find);
+    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, true);
 }
 
 void CommunityDetection::Component::remove_hyper_edge(std::vector<uint32_t> &hyper_edge) {

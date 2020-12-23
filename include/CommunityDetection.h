@@ -17,8 +17,8 @@ class CommunityDetection {
 public:
     class Component {
     private: 
-        uint32_t minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find);
-        uint32_t local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find);
+        uint32_t minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local);
+        // uint32_t local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find);
 
     public:
         std::vector<std::vector<uint32_t>> hyper_edges;
