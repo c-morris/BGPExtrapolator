@@ -72,44 +72,6 @@ void CommunityDetection::Component::merge(Component *other) {
         add_hyper_edge(hyper_edge);
 }
 
-// uint32_t CommunityDetection::Component::local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find) {
-//     if(hyper_edges_to_find.size() == 0)
-//         return 0;
-
-//     std::unordered_set<uint32_t> asns_to_attempt;
-//     for(auto &edge : hyper_edges_to_find) {
-//         for(size_t i = 0; i < edge.size(); i++) {
-//             if(edge.at(i) != root_asn)
-//                 continue;
-            
-            
-//         }
-//     }
-
-//     bool assigned = false;
-//     uint32_t mvc = 0;
-//     for(uint32_t asn : asns_to_attempt) {
-//         std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
-
-//         for(auto edge : hyper_edges_to_find) {
-//             //Eliminate any edge containing this ASN
-//             if(std::find(edge.begin(), edge.end(), asn) == edge.end())
-//                 next_hyper_edges_to_find.push_back(edge);
-//         }
-
-//         uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find);
-
-//         if(!assigned) {
-//             mvc = result;
-//             assigned = true;
-//         } else if(result < mvc) {
-//             mvc = result;
-//         }
-//     }
-
-//     return 1 + mvc;
-// }
-
 uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local) {
     if(hyper_edges_to_find.size() == 0)
         return 0;
@@ -225,6 +187,9 @@ void CommunityDetection::Component::threshold_filtering(CommunityDetection *comm
     }
 }
 
+/**
+ * I do not believe this is write? We need test cases for virtual pair removal to see how this should work 
+ */
 void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *community_detection, EZASGraph *graph) {
     threshold_filtering(community_detection, graph);
 
@@ -296,8 +261,6 @@ void CommunityDetection::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
             auto component_search_result = identifier_to_component.find(*iterator);
 
             Component *to_merge = component_search_result->second;
-
-            Logger::getInstance().log("Debug") << "Merging components " << first->unique_identifier << " and " << to_merge->unique_identifier; 
 
             first->merge(to_merge);
             

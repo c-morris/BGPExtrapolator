@@ -16,11 +16,33 @@
 class CommunityDetection {
 public:
     class Component {
-    private: 
+    private:
+        /**
+         * This helper function takes in the hyper edges that the root_asn is in. It then will find the minimum amount of AS removals to remove all hyper edges
+         * 
+         * The idea is to pick an AS that is in any of these edges, and is not the root_asn, and remove all edges that contain that AS.
+         * This is done recursively in a brute forced way to calculate the minimum number of ASes needed to remove all the edges.
+         * 
+         * TODO: make this not brute-forced
+         * 
+         * @param root_asn -> The AS to measure the mvc of
+         * @param hyper_edges_to_find -> A list of the hyper edges that the root_asn is part of that must be recursively removed from
+         * @param local -> Denotes whether or not the allowed ASes to be removed from the edges must be a neighbor to the root_asn (in this graph)
+         */
         uint32_t minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local);
-        // uint32_t local_minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find);
+
+        /**
+         * This will increment or decrement the degree of an AS, and update all relevant data structures. If the degree goes to 0, it will be removed from the graph.
+         * 
+         * If the AS is not part of the component and increment is truel, then the AS will be added into the structures
+         * 
+         * @param asn -> The asn to change the degree of
+         * #param increment -> True to increment the degree, false to decrease the degree
+         */
+        void change_degree(uint32_t asn, bool increment);
 
     public:
+        //TODO: This may benefit from being a map from asn to hyperedge? This kind of search is done often
         std::vector<std::vector<uint32_t>> hyper_edges;
 
         //Search up an AS's degree count
@@ -32,6 +54,10 @@ public:
         //Since an AS can only be in one component, the unique identifier will be one of the ASns
         uint32_t unique_identifier;
 
+        /**
+         * Initializes this component with this hyper edge
+         * Every AS in the edge is granted a degree of 1
+         */
         Component(std::vector<uint32_t> &hyper_edge);
         ~Component();
 
@@ -42,8 +68,6 @@ public:
          *  @return A boolean expressing if this component contains the hyper edge
          */
         bool contains_hyper_edge(std::vector<uint32_t> &hyper_edge);
-
-        void change_degree(uint32_t asn, bool increment);
 
         /**
          *  Given the hyper edge, this function will add it to the component.
@@ -57,6 +81,8 @@ public:
         /**
          *  This will take all of the hyper edges of the other component and add them to this one.
          *  This will not alter the other component, nor will its memory be freed or deleted.
+         * 
+         *  YOU MUST REMOVE THE OTHER COMPONENT FROM THE COMMUNITY DETECTION OBJECT AFTER THIS IS CALLED.
          */
         void merge(Component *other);
 
@@ -79,19 +105,58 @@ public:
          */
         uint32_t local_minimum_vertex_cover(uint32_t asn);
 
+        /**
+         * This takes in a hyper edge and removes each AS in the edge
+         * 
+         * @param hyper_edge -> List of ASes to remove from the component
+         */
         void remove_hyper_edge(std::vector<uint32_t> &hyper_edge);
 
+        /**
+         * Completely removes any trace of this AS.
+         * All edges containing this component will be removed. All relevant ASes will have a decrement to their degree.
+         * 
+         * This AS will result in a degree of 0 and as such will be completely removed from the data scructures
+         */
         void remove_AS(uint32_t asn_to_remove);
 
+        /**
+         * Given the current state of the component, this will filter out ASes as attackers with local and global mvc
+         * 
+         * @param community_detection -> Pointer to the community detection object since C++ does not give implicit refrence to the outer class
+         * @param graph -> EZASGraph to remove attackers from if they are detected
+         */
         void threshold_filtering(CommunityDetection *community_detection, EZASGraph *graph);
 
+        /**
+         * This will recursievely go through all permutations of edge removal and perform threshold filtering on every permutation to dig out any additional attackers
+         * 
+         * @param community_detection -> Pointer to the community detection object since C++ does not give implicit refrence to the outer class
+         * @param graph -> EZASGraph to remove attackers from if they are detected
+         */
         void virtual_pair_removal(CommunityDetection *community_detection, EZASGraph *graph);
     };
 
 public:
     uint32_t threshold;
+
+    //TODO: The identifier is currently based on the first ASN in the first hyper edge that the component is initialized with. This can brake. Do better.
     std::unordered_map<uint32_t, Component*> identifier_to_component;
 
+    /**
+     * This will simply stor this threshold into a member variable.
+     * 
+     * Hyper edges can be added by adding reports (EZAnnouncements that are from an attacker). 
+     * This class will handle detecting if the MAC is truly visible and condensing the path down to the relevant segment for community detection.
+     * 
+     * This class will separate the hyper edges (paths detected invalid MACs) into graph components (see the paper for visuals on what a hyper edge looks like)
+     * Components are handled internall in this class that way internal component-wise operations can be performed.
+     * Components will merge together when a reported path connects them.
+     * 
+     * In addition, the number of hyper edges an AS is in is referred to as its degree. This is also tracked as edges are added.
+     * The end goal is for every component to filter out attackers with threshold filtering an perform virtual removals to filter out more attackers 
+     *      (see paper for conceptual details) 
+     */
     CommunityDetection(uint32_t threshold);
     virtual ~CommunityDetection();
 
@@ -146,10 +211,20 @@ public:
     void add_report(EZAnnouncement &announcement, EZASGraph *graph);
 
     /**
-     * This will simply go through the components of the hyper graph and remove amy AS that has a degree above the threshold.
+     * This will go through the components of the hyper graph and remove any AS from the graph that has an mvc above the threshold. 
+     * 
+     * See paper on the details on how this is done with global and local mvc's
+     * 
+     * @param graph -> The graph to remove from
      */
     void threshold_filtering(EZASGraph *graph);
 
+    /**
+     * For each component, recursively compute every permutation of removing edges from the component. 
+     * For each permutation, perform threshold filtering to see what additional attackers are present.
+     * 
+     * @param graph -> The graph to remove from
+     */
     void virtual_pair_removal(EZASGraph *graph);
 };
 #endif
