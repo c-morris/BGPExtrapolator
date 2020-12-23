@@ -87,13 +87,6 @@ uint32_t CommunityDetection::Component::local_minimum_vertex_cover_helper(uint32
             else if(i != edge.size() - 1)
                 asns_to_attempt.insert(edge.at(i + 1));
         }
-
-        for(uint32_t asn : edge) {
-            if(asn == root_asn)
-                continue;
-
-            asns_to_attempt.insert(asn);
-        }
     }
 
     bool assigned = false;

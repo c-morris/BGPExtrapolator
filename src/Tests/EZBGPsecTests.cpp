@@ -781,10 +781,10 @@ bool ezbgpsec_test_mvc() {
 /** Test if the local mvc differs from the global mvc
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
- *     1        5 
+ *     1      5
  *    / \
  *   2   3
- *    \ /    
+ *    \ /
  *     4
  * 
  * Yes, 5 has no neighbors. This just makes the test easier. 1 will see the invalid MAC between 4 and 5.
@@ -824,20 +824,26 @@ bool ezbgpsec_test_local_mvc() {
         e.graph->ases->find(asn)->second->adopter = true;
     }
 
-    // e.graph->adopters->push_back(6);
-
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p2 = Prefix<>("155.94.0.0", "255.255.0.0");
 
-    //4 being the victim doesn't really matter, just need the prefix to be in here
+    //4 and 5 being the victims doesn't really matter, just need the prefixes to be in here
     e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
+    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(5, p2));
 
     //Make an announcement that states 4 and 5 are neighbors. This will create an invalid MAC
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 299, 5, 2, false, true);
+    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 298, 4, 2, false, true);
+    EZAnnouncement attack_announcement2(5, p2.addr, p2.netmask, 298, 4, 2, false, true);
 
     //The supposed path thus far
     attack_announcement.as_path.push_back(5);
+    attack_announcement.as_path.insert(attack_announcement.as_path.begin(), 4);
 
-    e.graph->ases->find(4)->second->process_announcement(attack_announcement);
+    attack_announcement2.as_path.push_back(5);
+    attack_announcement2.as_path.insert(attack_announcement2.as_path.begin(), 4);
+
+    e.graph->ases->find(2)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement2);
 
     e.propagate_up();
     e.propagate_down();
