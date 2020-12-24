@@ -129,6 +129,24 @@ BOOST_AUTO_TEST_CASE( Extrapolator_save_results_parallel ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_back ) {
+        BOOST_CHECK( test_prepending_priority_back() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_middle ) {
+        BOOST_CHECK( test_prepending_priority_middle() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_beginning ) {
+        BOOST_CHECK( test_prepending_priority_beginning() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_back_existing_ann ) {
+        BOOST_CHECK( test_prepending_priority_back_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_middle_existing_ann ) {
+        BOOST_CHECK( test_prepending_priority_middle_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_beginning_existing_ann ) {
+        BOOST_CHECK( test_prepending_priority_beginning_existing_ann() );
+}
 
 // ROVpp
 BOOST_AUTO_TEST_CASE( Announcement_eqality_operator ) {
@@ -210,6 +228,24 @@ BOOST_AUTO_TEST_CASE( ROVpp_test_tiny_hash ) {
 }
 BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
         BOOST_CHECK( test_rovpp_full_path() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_back() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_middle() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_back_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_middle_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann() );
 }
 
 //EZBGPsec Tests

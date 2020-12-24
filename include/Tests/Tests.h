@@ -93,6 +93,12 @@ bool test_propagate_down2();
 bool test_save_results_parallel();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
+bool test_prepending_priority_back();
+bool test_prepending_priority_middle();
+bool test_prepending_priority_beginning();
+bool test_prepending_priority_back_existing_ann();
+bool test_prepending_priority_middle_existing_ann();
+bool test_prepending_priority_beginning_existing_ann();
 
 // Prototypes for ROVppTest.cpp
 bool test_rovpp_ann_eq_operator();
@@ -123,6 +129,12 @@ bool test_rovpp_tiebreak_override();
 bool test_withdrawal();
 bool test_tiny_hash();
 bool test_rovpp_full_path();
+bool test_rovpp_prepending_priority_back();
+bool test_rovpp_prepending_priority_middle();
+bool test_rovpp_prepending_priority_beginning();
+bool test_rovpp_prepending_priority_back_existing_ann();
+bool test_rovpp_prepending_priority_middle_existing_ann();
+bool test_rovpp_prepending_priority_beginning_existing_ann();
 
 //EZBGPsec
 bool ezbgpsec_test_path_propagation();
