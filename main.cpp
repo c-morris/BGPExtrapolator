@@ -119,8 +119,8 @@ int main(int argc, char *argv[]) {
          po::value<unsigned int>()->default_value(0),
          "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
         ("config-section", po::value<string>()->default_value("bgp"), "section of the config file")
-        ("exclude-asn,e", po::value<int>()->default_value(-1), 
-         "exclude all announcements from a particular ASN");
+        ("exclude-asn,e", po::value<int>()->default_value(-1),
+         "exclude all announcements from a particular ASN")
         ("mh-propagation-mode", 
          po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
          "enables multi-home propagation mode, 1 - no propagation from mh, 2 - propagation from mh to peers");

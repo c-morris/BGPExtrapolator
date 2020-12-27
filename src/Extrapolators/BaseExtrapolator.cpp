@@ -263,7 +263,7 @@ std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType
         as_path << ann.received_from_asn << ',';
         ann = graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix)->second;
     }
-    // Add last AS on the path
+    // Add the last AS on the path
     as_path << ann.received_from_asn << '}';
     return as_path.str();
 }
