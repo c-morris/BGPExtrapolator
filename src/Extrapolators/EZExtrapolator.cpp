@@ -14,10 +14,11 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
                                 uint32_t num_between,
+                                int exclude_as_number,
                                 uint32_t mh_mode) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size, mh_mode) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, config_section);
+    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, exclude_as_number, config_section);
     
     this->successful_attacks = 0;
     this->successful_connections = 0;
@@ -30,7 +31,7 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
 EZExtrapolator::EZExtrapolator() 
     : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                         ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, DEFAULT_MH_MODE) { }
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, -1, DEFAULT_MH_MODE) { }
 
 EZExtrapolator::~EZExtrapolator() { }
 

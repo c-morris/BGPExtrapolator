@@ -27,15 +27,17 @@ SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE 
                         std::string results_table /* = RESULTS_TABLE */, 
                         std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                         std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
-                        std::string config_section,
-                        std::string config_path,
-                        bool create_connection) {
+                        int exclude_as_number, /* = -1 */
+                        std::string config_section /* = "bgp" */,
+                        std::string config_path /* = "/etc/bgp/bgp.conf" */,
+                        bool create_connection /* = true */) {
     this->announcements_table = announcements_table;
     this->results_table = results_table;
     this->depref_table = depref_results_table;
     this->inverse_results_table = inverse_results_table;
     this->config_section = config_section;
     this->config_path = config_path;
+    this->exclude_as_number = exclude_as_number;
     
     // Default host and port numbers
     // Strings for connection arg
@@ -193,7 +195,14 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit) {
 pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
-    sql += " WHERE prefix = \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix = \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix = \'" + cidr + "\';";
+    }
+
     return execute(sql);
 }
 
@@ -205,7 +214,13 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
 pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
-    sql += " WHERE prefix = \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix = \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix = \'" + cidr + "\';";
+    }
     return execute(sql);
 }
 
@@ -217,7 +232,13 @@ pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
 pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
-    sql += " WHERE prefix <<= \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix <<= \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix <<= \'" + cidr + "\';";
+    }
     return execute(sql);
 }
 
@@ -229,7 +250,13 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
 pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
-    sql += " WHERE prefix <<= \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix <<= \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix <<= \'" + cidr + "\';";
+    }
     return execute(sql);
 }
 

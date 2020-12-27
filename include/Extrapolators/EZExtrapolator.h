@@ -66,6 +66,7 @@ public:
                     uint32_t iteration_size,
                     uint32_t num_rounds,
                     uint32_t num_between,
+                    int exclude_as_number,
                     uint32_t mh_mode);
     
     EZExtrapolator();
