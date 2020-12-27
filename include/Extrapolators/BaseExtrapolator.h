@@ -25,7 +25,8 @@
 #define BASE_EXTRAPOLATOR_H
 
 #define DEFAULT_RANDOM_TIEBRAKING true
-#define DEFAULT_STORE_INVERT_RESULTS true
+#define DEFAULT_STORE_RESULTS true
+#define DEFAULT_STORE_INVERT_RESULTS false
 #define DEFAULT_STORE_DEPREF_RESULTS false
 
 #include <vector>
@@ -115,16 +116,20 @@ public:
     SQLQuerierType *querier;
 
     bool random_tiebraking;    // If randomness is enabled
+    bool store_results; // If inverted results are enabled
     bool store_invert_results; // If inverted results are enabled
     bool store_depref_results; // If depref results are enabled
+    std::vector<uint32_t> output_ases; // Limit output to these ASNs
     sem_t worker_thread_count; // Worker thread semaphore
     int max_workers;           // Max number of worker threads that can run concurrently
 
     BaseExtrapolator(bool random_tiebraking,
+                        bool store_results, 
                         bool store_invert_results, 
                         bool store_depref_results) {
 
         this->random_tiebraking = random_tiebraking;       // True to enable random tiebreaks
+        this->store_results = store_results; // True to store regular results
         this->store_invert_results = store_invert_results; // True to store the results inverted
         this->store_depref_results = store_depref_results; // True to store the second best ann for depref
 
@@ -147,7 +152,7 @@ public:
      *  - store_invert_results = true
      *  - store_depref_results = false
      */
-    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS) { }
+    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS) { }
 
     virtual ~BaseExtrapolator();
 
