@@ -38,6 +38,8 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <semaphore.h>
+#include <cstdint>
+#include <vector>
 
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
@@ -198,6 +200,23 @@ public:
      * @param iteration The current iteration of the propagation
      */
     virtual void save_results_thread(int iteration, int thread_num, int num_threads);
+
+    /** Save results only at a particular AS
+     *
+     * These results will also contain the full AS_PATH computed by tracing back
+     * the announcements to their origin. These results are not inverted.
+     *
+     * @param asn AS to save results for
+     */
+    virtual void save_results_at_asn(uint32_t asn);
+
+    /** Return the AS_PATH of an Announcement.
+     *
+     * @param ann Announcement to determine the path of
+     * @param asn AS number of the AS to start at
+     * @return The AS_PATH as a string, formatted as a postgres array literal
+     */
+    virtual std::string stream_as_path(AnnouncementType &ann, uint32_t asn);
 
 };
 #endif

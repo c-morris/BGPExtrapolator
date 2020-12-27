@@ -94,6 +94,7 @@ bool test_propagate_down();
 bool test_propagate_down2();
 bool test_propagate_down_multihomed_standard();
 bool test_save_results_parallel();
+bool test_save_results_at_asn();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
 bool test_send_all_announcements_multihomed_standard1();

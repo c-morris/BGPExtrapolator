@@ -101,10 +101,12 @@ public:
     void clear_inverse_from_db();
 
     virtual void create_results_tbl();
+    virtual void create_single_results_tbl();
     void create_depref_tbl();
     void create_inverse_results_tbl();
  
     virtual void copy_results_to_db(std::string file_name);
+    virtual void copy_single_results_to_db(std::string file_name);
     void copy_depref_to_db(std::string file_name);
     void copy_inverse_results_to_db(std::string file_name);
     

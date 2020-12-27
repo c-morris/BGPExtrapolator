@@ -376,6 +376,16 @@ void SQLQuerier::create_results_tbl() {
     execute(sql, false);
 }
 
+/** Instantiates a new, empty single results table in the database, dropping the old table.
+ *
+ * In addition to all of the columns in the results table, this table includes the as_path.
+ */
+void SQLQuerier::create_single_results_tbl() {
+    this->create_results_tbl();
+    std::string sql = std::string("ALTER TABLE " + results_table + " ADD COLUMN \
+    as_path bigint[];");
+    execute(sql, false);
+}
 
 /** Instantiates a new, empty depref table in the database, dropping the old table.
  */
@@ -409,6 +419,13 @@ void SQLQuerier::copy_results_to_db(std::string file_name) {
     execute(sql);
 }
 
+/** Similar to copy_results_to_db, but for a single AS result which includes an AS_PATH column.
+ */
+void SQLQuerier::copy_single_results_to_db(std::string file_name) {
+    std::string sql = std::string("COPY " + results_table + "(asn, prefix, origin, received_from_asn, time, as_path)") +
+                                  "FROM '" + file_name + "' WITH (FORMAT csv)";
+    execute(sql);
+}
 
 /** Takes a .csv filename and bulk copies all elements to the depref table.
  */
