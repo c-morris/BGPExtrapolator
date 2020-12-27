@@ -377,7 +377,30 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
                                                                                                         bool to_peers, 
                                                                                                         bool to_customers) {
     // Get the AS that is sending it's announcements
-    auto *source_as = this->graph->ases->find(asn)->second; 
+    auto *source_as = this->graph->ases->find(asn)->second;
+
+    // Don't propagate from multihomed
+    if (mh_mode == 1){
+        // Check if AS is multihomed
+        if (source_as->customers->empty()) {
+        return;
+        }
+    }
+
+    // Only propagate to peers from multihomed
+    if (mh_mode == 2) {
+            // Check if AS is multihomed
+            if (source_as->customers->empty()) {
+                if (to_peers){
+                    to_providers = false;
+                    to_customers = false;
+                } else {
+                    return;
+                }
+                
+            }
+    }
+
     // If we are sending to providers
     if (to_providers) {
         // Assemble the list of announcements to send to providers

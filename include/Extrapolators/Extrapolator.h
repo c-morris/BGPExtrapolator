@@ -37,7 +37,8 @@ public:
                     std::string depref_results_table,
                     std::string config_section, 
                     uint32_t iteration_size,
-                    int exclude_as_number);
+                    int exclude_as_number,
+                    uint32_t mh_mode);
 
     Extrapolator();
     ~Extrapolator();
