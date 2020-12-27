@@ -28,7 +28,7 @@
 
 class Extrapolator : public BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS> {
 protected:
-    std::vector<uint32_t> verify_ases = {0};
+    std::set<uint32_t> verify_ases = {0};
     
 public:
     
@@ -49,12 +49,19 @@ public:
                     std::string results_table, 
                     std::string inverse_results_table, 
                     std::string depref_results_table,
-                    std::vector<uint32_t> verify_ases,
+                    std::set<uint32_t> verify_ases,
                     std::string config_section, 
                     uint32_t iteration_size);
 
     Extrapolator();
     ~Extrapolator();
+    
+    /** Thread function to save results, but with support for verify_ases, which
+     * decides which ases to include in results.
+     *
+     * @param iteration The current iteration of the propagation
+     */
+    virtual void save_results_thread(int iteration, int thread_num, int num_threads);
     
 };
 

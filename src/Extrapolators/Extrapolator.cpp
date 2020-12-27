@@ -46,7 +46,7 @@ Extrapolator::Extrapolator(bool random_tiebraking,
                             std::string results_table, 
                             std::string inverse_results_table, 
                             std::string depref_results_table,
-                            std::vector<uint32_t> verify_ases,
+                            std::set<uint32_t> verify_ases,
                             std::string config_section, 
                             uint32_t iteration_size) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
 
@@ -59,4 +59,68 @@ Extrapolator::Extrapolator() : Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_S
                                             DEFAULT_STORE_DEPREF_RESULTS,ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE) { }
 
 Extrapolator::~Extrapolator() { }
+
+
+void Extrapolator::save_results_thread(int iteration, int thread_num, int num_threads){
+    // Decrement semaphore to limit the number of concurrent threads
+    sem_wait(&worker_thread_count);
+    int counter = thread_num;
+    // Need a copy of the querier to make a new db connection to avoid resource conflicts 
+    SQLQuerier querier_copy(*querier);
+    querier_copy.open_connection();
+    std::ofstream outfile;
+    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+    outfile.open(file_name);
+    
+    // Handle inverse results
+    if (store_invert_results) {
+        for (auto po : *graph->inverse_results){
+            // The results are divided into num_threads CSVs. For example, with 
+            // four threads, this loop will save every fourth item in the loop.
+            if (counter++ % num_threads == 0) {
+                for (uint32_t asn : *po.second) {
+                    if (verify_ases.find(asn) != verify_ases.end()) {
+                        outfile << asn << ','
+                                << po.first.first.to_cidr() << ','
+                                << po.first.second << '\n';
+                    }
+                }
+            }
+        }
+        outfile.close();
+        querier_copy.copy_inverse_results_to_db(file_name);
+    
+    // Handle standard results
+    } else {
+        for (auto &as : *graph->ases){
+            if (verify_ases.find(as.second->asn) != verify_ases.end()) {
+                if (counter++ % num_threads == 0) {
+                    as.second->stream_announcements(outfile);
+                }
+            }
+        }
+        outfile.close();
+        querier_copy.copy_results_to_db(file_name);
+
+    }
+    std::remove(file_name.c_str());
+    
+    // Handle depref results
+    if (store_depref_results) {
+        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+        outfile.open(depref_name);
+        for (auto &as : *graph->ases) {
+            if (verify_ases.find(as.second->asn) != verify_ases.end()) {
+                if (counter++ % num_threads == 0) {
+                    as.second->stream_depref(outfile);
+                }
+            }
+        }
+        outfile.close();
+        querier_copy.copy_depref_to_db(depref_name);
+        std::remove(depref_name.c_str());
+    }
+    querier_copy.close_connection();
+    sem_post(&worker_thread_count);
+}
 
