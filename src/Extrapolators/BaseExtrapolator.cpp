@@ -257,8 +257,8 @@ std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType
     // 2. The received from ASN does not exist in the graph
     // 3. Max depth is exceeded--- this likely indicates a loop in the topology
     while (ann.origin != ann.received_from_asn && 
-        graph->ases->find(ann.received_from_asn) != graph->ases->end() &&
-        depth < max_depth) {
+           graph->ases->find(ann.received_from_asn) != graph->ases->end() &&
+           depth < max_depth) {
         depth++;
         as_path << ann.received_from_asn << ',';
         ann = graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix)->second;
