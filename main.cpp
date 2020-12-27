@@ -94,6 +94,9 @@ int main(int argc, char *argv[]) {
         ("inverse-results-table,o",
          po::value<string>()->default_value(INVERSE_RESULTS_TABLE),
          "name of the inverse results table")
+        ("verify,y",
+         po::value<vector<uint32_t>>(),
+         "list of ASNs we should output results for")
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
          "name of announcements table")
@@ -196,6 +199,7 @@ int main(int argc, char *argv[]) {
         delete extrap;
     } else {
         // Instantiate Extrapolator
+        vector<uint32_t> default_verify_ases = {0};
         Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
             vm["invert-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
@@ -211,6 +215,9 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
+            (vm.count("verify") ?
+                vm["verify"].as<vector<uint32_t>>() : 
+                default_verify_ases),
             vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>());
             

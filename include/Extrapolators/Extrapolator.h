@@ -24,10 +24,14 @@
 #ifndef EXTRAPOLATOR_H
 #define EXTRAPOLATOR_H
 
-#include "Extrapolators/BlockedExtrapolator.h"
+#include "Extrapolators/BlockedExtrapolator.h" 
 
 class Extrapolator : public BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS> {
+protected:
+    std::vector<uint32_t> verify_ases = {0};
+    
 public:
+    
     Extrapolator(bool random_tiebraking,
                     bool store_invert_results, 
                     bool store_depref_results, 
@@ -37,9 +41,21 @@ public:
                     std::string depref_results_table,
                     std::string config_section, 
                     uint32_t iteration_size);
+    
+    Extrapolator(bool random_tiebraking,
+                    bool store_invert_results, 
+                    bool store_depref_results, 
+                    std::string announcement_table,
+                    std::string results_table, 
+                    std::string inverse_results_table, 
+                    std::string depref_results_table,
+                    std::vector<uint32_t> verify_ases,
+                    std::string config_section, 
+                    uint32_t iteration_size);
 
     Extrapolator();
     ~Extrapolator();
+    
 };
 
 #endif
