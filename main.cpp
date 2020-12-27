@@ -118,7 +118,12 @@ int main(int argc, char *argv[]) {
         ("severity-level,c",
          po::value<unsigned int>()->default_value(0),
          "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
-        ("config-section", po::value<string>()->default_value("bgp"), "section of the config file");
+        ("config-section", 
+        po::value<string>()->default_value("bgp"), 
+        "section of the config file")
+        ("mh-propagation-mode", 
+        po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
+        "enables multi-home propagation mode, 1 - no propagation from mh, 2 - propagation from mh to peers");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -187,7 +192,8 @@ int main(int argc, char *argv[]) {
             vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
             vm["ezbgpsec"].as<uint32_t>(),
-            vm["num-in-between"].as<uint32_t>());
+            vm["num-in-between"].as<uint32_t>(),
+            vm["mh-propagation-mode"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
@@ -212,7 +218,8 @@ int main(int argc, char *argv[]) {
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
             vm["config-section"].as<string>(),
-            vm["iteration-size"].as<uint32_t>());
+            vm["iteration-size"].as<uint32_t>(),
+            vm["mh-propagation-mode"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();

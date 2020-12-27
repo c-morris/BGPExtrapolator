@@ -88,11 +88,18 @@ bool test_combine_components();
 // Prototypes for ExtrapolatorTest.cpp
 bool test_Extrapolator_constructor();
 bool test_propagate_up();
+bool test_propagate_up_multihomed_standard();
+bool test_propagate_up_multihomed_peer_mode();
 bool test_propagate_down();
 bool test_propagate_down2();
+bool test_propagate_down_multihomed_standard();
 bool test_save_results_parallel();
 bool test_give_ann_to_as_path();
 bool test_send_all_announcements();
+bool test_send_all_announcements_multihomed_standard1();
+bool test_send_all_announcements_multihomed_standard2();
+bool test_send_all_announcements_multihomed_peer_mode1();
+bool test_send_all_announcements_multihomed_peer_mode2();
 
 // Prototypes for ROVppTest.cpp
 bool test_rovpp_ann_eq_operator();
