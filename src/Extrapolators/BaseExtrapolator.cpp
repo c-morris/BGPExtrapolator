@@ -225,24 +225,24 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_at_asn(uint32_t asn){
-    ASType &as = *graph->ases->find(asn)->second;
-    std::cout << "AAAAAAA\n";
+    auto search = graph->ases->find(asn); 
+    if (search == graph->ases->end()) {
+        // If the asn does not exist, return
+        return;
+    }
+    ASType &as = *search->second;
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(asn) + ".csv";
     outfile.open(file_name);
-    for (auto &as : *graph->ases) {
-        if (as.second->asn == asn) {
-            for (auto &ann : *as.second->all_anns) {
-                AnnouncementType &a = ann.second;
-                outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ",\"" << this->stream_as_path(a, asn) << "\"\n";
-            }
+    if (as.asn == asn) {
+        for (auto &ann : *as.all_anns) {
+            AnnouncementType &a = ann.second;
+            outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ",\"" << this->stream_as_path(a, asn) << "\"\n";
         }
     }
     outfile.close();
     this->querier->copy_single_results_to_db(file_name);
     std::remove(file_name.c_str());
-    
-    std::cout << "BBBBBB\n";
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
