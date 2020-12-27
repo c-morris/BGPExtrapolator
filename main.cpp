@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
          po::value<string>()->default_value(INVERSE_RESULTS_TABLE),
          "name of the inverse results table")
          ("verify,t",
-          po::value<set<uint32_t>>(),
+          po::value<vector<uint32_t>>(),
           "a list of ASes to verify (i.e. output)")
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
@@ -199,6 +199,15 @@ int main(int argc, char *argv[]) {
         delete extrap;
     } else {
         // Instantiate Extrapolator
+        // Convert verify vector to a set
+        // TODO: Why can't program options handle set type
+        set<uint32_t> verify_set;
+        if (vm.count("verify")) {
+          for (const uint32_t &i: vm["verify"].as<set<uint32_t>>()) {
+              verify_set.insert(i);
+          }
+        }
+        // Create Extrapolator
         Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
             vm["invert-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
@@ -213,10 +222,8 @@ int main(int argc, char *argv[]) {
                 INVERSE_RESULTS_TABLE),
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
-                DEPREF_RESULTS_TABLE),
-            (vm.count("verify") ?
-                vm["verify"].as<set<uint32_t>>() : 
-                set<uint32_t>()),
+                DEPREF_RESULTS_TABLE), 
+            verify_set,
             vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>());
             
