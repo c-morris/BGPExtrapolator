@@ -40,7 +40,8 @@ public:
                     std::string config_section, 
                     uint32_t iteration_size,
                     int exclude_as_number,
-                    uint32_t mh_mode);
+                    uint32_t mh_mode,
+                    std::vector<uint32_t> *full_path_asns);
 
     Extrapolator();
     ~Extrapolator();

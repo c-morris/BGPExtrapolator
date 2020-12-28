@@ -35,7 +35,7 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string config_section,
                                         int exclude_as_number)
     // ROVppExtrapolator always saves regular results
-    : BaseExtrapolator(false, true, false, false) {
+    : BaseExtrapolator(false, true, false, false, NULL) {
         
     this->graph = new ROVppASGraph();
 

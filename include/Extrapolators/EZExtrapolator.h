@@ -69,7 +69,8 @@ public:
                     uint32_t num_rounds,
                     uint32_t num_between,
                     int exclude_as_number,
-                    uint32_t mh_mode);
+                    uint32_t mh_mode,
+                    std::vector<uint32_t> *full_path_asns);
     
     EZExtrapolator();
     ~EZExtrapolator();

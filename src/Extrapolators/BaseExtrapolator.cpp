@@ -145,6 +145,17 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
     outfile.open(file_name);
+
+    // Handle standard results
+    if (store_results) {
+        for (auto &as : *graph->ases){
+            if (counter++ % num_threads == 0) {
+                as.second->stream_announcements(outfile);
+            }
+        }
+        outfile.close();
+        querier_copy.copy_results_to_db(file_name);
+    }
     
     // Handle inverse results
     if (store_invert_results) {
@@ -162,19 +173,10 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         outfile.close();
         querier_copy.copy_inverse_results_to_db(file_name);
     
-    // Handle standard results
-    } else {
-        for (auto &as : *graph->ases){
-            if (counter++ % num_threads == 0) {
-                as.second->stream_announcements(outfile);
-            }
-        }
-        outfile.close();
-        querier_copy.copy_results_to_db(file_name);
+    }    
 
-    }
     std::remove(file_name.c_str());
-    
+
     // Handle depref results
     if (store_depref_results) {
         std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
@@ -188,6 +190,16 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         querier_copy.copy_depref_to_db(depref_name);
         std::remove(depref_name.c_str());
     }
+
+    // Handle full_path results
+    if (full_path_asns != NULL) {
+        for (uint32_t asn : *full_path_asns){
+            if (counter++ % num_threads == 0) {
+                this->save_results_at_asn(asn);
+            }
+        }
+    }
+
     querier_copy.close_connection();
     sem_post(&worker_thread_count);
 }
@@ -232,7 +244,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     }
     ASType &as = *search->second;
     std::ofstream outfile;
-    std::string file_name = "/dev/shm/bgp/" + std::to_string(asn) + ".csv";
+    std::string file_name = "/dev/shm/bgp/as" + std::to_string(asn) + ".csv";
     outfile.open(file_name);
     if (as.asn == asn) {
         for (auto &ann : *as.all_anns) {

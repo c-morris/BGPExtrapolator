@@ -50,7 +50,7 @@
 
 void intro() {
     // This needs to be finished
-    std::cout << "***** Routing Extrapolator v0.3 *****" << std::endl;
+    std::cout << "***** BGP Extrapolator v0.3 *****" << std::endl;
     std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
     std::cout << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
 }
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
          "space-separated names of ROVpp policy tables")
         ("prop-twice,k",
          po::value<bool>()->default_value(true),
-         "flag whether or not to propagate twice")
+         "flag whether or not to propagate twice (ROVpp only)")
         ("log-std-out,l",
          po::value<bool>()->default_value(true),
          "enables logging into the console, best used for debugging only")
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
         ("config-section", po::value<string>()->default_value("bgp"), "section of the config file")
         ("exclude-monitor", po::value<int>()->default_value(-1),
          "exclude announcements from a particular monitor ASN")
-        ("full-path-asns,",
+        ("full-path-asns",
          po::value<vector<uint32_t>>(),
          "output these ASNs with their full AS_PATH in a separate table")
         ("mh-propagation-mode", 
@@ -154,6 +154,14 @@ int main(int argc, char *argv[]) {
 
     // Handle intro information
     intro();
+
+    // Record full path asns
+    vector<uint32_t> *full_path_asns = NULL;
+    vector<uint32_t> asn_vect;
+    if (vm.count("full-path-asns")) {
+        asn_vect = vm["full-path-asns"].as<vector<uint32_t>>();
+        full_path_asns = &asn_vect;
+    }
     
     // Check for ROV++ mode
     if (vm["rovpp"].as<bool>()) {
@@ -177,7 +185,7 @@ int main(int argc, char *argv[]) {
                 vm["simulation-table"].as<string>() : 
                 ROVPP_SIMULATION_TABLE),
             vm["config-section"].as<string>(),
-            vm["exclude-asn"].as<int>());
+            vm["exclude-monitor"].as<int>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -189,7 +197,7 @@ int main(int argc, char *argv[]) {
         EZExtrapolator *extrap = new EZExtrapolator(
             vm["random"].as<bool>(),
             vm["store-results"].as<bool>(),
-            vm["invert-results"].as<bool>(),
+            vm["store-inverse-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
             (vm.count("announcements-table") ? 
                 vm["announcements-table"].as<string>() : 
@@ -210,8 +218,9 @@ int main(int argc, char *argv[]) {
             vm["iteration-size"].as<uint32_t>(),
             vm["ezbgpsec"].as<uint32_t>(), // number of rounds
             vm["num-in-between"].as<uint32_t>(),
-            vm["exclude-asn"].as<int>(),
-            vm["mh-propagation-mode"].as<uint32_t>());
+            vm["exclude-monitor"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>(),
+            full_path_asns);
             
         // Run propagation
         extrap->perform_propagation();
@@ -222,7 +231,7 @@ int main(int argc, char *argv[]) {
         // Instantiate Extrapolator
         Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
             vm["store-results"].as<bool>(),
-            vm["invert-results"].as<bool>(),
+            vm["store-inverse-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
             (vm.count("announcements-table") ? 
                 vm["announcements-table"].as<string>() : 
@@ -241,8 +250,9 @@ int main(int argc, char *argv[]) {
                 FULL_PATH_RESULTS_TABLE),
             vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
-            vm["exclude-asn"].as<int>(),
-            vm["mh-propagation-mode"].as<uint32_t>());
+            vm["exclude-monitor"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>(),
+            full_path_asns);
             
         // Run propagation
         extrap->perform_propagation();

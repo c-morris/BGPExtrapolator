@@ -366,7 +366,7 @@ void SQLQuerier::clear_inverse_from_db() {
 
 /** Drop the Querier's full path results table.
  */
-void SQLQuerier::clear_full_path_results_from_db() {
+void SQLQuerier::clear_full_path_from_db() {
     std::string sql = std::string("DROP TABLE IF EXISTS " + full_path_results_table + ";");
     execute(sql);
 }

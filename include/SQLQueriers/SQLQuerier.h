@@ -101,7 +101,7 @@ public:
     void clear_results_from_db();
     void clear_depref_from_db();
     void clear_inverse_from_db();
-    void clear_full_path_results_from_db();
+    void clear_full_path_from_db();
 
     virtual void create_results_tbl();
     virtual void create_full_path_results_tbl();
