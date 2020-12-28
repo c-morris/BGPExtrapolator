@@ -116,7 +116,7 @@ public:
     SQLQuerierType *querier;
 
     bool random_tiebraking;    // If randomness is enabled
-    bool store_results; // If inverted results are enabled
+    bool store_results; // If results are enabled
     bool store_invert_results; // If inverted results are enabled
     bool store_depref_results; // If depref results are enabled
     std::vector<uint32_t> *full_path_asns; // Limit output to these ASNs
