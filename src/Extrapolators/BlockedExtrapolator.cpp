@@ -265,10 +265,11 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         // Find the current AS on the path
         ASType *as_on_path = this->graph->ases->find(asn_on_path)->second;
 
-        AnnouncementType &second_announcement = as_on_path->all_anns->find(prefix);
+        auto second_announcement_search = as_on_path->all_anns->find(prefix);
 
         // Check if already received this prefix
-        if (as_on_path->all_anns->filled(second_announcement)) {
+        if (second_announcement_search != as_on_path->all_anns->end()) {
+            const AnnouncementType& second_announcement = *second_announcement_search;
             // If the current timestamp is newer (worse)
             if (timestamp > second_announcement.tstamp) {
                 // Skip it

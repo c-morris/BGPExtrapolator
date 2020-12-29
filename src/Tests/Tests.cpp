@@ -212,6 +212,11 @@ BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
         BOOST_CHECK( test_rovpp_full_path() );
 }
 
+//PrefixAnnouncementMap Tests
+BOOST_AUTO_TEST_CASE( PrefixAnnouncementMap_test_insert ) {
+        BOOST_CHECK( prefixAnnouncementMap_test_insert() );
+}
+
 //EZBGPsec Tests
 
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {

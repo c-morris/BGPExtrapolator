@@ -132,7 +132,7 @@ std::ostream& operator<<(std::ostream &os, const ROVppAnnouncement& ann) {
  * @param &os Specifies the output stream.
  * @return The output stream parameter for reuse/recursion.
  */ 
-std::ostream& ROVppAnnouncement::to_csv(std::ostream &os) {
+std::ostream& ROVppAnnouncement::to_csv(std::ostream &os) const {
     os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << alt << '\n';
     return os;
 }

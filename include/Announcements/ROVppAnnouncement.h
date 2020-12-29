@@ -92,7 +92,7 @@ public:
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    virtual std::ostream& to_csv(std::ostream &os);
+    virtual std::ostream& to_csv(std::ostream &os) const;
 
     /** Passes the announcement struct data to an output stream to csv generation.
      * For creating the rovpp_blackholes table only.

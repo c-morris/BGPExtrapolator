@@ -102,29 +102,48 @@ bool test_give_ann_to_as_path() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2);
 
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_3_search = e.graph->ases->find(3)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_3_search == e.graph->ases->find(3)->second->all_anns->end()) {
+        std::cerr << "AS 3 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
     // Test that monitor annoucements were received
-    if(!(e.graph->ases->find(2)->second->all_anns->find(p).from_monitor &&
-         e.graph->ases->find(3)->second->all_anns->find(p).from_monitor &&
-         e.graph->ases->find(5)->second->all_anns->find(p).from_monitor)) {
+    if(!((*as_2_search).from_monitor &&
+         (*as_3_search).from_monitor &&
+         (*as_5_search).from_monitor)) {
         std::cerr << "Monitor flag failed." << std::endl;
         return false;
     }
     
     // Test announcement priority calculation
-    if (e.graph->ases->find(3)->second->all_anns->find(p).priority != 198 &&
-        e.graph->ases->find(2)->second->all_anns->find(p).priority != 299 &&
-        e.graph->ases->find(5)->second->all_anns->find(p).priority != 400) {
+    if ((*as_3_search).priority != 198 &&
+        (*as_2_search).priority != 299 &&
+        (*as_5_search).priority != 400) {
         std::cerr << "Priority calculation failed." << std::endl;
         return false;
     }
 
     // Test that only path received the announcement
-    if (!(e.graph->ases->find(1)->second->all_anns->num_filled() == 0 &&
-        e.graph->ases->find(2)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(4)->second->all_anns->num_filled() == 0 &&
-        e.graph->ases->find(5)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->num_filled() == 0)) {
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
         std::cerr << "MRT overseeding check failed." << std::endl;
         return false;
     }
@@ -137,13 +156,20 @@ bool test_give_ann_to_as_path() {
     as_path_b->push_back(4);
     e.give_ann_to_as_path(as_path_b, p, 1);
 
-    if (e.graph->ases->find(2)->second->all_anns->find(p).tstamp != 1) {
+    auto as_2_search_2 = e.graph->ases->find(2)->second->all_anns->find(p);
+    if(as_2_search_2 == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "as_2_search_2 announcement does not exist for tiebraking!" << std::endl;
+        return false;
+    }
+
+    if ((*as_2_search_2).tstamp != 1) {
+        std::cerr << "as_2_search_2 announcement has the wrong timestamp for tiebraking!" << std::endl;
         return false;
     }
     
     // Test prepending calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p).priority != 298) {
-        std::cout << e.graph->ases->find(2)->second->all_anns->find(p).priority << std::endl;
+    if ((*as_2_search_2).priority != 298) {
+        std::cout << (*as_2_search_2).priority << std::endl;
         return false;
     }
 
@@ -188,23 +214,54 @@ bool test_propagate_up() {
     e.propagate_up();
     
     // Check all announcements are propagted
-    if (!(e.graph->ases->find(1)->second->all_anns->num_filled() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->num_filled() == 1 &&
-          e.graph->ases->find(3)->second->all_anns->num_filled() == 1 &&
-          e.graph->ases->find(4)->second->all_anns->num_filled() == 0 &&
-          e.graph->ases->find(5)->second->all_anns->num_filled() == 1 &&
-          e.graph->ases->find(6)->second->all_anns->num_filled() == 1 &&
-          e.graph->ases->find(7)->second->all_anns->num_filled() == 0)) {
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Loop detection failed." << std::endl;
         return false;
     }
     
+    auto as_1_search = e.graph->ases->find(1)->second->all_anns->find(p);
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_3_search = e.graph->ases->find(3)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+    auto as_6_search = e.graph->ases->find(6)->second->all_anns->find(p);
+
+    if(as_1_search == e.graph->ases->find(1)->second->all_anns->end()) {
+        std::cerr << "AS 1 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_3_search == e.graph->ases->find(3)->second->all_anns->end()) {
+        std::cerr << "AS 3 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_6_search == e.graph->ases->find(6)->second->all_anns->end()) {
+        std::cerr << "AS 6 announcement does not exist!" << std::endl;
+        return false;
+    }
+
     // Check propagation priority calculation
-    if (e.graph->ases->find(5)->second->all_anns->find(p).priority != 290 &&
-        e.graph->ases->find(2)->second->all_anns->find(p).priority != 289 &&
-        e.graph->ases->find(6)->second->all_anns->find(p).priority != 189 &&
-        e.graph->ases->find(1)->second->all_anns->find(p).priority != 288 &&
-        e.graph->ases->find(3)->second->all_anns->find(p).priority != 188) {
+    if ((*as_5_search).priority != 290 &&
+        (*as_2_search).priority != 289 &&
+        (*as_6_search).priority != 189 &&
+        (*as_1_search).priority != 288 &&
+        (*as_3_search).priority != 188) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
@@ -245,18 +302,37 @@ bool test_propagate_down() {
     e.propagate_down();
     
     // Check all announcements are propagted
-    if (!(e.graph->ases->find(1)->second->all_anns->num_filled() == 0 &&
-        e.graph->ases->find(2)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->num_filled() == 0 &&
-        e.graph->ases->find(4)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(5)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->num_filled() == 0)) {
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
         return false;
     }
     
-    if (e.graph->ases->find(2)->second->all_anns->find(p).priority != 290 &&
-        e.graph->ases->find(4)->second->all_anns->find(p).priority != 89 &&
-        e.graph->ases->find(5)->second->all_anns->find(p).priority != 89) {
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_4_search = e.graph->ases->find(4)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_4_search == e.graph->ases->find(4)->second->all_anns->end()) {
+        std::cerr << "AS 4 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if ((*as_2_search).priority != 290 &&
+        (*as_4_search).priority != 89 &&
+        (*as_5_search).priority != 89) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
@@ -297,20 +373,20 @@ bool test_propagate_down2() {
     e.propagate_down();
     
     // Check all announcements are propagted
-    if (!(e.graph->ases->find(1)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(2)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(3)->second->all_anns->num_filled() == 0 &&
-        e.graph->ases->find(4)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(5)->second->all_anns->num_filled() == 1 &&
-        e.graph->ases->find(6)->second->all_anns->num_filled() == 0)) {
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
         
         std::cerr << "test_propagate_down2 failed... Not all ASes have refrence when they should.." << std::endl;
-        std::cerr << e.graph->ases->find(1)->second->all_anns->num_filled() << std::endl;
-        std::cerr << e.graph->ases->find(2)->second->all_anns->num_filled() << std::endl;
-        std::cerr << e.graph->ases->find(3)->second->all_anns->num_filled() << std::endl;
-        std::cerr << e.graph->ases->find(4)->second->all_anns->num_filled() << std::endl;
-        std::cerr << e.graph->ases->find(5)->second->all_anns->num_filled() << std::endl;
-        std::cerr << e.graph->ases->find(6)->second->all_anns->num_filled() << std::endl;
+        std::cerr << e.graph->ases->find(1)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(2)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(3)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(4)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(5)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(6)->second->all_anns->size() << std::endl;
 
         return false;
     }
@@ -363,12 +439,12 @@ bool test_send_all_announcements() {
     // Check to providers
     e.send_all_announcements(2, true, false, false);
     if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->num_filled() == 1 &&
-          e.graph->ases->find(3)->second->all_anns->num_filled() == 0 &&
-          e.graph->ases->find(4)->second->all_anns->num_filled() == 1 &&
-          e.graph->ases->find(5)->second->all_anns->num_filled() == 0 &&
-          e.graph->ases->find(6)->second->all_anns->num_filled() == 0 &&
-          e.graph->ases->find(7)->second->all_anns->num_filled() == 0)) {
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to providers" << std::endl;
         return false;
     }
@@ -376,12 +452,12 @@ bool test_send_all_announcements() {
     // Check to peers
     e.send_all_announcements(2, false, true, false);
     if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->num_filled() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(4)->second->all_anns->num_filled() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
           e.graph->ases->find(5)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(6)->second->all_anns->num_filled() == 0 &&
-          e.graph->ases->find(7)->second->all_anns->num_filled() == 0)) {
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to peers" << std::endl;
         return false;
     }
@@ -389,21 +465,52 @@ bool test_send_all_announcements() {
     // Check to customers
     e.send_all_announcements(2, false, false, true);
     if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(2)->second->all_anns->num_filled() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(4)->second->all_anns->num_filled() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
           e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(6)->second->all_anns->num_filled() == 0 &&
-          e.graph->ases->find(7)->second->all_anns->num_filled() == 0)) {
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
         return false;
     }
-    
+
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(1)->second->process_announcements(true);
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(5)->second->process_announcements(true);
+
+    auto as_1_search = e.graph->ases->find(1)->second->all_anns->find(p);
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_3_search = e.graph->ases->find(3)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    if(as_1_search == e.graph->ases->find(1)->second->all_anns->end()) {
+        std::cerr << "AS 1 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_3_search == e.graph->ases->find(3)->second->all_anns->end()) {
+        std::cerr << "AS 3 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
     // Check priority calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p).priority != 299 &&
-        e.graph->ases->find(1)->second->all_anns->find(p).priority != 289 &&
-        e.graph->ases->find(3)->second->all_anns->find(p).priority != 189 &&
-        e.graph->ases->find(5)->second->all_anns->find(p).priority != 89) {
+    if ((*as_2_search).priority != 299 &&
+        (*as_1_search).priority != 289 &&
+        (*as_3_search).priority != 189 &&
+        (*as_5_search).priority != 89) {
         std::cerr << "Send all announcement priority calculation failed." << std::endl;
         return false;
     }

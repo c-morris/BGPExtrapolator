@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
     return os;
 }
 
-std::ostream& Announcement::to_csv(std::ostream &os) {
+std::ostream& Announcement::to_csv(std::ostream &os) const {
     os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
     return os;
 }

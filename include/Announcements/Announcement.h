@@ -81,6 +81,6 @@ public:
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    virtual std::ostream& to_csv(std::ostream &os);
+    virtual std::ostream& to_csv(std::ostream &os) const;
 };
 #endif
