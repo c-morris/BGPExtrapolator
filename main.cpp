@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
          "exclude all announcements from a particular ASN")
         ("mh-propagation-mode", 
          po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
-         "enables multi-home propagation mode, 1 - no propagation from mh, 2 - propagation from mh to peers");
+         "multi-home propagation mode, 0 - off, 1 - propagate from mh to providers in some cases (automatic), 2 - no propagation from mh, 3 - propagation from mh to peers");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
