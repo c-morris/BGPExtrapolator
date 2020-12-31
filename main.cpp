@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
         ("iteration-size,s", 
          po::value<uint32_t>()->default_value(50000), 
          "number of prefixes to be used in one iteration cycle")
-        ("rounds", 
+        ("rounds,z", 
          po::value<uint32_t>()->default_value(1), 
          "rounds (ignored)")
         ("results-table,r",
