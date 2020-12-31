@@ -1,7 +1,7 @@
 #ifndef TABLENAMES_H
 #define TABLENAMES_H
 
-#define RESULTS_TABLE "rovpp_extrapolation_results"
+#define RESULTS_TABLE "simulation_extrapolation_results_raw_round_1"
 #define DEPREF_RESULTS_TABLE "extrapolation_deprefer_results"
 #define INVERSE_RESULTS_TABLE "extrapolation_inverse_results"
 #define PEERS_TABLE "peers"
