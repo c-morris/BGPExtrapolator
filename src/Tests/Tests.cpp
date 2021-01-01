@@ -150,6 +150,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements2 ) {
         BOOST_CHECK( test_send_all_announcements2() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements3 ) {
+        BOOST_CHECK( test_send_all_announcements3() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements_no_multihomed ) {
         BOOST_CHECK( test_send_all_announcements_no_multihomed() );
 }

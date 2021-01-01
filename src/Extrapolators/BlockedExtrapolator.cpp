@@ -425,7 +425,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             }
 
             // Automatic multihomed mode
-            // Propagate an announcement to providers if there are some that haven't received an announcement from that prefix with origin = current asn
+            // Propagate an announcement to providers if none received an announcement from that prefix with origin = current asn
             uint32_t providers_with_ann = 0;
             if (mh_mode == 1) {
                 // Check if AS is multihomed
@@ -433,16 +433,17 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
                     // Check if all providers have the announcement
                     for (uint32_t provider_asn : *source_as->providers) {
                         auto *recving_as = this->graph->ases->find(provider_asn)->second;
-                        for (auto &recving_as_ann : *recving_as->all_anns) {
-                            if (recving_as_ann.second.origin == ann.second.origin && recving_as_ann.second.prefix.addr == ann.second.prefix.addr && recving_as_ann.second.prefix.netmask == ann.second.prefix.netmask) {
-                                providers_with_ann++;
-                            }
+                        auto search = recving_as->all_anns->find(ann.second.prefix);
+                        if (search != recving_as->all_anns->end() && search->second.origin == ann.second.origin) {
+                            providers_with_ann++;
+                            break; // Break because at least one provider received the announcement from this AS
                         }
                     }
                 }
             } 
-            // If there are providers that don't have the announcement, propagate to providers
-            if (providers_with_ann < source_as->providers->size()) {
+            
+            // If no providers have the announcement, propagate to providers
+            if (providers_with_ann == 0) {
                 // Set the priority of the announcement at destination 
                 uint32_t old_priority = ann.second.priority;
                 uint32_t path_len_weight = old_priority % 100;
