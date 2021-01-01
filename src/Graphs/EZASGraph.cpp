@@ -124,11 +124,28 @@ void EZASGraph::distributeAttackersVictims(SQLQuerier* querier) {
     }
 }
 
-void EZASGraph::process(SQLQuerier* querier) {
+void EZASGraph::process(EZSQLQuerier* querier) {
     //We definately want stubs/edge ASes
     // distributeAttackersVictims(querier);
+    assign_policies(querier);
     tarjan();
     combine_components();
     //Don't need to save super nodes
     decide_ranks();
+}
+
+
+void EZASGraph::assign_policies(EZSQLQuerier* querier) {
+    for (auto policy_table : querier->policy_tables) {
+        pqxx::result R = querier->select_policy_assignments(policy_table);
+        // For each AS in the policy Table
+        for (pqxx::result::const_iterator c = R.begin(); c != R.end(); ++c) {
+            // Get the ASN for current AS
+            auto search = ases->find(c["asn"].as<uint32_t>());
+            if (search != ases->end()) {
+                // Add the policy to AS
+                search->second->policy = c["as_type"].as<uint32_t>();
+            }
+        }
+    }
 }

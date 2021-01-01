@@ -35,6 +35,10 @@ public:
      */
     void disconnect_as_from_adopting_neighbors(uint32_t asn);
     void distributeAttackersVictims(SQLQuerier* querier);
-    void process(SQLQuerier* querier);
+    void process(EZSQLQuerier* querier);
+
+    /** Load EzBGPsec policy assignments from the database and assign them to ASes.
+     */  
+    void assign_policies(EZSQLQuerier* querier);
 };
 #endif

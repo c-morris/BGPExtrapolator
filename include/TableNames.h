@@ -53,5 +53,6 @@
 //EzBGPsec Tables
 #define EZBGPSEC_AS_CATAGORIES_TABLE "good_customer_pairs"
 #define EZBGPSEC_ANNOUNCEMENTS_TABLE "good_customer_pairs_ann"
+#define EZBGPSEC_ROUND_TABLE_BASE_NAME "simulation_extrapolation_results_raw_round_"
 
 #endif
