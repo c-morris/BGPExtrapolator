@@ -71,6 +71,9 @@ int main(int argc, char *argv[]) {
         ("iteration-size,s", 
          po::value<uint32_t>()->default_value(DEFAULT_ITERATION_SIZE), 
          "number of prefixes to be used in one iteration cycle")
+        ("local-thresh", 
+         po::value<uint32_t>()->default_value(3), 
+         "local threshold for ezbgpsec")
         ("results-table,r",
          po::value<string>()->default_value(RESULTS_TABLE),
          "name of the results table")
