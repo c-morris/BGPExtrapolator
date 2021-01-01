@@ -124,14 +124,15 @@ void EZASGraph::distributeAttackersVictims(SQLQuerier* querier) {
     }
 }
 
-void EZASGraph::process(EZSQLQuerier* querier) {
+void EZASGraph::process(SQLQuerier* querier) {
     //We definately want stubs/edge ASes
     // distributeAttackersVictims(querier);
-    assign_policies(querier);
     tarjan();
     combine_components();
     //Don't need to save super nodes
     decide_ranks();
+    // The EZASGraph must be used with the EZSQLQuerier
+    assign_policies(static_cast<EZSQLQuerier*>(querier));
 }
 
 

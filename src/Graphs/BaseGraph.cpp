@@ -120,7 +120,7 @@ void BaseGraph<ASType>::create_graph_from_db(SQLQuerier *querier) {
                          c["customer_as"].as<uint32_t>(),AS_REL_CUSTOMER);
     }
 
-    process(querier);
+    this->process(querier);
 }
 
 template <class ASType>
