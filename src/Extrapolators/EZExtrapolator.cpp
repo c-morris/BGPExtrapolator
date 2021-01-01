@@ -250,7 +250,7 @@ void EZExtrapolator::calculate_successful_attacks() {
 }
 
 void EZExtrapolator::save_results(int iteration) {
-    // BaseExtrapolator::save_results(iteration);
+    BaseExtrapolator::save_results(iteration);
     calculate_successful_attacks();
     gather_community_detection_reports();
 }
