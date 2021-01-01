@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
         ("rovpp,v", 
          po::value<bool>()->default_value(false), 
          "flag for rovpp run")
-        ("ezbgpsec,z", 
+        ("rounds,z", 
          po::value<uint32_t>()->default_value(0), 
          "number of rounds for ezbgpsec run")
         ("num-in-between,n", 
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
         extrap->perform_propagation(prop_twice);
         // Clean up
         delete extrap;
-    } else if(vm["ezbgpsec"].as<uint32_t>()) {
+    } else if(vm["rounds"].as<uint32_t>()) {
         // Instantiate Extrapolator
         EZExtrapolator *extrap = new EZExtrapolator(
             vm["random"].as<bool>(),
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
                 DEPREF_RESULTS_TABLE),
             pt,
             vm["iteration-size"].as<uint32_t>(),
-            vm["ezbgpsec"].as<uint32_t>(),
+            vm["rounds"].as<uint32_t>(),
             vm["num-in-between"].as<uint32_t>(), 2);//TODO put a command line arguement for threshold
             
         // Run propagation
