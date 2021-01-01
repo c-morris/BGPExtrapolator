@@ -10,7 +10,8 @@ public:
     EZSQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, 
                     std::string r=RESULTS_TABLE,
                     std::string i=INVERSE_RESULTS_TABLE,
-                    std::string d=DEPREF_RESULTS_TABLE);
+                    std::string d=DEPREF_RESULTS_TABLE,
+                    std::vector<std::string> *pt=NULL);
     ~EZSQLQuerier();
 
     pqxx::result select_subnet_ann(Prefix<>* p); 

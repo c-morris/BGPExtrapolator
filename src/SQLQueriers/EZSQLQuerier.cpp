@@ -1,7 +1,8 @@
 #include "SQLQueriers/EZSQLQuerier.h"
 
-EZSQLQuerier::EZSQLQuerier(std::string a, std::string r, std::string i, std::string d) : SQLQuerier(a, r, i, d) {
-    
+EZSQLQuerier::EZSQLQuerier(std::string a, std::string r, std::string i, std::string d, std::vector<std::string> *pt) : SQLQuerier(a, r, i, d) {
+   if (pt != NULL)
+       this->policy_tables = *pt;
 }
 
 EZSQLQuerier::~EZSQLQuerier() {

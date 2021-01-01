@@ -120,6 +120,15 @@ int main(int argc, char *argv[]) {
         }
     }
 
+
+    // Set policy tables
+    vector<std::string> *pt = NULL;
+    vector<std::string> policy_tables;
+    if (vm.count("policy-tables")) {
+        policy_tables = vm["policy-tables"].as<vector<std::string>>();
+        pt = &policy_tables;
+    }
+
     // Check for ROV++ mode
     if (vm["rovpp"].as<bool>()) {
          ROVppExtrapolator *extrap = new ROVppExtrapolator(
@@ -162,6 +171,7 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
+            pt,
             vm["iteration-size"].as<uint32_t>(),
             vm["ezbgpsec"].as<uint32_t>(),
             vm["num-in-between"].as<uint32_t>(), 2);//TODO put a command line arguement for threshold

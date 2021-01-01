@@ -10,13 +10,14 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
                                 std::string results_table, 
                                 std::string inverse_results_table, 
                                 std::string depref_results_table, 
+                                std::vector<std::string> *policy_tables, 
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
                                 uint32_t num_between,
                                 uint32_t community_detection_threshold) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table);
+    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, policy_tables);
     communityDetection = new CommunityDetection(community_detection_threshold);
 
     this->successful_attacks = 0;
@@ -28,14 +29,14 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
 }
 
 EZExtrapolator::EZExtrapolator(uint32_t community_detection_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE, 
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
                         0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, community_detection_threshold) {
 
 }
 
 EZExtrapolator::EZExtrapolator() 
     : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_ITERATION_SIZE, 
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
                         0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, DEFAULT_COMMUNITY_DETECTION_THRESHOLD) { }
 
 EZExtrapolator::~EZExtrapolator() { }

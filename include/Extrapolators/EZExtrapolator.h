@@ -3,6 +3,7 @@
 
 #define DEFAULT_NUM_ASES_BETWEEN_ATTACKER 0
 #define DEFAULT_COMMUNITY_DETECTION_THRESHOLD 0
+#define DEFAULT_POLICY_TABLES NULL
 
 #include "Extrapolators/BlockedExtrapolator.h"
 
@@ -66,6 +67,7 @@ public:
                     std::string results_table, 
                     std::string inverse_results_table, 
                     std::string depref_results_table, 
+                    std::vector<std::string> *policy_tables, 
                     uint32_t iteration_size,
                     uint32_t num_rounds,
                     uint32_t num_between,
