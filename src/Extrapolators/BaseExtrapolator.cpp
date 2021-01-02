@@ -28,6 +28,9 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <vector>
+#include <thread>
+#include <semaphore.h>
 
 #include "Logger.h"
 #include "Extrapolators/BaseExtrapolator.h"
@@ -38,6 +41,7 @@ BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::~BaseExtr
         delete graph;
     if(querier != NULL)
         delete querier;
+    sem_destroy(&worker_thread_count);
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -99,6 +103,9 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
         }
     }
     // Propagate to peers
+    // When propagating to peers,
+    // all ASes may not have processed all incoming announcements after the function completes.
+    // Those announcements will be processed after propagate_down()
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
@@ -128,47 +135,91 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread(int iteration, int thread_num, int num_threads){
+    // Decrement semaphore to limit the number of concurrent threads
+    sem_wait(&worker_thread_count);
+    int counter = thread_num;
+    // Need a copy of the querier to make a new db connection to avoid resource conflicts 
+    SQLQuerierType querier_copy(*querier);
+    querier_copy.open_connection();
     std::ofstream outfile;
-    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
+    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
     outfile.open(file_name);
     
     // Handle inverse results
     if (store_invert_results) {
-        std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
         for (auto po : *graph->inverse_results){
-            for (uint32_t asn : *po.second) {
-                outfile << asn << ','
-                        << po.first.first.to_cidr() << ','
-                        << po.first.second << '\n';
+            // The results are divided into num_threads CSVs. For example, with 
+            // four threads, this loop will save every fourth item in the loop.
+            if (counter++ % num_threads == 0) {
+                for (uint32_t asn : *po.second) {
+                    outfile << asn << ','
+                            << po.first.first.to_cidr() << ','
+                            << po.first.second << '\n';
+                }
             }
         }
         outfile.close();
-        querier->copy_inverse_results_to_db(file_name);
+        querier_copy.copy_inverse_results_to_db(file_name);
     
     // Handle standard results
     } else {
-        std::cout << "Saving Results From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases){
-            as.second->stream_announcements(outfile);
+            if (counter++ % num_threads == 0) {
+                as.second->stream_announcements(outfile);
+            }
         }
         outfile.close();
-        querier->copy_results_to_db(file_name);
+        querier_copy.copy_results_to_db(file_name);
 
     }
     std::remove(file_name.c_str());
     
     // Handle depref results
     if (store_depref_results) {
-        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + ".csv";
+        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
         outfile.open(depref_name);
-        std::cout << "Saving Depref From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases) {
-            as.second->stream_depref(outfile);
+            if (counter++ % num_threads == 0) {
+                as.second->stream_depref(outfile);
+            }
         }
         outfile.close();
-        querier->copy_depref_to_db(depref_name);
+        querier_copy.copy_depref_to_db(depref_name);
         std::remove(depref_name.c_str());
+    }
+    querier_copy.close_connection();
+    sem_post(&worker_thread_count);
+}
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
+    if (store_invert_results) {
+        std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
+    } else {
+        std::cout << "Saving Results From Iteration: " << iteration << std::endl;
+    }
+    if (store_depref_results) {
+        std::cout << "Saving Depref Results From Iteration: " << iteration << std::endl;
+    }
+    std::vector<std::thread> threads;
+    int cpus = std::thread::hardware_concurrency();
+    // Ensure we have at least one worker even when only one cpu core is avaliable
+    int max_workers = cpus > 1 ? cpus - 1 : 1;
+    if (max_workers > 1) {
+        for (int i = 0; i < max_workers; i++) {
+            // Start the worker threads
+            threads.push_back(std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread, this, iteration, i, max_workers));
+        }
+        for (size_t i = 0; i < threads.size(); i++) {
+            // Note, this could be done slightly faster, technically we can start
+            // propagating the next iteration once the CSVs are saved, we don't
+            // need to wait for the database insertion, but the speedup likely
+            // isn't worth the added complexity at this point.
+            threads[i].join();
+        }
+    } else {
+        this->save_results_thread(iteration, 0, 1);
     }
 }
 

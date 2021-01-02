@@ -26,11 +26,18 @@
 SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE */,
                         std::string results_table /* = RESULTS_TABLE */, 
                         std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
-                        std::string depref_results_table /* = DEPREF_RESULTS_TABLE */) {
+                        std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
+                        int exclude_as_number, /* = -1 */
+                        std::string config_section /* = "bgp" */,
+                        std::string config_path /* = "/etc/bgp/bgp.conf" */,
+                        bool create_connection /* = true */) {
     this->announcements_table = announcements_table;
     this->results_table = results_table;
     this->depref_table = depref_results_table;
     this->inverse_results_table = inverse_results_table;
+    this->config_section = config_section;
+    this->config_path = config_path;
+    this->exclude_as_number = exclude_as_number;
     
     // Default host and port numbers
     // Strings for connection arg
@@ -38,7 +45,10 @@ SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE 
     port = "5432";
 
     read_config();
-    open_connection();
+
+    if (create_connection){
+        open_connection();
+    }
 }
 
 SQLQuerier::~SQLQuerier() {
@@ -51,47 +61,53 @@ SQLQuerier::~SQLQuerier() {
  */
 void SQLQuerier::read_config() {
     using namespace std;
-    string file_location = "/etc/bgp/bgp.conf";
-    ifstream cFile(file_location);
+
+    cout << "Config section: " << config_section << std::endl;
+    
+    program_options::variables_map var_map;
+
+    // Specify config parameters to parse
+    program_options::options_description file_options("File options");
+    file_options.add_options()
+        ((config_section + ".user").c_str(), program_options::value<string>(), "username")
+        ((config_section + ".password").c_str(), program_options::value<string>(), "password")
+        ((config_section + ".database").c_str(), program_options::value<string>(), "db")
+        ((config_section + ".host").c_str(), program_options::value<string>(), "host")
+        ((config_section + ".port").c_str(), program_options::value<string>(), "port")
+        ;
+
+    program_options::notify(var_map);
+
+    ifstream cFile(config_path);
     if (cFile.is_open()) {
         // Map config variables to settings in file
-        map<string,string> config;
-        string line;
-        
-        while(getline(cFile, line)) {
-            // Remove whitespace and check to ignore line
-            line.erase(remove_if(line.begin(),line.end(),::isspace), line.end());
-            if (line.empty() || line[0] == '#' || line[0] == '[') {
-                continue;
-            }
-            auto delim_index = line.find("=");
-            std::string var_name = line.substr(0,delim_index);
-            std::string value = line.substr(delim_index+1);
-            config.insert(std::pair<std::string,std::string>(var_name, value));
+        program_options::store(program_options::parse_config_file(cFile, file_options, true), var_map);
+
+        if (var_map.count(config_section + ".user")){
+            user = var_map[config_section + ".user"].as<string>();
         }
 
-        for (auto const& setting : config){
-            if(setting.first == "user") {
-                user = setting.second;
-            } else if(setting.first == "password") {
-                pass = setting.second;
-            } else if(setting.first == "database") {
-                db_name = setting.second;
-            } else if(setting.first == "host") {
-                if (setting.second == "localhost") {
-                    host = "127.0.0.1";
-                } else {
-                    host = setting.second;
-                }
-            } else if(setting.first == "port") {
-                port = setting.second;
+        if (var_map.count(config_section + ".password")){
+            pass = var_map[config_section + ".password"].as<string>();
+        }
+
+        if (var_map.count(config_section + ".database")){
+            db_name = var_map[config_section + ".database"].as<string>();
+        }
+
+        if (var_map.count(config_section + ".host")){
+            if (var_map[config_section + ".host"].as<string>() == "localhost") {
+                host = "127.0.0.1";
             } else {
-                // This outputs extraneous setting found in the config file
-                // std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
+                host = var_map[config_section + ".host"].as<string>();
             }
         }
+
+        if (var_map.count(config_section + ".port")){
+            port = var_map[config_section + ".port"].as<string>();
+        }
     } else {
-        std::cerr << "Error loading config file \"" << file_location << "\"" << std::endl;
+        std::cerr << "Error loading config file \"" << config_path << "\"" << std::endl;
     }
 }
 
@@ -109,7 +125,6 @@ void SQLQuerier::open_connection() {
     try {
         pqxx::connection *conn = new pqxx::connection(stream.str());
         if (conn->is_open()) {
-            std::cout << "Connected to database: " << db_name <<std::endl;
             C = conn;
         } else {
             std::cerr << "Failed to connect to database : " << db_name <<std::endl;
@@ -180,7 +195,14 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit) {
 pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
-    sql += " WHERE prefix = \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix = \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix = \'" + cidr + "\';";
+    }
+
     return execute(sql);
 }
 
@@ -192,7 +214,13 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
 pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
-    sql += " WHERE prefix = \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix = \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix = \'" + cidr + "\';";
+    }
     return execute(sql);
 }
 
@@ -204,7 +232,13 @@ pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
 pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
-    sql += " WHERE prefix <<= \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix <<= \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix <<= \'" + cidr + "\';";
+    }
     return execute(sql);
 }
 
@@ -216,7 +250,13 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
 pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
-    sql += " WHERE prefix <<= \'" + cidr + "\';";
+
+    // Exclude ASN if specified
+    if (exclude_as_number > -1) {
+        sql += " WHERE prefix <<= \'" + cidr + "\' and " + "monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += " WHERE prefix <<= \'" + cidr + "\';";
+    }
     return execute(sql);
 }
 

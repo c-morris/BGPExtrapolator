@@ -58,7 +58,7 @@ void CommunityDetection::Component::change_degree(uint32_t asn, bool increment) 
 }
 
 void CommunityDetection::Component::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
-    Logger::getInstance().log("Debug") << "Hyper edge: " << hyper_edge << " is being added to the hyper graph";
+    //Logger::getInstance().log("Debug") << "Hyper edge: " << hyper_edge << " is being added to the hyper graph";
 
     hyper_edges.push_back(hyper_edge);
     for(size_t i = 0; i < hyper_edge.size(); i++)

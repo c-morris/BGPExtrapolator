@@ -24,8 +24,11 @@
 #ifndef RUN_TESTS
 #include <iostream>
 #include <boost/program_options.hpp>
+#include <thread>
+#include <semaphore.h>
 
 #include "Logger.h"
+
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
@@ -33,6 +36,17 @@
 #include "Extrapolators/ROVppExtrapolator.h"
 #include "Extrapolators/EZExtrapolator.h"
 #include "Tests/Tests.h"
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
+// #include <boost/log/sources/global_logger_storage.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+
 
 void intro() {
     // This needs to be finished
@@ -43,7 +57,7 @@ void intro() {
 
 int main(int argc, char *argv[]) {
     using namespace std;   
-    // don't sync iostreams with printf
+    // Don't sync iostreams with printf
     ios_base::sync_with_stdio(false);
     namespace po = boost::program_options;
     // Handle parameters
@@ -98,9 +112,21 @@ int main(int argc, char *argv[]) {
         ("prop-twice,k",
          po::value<bool>()->default_value(true),
          "flag whether or not to propagate twice")
-        ("log-folder,l",
+        ("log-std-out,l",
+         po::value<bool>()->default_value(true),
+         "enables logging into the console, best used for debugging only")
+        ("log-folder,g",
          po::value<string>()->default_value(""),
-         "enables the use of logging, best used for debugging only");
+         "path to a log folder, enables logging into a file, best used for debugging only")
+        ("severity-level,c",
+         po::value<unsigned int>()->default_value(0),
+         "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
+        ("config-section", po::value<string>()->default_value("bgp"), "section of the config file")
+        ("exclude-asn,e", po::value<int>()->default_value(-1), 
+         "exclude all announcements from a particular ASN")
+        ("mh-propagation-mode", 
+         po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
+         "enables multi-home propagation mode, 1 - no propagation from mh, 2 - propagation from mh to peers");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -109,21 +135,20 @@ int main(int argc, char *argv[]) {
         cout << desc << endl;
         exit(0);
     }
-    
+
+    // Logging
+    unsigned int severity_level = vm["severity-level"].as<unsigned int>();
+    bool log_std_out = vm["log-std-out"].as<bool>();
+    string log_folder = vm["log-folder"].as<string>();
+    if ((severity_level < 0) || (severity_level > 5)) {
+       Logger::init_logger(log_std_out, log_folder, 0);
+    } else {
+       Logger::init_logger(log_std_out, log_folder, severity_level);
+    }
+
     // Handle intro information
     intro();
     
-    std::string loggingFolder = vm.count("log-folder") ? vm["log-folder"].as<string>() : "";
-    if(loggingFolder != "") {
-        if(loggingFolder.back() == '/') {
-            Logger::setFolder(loggingFolder);
-            Logger::getInstance();
-        } else {
-            std::cerr << "ERROR: Logger Folder must be a directory" << endl;
-        }
-    }
-
-
     // Set policy tables
     vector<std::string> *pt = NULL;
     vector<std::string> policy_tables;
@@ -149,7 +174,9 @@ int main(int argc, char *argv[]) {
                 ROVPP_TRACKED_ASES_TABLE),
             (vm.count("simulation-table") ?
                 vm["simulation-table"].as<string>() : 
-                ROVPP_SIMULATION_TABLE));
+                ROVPP_SIMULATION_TABLE),
+            vm["config-section"].as<string>(),
+            vm["exclude-asn"].as<int>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -174,10 +201,16 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
+            vm["config-section"].as<string>(),
             pt,
             vm["iteration-size"].as<uint32_t>(),
             vm["rounds"].as<uint32_t>(),
-            vm["num-in-between"].as<uint32_t>(), 2);//TODO put a command line arguement for threshold
+            vm["num-in-between"].as<uint32_t>(), 
+            (vm.count("local-thresh") ?
+                vm["local-thresh"].as<uint32_t>() : 
+                3),
+            vm["exclude-asn"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
@@ -201,14 +234,16 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
-            (vm["iteration-size"].as<uint32_t>()));
+            vm["config-section"].as<string>(),
+            vm["iteration-size"].as<uint32_t>(),
+            vm["exclude-asn"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
         // Clean up
         delete extrap;
     }
-
     return 0;
 }
 #endif // RUN_TESTS

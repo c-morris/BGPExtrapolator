@@ -13,7 +13,9 @@ public:
                     std::string r=RESULTS_TABLE,
                     std::string i=INVERSE_RESULTS_TABLE,
                     std::string d=DEPREF_RESULTS_TABLE,
-                    std::vector<std::string> *pt=NULL);
+                    std::vector<std::string> *pt=NULL,
+                    int n=-1,
+                    std::string s=DEFAULT_QUERIER_CONFIG_SECTION);
     ~EZSQLQuerier();
 
     pqxx::result select_subnet_ann(Prefix<>* p); 

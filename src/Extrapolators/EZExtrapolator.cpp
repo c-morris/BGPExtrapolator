@@ -10,35 +10,34 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
                                 std::string results_table, 
                                 std::string inverse_results_table, 
                                 std::string depref_results_table, 
+                                std::string config_section,
                                 std::vector<std::string> *policy_tables, 
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
                                 uint32_t num_between,
-                                uint32_t community_detection_threshold) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
+                                uint32_t community_detection_threshold,
+                                int exclude_as_number,
+                                uint32_t mh_mode) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size, mh_mode) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, policy_tables);
+    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, policy_tables, exclude_as_number, config_section);
     communityDetection = new CommunityDetection(community_detection_threshold);
-
-    //this->successful_attacks = 0;
-    //this->successful_connections = 0;
-    //this->disconnections = 0;
-
+    
     this->num_rounds = num_rounds;
     this->round = 0;
     this->num_between = num_between;
 }
 
 EZExtrapolator::EZExtrapolator(uint32_t community_detection_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, community_detection_threshold) {
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, community_detection_threshold, -1, DEFAULT_MH_MODE) {
 
 }
 
 EZExtrapolator::EZExtrapolator() 
     : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, DEFAULT_COMMUNITY_DETECTION_THRESHOLD) { }
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, DEFAULT_COMMUNITY_DETECTION_THRESHOLD, -1, DEFAULT_MH_MODE) { }
 
 EZExtrapolator::~EZExtrapolator() {
     delete communityDetection;
@@ -46,7 +45,7 @@ EZExtrapolator::~EZExtrapolator() {
 
 void EZExtrapolator::init() {
     BlockedExtrapolator::init();
-    for (int i = 0; i < num_rounds; i++) {
+    for (unsigned int i = 0; i < num_rounds; i++) {
         this->querier->clear_round_results_from_db(i);
         this->querier->create_round_results_tbl(i);
     }
@@ -73,7 +72,7 @@ void EZExtrapolator::gather_community_detection_reports() {
             //Non attacking announcement will not have an invalid MAC
             //An attacking announcement will, and community detection will check if it is visible
             if(announcement_search->second.from_attacker) {
-                Logger::getInstance().log("Debug") << "Announcement with path: " << announcement_search->second.as_path << " is being sent to CD";
+                //Logger::getInstance().log("Debug") << "Announcement with path: " << announcement_search->second.as_path << " is being sent to CD";
                 communityDetection->add_report(announcement_search->second, graph);
             }
         }

@@ -33,7 +33,9 @@ struct ROVppExtrapolator: public BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph,
                         std::string announcement_table,
                         std::string results_table,
                         std::string tracked_ases_table,
-                        std::string simulation_table);
+                        std::string simulation_table,
+                        std::string config_section,
+                        int exclude_as_number);
 
     ROVppExtrapolator();
     ~ROVppExtrapolator();

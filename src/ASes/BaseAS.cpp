@@ -37,8 +37,18 @@ BaseAS<AnnouncementType>::~BaseAS() {
 }
 
 template <class AnnouncementType>
+uint8_t BaseAS<AnnouncementType>::tiny_hash(uint32_t as_number) {
+    uint8_t mask = 0xFF;
+    uint8_t value = 0;
+    for (size_t i = 0; i < sizeof(as_number); i++) {
+        value = (value ^ (mask & (as_number>>(i * 8)))) * 3;
+    }
+    return value;
+}
+
+template <class AnnouncementType>
 bool BaseAS<AnnouncementType>::get_random() {
-    bool r = (ran_bool() % 2 == 0);
+    bool r = (tiny_hash(asn) % 2 == 0);
     return r;
 }
 
@@ -241,8 +251,7 @@ void BaseAS<AnnouncementType>::clear_announcements() {
 template <class AnnouncementType>
 bool BaseAS<AnnouncementType>::already_received(AnnouncementType &ann) {
     auto search = all_anns->find(ann.prefix);
-    bool found = (search == all_anns->end()) ? false : true;
-    return found;
+    return !(search == all_anns->end());
 }
 
 template <class AnnouncementType>

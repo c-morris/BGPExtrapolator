@@ -65,11 +65,14 @@ public:
                     std::string results_table, 
                     std::string inverse_results_table, 
                     std::string depref_results_table, 
+                    std::string config_section,
                     std::vector<std::string> *policy_tables, 
                     uint32_t iteration_size,
                     uint32_t num_rounds,
                     uint32_t num_between,
-                    uint32_t community_detection_threshold);
+                    uint32_t community_detection_threshold,
+                    int exclude_as_number,
+                    uint32_t mh_mode);
     
     EZExtrapolator(uint32_t community_detection_threshold);
 
