@@ -20,11 +20,12 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
     querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, policy_tables);
     communityDetection = new CommunityDetection(community_detection_threshold);
 
-    this->successful_attacks = 0;
-    this->successful_connections = 0;
-    this->disconnections = 0;
+    //this->successful_attacks = 0;
+    //this->successful_connections = 0;
+    //this->disconnections = 0;
 
     this->num_rounds = num_rounds;
+    this->round = 0;
     this->num_between = num_between;
 }
 
@@ -45,10 +46,10 @@ EZExtrapolator::~EZExtrapolator() {
 
 void EZExtrapolator::init() {
     BlockedExtrapolator::init();
-
-    successful_attacks = 0;
-    successful_connections = 0;
-    disconnections = 0;
+    for (int i = 0; i < num_rounds; i++) {
+        this->querier->clear_round_results_from_db(i);
+        this->querier->create_round_results_tbl(i);
+    }
 }
 
 void EZExtrapolator::gather_community_detection_reports() {
@@ -80,7 +81,7 @@ void EZExtrapolator::gather_community_detection_reports() {
 }
 
 void EZExtrapolator::perform_propagation() {
-    init();
+    this->init();
 
     std::cout << "Generating subnet blocks..." << std::endl;
     
@@ -91,14 +92,11 @@ void EZExtrapolator::perform_propagation() {
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
     
-    uint32_t round = 0;
+    round = 1;
 
-    //Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
-    //Runs until no more attacks (guaranteed to terminate since the edge to the neighebor is removed after an attack)
-    // TODO change this so that it only runs the specified number of rounds
+    // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
+    // 
     do {
-        round++;
-
         std::cout << "Round #" << round << std::endl;
 
         extrapolate(prefix_blocks, subnet_blocks);
@@ -108,46 +106,18 @@ void EZExtrapolator::perform_propagation() {
         // graph->disconnectAttackerEdges();
         // communityDetection->do_real_disconnections(graph);
         graph->clear_announcements();
-
-        for(auto element : *graph->ases) {
-            element.second->rank = -1;
-            element.second->index = -1;
-            element.second->onStack = false;
-            element.second->lowlink = 0;
-            element.second->visited = false;
-            element.second->member_ases->clear();
-
-            if(element.second->inverse_results != NULL) {
-                for(auto i : *element.second->inverse_results)
-                    delete i.second;
-
-                element.second->inverse_results->clear();
-            }
-        }
-
-        for(auto element : *graph->ases_by_rank)
-            delete element;
-        graph->ases_by_rank->clear();
-
-        for(auto element : *graph->components)
-            delete element;
-        graph->components->clear();
-
-        graph->component_translation->clear();
-        graph->stubs_to_parents->clear();
-        graph->non_stubs->clear();
-
+        graph->reset_ranks_and_components();
         //Re-calculate the components with these new relationships
         graph->process(querier);
-    } while(round <= num_rounds - 1);
+    } while(round++ < num_rounds);
     
     // Cleanup
     for (Prefix<> *p : *prefix_blocks)   { delete p; }
     for (Prefix<> *p : *subnet_blocks) { delete p; }
     delete prefix_blocks;
     delete subnet_blocks;
-
 }
+
 
 /*
  * This will seed the announcement at the two different locations: the origin and the attacker
@@ -202,6 +172,7 @@ uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, u
     return getPathNeighborOfAttacker(graph->ases->find(from_asn)->second, prefix, attacker_asn);
 }
 
+/*
 void EZExtrapolator::calculate_successful_attacks() {
     //For every victim, prefix pair
     for(auto& it : *graph->victim_to_prefixes) {
@@ -239,9 +210,10 @@ void EZExtrapolator::calculate_successful_attacks() {
 
     graph->victim_to_prefixes->clear();
 }
+*/
 
 void EZExtrapolator::save_results(int iteration) {
     BaseExtrapolator::save_results(iteration);
-    calculate_successful_attacks();
+    //calculate_successful_attacks();
     gather_community_detection_reports();
 }

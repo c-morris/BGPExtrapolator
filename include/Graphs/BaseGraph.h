@@ -90,6 +90,12 @@ public:
     */
     virtual void clear_announcements();
 
+    /** Reset all tarjan and rank related attributes.
+     *
+     *  Useful when modifying the AS graph (adding and removing relationships or ASes).
+     */
+    virtual void reset_ranks_and_components();
+
     /** Translates asn to asn of component it belongs to in graph.
      *
      *  @param asn the asn to translate

@@ -51,11 +51,9 @@ public:
      *   - Origin gets the traffic: successful connection
      *   - Nobody gets the traffic: disconnection
      */
-    uint32_t successful_attacks;
-    uint32_t successful_connections;
-    uint32_t disconnections;
 
-    uint32_t num_rounds;
+    uint32_t num_rounds; // Number of rounds in simulation
+    uint32_t round; // Current round
 
     //Number of "ASes" between the attacker and the origin
     uint32_t num_between;

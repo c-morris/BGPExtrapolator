@@ -1,6 +1,8 @@
 #ifndef EZ_SQL_QUERIER_H
 #define EZ_SQL_QUERIER_H
 
+#include <sstream>
+
 #include "SQLQueriers/SQLQuerier.h"
 
 class EZSQLQuerier : public SQLQuerier {
@@ -25,6 +27,13 @@ public:
      */
     pqxx::result select_policy_assignments(std::string const& policy_table);
 
+    /** Instantiates a new, empty round results table in the database.
+     *
+     * The schema is identical to a regular results table. 
+     */
+    void create_round_results_tbl(int i);
+
+    void clear_round_results_from_db(int i);
 
 };
 

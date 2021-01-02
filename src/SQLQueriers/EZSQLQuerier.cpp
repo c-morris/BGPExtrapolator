@@ -1,4 +1,4 @@
-#include "SQLQueriers/EZSQLQuerier.h"
+#include "SQLQueriers/EZSQLQuerier.h" 
 
 EZSQLQuerier::EZSQLQuerier(std::string a, std::string r, std::string i, std::string d, std::vector<std::string> *pt) : SQLQuerier(a, r, i, d) {
    if (pt != NULL)
@@ -26,4 +26,21 @@ pqxx::result EZSQLQuerier::select_subnet_ann(Prefix<>* p) {
 pqxx::result EZSQLQuerier::select_policy_assignments(std::string const& policy_table){
     std::string sql = "SELECT asn, as_type, impliment FROM " + policy_table + ";";
     return execute(sql);
+}
+
+void EZSQLQuerier::create_round_results_tbl(int i) {
+    std::stringstream sql;
+    sql << "CREATE UNLOGGED TABLE IF NOT EXISTS " << EZBGPSEC_ROUND_TABLE_BASE_NAME <<
+    i << " (asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint);" <<
+    "GRANT ALL ON TABLE " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << " TO bgp_user;";
+
+    std::cout << "Creating round results table..." << std::endl;
+    execute(sql.str(), false);
+}
+
+
+void EZSQLQuerier::clear_round_results_from_db(int i) {
+    std::stringstream sql;
+    sql << "DROP TABLE IF EXISTS " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << ";";
+    execute(sql.str());
 }

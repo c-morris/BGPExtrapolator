@@ -70,6 +70,36 @@ void BaseGraph<ASType>::clear_announcements() {
 }
 
 template <class ASType>
+void BaseGraph<ASType>::reset_ranks_and_components() {
+    for(auto element : *ases) {
+        element.second->rank = -1;
+        element.second->index = -1;
+        element.second->onStack = false;
+        element.second->lowlink = 0;
+        element.second->visited = false;
+        element.second->member_ases->clear();
+
+        // Clear inverse results also
+        if(element.second->inverse_results != NULL) {
+            for(auto i : *element.second->inverse_results)
+                delete i.second;
+            element.second->inverse_results->clear();
+        }
+    }
+    for(auto element : *ases_by_rank)
+        delete element;
+    ases_by_rank->clear();
+
+    for(auto element : *components)
+        delete element;
+    components->clear();
+
+    component_translation->clear();
+    stubs_to_parents->clear();
+    non_stubs->clear();
+}
+
+template <class ASType>
 void BaseGraph<ASType>::add_relationship(uint32_t asn, 
                                             uint32_t neighbor_asn, 
                                             int relation) {
