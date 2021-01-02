@@ -24,7 +24,7 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
     communityDetection = new CommunityDetection(community_detection_threshold);
     
     this->num_rounds = num_rounds;
-    this->round = 0;
+    this->round = 1;
     this->num_between = num_between;
 }
 
@@ -45,7 +45,7 @@ EZExtrapolator::~EZExtrapolator() {
 
 void EZExtrapolator::init() {
     BlockedExtrapolator::init();
-    for (unsigned int i = 0; i < num_rounds; i++) {
+    for (unsigned int i = 1; i <= num_rounds; i++) {
         this->querier->clear_round_results_from_db(i);
         this->querier->create_round_results_tbl(i);
     }
@@ -98,7 +98,7 @@ void EZExtrapolator::perform_propagation() {
     do {
         std::cout << "Round #" << round << std::endl;
 
-        extrapolate(prefix_blocks, subnet_blocks);
+        this->extrapolate(prefix_blocks, subnet_blocks);
 
         //Disconnect attacker from provider (if community detection added anything)
         //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
