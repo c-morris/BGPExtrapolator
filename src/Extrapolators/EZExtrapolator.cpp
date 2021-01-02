@@ -39,7 +39,9 @@ EZExtrapolator::EZExtrapolator()
                         ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
                         0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, DEFAULT_COMMUNITY_DETECTION_THRESHOLD) { }
 
-EZExtrapolator::~EZExtrapolator() { }
+EZExtrapolator::~EZExtrapolator() {
+    delete communityDetection;
+}
 
 void EZExtrapolator::init() {
     BlockedExtrapolator::init();
@@ -89,73 +91,62 @@ void EZExtrapolator::perform_propagation() {
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
     
-    std::ofstream ezStatistics("EZStatistics.csv");
-    ezStatistics << "Round,Successful Attacks,Successful Connections,Disconnections,Total Attacks,Probability Successful Attack" << std::endl;
-
     uint32_t round = 0;
 
     //Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
     //Runs until no more attacks (guaranteed to terminate since the edge to the neighebor is removed after an attack)
+    // TODO change this so that it only runs the specified number of rounds
     do {
         round++;
-
-        successful_attacks = 0;
-        successful_connections = 0;
-        disconnections = 0;
 
         std::cout << "Round #" << round << std::endl;
 
         extrapolate(prefix_blocks, subnet_blocks);
 
-        if(successful_attacks > 0) {
-            ezStatistics << round << "," << successful_attacks << "," << successful_connections << "," << disconnections << "," << graph->origin_to_attacker_victim->size() << "," << ((double) successful_attacks / (double) graph->origin_to_attacker_victim->size()) << std::endl;
+        //Disconnect attacker from provider (if community detection added anything)
+        //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
+        // graph->disconnectAttackerEdges();
+        // communityDetection->do_real_disconnections(graph);
+        graph->clear_announcements();
 
-            //Disconnect attacker from provider (if community detection added anything)
-            //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
-            // graph->disconnectAttackerEdges();
-            // communityDetection->do_real_disconnections(graph);
-            graph->clear_announcements();
+        for(auto element : *graph->ases) {
+            element.second->rank = -1;
+            element.second->index = -1;
+            element.second->onStack = false;
+            element.second->lowlink = 0;
+            element.second->visited = false;
+            element.second->member_ases->clear();
 
-            for(auto element : *graph->ases) {
-                element.second->rank = -1;
-                element.second->index = -1;
-                element.second->onStack = false;
-                element.second->lowlink = 0;
-                element.second->visited = false;
-                element.second->member_ases->clear();
+            if(element.second->inverse_results != NULL) {
+                for(auto i : *element.second->inverse_results)
+                    delete i.second;
 
-                if(element.second->inverse_results != NULL) {
-                    for(auto i : *element.second->inverse_results)
-                        delete i.second;
-
-                    element.second->inverse_results->clear();
-                }
+                element.second->inverse_results->clear();
             }
-
-            for(auto element : *graph->ases_by_rank)
-                delete element;
-            graph->ases_by_rank->clear();
-
-            for(auto element : *graph->components)
-                delete element;
-            graph->components->clear();
-
-            graph->component_translation->clear();
-            graph->stubs_to_parents->clear();
-            graph->non_stubs->clear();
-
-            //Re-calculate the components with these new relationships
-            graph->process(querier);
-        } else {
-            std::cout << "Round #" << round << ": No more attacks" << std::endl;
         }
-    } while(successful_attacks > 0 && round <= num_rounds - 1);
+
+        for(auto element : *graph->ases_by_rank)
+            delete element;
+        graph->ases_by_rank->clear();
+
+        for(auto element : *graph->components)
+            delete element;
+        graph->components->clear();
+
+        graph->component_translation->clear();
+        graph->stubs_to_parents->clear();
+        graph->non_stubs->clear();
+
+        //Re-calculate the components with these new relationships
+        graph->process(querier);
+    } while(round <= num_rounds - 1);
     
     // Cleanup
+    for (Prefix<> *p : *prefix_blocks)   { delete p; }
+    for (Prefix<> *p : *subnet_blocks) { delete p; }
     delete prefix_blocks;
     delete subnet_blocks;
 
-    ezStatistics.close();
 }
 
 /*
