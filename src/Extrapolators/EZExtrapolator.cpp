@@ -49,6 +49,19 @@ void EZExtrapolator::init() {
         this->querier->clear_round_results_from_db(i);
         this->querier->create_round_results_tbl(i);
     }
+
+    // Set attacker(s)
+    pqxx::result returned_pairs = this->querier->get_attacker_po_pairs();
+    for (pqxx::result::size_type i = 0; i < returned_pairs.size(); i++) {
+        // Get row origin
+        uint32_t origin;
+        returned_pairs[i]["origin_hijack_asn"].to(origin);
+        // Get row prefix
+        std::string ip = returned_pairs[i]["host"].c_str();
+        std::string mask = returned_pairs[i]["netmask"].c_str();
+        Prefix<> tmp_prefix(ip, mask);
+        attacker_prefix_pairs.insert(std::pair<Prefix<>,uint32_t>(tmp_prefix, origin));
+    }
 }
 
 void EZExtrapolator::gather_community_detection_reports() {
@@ -94,17 +107,16 @@ void EZExtrapolator::perform_propagation() {
     round = 1;
 
     // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
-    // 
     do {
         std::cout << "Round #" << round << std::endl;
 
         this->extrapolate(prefix_blocks, subnet_blocks);
 
         //Disconnect attacker from provider (if community detection added anything)
-        //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
         // graph->disconnectAttackerEdges();
         // communityDetection->do_real_disconnections(graph);
         graph->clear_announcements();
+        //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
         graph->reset_ranks_and_components();
         //Re-calculate the components with these new relationships
         graph->process(querier);
@@ -127,39 +139,55 @@ void EZExtrapolator::perform_propagation() {
  * Attackers are the only announcements that we need paths from, thus we don't need to build up the path as we seed the path
  */
 void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp /* = 0 */) {
-    BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
+    //BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
     
     uint32_t path_origin_asn = as_path->at(as_path->size() - 1);
+    uint32_t attacker_asn = as_path->at(0); // possibly not the attacker_asn
 
-    auto result = graph->origin_to_attacker_victim->find(path_origin_asn);
+    std::pair<Prefix<>,uint32_t> po = std::pair<Prefix<>,uint32_t>(prefix,attacker_asn);
+    auto result = attacker_prefix_pairs.find(po);
 
-    //Test if this origin is the origin in an attack, if not, don't attack
-    if(result == graph->origin_to_attacker_victim->end()) {
-        // BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
-        return;
+    if(result == attacker_prefix_pairs.end()) {
+        // If not attacker
+        auto as_search = graph->ases->find(path_origin_asn);
+        if(as_search == graph->ases->end())
+            return;
+        
+        EZAS* as = as_search->second;
+
+        EZAnnouncement announcement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299, path_origin_asn, timestamp, true, true);
+        // Remove first element of as_path so the as doesn't see itself on the path (and reject the announcement because of that)
+        as_path->erase(as_path->begin());
+        announcement.as_path = *as_path;
+        announcement.received_from_asn = NOTHIJACKED;
+        as->process_announcement(announcement, this->random_tiebraking);
+    } else {
+    // If attacker
+        //uint32_t victim2_asn = result->second.second;
+
+        //Check if we have a prefix set to attack already, don't announce attack
+        //if(graph->victim_to_prefixes->find(victim2_asn) != graph->victim_to_prefixes->end())
+        //    return;
+
+        auto attacker_search = graph->ases->find(attacker_asn);
+        if(attacker_search == graph->ases->end())
+            return;
+        
+        EZAS* attacker = attacker_search->second;
+
+        //Don't bother with anything of this if the attacker can't show up to the party
+        // if(attacker->providers->size() == 0 && attacker->peers->size() == 0)
+        //     return;
+
+        //graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
+
+        EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 300 - as_path->size(), path_origin_asn, timestamp, true, true);
+        // Remove first element of as_path so the attacker doesn't see itself on the path (and reject the announcement because of that)
+        as_path->erase(as_path->begin());
+        attackAnnouncement.as_path = *as_path;
+        attackAnnouncement.received_from_asn = HIJACKED;
+        attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
     }
-
-    uint32_t attacker_asn = result->second.first;
-    uint32_t victim2_asn = result->second.second;
-
-    //Check if we have a prefix set to attack already, don't announce attack
-    if(graph->victim_to_prefixes->find(victim2_asn) != graph->victim_to_prefixes->end())
-        return;
-
-    auto attacker_search = graph->ases->find(attacker_asn);
-    if(attacker_search == graph->ases->end())
-        return;
-    
-    EZAS* attacker = attacker_search->second;
-
-    //Don't bother with anything of this if the attacker can't show up to the party
-    // if(attacker->providers->size() == 0 && attacker->peers->size() == 0)
-    //     return;
-
-    graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
-
-    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299 - num_between, path_origin_asn, timestamp, true, true);
-    attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
 }
 
 uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn) {

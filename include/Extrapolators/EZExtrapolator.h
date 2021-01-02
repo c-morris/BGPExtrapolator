@@ -4,6 +4,8 @@
 #define DEFAULT_NUM_ASES_BETWEEN_ATTACKER 0
 #define DEFAULT_COMMUNITY_DETECTION_THRESHOLD 0
 #define DEFAULT_POLICY_TABLES NULL
+#define HIJACKED 64513
+#define NOTHIJACKED 64514
 
 #include <sstream>
 
@@ -49,6 +51,7 @@
 class EZExtrapolator : public BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS> {
 public:
     CommunityDetection *communityDetection;
+    std::set<std::pair<Prefix<>,uint32_t>> attacker_prefix_pairs;
 
     /*   - Attacker gets the traffic: successful attack
      *   - Origin gets the traffic: successful connection

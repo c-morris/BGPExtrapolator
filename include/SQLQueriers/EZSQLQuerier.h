@@ -18,8 +18,9 @@ public:
                     std::string s=DEFAULT_QUERIER_CONFIG_SECTION);
     ~EZSQLQuerier();
 
-    pqxx::result select_subnet_ann(Prefix<>* p); 
-    pqxx::result select_prefix_ann(Prefix<>* p);
+    /** Select every origin-hijacking AS and its prefix
+     */
+    pqxx::result get_attacker_po_pairs();
 
     /** Loads AS policy assignments from the database.
      *
