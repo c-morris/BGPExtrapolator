@@ -5,12 +5,15 @@
 #define DEFAULT_COMMUNITY_DETECTION_THRESHOLD 0
 #define DEFAULT_POLICY_TABLES NULL
 
+#include <sstream>
+
 #include "Extrapolators/BlockedExtrapolator.h"
 
 #include "SQLQueriers/EZSQLQuerier.h"
 #include "Graphs/EZASGraph.h"
 #include "Announcements/EZAnnouncement.h"
 #include "ASes/EZAS.h"
+#include "TableNames.h"
 #include "CommunityDetection.h"
 
 /**
@@ -118,6 +121,8 @@ public:
     * Comment out the first line if the output is needed.
     */
     void save_results(int iteration);
+
+    void save_results_round(int iteration);
 };
 
 #endif

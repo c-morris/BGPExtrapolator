@@ -34,7 +34,6 @@ public:
      * The schema is identical to a regular results table. 
      */
     void create_round_results_tbl(int i);
-
     void clear_round_results_from_db(int i);
 
 };

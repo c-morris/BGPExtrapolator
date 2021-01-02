@@ -44,3 +44,5 @@ void EZSQLQuerier::clear_round_results_from_db(int i) {
     sql << "DROP TABLE IF EXISTS " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << ";";
     execute(sql.str());
 }
+
+

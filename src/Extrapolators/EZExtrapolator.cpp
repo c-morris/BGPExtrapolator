@@ -212,7 +212,19 @@ void EZExtrapolator::calculate_successful_attacks() {
 */
 
 void EZExtrapolator::save_results(int iteration) {
-    BaseExtrapolator::save_results(iteration);
+    this->save_results_round(iteration);
     //calculate_successful_attacks();
     gather_community_detection_reports();
 }
+
+void EZExtrapolator::save_results_round(int iteration) {
+    std::stringstream tbl;
+    tbl << EZBGPSEC_ROUND_TABLE_BASE_NAME << round;
+    // cheeky switcheroo to avoid code duplication
+    std::string old_results_table = querier->results_table;
+    querier->results_table = tbl.str();
+    BaseExtrapolator::save_results(iteration); 
+    querier->results_table = old_results_table;
+}
+
+
