@@ -56,6 +56,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     extrapolate(prefix_blocks, subnet_blocks);
     
     // Cleanup
+    for (Prefix<> *p : *prefix_blocks)   { delete p; }
+    for (Prefix<> *p : *subnet_blocks) { delete p; }
     delete prefix_blocks;
     delete subnet_blocks;
 }
