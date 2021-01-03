@@ -69,7 +69,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     graph->create_graph_from_db(querier);
     
     // Main differences start here
-    std::cout << "Beginning propagation..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Beginning propagation...";
     
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
@@ -112,10 +112,10 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         propagate_down();
         count++;
         if (count >= 100) {
-            std::cout << "Exceeded max propagation cycles" << std::endl;
+            BOOST_LOG_TRIVIAL(info) << "Exceeded max propagation cycles";
         }
     } while (ROVppAS::graph_changed && count < 100);
-    std::cout << "Times propagated: " << count << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Times propagated: " << count;
     
     // std::ofstream gvpythonfile;
     // gvpythonfile.open("asgraph.py");
@@ -123,7 +123,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     // rovpp_graph->to_graphviz(gvpythonfile, to_graph);
     // gvpythonfile.close();
     save_results(iter);
-    std::cout << "completed: ";
+    BOOST_LOG_TRIVIAL(info) << "completed: ";
 }
 
 void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
@@ -578,7 +578,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 }
 
 bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a, int d) {
-    if (d > 100) { std::cerr << "Maximum depth exceeded during traceback.\n"; return true; }
+    if (d > 100) { BOOST_LOG_TRIVIAL(error) << "Maximum depth exceeded during traceback.\n"; return true; }
     auto ann_pair = cur_as.loc_rib->find(p);
     const Announcement &ann = ann_pair->second;
     // i wonder if a cabinet holding a subwoofer counts as a bass case
@@ -593,7 +593,7 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a
         return false; 
     }
     auto next_as_pair = graph->ases->find(ann.received_from_asn);
-    if (next_as_pair == graph->ases->end()) { std::cerr << "Traced back announcement to nonexistent AS.\n"; return true; }
+    if (next_as_pair == graph->ases->end()) { BOOST_LOG_TRIVIAL(error) << "Traced back announcement to nonexistent AS.\n"; return true; }
     const ROVppAS& next_as = *next_as_pair->second;
     return loop_check(p, next_as, a, d+1);
 }
@@ -608,7 +608,7 @@ void ROVppExtrapolator::save_results(int iteration) {
     blackhole_outfile.open(blackhole_file_name);
     
     // Iterate over all nodes in graph
-    std::cout << "Saving Results From Iteration: " << iteration << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Results From Iteration: " << iteration;
     for (auto &as : *graph->ases){
         as.second->stream_announcements(outfile);
         // Check if it's a ROVpp node
