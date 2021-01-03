@@ -48,7 +48,7 @@
 
 void intro() {
     // This needs to be finished
-    BOOST_LOG_TRIVIAL(info) << "***** Routing Extrapolator v0.3 *****" << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "***** Routing Extrapolator v0.3 *****";
     BOOST_LOG_TRIVIAL(info) << "This is free software: you are free to change and redistribute it.";
     BOOST_LOG_TRIVIAL(info) << "There is NO WARRANTY, to the extent permitted by law.";
 }
