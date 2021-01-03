@@ -160,12 +160,19 @@ void CommunityDetection::Component::remove_AS(uint32_t asn_to_remove) {
             remove_hyper_edge(*it);
 }
 
-void CommunityDetection::Component::threshold_filtering(CommunityDetection *community_detection, EZASGraph *graph) {
-    if(community_detection->threshold == 0)
+void CommunityDetection::Component::local_threshold_filtering(CommunityDetection *community_detection) {
+    for(auto &pair : as_to_degree_count) {
+        if(local_minimum_vertex_cover(pair.first) > community_detection->local_threshold)
+            community_detection->blacklist_asns.insert(pair.first);
+    }
+}
+
+void CommunityDetection::Component::global_threshold_filtering(CommunityDetection *community_detection) {
+    if(community_detection->global_threshold == 0)
         return;
 
     bool changed = true;
-    while(changed && community_detection->threshold > 0) {
+    while(changed && community_detection->global_threshold > 0) {
         //find the highest degree in the graph
         uint32_t highest_mvc = 0;
         uint32_t highest_mvc_asn = 0;
@@ -178,24 +185,26 @@ void CommunityDetection::Component::threshold_filtering(CommunityDetection *comm
             }
         }
 
-        //if there is an AS with an mvc higher than the threshold, remove the AS and decrement threshold
+        //if there is an AS with an mvc higher than the threshold, blacklist the AS and decrement threshold
         //Check that it is also greater than or equal to 2 (don't remove something with an mvc of 1)
-        if(highest_mvc > community_detection->threshold)
-            remove_AS(highest_mvc_asn);
-        else
+        if(highest_mvc > community_detection->global_threshold && highest_mvc > 1) {
+            community_detection->blacklist_asns.insert(highest_mvc_asn);
+            community_detection->global_threshold--;
+        } else {
             changed = false;
+        }
     }
 }
 
 /**
- * I do not believe this is write? We need test cases for virtual pair removal to see how this should work 
+ * I do not believe this is right? We need test cases for virtual pair removal to see how this should work 
  */
-void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *community_detection, EZASGraph *graph) {
-    threshold_filtering(community_detection, graph);
+void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *community_detection) {
+    global_threshold_filtering(community_detection);
 
     //For all removal sequences...
     for(size_t i = 0; i < hyper_edges.size(); i++) {
-        CommunityDetection temp_community_detection(community_detection->threshold - 1);
+        CommunityDetection temp_community_detection(community_detection->global_threshold - 1);
 
         for(size_t j = 0; j < hyper_edges.size(); j++) {
             if(i == j) continue;
@@ -203,13 +212,13 @@ void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *com
         }
 
         //Do community detection on that 
-        temp_community_detection.virtual_pair_removal(graph);
+        temp_community_detection.virtual_pair_removal();
     }
 }
 
 //**************** Community Detection ****************//
 
-CommunityDetection::CommunityDetection(uint32_t threshold) : threshold(threshold) { }
+CommunityDetection::CommunityDetection(uint32_t local_threshold) : local_threshold(local_threshold) { }
 CommunityDetection::~CommunityDetection() {
     clear();
 }
@@ -287,7 +296,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
 
     //The reporting AS must be an adopter in order to make a report...
     EZAS *reporting_as = reporting_as_search->second;
-    if(!reporting_as->adopter)
+    if(reporting_as->policy == EZAS_TYPE_BGP)
         return;
 
     //******   Trim Report to Hyper Edges   ******//
@@ -348,12 +357,12 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         EZAS *as = as_search->second;
 
         //Can't track over a non-adopter
-        if(!as->adopter) {
+        if(as->policy == EZAS_TYPE_BGP) {
             stop_tracking_adopter = true;
         }
 
         //Found invalid MAC
-        if(as->adopter && !as->has_neighbor(as_path.at(i - 1))) {
+        if(as->policy != EZAS_TYPE_BGP && !as->has_neighbor(as_path.at(i - 1))) {
             //Add to ranges that will construct the hyper edges from this report
             hyper_edge_ranges.push_back(std::pair<int, int>(last_adopter_index, i));
 
@@ -379,19 +388,53 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         //Add the hyper edge to the component it belongs to (ASes on the path belong to no existing component and thos that do all belong to the same component)
         //Or merge components if the path contains more than one AS that belong to different components already (an AS can be in 1 component only)
         //Or create a whole new component if none of the ASes belong to an existing component
-        add_hyper_edge(hyper_edge);
+        // add_hyper_edge(hyper_edge);
+
+        edges_to_proccess.push_back(hyper_edge);
     }
 }
 
-void CommunityDetection::threshold_filtering(EZASGraph *graph) {
+void CommunityDetection::local_threshold_filtering() {
     for(auto &p : identifier_to_component)
-        p.second->threshold_filtering(this, graph);
+        p.second->local_threshold_filtering(this);
 }
 
-void CommunityDetection::virtual_pair_removal(EZASGraph *graph) {
-    if(threshold == 0)
+void CommunityDetection::global_threshold_filtering() {
+    for(auto &p : identifier_to_component)
+        p.second->global_threshold_filtering(this);
+}
+
+void CommunityDetection::virtual_pair_removal() {
+    if(global_threshold == 0)
         return;
 
     for(auto &p : identifier_to_component)
-        p.second->virtual_pair_removal(this, graph);
+        p.second->virtual_pair_removal(this);
+}
+
+void CommunityDetection::process_reports(EZASGraph *graph) {
+    for(auto &edge : edges_to_proccess) {
+        /**
+         * Attacker directly in between two adopters. This edge only got this far if it went through add_report which checks for *visible* invalid MACs 
+         * 
+         * If we want a mix of policies, this may need to change since a CD adopter and a directory only adopter next to each other changes this
+         * 
+         * add_report narrows the path down to the two adopters with the invalid MAC in between. However, if an adopter is directory only then it won't send to CD
+         * however, a neighbor to the directory only adopter will, but that neighbor is not considered by this algorithm since it assumes no mix of policies
+         */
+        if(edge.size() == 3) {
+            blacklist_asns.insert(edge.at(1));
+        }
+
+        blacklist_paths.push_back(edge);
+
+        unsigned int reporter_policy = graph->ases->find(edge.at(edge.size() - 1))->second->policy;
+
+        if(reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL) {
+            add_hyper_edge(edge);
+        }
+    }
+
+    local_threshold_filtering();
+    edges_to_proccess.clear();
 }

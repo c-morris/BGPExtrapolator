@@ -120,13 +120,15 @@ public:
          */
         void remove_AS(uint32_t asn_to_remove);
 
+        void local_threshold_filtering(CommunityDetection *community_detection);
+
         /**
          * Given the current state of the component, this will filter out ASes as attackers with local and global mvc
          * 
          * @param community_detection -> Pointer to the community detection object since C++ does not give implicit refrence to the outer class
          * @param graph -> EZASGraph to remove attackers from if they are detected
          */
-        void threshold_filtering(CommunityDetection *community_detection, EZASGraph *graph);
+        void global_threshold_filtering(CommunityDetection *community_detection);
 
         /**
          * This will recursievely go through all permutations of edge removal and perform threshold filtering on every permutation to dig out any additional attackers
@@ -134,17 +136,23 @@ public:
          * @param community_detection -> Pointer to the community detection object since C++ does not give implicit refrence to the outer class
          * @param graph -> EZASGraph to remove attackers from if they are detected
          */
-        void virtual_pair_removal(CommunityDetection *community_detection, EZASGraph *graph);
+        void virtual_pair_removal(CommunityDetection *community_detection);
     };
 
 public:
-    uint32_t threshold;
+    uint32_t local_threshold;
+    uint32_t global_threshold;
 
     //TODO: The identifier is currently based on the first ASN in the first hyper edge that the component is initialized with. This can brake. Do better.
     std::unordered_map<uint32_t, Component*> identifier_to_component;
 
+    std::vector<std::vector<uint32_t>> blacklist_paths;
+    std::unordered_set<uint32_t> blacklist_asns;
+
+    std::vector<std::vector<uint32_t>> edges_to_proccess;
+
     /**
-     * This will simply stor this threshold into a member variable.
+     * This will simply store this threshold into a member variable.
      * 
      * Hyper edges can be added by adding reports (EZAnnouncements that are from an attacker). 
      * This class will handle detecting if the MAC is truly visible and condensing the path down to the relevant segment for community detection.
@@ -157,7 +165,7 @@ public:
      * The end goal is for every component to filter out attackers with threshold filtering an perform virtual removals to filter out more attackers 
      *      (see paper for conceptual details) 
      */
-    CommunityDetection(uint32_t threshold);
+    CommunityDetection(uint32_t local_threshold);
     virtual ~CommunityDetection();
 
     /**
@@ -217,7 +225,9 @@ public:
      * 
      * @param graph -> The graph to remove from
      */
-    void threshold_filtering(EZASGraph *graph);
+    void global_threshold_filtering();
+
+    void local_threshold_filtering();
 
     /**
      * For each component, recursively compute every permutation of removing edges from the component. 
@@ -225,6 +235,8 @@ public:
      * 
      * @param graph -> The graph to remove from
      */
-    void virtual_pair_removal(EZASGraph *graph);
+    void virtual_pair_removal();
+
+    void process_reports(EZASGraph *graph);
 };
 #endif

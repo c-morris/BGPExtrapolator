@@ -1,8 +1,7 @@
 #ifndef EZ_EXTRAPLATOR_H
 #define EZ_EXTRAPLATOR_H
 
-#define DEFAULT_NUM_ASES_BETWEEN_ATTACKER 0
-#define DEFAULT_COMMUNITY_DETECTION_THRESHOLD 0
+#define DEFAULT_COMMUNITY_DETECTION_LOCAL_THRESHOLD 3
 #define DEFAULT_POLICY_TABLES NULL
 #define HIJACKED 64513
 #define NOTHIJACKED 64514
@@ -61,9 +60,6 @@ public:
     uint32_t num_rounds; // Number of rounds in simulation
     uint32_t round; // Current round
 
-    //Number of "ASes" between the attacker and the origin
-    uint32_t num_between;
-
     EZExtrapolator(bool random_tiebraking,
                     bool store_invert_results, 
                     bool store_depref_results, 
@@ -75,7 +71,6 @@ public:
                     std::vector<std::string> *policy_tables, 
                     uint32_t iteration_size,
                     uint32_t num_rounds,
-                    uint32_t num_between,
                     uint32_t community_detection_threshold,
                     int exclude_as_number,
                     uint32_t mh_mode);
@@ -99,24 +94,6 @@ public:
      *      is to be attacked, then have the attacker process a malicous announcement and send it out (muahahaa).
      */
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
-
-    /**
-     * This will find the neighbor to the attacker on the AS path.
-     * The initial call should have the as be the victim.
-     * This fucntion will likely get removed in the future because of path propagation.
-     */
-    uint32_t getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn);
-
-    /**
-     * This runs at the end of every iteration
-     * 
-     * Baically, go to the victim and see if it chose the attacker route.
-     * if the prefix didn't reach the victim (an odd edge case), then it does not count to the total
-     * If the Victim chose the fake announcement path, then sucessful attack++
-     * 
-     * In addition, if there was a successful attack, record the edge (asn pair) from the attacker to the neighbor on the path
-     */
-    void calculate_successful_attacks();
 
     /*
     * A quick overwrite that removes the traditional saving functionality since we are 

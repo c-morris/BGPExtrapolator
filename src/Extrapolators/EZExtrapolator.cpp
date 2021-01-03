@@ -14,30 +14,28 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
                                 std::vector<std::string> *policy_tables, 
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
-                                uint32_t num_between,
-                                uint32_t community_detection_threshold,
+                                uint32_t community_detection_local_threshold,
                                 int exclude_as_number,
                                 uint32_t mh_mode) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size, mh_mode) {
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, policy_tables, exclude_as_number, config_section);
-    communityDetection = new CommunityDetection(community_detection_threshold);
+    communityDetection = new CommunityDetection(community_detection_local_threshold);
     
     this->num_rounds = num_rounds;
     this->round = 1;
-    this->num_between = num_between;
 }
 
-EZExtrapolator::EZExtrapolator(uint32_t community_detection_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+EZExtrapolator::EZExtrapolator(uint32_t community_detection_local_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                         ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, community_detection_threshold, -1, DEFAULT_MH_MODE) {
+                        0, community_detection_local_threshold, -1, DEFAULT_MH_MODE) {
 
 }
 
 EZExtrapolator::EZExtrapolator() 
     : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                         ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, DEFAULT_COMMUNITY_DETECTION_THRESHOLD, -1, DEFAULT_MH_MODE) { }
+                        0, DEFAULT_COMMUNITY_DETECTION_LOCAL_THRESHOLD, -1, DEFAULT_MH_MODE) { }
 
 EZExtrapolator::~EZExtrapolator() {
     delete communityDetection;
@@ -65,28 +63,22 @@ void EZExtrapolator::init() {
 }
 
 void EZExtrapolator::gather_community_detection_reports() {
-    //Go through all of the adoptors and see if there are any attacking announcements
+    //Go through all of the ases and see if there are any attacking announcements
     //send them to the community detection
-    for(uint32_t adopter_asn : *graph->adopters) {
-        auto as_search = graph->ases->find(adopter_asn);
-        if(as_search == graph->ases->end())
-            continue;
-        
-        EZAS *as = as_search->second;
+    for(auto &as_pair : *graph->ases) {
+        EZAS *as = as_pair.second;
 
-        //For all of the prefixes that are being attacked, report the path if it was from an attacker
-        //This is not cheating since a non-attacking announcement is guarenteed to not have an invalid make 
-        //and would not get reported
-        for(auto victim_prefix_pair : *graph->victim_to_prefixes) {
-            auto announcement_search = as->all_anns->find(victim_prefix_pair.second);
-            if(announcement_search == as->all_anns->end())
-                continue;
-            
+        if(as->policy == EZAS_TYPE_BGP) {
+            continue;
+        }
+
+        //For all of the announcements, report the path if it was from an attacker. CD will check if they are truly visible
+        for(auto &announcement_pair : *as->all_anns) {
             //Non attacking announcement will not have an invalid MAC
             //An attacking announcement will, and community detection will check if it is visible
-            if(announcement_search->second.from_attacker) {
+            if(announcement_pair.second.from_attacker) {
                 //Logger::getInstance().log("Debug") << "Announcement with path: " << announcement_search->second.as_path << " is being sent to CD";
-                communityDetection->add_report(announcement_search->second, graph);
+                communityDetection->add_report(announcement_pair.second, graph);
             }
         }
     }
@@ -104,31 +96,28 @@ void EZExtrapolator::perform_propagation() {
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
     
-    round = 1;
-
     // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
-    do {
+    for(unsigned int round = 0; round < num_rounds; round++) {
         std::cout << "Round #" << round << std::endl;
 
         this->extrapolate(prefix_blocks, subnet_blocks);
 
-        //Disconnect attacker from provider (if community detection added anything)
-        // graph->disconnectAttackerEdges();
-        // communityDetection->do_real_disconnections(graph);
+        communityDetection->process_reports(graph);
+
         graph->clear_announcements();
         //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
         graph->reset_ranks_and_components();
         //Re-calculate the components with these new relationships
         graph->process(querier);
-    } while(round++ < num_rounds);
+    }
     
     // Cleanup
-    for (Prefix<> *p : *prefix_blocks)   { delete p; }
+    for (Prefix<> *p : *prefix_blocks) { delete p; }
     for (Prefix<> *p : *subnet_blocks) { delete p; }
+
     delete prefix_blocks;
     delete subnet_blocks;
 }
-
 
 /*
  * This will seed the announcement at the two different locations: the origin and the attacker
@@ -190,58 +179,8 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     }
 }
 
-uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn) {
-    uint32_t from_asn = as->all_anns->find(prefix)->second.received_from_asn;
-
-    if(from_asn == attacker_asn)
-        return as->asn;
-
-    return getPathNeighborOfAttacker(graph->ases->find(from_asn)->second, prefix, attacker_asn);
-}
-
-/*
-void EZExtrapolator::calculate_successful_attacks() {
-    //For every victim, prefix pair
-    for(auto& it : *graph->victim_to_prefixes) {
-        uint32_t victim_asn = it.first;
-        auto victim_search = graph->ases->find(victim_asn);
-
-        if(victim_search == graph->ases->end())
-            continue;
-
-        EZAS* victim = victim_search->second;
-
-        auto announcement_search = victim->all_anns->find(it.second);
-
-        //If there is no announcement for the prefix, move on
-        if(announcement_search == victim->all_anns->end()) { //the prefix never reached the victim
-            disconnections++;
-            continue;
-        }
-
-        //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
-        if(announcement_search->second.from_attacker) {
-            // if(this->num_between == 0) {
-            //     uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->second.origin)->second.first;
-            //     uint32_t neighbor_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
-            //     graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, neighbor_asn));
-            // }
-
-            // communityDetection->add_report(announcement_search->second);
-
-            successful_attacks++;
-        } else {
-            successful_connections++;
-        }
-    }
-
-    graph->victim_to_prefixes->clear();
-}
-*/
-
 void EZExtrapolator::save_results(int iteration) {
     this->save_results_round(iteration);
-    //calculate_successful_attacks();
     gather_community_detection_reports();
 }
 
@@ -254,5 +193,3 @@ void EZExtrapolator::save_results_round(int iteration) {
     BaseExtrapolator::save_results(iteration); 
     querier->results_table = old_results_table;
 }
-
-

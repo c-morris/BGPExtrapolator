@@ -56,7 +56,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     extrapolate(prefix_blocks, subnet_blocks);
     
     // Cleanup
-    for (Prefix<> *p : *prefix_blocks)   { delete p; }
+    for (Prefix<> *p : *prefix_blocks) { delete p; }
     for (Prefix<> *p : *subnet_blocks) { delete p; }
     delete prefix_blocks;
     delete subnet_blocks;
@@ -381,26 +381,22 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
     // Get the AS that is sending it's announcements
     auto *source_as = this->graph->ases->find(asn)->second;
 
-    // Don't propagate from multihomed
-    if (mh_mode == 1){
-        // Check if AS is multihomed
-        if (source_as->customers->empty()) {
+    // Check if AS is multihomed
+    if (mh_mode == 1 && source_as->customers->empty()){
         return;
-        }
     }
 
     // Only propagate to peers from multihomed
     if (mh_mode == 2) {
-            // Check if AS is multihomed
-            if (source_as->customers->empty()) {
-                if (to_peers){
-                    to_providers = false;
-                    to_customers = false;
-                } else {
-                    return;
-                }
-                
+        // Check if AS is multihomed
+        if (source_as->customers->empty()) {
+            if (to_peers) {
+                to_providers = false;
+                to_customers = false;
+            } else {
+                return;
             }
+        }
     }
 
     // If we are sending to providers

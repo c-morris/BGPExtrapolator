@@ -70,9 +70,6 @@ int main(int argc, char *argv[]) {
         ("rounds,z", 
          po::value<uint32_t>()->default_value(0), 
          "number of rounds for ezbgpsec run")
-        ("num-in-between,n", 
-         po::value<uint32_t>()->default_value(DEFAULT_NUM_ASES_BETWEEN_ATTACKER), 
-         "number of in between ASes for ezbgpsec run")
         ("random,b", 
          po::value<bool>()->default_value(DEFAULT_RANDOM_TIEBRAKING), 
          "disables random tiebraking for testing")
@@ -86,7 +83,7 @@ int main(int argc, char *argv[]) {
          po::value<uint32_t>()->default_value(DEFAULT_ITERATION_SIZE), 
          "number of prefixes to be used in one iteration cycle")
         ("local-thresh", 
-         po::value<uint32_t>()->default_value(3), 
+         po::value<uint32_t>()->default_value(DEFAULT_COMMUNITY_DETECTION_LOCAL_THRESHOLD), 
          "local threshold for ezbgpsec")
         ("results-table,r",
          po::value<string>()->default_value(RESULTS_TABLE),
@@ -205,10 +202,9 @@ int main(int argc, char *argv[]) {
             pt,
             vm["iteration-size"].as<uint32_t>(),
             vm["rounds"].as<uint32_t>(),
-            vm["num-in-between"].as<uint32_t>(), 
             (vm.count("local-thresh") ?
                 vm["local-thresh"].as<uint32_t>() : 
-                3),
+                DEFAULT_COMMUNITY_DETECTION_LOCAL_THRESHOLD),
             vm["exclude-asn"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>());
             

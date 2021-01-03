@@ -24,6 +24,13 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
+
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     EZAnnouncement attack_announcement(5, p.addr, p.netmask, 300, 5, 2, false, true);
 
@@ -106,23 +113,15 @@ bool ezbgpsec_test_gather_reports() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(2);
-    e.graph->adopters->push_back(4);
-    e.graph->adopters->push_back(3);
-    // e.graph->adopters->push_back(1);
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
 
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
-    }
-
-    // e.graph->adopters->push_back(6);
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
 
     //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
     EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
@@ -135,6 +134,7 @@ bool ezbgpsec_test_gather_reports() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
 
     CommunityDetection *community_detection = e.communityDetection;
     if(community_detection->identifier_to_component.size() != 1) {
@@ -143,13 +143,13 @@ bool ezbgpsec_test_gather_reports() {
     }
 
     //2 should be the identifier since it will be the first adopter to report the invalid MAC
-    auto compnent_search = community_detection->identifier_to_component.find(2);
-    if(compnent_search == community_detection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct!" << std::endl;
-        return false;
-    }
+    // auto compnent_search = community_detection->identifier_to_component.find(2);
+    // if(compnent_search == community_detection->identifier_to_component.end()) {
+    //     std::cerr << "Unique identifier is not correct!" << std::endl;
+    //     return false;
+    // }
 
-    CommunityDetection::Component *component = compnent_search->second;
+    CommunityDetection::Component *component = community_detection->identifier_to_component.begin()->second;
     if(component->hyper_edges.size() != 1) {
         std::cerr << "The hyper edge was not added to the component properly!" << std::endl;
         return false;
@@ -211,9 +211,6 @@ bool ezbgpsec_test_gather_reports() {
 
     Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
 
-    //Prefixes need not compete for 2's favor, thus they both need to be checked
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
-
     EZAnnouncement attack_announcement2(3, p2.addr, p2.netmask, 299, 3, 2, false, true);
     attack_announcement2.as_path.push_back(3);//Make the origin on the path
 
@@ -223,6 +220,7 @@ bool ezbgpsec_test_gather_reports() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
 
     if(community_detection->identifier_to_component.size() != 1) {
         std::cerr << "Component was not created properly after the second announcement!" << std::endl;
@@ -230,11 +228,11 @@ bool ezbgpsec_test_gather_reports() {
     }
 
     //2 should be the identifier since it will be the first adopter to report the invalid MAC
-    auto compnent_search2 = community_detection->identifier_to_component.find(2);
-    if(compnent_search2 == community_detection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct after the second announcement!" << std::endl;
-        return false;
-    }
+    // auto compnent_search2 = community_detection->identifier_to_component.find(2);
+    // if(compnent_search2 == community_detection->identifier_to_component.end()) {
+    //     std::cerr << "Unique identifier is not correct after the second announcement!" << std::endl;
+    //     return false;
+    // }
 
     if(component->hyper_edges.size() != 2) {
         std::cerr << "The hyper edge was not added to the component properly after the second announcement!" << std::endl;
@@ -360,22 +358,15 @@ bool ezbgpsec_test_gather_reports_merge() {
 
     e.graph->decide_ranks();
 
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(2);
-    e.graph->adopters->push_back(3);
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(5)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(6)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
 
-    e.graph->adopters->push_back(5);
-    e.graph->adopters->push_back(6);
-
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
-    }
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_BGP;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
 
     //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
     EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
@@ -388,6 +379,11 @@ bool ezbgpsec_test_gather_reports_merge() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
+
+    //Clear blacklists to make the test case easier to check for merging components
+    e.communityDetection->blacklist_asns.clear();
+    e.communityDetection->blacklist_paths.clear();
 
     CommunityDetection *community_detection = e.communityDetection;
     if(community_detection->identifier_to_component.size() != 1) {
@@ -396,13 +392,14 @@ bool ezbgpsec_test_gather_reports_merge() {
     }
 
     //2 should be the identifier since it will be the first adopter to report the invalid MAC
-    auto compnent_search = community_detection->identifier_to_component.find(2);
-    if(compnent_search == community_detection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct!" << std::endl;
-        return false;
-    }
+    // auto compnent_search = community_detection->identifier_to_component.find(2);
+    // if(compnent_search == community_detection->identifier_to_component.end()) {
+    //     std::cerr << "Unique identifier is not correct!" << std::endl;
+    //     return false;
+    // }
 
-    CommunityDetection::Component *component = compnent_search->second;
+    CommunityDetection::Component *component = community_detection->identifier_to_component.begin()->second;
+
     if(component->hyper_edges.size() != 1) {
         std::cerr << "The hyper edge was not added to the component properly!" << std::endl;
         return false;
@@ -464,9 +461,6 @@ bool ezbgpsec_test_gather_reports_merge() {
 
     Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
 
-    //Prefixes need not compete for 2's favor, thus they both need to be checked
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
-
     EZAnnouncement attack_announcement2(6, p2.addr, p2.netmask, 299, 6, 2, false, true);
     attack_announcement2.as_path.push_back(6);//Make the origin on the path
 
@@ -476,6 +470,11 @@ bool ezbgpsec_test_gather_reports_merge() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
+
+    //Clear blacklists to make the test case easier to check for merging components
+    e.communityDetection->blacklist_asns.clear();
+    e.communityDetection->blacklist_paths.clear();
 
     if(community_detection->identifier_to_component.size() != 2) {
         std::cerr << "Second component was not created properly after the second announcement!" << std::endl;
@@ -531,9 +530,6 @@ bool ezbgpsec_test_gather_reports_merge() {
     //MERGE TIME
     Prefix<> p3 = Prefix<>("211.99.0.0", "255.255.0.0");
 
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(1, p3));
-
     //Make an announcement that states 5 and 1 are neighbors. This will create an invalid MAC
     EZAnnouncement attack_announcement3(5, p3.addr, p3.netmask, 299, 5, 2, false, true);
     //The supposed path thus far
@@ -545,6 +541,11 @@ bool ezbgpsec_test_gather_reports_merge() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
+
+    //Clear blacklists to make the test case easier to check for merging components
+    e.communityDetection->blacklist_asns.clear();
+    e.communityDetection->blacklist_paths.clear();
 
     /*
      * 1   4
@@ -661,23 +662,15 @@ bool ezbgpsec_test_mvc() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(2);
-    e.graph->adopters->push_back(4);
-    e.graph->adopters->push_back(3);
-    // e.graph->adopters->push_back(1);
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
 
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
-    }
-
-    // e.graph->adopters->push_back(6);
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
 
     //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
     EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
@@ -689,9 +682,6 @@ bool ezbgpsec_test_mvc() {
 
     Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
 
-    //Prefixes need not compete for 2's favor, thus they both need to be checked
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
-
     EZAnnouncement attack_announcement2(4, p2.addr, p2.netmask, 299, 4, 2, false, true);
     attack_announcement2.as_path.push_back(4);//Make the origin on the path
 
@@ -701,14 +691,17 @@ bool ezbgpsec_test_mvc() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
 
-    auto compnent_search = e.communityDetection->identifier_to_component.find(2);
-    if(compnent_search == e.communityDetection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct! In MVC" << std::endl;
-        return false;
-    }
+    // auto compnent_search = e.communityDetection->identifier_to_component.find(2);
+    // if(compnent_search == e.communityDetection->identifier_to_component.end()) {
+    //     std::cerr << "Unique identifier is not correct! In MVC" << std::endl;
+    //     return false;
+    // }
 
-    CommunityDetection::Component *component = compnent_search->second;
+    // CommunityDetection::Component *component = compnent_search->second;
+
+    CommunityDetection::Component *component = e.communityDetection->identifier_to_component.begin()->second;
 
     //*************************************************************************
     uint32_t mvc = component->minimum_vertex_cover(2);
@@ -814,22 +807,15 @@ bool ezbgpsec_test_local_mvc() {
 
     e.graph->decide_ranks();
 
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(5);
-    e.graph->adopters->push_back(1);
-    // e.graph->adopters->push_back(1);
+    e.graph->ases->find(5)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
 
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
-    }
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_BGP;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     Prefix<> p2 = Prefix<>("155.94.0.0", "255.255.0.0");
-
-    //4 and 5 being the victims doesn't really matter, just need the prefixes to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(5, p2));
 
     //Make an announcement that states 4 and 5 are neighbors. This will create an invalid MAC
     EZAnnouncement attack_announcement(5, p.addr, p.netmask, 298, 4, 2, false, true);
@@ -849,6 +835,7 @@ bool ezbgpsec_test_local_mvc() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
 
     if(e.communityDetection->identifier_to_component.size() != 1) {
         std::cerr << "Local MVC test has " << e.communityDetection->identifier_to_component.size() << " component(s) rather than 1 component" << std::endl;
