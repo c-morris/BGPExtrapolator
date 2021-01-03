@@ -578,7 +578,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 }
 
 bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a, int d) {
-    if (d > 100) { BOOST_LOG_TRIVIAL(error) << "Maximum depth exceeded during traceback.\n"; return true; }
+    if (d > 100) { BOOST_LOG_TRIVIAL(error) << "Maximum depth exceeded during traceback."; return true; }
     auto ann_pair = cur_as.loc_rib->find(p);
     const Announcement &ann = ann_pair->second;
     // i wonder if a cabinet holding a subwoofer counts as a bass case
@@ -593,7 +593,7 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a
         return false; 
     }
     auto next_as_pair = graph->ases->find(ann.received_from_asn);
-    if (next_as_pair == graph->ases->end()) { BOOST_LOG_TRIVIAL(error) << "Traced back announcement to nonexistent AS.\n"; return true; }
+    if (next_as_pair == graph->ases->end()) { BOOST_LOG_TRIVIAL(error) << "Traced back announcement to nonexistent AS."; return true; }
     const ROVppAS& next_as = *next_as_pair->second;
     return loop_check(p, next_as, a, d+1);
 }
