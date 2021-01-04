@@ -304,74 +304,40 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
     //The condition of an invalid MAC is this: 
     //    When an adopter at index i is not a true neighbor of the AS at i - 1.
     //Consider an adopting origin, which is at the very end of the path
-    //There will be an invalid MAC if the neighbor on the path at the index length - 1 is not a real neighbor
-
-    //This will work by starting at the 0 index of the list and keeping track of the last adopter
-    //We need to see if the invalid MAC is between two adopters
-    //However, if we move over a non-adopter or find an invalid MAC
-    //We must remeber the last trusted adopter
-
-    // A - adopter. N - Non adopter. O - Origin, who is an adopter
-    //Suppose the invalid MAC is between the origin and the non adopter
-    
-    //A A N N O
-    //^
-
-    //A A N N O
-    //  ^
-
-    //A A N N O
-    //  * ^
-
-    //A A N N O
-    //  *   ^ 
-
-    //A A N N O
-    //  *     ^  <-- Invalid MAC found
-
-    //This will return the path {A N N O}, for whatever asns they may be, and how it trimmed out that first adopter
-    //It is safe to trim out this adopter since it had a valid MAC for a key it did not have, and thus could not fake this report.
-    //This is because the algorithm remembered what adopter that was last validated (represented as *)
-    //Notice that the * did not move over the non adopters
-    //This must also generalize to having multiple hyper edges on the path
 
     //Indecies of the hyper edge range
     std::vector<std::pair<int, int>> hyper_edge_ranges;
 
-    //This is true because the reporting AS must be an adopter and the reporting AS is at index 0.
-    int last_adopter_index = 0;
+    //Store the index of the adopter next to the invalid MAC so the range can be stored if/when an adopter is found on the other side
+    int as_index_invalid_relationship = 0;
 
-    //Turn true when there is an invalid MAC or non-adopter
-    //This is essentially the control of where to place * from the example above.
-    //We will keep track of the adopters until we hit a non adopter or invalid MAC
-    bool stop_tracking_adopter = false;
+    //There is an invalid MAC, keep an eye out for an adopter on the other side of the invalid MAC
+    bool search_for_adopter = false;
 
-    for(size_t i = 1; i < as_path.size(); i++) {// Starts at 1 because we need to check if the "previous" AS is a real neighbor
-        uint32_t asn = as_path.at(i);
-        auto as_search = graph->ases->find(asn);
-        if(as_search == graph->ases->end()) {
-            std::cerr << "Non-existent AS on the path!" << std::endl;
+    for(int i = as_path.size() - 2; i >= 0; i--) {
+        auto current_search = graph->ases->find(as_path.at(i));
+        if(current_search == graph->ases->end()) {
             return;
         }
 
-        EZAS *as = as_search->second;
-
-        //Can't track over a non-adopter
-        if(as->policy == EZAS_TYPE_BGP) {
-            stop_tracking_adopter = true;
+        auto previous_search = graph->ases->find(as_path.at(i + 1));
+        if(previous_search == graph->ases->end()) {
+            return;
         }
 
-        //Found invalid MAC
-        if(as->policy != EZAS_TYPE_BGP && !as->has_neighbor(as_path.at(i - 1))) {
-            //Add to ranges that will construct the hyper edges from this report
-            hyper_edge_ranges.push_back(std::pair<int, int>(last_adopter_index, i));
+        EZAS *current_as = current_search->second;
+        EZAS *previous_as = previous_search->second;
 
-            stop_tracking_adopter = false;
+        //Previous AS is an adopter and does not have an actual relationship to this AS (invalid MAC)
+        if(previous_as->policy != EZAS_TYPE_BGP && !previous_as->has_neighbor(current_as->asn)) {
+            as_index_invalid_relationship = i + 1;
+            search_for_adopter = true;
+            continue;
+        }
 
-            //TODO, do we trust this adopter?
-            last_adopter_index = i;
-        } else if(!stop_tracking_adopter) {
-            last_adopter_index++;
+        if(current_as->policy != EZAS_TYPE_BGP && search_for_adopter) {
+            search_for_adopter = false;
+            hyper_edge_ranges.push_back(std::make_pair(i, as_index_invalid_relationship));
         }
     }
 
@@ -389,6 +355,17 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         //Or merge components if the path contains more than one AS that belong to different components already (an AS can be in 1 component only)
         //Or create a whole new component if none of the ASes belong to an existing component
         // add_hyper_edge(hyper_edge);
+        
+        bool contains = false;
+        for(auto &temp_edge : edges_to_proccess) {
+            if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin())) {
+                contains = true;
+                break;
+            }
+        }
+
+        if(contains)
+            continue;
 
         edges_to_proccess.push_back(hyper_edge);
     }
