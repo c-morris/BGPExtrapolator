@@ -97,7 +97,7 @@ void EZExtrapolator::perform_propagation() {
     delete cur_prefix;
     
     // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
-    for(unsigned int round = 0; round < num_rounds; round++) {
+    for(round = 1; round <= num_rounds; round++) {
         std::cout << "Round #" << round << std::endl;
 
         this->extrapolate(prefix_blocks, subnet_blocks);
