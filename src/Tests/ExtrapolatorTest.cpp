@@ -971,7 +971,7 @@ bool test_save_results_parallel() {
     return true;
 }
 
-// Create an announcements table and insert an announcement
+// Create an announcements table and insert two announcements with different prefixes
 bool test_extrapolate_blocks_buildup() {
     try {
         std::string announcements_table = "mrt_announcements_test";
@@ -1026,12 +1026,13 @@ bool test_extrapolate_blocks_teardown() {
  *   /|   
  *  4 5--6 
  *
- *  Starting propagation at 1, everyone should see the announcement.
+ *  Extrapolate two announcements with different prefixes (from AS 1 and AS 5).
  */
 bool test_extrapolate_blocks() {
     std::string announcements_table = "mrt_announcements_test";
+    std::string results_table = "test_extrapolate_blocks_results";
 
-    Extrapolator e = Extrapolator(false, false, false, announcements_table, "test_extrapolate_blocks_results", "unused", "unused", "bgp", 10000, -1, 0);
+    Extrapolator e = Extrapolator(false, false, false, announcements_table, results_table, "unused", "unused", "bgp", 10000, -1, 0);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1060,5 +1061,46 @@ bool test_extrapolate_blocks() {
     int iteration = 0;
 
     e.extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
+
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time)
+    std::vector<std::string> trueResults {
+        "1 137.99.0.0/16 1 1 0 ",
+        "2 137.99.0.0/16 1 1 0 ",
+        "4 137.99.0.0/16 1 2 0 ",
+        "5 137.99.0.0/16 1 2 0 ",
+        "1 137.98.0.0/16 5 2 0 ",
+        "2 137.98.0.0/16 5 5 0 ",
+        "3 137.98.0.0/16 5 2 0 ",
+        "4 137.98.0.0/16 5 2 0 ",
+        "5 137.98.0.0/16 5 5 0 ",
+        "6 137.98.0.0/16 5 5 0 " 
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // If the number of rows is different from trueResults, we already know that something is not right
+    if (r.size() != trueResults.size()) {
+        std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as trueResults)
+    // Make sure the results match those in trueResults
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(trueResults.begin(), trueResults.end(), rowStr);
+        if (it != trueResults.end()) {
+            trueResults.erase(it);
+        } else {
+            std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
+
     return true;
 }

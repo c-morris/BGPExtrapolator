@@ -95,12 +95,10 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            std::cout << "Propagate to providers" << std::endl;
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                std::cout << "Sending all announcements, asn = " << asn << std::endl;
                 send_all_announcements(asn, true, false, false);
             }
         }
@@ -111,12 +109,10 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
     // Those announcements will be processed after propagate_down()
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            std::cout << "Propagate to peers" << std::endl;
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                std::cout << "Sending all announcements, asn = " << asn << std::endl;
                 send_all_announcements(asn, false, true, false);
             }
         }
@@ -129,12 +125,10 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
-            std::cout << "Propagate to customers" << std::endl;
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                std::cout << "Sending all announcements, asn = " << asn << std::endl;
                 send_all_announcements(asn, false, false, true);
             }
         }
@@ -189,6 +183,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         outfile.close();
     }
 
+    // Csvs are saved, release the semaphore 
     BOOST_LOG_TRIVIAL(debug) << "Finished writing files, thread#" << thread_num; 
     sem_post(&csvs_written);
     BOOST_LOG_TRIVIAL(debug) << "Saving to the DB, thread#" << thread_num; 
