@@ -247,6 +247,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
         std::chrono::duration<double> q = prefix_finish - prefix_start;
     }
 
+    // Finalize saving before exiting the function
     if (save_res_thread.joinable()) {
         save_res_thread.join();
         BOOST_LOG_TRIVIAL(debug) << "Joined after";
