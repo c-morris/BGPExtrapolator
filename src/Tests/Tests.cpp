@@ -153,7 +153,7 @@ BOOST_AUTO_TEST_CASE( Extrapolator_save_results_parallel ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_test_extrapolate_blocks ) {
         BOOST_CHECK( test_extrapolate_blocks_buildup() );
         BOOST_CHECK( test_extrapolate_blocks() );
-        //BOOST_CHECK( test_extrapolate_blocks_teardown() );
+        BOOST_CHECK( test_extrapolate_blocks_teardown() );
 }
 
 // // ROVpp

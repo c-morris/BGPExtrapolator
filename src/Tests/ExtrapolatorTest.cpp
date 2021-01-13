@@ -986,6 +986,9 @@ bool test_extrapolate_blocks_buildup() {
         sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0);");
         querier->execute(sql, true);
 
+        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.98.0.0/16', '{5}', 5, 0);");
+        querier->execute(sql, true);
+
         delete querier;
     } catch (const std::exception &e) {
         std::cerr << "Extrapolate blocks buildup failed" << std::endl;
@@ -1043,8 +1046,12 @@ bool test_extrapolate_blocks() {
     e.graph->decide_ranks();
     
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>;
-    Prefix<>* p = new Prefix<>("137.99.0.0", "255.255.0.0");
-    subnet_blocks->push_back(p);
+    
+    Prefix<>* p1 = new Prefix<>("137.99.0.0", "255.255.0.0");
+    subnet_blocks->push_back(p1);
+
+    Prefix<>* p2 = new Prefix<>("137.98.0.0", "255.255.0.0");
+    subnet_blocks->push_back(p2);
 
     e.querier->clear_results_from_db();
     e.querier->create_results_tbl();
