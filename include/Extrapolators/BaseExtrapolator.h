@@ -117,6 +117,7 @@ public:
     bool store_depref_results; // If depref results are enabled
     sem_t worker_thread_count; // Worker thread semaphore
     int max_workers;           // Max number of worker threads that can run concurrently
+    sem_t csvs_written;        // Semaphore to delay saving to the database
 
     BaseExtrapolator(bool random_tiebraking,
                         bool store_invert_results, 
@@ -130,6 +131,9 @@ public:
         int cpus = std::thread::hardware_concurrency();
         max_workers = cpus > 1 ? cpus - 1 : 1;
         sem_init(&worker_thread_count, 0, max_workers);
+
+        // Init csv semaphore to 0. That way the next iteration starts only after all csvs were written
+        sem_init(&csvs_written, 0, 0);
         
         // The child will initialize these properly right after this constructor returns
         // That way they can give the variable a proper type

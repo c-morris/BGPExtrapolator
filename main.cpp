@@ -27,8 +27,6 @@
 #include <thread>
 #include <semaphore.h>
 
-#include "Logger.h"
-
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"

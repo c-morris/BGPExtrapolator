@@ -970,3 +970,88 @@ bool test_save_results_parallel() {
 
     return true;
 }
+
+// Create an announcements table and insert an announcement
+bool test_extrapolate_blocks_buildup() {
+    try {
+        std::string announcements_table = "mrt_announcements_test";
+
+        SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + announcements_table + " (\
+        prefix cidr, as_path bigint[], origin bigint, time bigint); GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
+        std::cout << "Creating results table..." << std::endl;
+        querier->execute(sql, false);
+
+        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0);");
+        querier->execute(sql, true);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks buildup failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+// Drop an announcements table created in the buildup function
+bool test_extrapolate_blocks_teardown() {
+    try {
+        std::string announcements_table = "mrt_announcements_test";
+
+        SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("DROP TABLE IF EXISTS " + announcements_table + ";");
+        querier->execute(sql, false);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks teardown failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test extrapolate blocks in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Starting propagation at 1, everyone should see the announcement.
+ */
+bool test_extrapolate_blocks() {
+    std::string announcements_table = "mrt_announcements_test";
+
+    Extrapolator e = Extrapolator(false, false, false, announcements_table, "test_extrapolate_blocks_results", "unused", "unused", "bgp", 10000, -1, 0);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>;
+    Prefix<>* p = new Prefix<>("137.99.0.0", "255.255.0.0");
+    subnet_blocks->push_back(p);
+
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    
+    uint32_t announcement_count = 0; 
+    int iteration = 0;
+
+    e.extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
+    return true;
+}

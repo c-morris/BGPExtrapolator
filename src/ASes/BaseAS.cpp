@@ -216,6 +216,9 @@ template <class AnnouncementType>
 void BaseAS<AnnouncementType>::process_announcements(bool ran) {
     for (auto &ann : *incoming_announcements) {
         auto search = all_anns->find(ann.prefix);
+        std::cout << "Process announcements, addr = " << search->second.prefix.addr << ", netmask = " << search->second.prefix.netmask  << "\
+        , origin = " << search->second.origin << ", received from = " << search->second.received_from_asn << ", priority = " << search->second.priority << "\
+        , from_monitor = /" << search->second.from_monitor << ", timestamp = " << search->second.tstamp << std::endl;
         if (search == all_anns->end() || !search->second.from_monitor) {
             process_announcement(ann, ran);
         }

@@ -38,6 +38,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::i
     
     // Generate the graph and populate the stubs & supernode tables
     this->graph->create_graph_from_db(this->querier);
+
+    //this->save_res_thread = std::thread();
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -143,6 +145,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
                                                                                                     int &iteration, 
                                                                                                     bool subnet, 
                                                                                                     std::vector<Prefix<>*> *prefix_set) {
+    std::thread save_res_thread;
+    
     // For each unprocessed block of announcements 
     for (Prefix<>* prefix : *prefix_set) {
         std::cout << "Selecting Announcements..." << std::endl;
@@ -213,18 +217,37 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             // Seed announcements along AS path
             this->give_ann_to_as_path(as_path, cur_prefix, timestamp);
             delete as_path;
+
+            std::cout << "Origin: " << origin << ", Prefix: " << cur_prefix.to_cidr() << ", Path: " << path_as_string << ", Timestamp: " << timestamp << std::endl;
         }
         // Propagate for this subnet
         std::cout << "Propagating..." << std::endl;
         this->propagate_up();
         this->propagate_down();
-        this->save_results(iteration);
+
+        if (save_res_thread.joinable()) {
+            save_res_thread.join();
+            BOOST_LOG_TRIVIAL(debug) << "Joined";
+        }
+        save_res_thread = std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results, this, iteration);
+        BOOST_LOG_TRIVIAL(debug) << "max_workers = " << this->max_workers;
+        for (int i = 0; i < this->max_workers; i++) {
+            sem_wait(&this->csvs_written);
+        }
+        BOOST_LOG_TRIVIAL(debug) << "Not waiting";
+
+        //this->save_results(iteration);
         this->graph->clear_announcements();
         iteration++;
         
         std::cout << prefix->to_cidr() << " completed." << std::endl;
         auto prefix_finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> q = prefix_finish - prefix_start;
+    }
+
+    if (save_res_thread.joinable()) {
+        save_res_thread.join();
+        BOOST_LOG_TRIVIAL(debug) << "Joined after";
     }
 }
 
