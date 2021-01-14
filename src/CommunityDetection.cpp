@@ -1,3 +1,5 @@
+#include <limits.h>
+
 #include "CommunityDetection.h"
 
 //**************** Component ****************//
@@ -72,9 +74,12 @@ void CommunityDetection::Component::merge(Component *other) {
         add_hyper_edge(hyper_edge);
 }
 
-uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local) {
+uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local, uint32_t thresh, uint32_t best_so_far, uint32_t depth) {
     if(hyper_edges_to_find.size() == 0)
         return 0;
+    // Stop if a better solution has already been found OR if the size of this cover exceeds thresh
+    if (depth > best_so_far or depth > thresh)
+        return 1;
 
     std::unordered_set<uint32_t> asns_to_attempt;
     for(auto &edge : hyper_edges_to_find) {
@@ -95,9 +100,8 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t roo
             }
         }
     }
-
-    bool assigned = false;
-    uint32_t mvc = 0;
+    
+    uint32_t best_result = UINT_MAX;
     for(uint32_t asn : asns_to_attempt) {
         std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
 
@@ -107,20 +111,25 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t roo
                 next_hyper_edges_to_find.push_back(edge);
         }
 
-        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find, local);
+        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find, local, thresh, best_so_far, depth+1);
 
-        if(!assigned) {
-            mvc = result;
-            assigned = true;
-        } else if(result < mvc) {
-            mvc = result;
+        if(result+depth < best_so_far) {
+            // If we got a smaller cover than we have seen before, update the best so far
+            best_so_far = result+depth;
+        }
+        // If one branch of this function call tree terminates, no sense in going deeper, it can only get worse
+        if (result == 0) {
+            return 1;
+        }
+        if(result < best_result) {
+            best_result = result;
         }
     }
 
-    return 1 + mvc;
+    return 1 + best_result;
 }
 
-uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn) {
+uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn, uint32_t thresh) {
     std::vector<std::vector<uint32_t>> hyper_edges_to_find;
 
     //TODO we need a data structure to supply the hyper edges that an AS is in
@@ -128,17 +137,19 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn) {
         if(std::find(edge.begin(), edge.end(), asn) != edge.end())
             hyper_edges_to_find.push_back(edge);
 
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, false);
+    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, false, thresh, UINT_MAX, 0);
 }
 
-uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn) {
+uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn, uint32_t thresh) {
     std::vector<std::vector<uint32_t>> hyper_edges_to_find;
 
     for(auto &edge : this->hyper_edges)
         if(std::find(edge.begin(), edge.end(), asn) != edge.end())
             hyper_edges_to_find.push_back(edge);
 
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, true);
+    std::cout << "About to start local CD with " << hyper_edges_to_find.size() << " edges..." << std::endl;
+
+    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, true, thresh, UINT_MAX, 0);
 }
 
 void CommunityDetection::Component::remove_hyper_edge(std::vector<uint32_t> &hyper_edge) {
@@ -162,7 +173,7 @@ void CommunityDetection::Component::remove_AS(uint32_t asn_to_remove) {
 
 void CommunityDetection::Component::local_threshold_filtering(CommunityDetection *community_detection) {
     for(auto &pair : as_to_degree_count) {
-        if(local_minimum_vertex_cover(pair.first) > community_detection->local_threshold)
+        if(local_minimum_vertex_cover(pair.first, community_detection->local_threshold) > community_detection->local_threshold)
             community_detection->blacklist_asns.insert(pair.first);
     }
 }
@@ -177,7 +188,7 @@ void CommunityDetection::Component::global_threshold_filtering(CommunityDetectio
         uint32_t highest_mvc = 0;
         uint32_t highest_mvc_asn = 0;
         for(auto &pair : as_to_degree_count) {
-            uint32_t mvc = minimum_vertex_cover(pair.first);
+            uint32_t mvc = minimum_vertex_cover(pair.first, community_detection->global_threshold);
 
             if(mvc > highest_mvc) {
                 highest_mvc = mvc;

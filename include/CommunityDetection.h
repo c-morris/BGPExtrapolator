@@ -29,7 +29,7 @@ public:
          * @param hyper_edges_to_find -> A list of the hyper edges that the root_asn is part of that must be recursively removed from
          * @param local -> Denotes whether or not the allowed ASes to be removed from the edges must be a neighbor to the root_asn (in this graph)
          */
-        uint32_t minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local);
+        uint32_t minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local, uint32_t thresh, uint32_t best_so_far, uint32_t depth);
 
         /**
          * This will increment or decrement the degree of an AS, and update all relevant data structures. If the degree goes to 0, it will be removed from the graph.
@@ -94,7 +94,7 @@ public:
          * @param asn -> The AS to start from
          * @return -> The minimum nodes to cover all hyperedges that the AS is in. 0 If the AS is not in the component
          */
-        uint32_t minimum_vertex_cover(uint32_t asn);
+        uint32_t minimum_vertex_cover(uint32_t asn, uint32_t thresh=5);
 
         /**
          * Given an ASN, calculate the minimum vertex cover similar to minimum_vertex_cover. 
@@ -103,7 +103,7 @@ public:
          * @param asn -> The AS to measure and to take the neighbors of
          * @return -> The minimum amount of neighbors that have to be malicious in order for the reports to have occured.
          */
-        uint32_t local_minimum_vertex_cover(uint32_t asn);
+        uint32_t local_minimum_vertex_cover(uint32_t asn, uint32_t thresh=5);
 
         /**
          * This takes in a hyper edge and removes each AS in the edge
