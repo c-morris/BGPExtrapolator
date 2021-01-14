@@ -1385,7 +1385,6 @@ bool test_extrapolate_blocks_buildup() {
 
         std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + announcements_table + " (\
         prefix cidr, as_path bigint[], origin bigint, time bigint); GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
-        std::cout << "Creating results table..." << std::endl;
         querier->execute(sql, false);
 
         sql = std::string("TRUNCATE " + announcements_table + ";");
