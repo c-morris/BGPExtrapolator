@@ -137,7 +137,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread(int iteration, int thread_num, int num_threads){
-    BOOST_LOG_TRIVIAL(debug) << "save_results_thread, iteration = " << iteration << ", thread_num = " << thread_num << ", num_threads = " << num_threads;
     // Decrement semaphore to limit the number of concurrent threads
     sem_wait(&worker_thread_count);
     int counter = thread_num;
@@ -184,9 +183,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     }
 
     // Csvs are saved, release the semaphore 
-    BOOST_LOG_TRIVIAL(debug) << "Finished writing files, thread#" << thread_num; 
     sem_post(&csvs_written);
-    BOOST_LOG_TRIVIAL(debug) << "Saving to the DB, thread#" << thread_num; 
 
     // Need a copy of the querier to make a new db connection to avoid resource conflicts 
     SQLQuerierType querier_copy(*querier);
@@ -212,7 +209,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     querier_copy.close_connection();
     sem_post(&worker_thread_count);
 
-    BOOST_LOG_TRIVIAL(debug) << "Done saving to the DB, thread#" << thread_num << "..."; 
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>

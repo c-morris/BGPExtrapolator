@@ -226,18 +226,15 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
         // Make sure we finish saving to the database before running save_results() on the next prefix
         if (save_res_thread.joinable()) {
             save_res_thread.join();
-            BOOST_LOG_TRIVIAL(debug) << "Joined";
         }
 
         // Run save_results() in a separate thread
         save_res_thread = std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results, this, iteration);
 
         // Wait for all csvs to be saved before clearing the announcements
-        BOOST_LOG_TRIVIAL(debug) << "max_workers = " << this->max_workers;
         for (int i = 0; i < this->max_workers; i++) {
             sem_wait(&this->csvs_written);
         }
-        BOOST_LOG_TRIVIAL(debug) << "Not waiting";
 
         this->graph->clear_announcements();
         iteration++;
@@ -250,7 +247,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
     // Finalize saving before exiting the function
     if (save_res_thread.joinable()) {
         save_res_thread.join();
-        BOOST_LOG_TRIVIAL(debug) << "Joined after";
     }
 }
 

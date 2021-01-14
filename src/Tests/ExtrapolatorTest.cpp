@@ -21,6 +21,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
+#define TEST_RESULTS_TABLE "test_extrapolate_blocks_results"
+#define TEST_ANNOUNCEMENTS_TABLE "mrt_announcements_test"
+
 #include <iostream>
 #include <cstdint>
 #include <vector>
@@ -1376,7 +1379,7 @@ bool test_save_results_parallel() {
 // Create an announcements table and insert two announcements with different prefixes
 bool test_extrapolate_blocks_buildup() {
     try {
-        std::string announcements_table = "mrt_announcements_test";
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
 
         SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", -1, "bgp");
 
@@ -1385,10 +1388,10 @@ bool test_extrapolate_blocks_buildup() {
         std::cout << "Creating results table..." << std::endl;
         querier->execute(sql, false);
 
-        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0);");
+        sql = std::string("TRUNCATE " + announcements_table + ";");
         querier->execute(sql, true);
 
-        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.98.0.0/16', '{5}', 5, 0);");
+        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0), ('137.98.0.0/16', '{5}', 5, 0);");
         querier->execute(sql, true);
 
         delete querier;
@@ -1403,11 +1406,12 @@ bool test_extrapolate_blocks_buildup() {
 // Drop an announcements table created in the buildup function
 bool test_extrapolate_blocks_teardown() {
     try {
-        std::string announcements_table = "mrt_announcements_test";
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+        std::string results_table = TEST_RESULTS_TABLE;
 
         SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", -1, "bgp");
 
-        std::string sql = std::string("DROP TABLE IF EXISTS " + announcements_table + ";");
+        std::string sql = std::string("DROP TABLE IF EXISTS " + announcements_table + ", " + results_table + ";");
         querier->execute(sql, false);
 
         delete querier;
@@ -1431,8 +1435,8 @@ bool test_extrapolate_blocks_teardown() {
  *  Extrapolate two announcements with different prefixes (from AS 1 and AS 5).
  */
 bool test_extrapolate_blocks() {
-    std::string announcements_table = "mrt_announcements_test";
-    std::string results_table = "test_extrapolate_blocks_results";
+    std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+    std::string results_table = TEST_RESULTS_TABLE;
 
     Extrapolator e = Extrapolator(false, false, false, announcements_table, results_table, "unused", "unused", "bgp", 10000, -1, 0);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
