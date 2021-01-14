@@ -147,7 +147,7 @@ uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn,
         if(std::find(edge.begin(), edge.end(), asn) != edge.end())
             hyper_edges_to_find.push_back(edge);
 
-    std::cout << "About to start local CD with " << hyper_edges_to_find.size() << " edges..." << std::endl;
+    //std::cout << "About to start local CD with " << hyper_edges_to_find.size() << " edges..." << std::endl;
 
     return minimum_vertex_cover_helper(asn, hyper_edges_to_find, true, thresh, UINT_MAX, 0);
 }
