@@ -405,19 +405,29 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
     // Get the AS that is sending it's announcements
     auto *source_as = this->graph->ases->find(asn)->second;
 
-    // Don't propagate from multihomed
-    if (mh_mode == 1){
+    // If to_customers = true and the AS is multihomed, return now for efficiency
+    if (mh_mode == 1) {
         // Check if AS is multihomed
         if (source_as->customers->empty()) {
-        return;
+            if (to_customers) {
+                return;
+            }
+        }
+    }
+
+    // Don't propagate from multihomed
+    if (mh_mode == 2) {
+        // Check if AS is multihomed
+        if (source_as->customers->empty()) {
+            return;
         }
     }
 
     // Only propagate to peers from multihomed
-    if (mh_mode == 2) {
+    if (mh_mode == 3) {
             // Check if AS is multihomed
             if (source_as->customers->empty()) {
-                if (to_peers){
+                if (to_peers) {
                     to_providers = false;
                     to_customers = false;
                 } else {
@@ -439,33 +449,54 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             if (ann.second.priority < 200) {
                 continue;
             }
+
+            // Automatic multihomed mode
+            // Propagate an announcement to providers if none received an announcement from that prefix with origin = current asn
+            uint32_t providers_with_ann = 0;
+            if (mh_mode == 1) {
+                // Check if AS is multihomed
+                if (source_as->customers->empty()) {
+                    // Check if all providers have the announcement
+                    for (uint32_t provider_asn : *source_as->providers) {
+                        auto *recving_as = this->graph->ases->find(provider_asn)->second;
+                        auto search = recving_as->all_anns->find(ann.second.prefix);
+                        if (search != recving_as->all_anns->end() && search->second.origin == ann.second.origin) {
+                            providers_with_ann++;
+                            break; // Break because at least one provider received the announcement from this AS
+                        }
+                    }
+                }
+            } 
             
-            // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
-            uint32_t path_len_weight = old_priority % 100;
-            if (path_len_weight == 0) {
-                // For MRT ann at origin: old_priority = 400
-                path_len_weight = 99;
-            } else {
-                // Sub 1 for the current hop
-                path_len_weight -= 1;
+            // If no providers have the announcement, propagate to providers
+            if (providers_with_ann == 0) {
+                // Set the priority of the announcement at destination 
+                uint32_t old_priority = ann.second.priority;
+                uint32_t path_len_weight = old_priority % 100;
+                if (path_len_weight == 0) {
+                    // For MRT ann at origin: old_priority = 400
+                    path_len_weight = 99;
+                } else {
+                    // Sub 1 for the current hop
+                    path_len_weight -= 1;
+                }
+                uint32_t priority = 200 + path_len_weight;
+                
+                AnnouncementType temp = AnnouncementType(ann.second);
+                temp.priority = priority;
+                temp.from_monitor = false;
+                temp.received_from_asn = asn;
+
+                // Push announcement with new priority to ann vector
+                // anns_to_providers.push_back(AnnouncementType(ann.second.origin,
+                //                                          ann.second.prefix.addr,
+                //                                          ann.second.prefix.netmask,
+                //                                          priority,
+                //                                          asn,
+                //                                          ann.second.tstamp));
+
+                anns_to_providers.push_back(temp);
             }
-            uint32_t priority = 200 + path_len_weight;
-            
-            AnnouncementType temp = AnnouncementType(ann.second);
-            temp.priority = priority;
-            temp.from_monitor = false;
-            temp.received_from_asn = asn;
-
-            // Push announcement with new priority to ann vector
-            // anns_to_providers.push_back(AnnouncementType(ann.second.origin,
-            //                                          ann.second.prefix.addr,
-            //                                          ann.second.prefix.netmask,
-            //                                          priority,
-            //                                          asn,
-            //                                          ann.second.tstamp));
-
-            anns_to_providers.push_back(temp);
         }
         // Send the vector of assembled announcements
         for (uint32_t provider_asn : *source_as->providers) {
