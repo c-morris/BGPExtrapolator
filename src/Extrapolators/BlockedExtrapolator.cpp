@@ -38,8 +38,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::i
     
     // Generate the graph and populate the stubs & supernode tables
     this->graph->create_graph_from_db(this->querier);
-
-    //this->save_res_thread = std::thread();
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
