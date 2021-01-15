@@ -1,3 +1,4 @@
+#include <map>
 #include <limits.h>
 
 #include "CommunityDetection.h"
@@ -81,7 +82,9 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t roo
     if (depth > best_so_far or depth > thresh)
         return 1;
 
+    std::map<uint32_t,size_t> counts;
     std::unordered_set<uint32_t> asns_to_attempt;
+    std::vector<uint32_t> ordered_asns_to_attempt;
     for(auto &edge : hyper_edges_to_find) {
         for(size_t i = 0; i < edge.size(); i++) {
             if(local) {//Trial remove only neighbors and not the root
@@ -100,9 +103,35 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t roo
             }
         }
     }
-    
-    uint32_t best_result = UINT_MAX;
+
+    // Get the most frequently occurring ASN
+    // (most frequently occurring are most likely to yield the smallest VC)
+    // TODO make this actually efficient
     for(uint32_t asn : asns_to_attempt) {
+        counts[asn] = 0;
+    }
+    for(auto &edge : hyper_edges_to_find) {
+        for(size_t i = 0; i < edge.size(); i++) {
+            counts[edge.at(i)]++;
+        }
+    }
+    uint32_t most_common_asn = 0; // *one of* the most common asns
+    uint32_t most_common_asn_ct = 0;
+    for (auto &ct : counts) {
+        if (ct.second > most_common_asn_ct) {
+            most_common_asn = ct.first;
+            most_common_asn_ct = ct.second;
+        }
+    }
+    ordered_asns_to_attempt.push_back(most_common_asn);
+    for (auto asn : asns_to_attempt) {
+        if (asn != most_common_asn) {
+            ordered_asns_to_attempt.push_back(asn);
+        }
+    }
+    
+    uint32_t best_result = UINT32_MAX;
+    for(uint32_t asn : ordered_asns_to_attempt) {
         std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
 
         for(auto edge : hyper_edges_to_find) {
@@ -137,7 +166,7 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn, uint3
         if(std::find(edge.begin(), edge.end(), asn) != edge.end())
             hyper_edges_to_find.push_back(edge);
 
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, false, thresh, UINT_MAX, 0);
+    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, false, thresh, UINT32_MAX, 0);
 }
 
 uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn, uint32_t thresh) {
@@ -149,7 +178,7 @@ uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn,
 
     //std::cout << "About to start local CD with " << hyper_edges_to_find.size() << " edges..." << std::endl;
 
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, true, thresh, UINT_MAX, 0);
+    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, true, thresh, UINT32_MAX, 0);
 }
 
 void CommunityDetection::Component::remove_hyper_edge(std::vector<uint32_t> &hyper_edge) {
