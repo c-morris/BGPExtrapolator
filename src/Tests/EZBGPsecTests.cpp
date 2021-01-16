@@ -786,7 +786,7 @@ bool ezbgpsec_test_mvc() {
  * 2 and 3 are non adopting
  * 5 and 1 are adopting
  * 
- * The local mvc for 1 will be 2
+ * The local mvc for 1 will be 1
  * The global mvc for 1 will be 1
  */
 bool ezbgpsec_test_local_mvc() {
@@ -857,7 +857,7 @@ bool ezbgpsec_test_local_mvc() {
     }
 
     mvc = component->local_minimum_vertex_cover(1);
-    if(mvc != 2) {
+    if(mvc != 1) {
         std::cerr << "In the local mvc test, Local Minimum vertex cover on AS 1 is " << mvc << ", rather than 2" << std::endl; 
         return false;
     }
@@ -962,6 +962,51 @@ bool ezbgpsec_test_threshold_filtering() {
     //     std::cerr << "Minimum vertex cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
     //     return false;
     // }
+
+    return true;
+}
+
+
+bool ezbgpsec_test_mvc2() {
+
+    std::vector<uint32_t> edge1 = {4, 3, 2, 1}; 
+    std::vector<uint32_t> edge2 = {5, 3, 2, 1};
+    std::vector<uint32_t> edge3 = {6, 3, 2, 1};
+    std::vector<uint32_t> edge4 = {7, 3, 2, 1};
+
+    CommunityDetection::Component c = CommunityDetection::Component(edge1);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+
+    if (c.local_minimum_vertex_cover(3, 2) != 1)
+        return false;
+
+    edge1 = {4, 1}; 
+    edge2 = {5, 1};
+    edge3 = {6, 1};
+    edge4 = {7, 1};
+
+    c = CommunityDetection::Component(edge1);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+
+    if (c.local_minimum_vertex_cover(1, 2) <= 2)
+        return false;
+
+    edge1 = {2, 4, 1}; 
+    edge2 = {2, 5, 1};
+    edge3 = {2, 6, 1};
+    edge4 = {2, 7, 1};
+
+    c = CommunityDetection::Component(edge1);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+
+    if (c.local_minimum_vertex_cover(1, 2) != 1)
+        return false;
 
     return true;
 }

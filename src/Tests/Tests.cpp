@@ -248,6 +248,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports_merge ) {
 
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_mvc ) {
         BOOST_CHECK( ezbgpsec_test_mvc() );
+        BOOST_CHECK( ezbgpsec_test_mvc2() );
 }
 
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_local_mvc ) {

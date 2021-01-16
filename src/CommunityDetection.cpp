@@ -87,20 +87,9 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t roo
     std::vector<uint32_t> ordered_asns_to_attempt;
     for(auto &edge : hyper_edges_to_find) {
         for(size_t i = 0; i < edge.size(); i++) {
-            if(local) {//Trial remove only neighbors and not the root
-                if(edge.at(i) != root_asn)
-                    continue;
-
-                if(i != 0)
-                    asns_to_attempt.insert(edge.at(i - 1));
-                else if(i != edge.size() - 1)
-                    asns_to_attempt.insert(edge.at(i + 1));
-            } else {//Trial remove all but the root AS
-                if(edge.at(i) == root_asn)
-                    continue;
-
-                asns_to_attempt.insert(edge.at(i));
-            }
+            if(edge.at(i) == root_asn)
+                continue;
+            asns_to_attempt.insert(edge.at(i));
         }
     }
 
@@ -112,7 +101,9 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t roo
     }
     for(auto &edge : hyper_edges_to_find) {
         for(size_t i = 0; i < edge.size(); i++) {
-            counts[edge.at(i)]++;
+            if (edge.at(i) != root_asn) {
+                counts[edge.at(i)]++;
+            }
         }
     }
     uint32_t most_common_asn = 0; // *one of* the most common asns
