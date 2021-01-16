@@ -33,14 +33,15 @@ Extrapolator::Extrapolator(bool random_tiebraking,
                             std::string config_section, 
                             uint32_t iteration_size,
                             int exclude_as_number,
-                            uint32_t mh_mode) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size, mh_mode) {
+                            uint32_t mh_mode,
+                            bool origin_only) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size, mh_mode, origin_only) {
 
     graph = new ASGraph(store_invert_results, store_depref_results);
     querier = new SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, exclude_as_number, config_section);
 }
 
 Extrapolator::Extrapolator() : Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, DEFAULT_MH_MODE) { }
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY) { }
 
 Extrapolator::~Extrapolator() { }
 

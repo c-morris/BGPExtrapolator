@@ -32,8 +32,9 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string tracked_ases_table,
                                         std::string simulation_table,
                                         std::string config_section,
-                                        int exclude_as_number)
-    : BaseExtrapolator(false, false, false) {
+                                        int exclude_as_number,
+                                        bool origin_only)
+    : BaseExtrapolator(false, false, false, origin_only) {
         
     this->graph = new ROVppASGraph();
 
@@ -42,7 +43,7 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
     this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, tracked_ases_table, simulation_table, exclude_as_number, config_section);
 }
 
-ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1) { }
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1, DEFAULT_ORIGIN_ONLY) { }
 ROVppExtrapolator::~ROVppExtrapolator() { }
 
 void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
@@ -151,6 +152,11 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
   
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
+        // Only seed at origin AS if origin only mode is enabled
+        if (this->origin_only == true && it != as_path->rbegin()) {
+            return;
+        }
+
         // Increments path length, including prepending
         i++;
         // If ASN not in graph, continue

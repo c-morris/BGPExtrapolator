@@ -29,13 +29,14 @@ public:
                         bool store_invert_results, 
                         bool store_depref_results,
                         uint32_t iteration_size,
-                        uint32_t mh_mode) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_invert_results, store_depref_results) {
+                        uint32_t mh_mode,
+                        bool origin_only) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_invert_results, store_depref_results, origin_only) {
         
         this->iteration_size = iteration_size;
         this->mh_mode = mh_mode;
     }
 
-    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE, DEFAULT_MH_MODE) { }
+    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY) { }
     
     virtual ~BlockedExtrapolator();
 

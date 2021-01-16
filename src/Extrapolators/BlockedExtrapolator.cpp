@@ -247,6 +247,11 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
     
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
+        // Only seed at origin AS if origin only mode is enabled
+        if (this->origin_only == true && it != as_path->rbegin()) {
+            return;
+        }
+
         // Increments path length, including prepending
         i++;
         // If ASN not in graph, continue
