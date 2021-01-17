@@ -720,3 +720,59 @@ bool test_prepending_priority_beginning_existing_ann() {
     
     return true;
 }
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 5, 5] with an existing announcement at those ASes. This should change the priority since the existing announcement has lower priority.  
+ */
+bool test_prepending_priority_beginning_existing_ann2() {
+    Extrapolator e = Extrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    e.give_ann_to_as_path(as_path, p, 2);
+    
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 197) {
+        std::cerr << "prepending_priority_beginning_existing_ann2 failed." << std::endl;
+        return false;
+    }
+
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198) {
+        std::cerr << "prepending_priority_beginning_existing_ann2 failed." << std::endl;
+        return false;
+    }
+    
+    return true;
+}

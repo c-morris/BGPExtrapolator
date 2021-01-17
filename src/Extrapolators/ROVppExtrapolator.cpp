@@ -194,18 +194,19 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             }
 
             // Position of previous AS on path
-            uint32_t pos = path_l - i + 1;
+            uint32_t prevPos = path_l - i + 1;
+
+            // Position of the current AS on path
+            uint32_t currPos = path_l - i;
 
             // Skip announcement if there exists one with a higher priority
-            if (pos < path_l) {
-                ROVppAS *previous_as = this->graph->ases->find(as_path->at(pos))->second;
-                if (previous_as->all_anns->find(prefix)->second.priority > priority) {
-                    continue;
-                }
+            ROVppAS *current_as = this->graph->ases->find(as_path->at(currPos))->second;
+            if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                continue;
             }
 
             // Prepending check, use original priority
-            if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
+            if (prevPos < path_l && prevPos >= 0 && as_path->at(prevPos) == as_on_path->asn) {
                 continue;
             }
 

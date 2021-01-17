@@ -293,21 +293,25 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                 continue;
             } else if (timestamp == second_announcement.tstamp) {
                 // Position of previous AS on path
-                uint32_t pos = path_l - i + 1;
+                uint32_t prevPos = path_l - i + 1;
 
-                // Skip announcement if there exists one with a higher priority
-                if (pos < path_l) {
-                    ASType *previous_as = this->graph->ases->find(as_path->at(pos))->second;
-                    if (previous_as->all_anns->find(prefix)->second.priority > priority) {
-                        continue;
-                    }
-                }
+                // Position of the current AS on path
+                uint32_t currPos = path_l - i;
 
                 // Tie breaker for equal timestamp
                 bool keep_first = true;
                 // Random tiebreak if enabled
                 if (this->random_tiebraking) {
                     keep_first = as_on_path->get_random();
+                }
+
+                // Skip announcement if there exists one with a higher priority
+                ASType *current_as = this->graph->ases->find(as_path->at(currPos))->second;
+                if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                    continue;
+                // If the new announcement has a higher priority, change keep_first to false to make sure we save it
+                } else if (current_as->all_anns->find(prefix)->second.priority < priority) {
+                    keep_first = false;
                 }
 
                 // Log annoucements with equal timestamps 
@@ -320,7 +324,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
                     continue;
                 } else {
                     // Prepending check, use original priority
-                    if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
+                    if (prevPos < path_l && prevPos >= 0 && as_path->at(prevPos) == as_on_path->asn) {
                         continue;
                     }
                     as_on_path->delete_ann(prefix);

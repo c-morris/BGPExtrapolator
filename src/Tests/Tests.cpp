@@ -147,6 +147,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_middle_existing_ann ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_beginning_existing_ann ) {
         BOOST_CHECK( test_prepending_priority_beginning_existing_ann() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_beginning_existing_ann2 ) {
+        BOOST_CHECK( test_prepending_priority_beginning_existing_ann2() );
+}
 
 // ROVpp
 BOOST_AUTO_TEST_CASE( Announcement_eqality_operator ) {
@@ -246,6 +249,9 @@ BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle_existing_ann ) {
 }
 BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann ) {
         BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann2 ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann2() );
 }
 
 //EZBGPsec Tests

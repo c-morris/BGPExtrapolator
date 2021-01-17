@@ -99,6 +99,7 @@ bool test_prepending_priority_beginning();
 bool test_prepending_priority_back_existing_ann();
 bool test_prepending_priority_middle_existing_ann();
 bool test_prepending_priority_beginning_existing_ann();
+bool test_prepending_priority_beginning_existing_ann2();
 
 // Prototypes for ROVppTest.cpp
 bool test_rovpp_ann_eq_operator();
@@ -135,6 +136,7 @@ bool test_rovpp_prepending_priority_beginning();
 bool test_rovpp_prepending_priority_back_existing_ann();
 bool test_rovpp_prepending_priority_middle_existing_ann();
 bool test_rovpp_prepending_priority_beginning_existing_ann();
+bool test_rovpp_prepending_priority_beginning_existing_ann2();
 
 //EZBGPsec
 bool ezbgpsec_test_path_propagation();
