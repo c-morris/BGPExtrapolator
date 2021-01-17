@@ -62,7 +62,7 @@ SQLQuerier::~SQLQuerier() {
 void SQLQuerier::read_config() {
     using namespace std;
 
-    cout << "Config section: " << config_section << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Config section: " << config_section;
     
     program_options::variables_map var_map;
 
@@ -107,7 +107,7 @@ void SQLQuerier::read_config() {
             port = var_map[config_section + ".port"].as<string>();
         }
     } else {
-        std::cerr << "Error loading config file \"" << config_path << "\"" << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "Error loading config file \"" << config_path << "\"";
     }
 }
 
@@ -127,11 +127,11 @@ void SQLQuerier::open_connection() {
         if (conn->is_open()) {
             C = conn;
         } else {
-            std::cerr << "Failed to connect to database : " << db_name <<std::endl;
+            BOOST_LOG_TRIVIAL(error) << "Failed to connect to database : " << db_name;
             return;
         }
     } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        BOOST_LOG_TRIVIAL(error) << e.what();
     }
 }
 
@@ -159,7 +159,7 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert) {
             txn.commit();
             return R;
         } catch(const std::exception &e) {
-            std::cerr << e.what() <<std::endl;
+            BOOST_LOG_TRIVIAL(error) << e.what();
         }
     } else {
         try {
@@ -167,7 +167,7 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert) {
             pqxx::result R( N.exec(sql));
             return R;
         } catch(const std::exception &e) {
-            std::cerr << e.what() <<std::endl;
+            BOOST_LOG_TRIVIAL(error) << e.what();
         }
     }
     return R;
@@ -289,7 +289,7 @@ void SQLQuerier::clear_supernodes_from_db() {
  */
 void SQLQuerier::create_stubs_tbl() {
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " STUBS_TABLE " (stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint);");
-    std::cout << "Creating stubs table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating stubs table...";
     execute(sql, false);
 }
 
@@ -298,7 +298,7 @@ void SQLQuerier::create_stubs_tbl() {
  */
 void SQLQuerier::create_non_stubs_tbl() {
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " NON_STUBS_TABLE " (non_stub_asn BIGSERIAL PRIMARY KEY);");
-    std::cout << "Creating non_stubs table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating non_stubs table...";
     execute(sql, false);
 }
 
@@ -307,7 +307,7 @@ void SQLQuerier::create_non_stubs_tbl() {
  */
 void SQLQuerier::create_supernodes_tbl() {
     std::string sql = std::string("CREATE TABLE IF NOT EXISTS " SUPERNODES_TABLE "(supernode_asn BIGSERIAL PRIMARY KEY, supernode_lowest_asn bigint)");
-    std::cout << "Creating supernodes table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating supernodes table...";
     execute(sql, false);
 }
 
@@ -372,7 +372,7 @@ void SQLQuerier::create_results_tbl() {
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint, time bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
-    std::cout << "Creating results table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating results table...";
     execute(sql, false);
 }
 
@@ -383,7 +383,7 @@ void SQLQuerier::create_depref_tbl() {
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint, time bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
-    std::cout << "Creating depref table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating depref table...";
     execute(sql, false);
 }
 
@@ -396,7 +396,7 @@ void SQLQuerier::create_inverse_results_tbl() {
     "(asn bigint,prefix cidr, origin bigint) ";
     sql += ";";
     sql += "GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;";
-    std::cout << "Creating inverse results table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating inverse results table...";
     execute(sql, false);
 }
 
@@ -433,6 +433,6 @@ void SQLQuerier::copy_inverse_results_to_db(std::string file_name) {
 void SQLQuerier::create_results_index() {
     // Version of postgres must support this
     std::string sql = std::string("CREATE INDEX ON " + results_table + " USING GIST(prefix inet_ops, origin)");
-    std::cout << "Generating index on results..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Generating index on results...";
     execute(sql, false);
 }

@@ -44,7 +44,7 @@ template <class SQLQuerierType, class GraphType, class AnnouncementType, class A
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::perform_propagation() {
     init();
 
-    std::cout << "Generating subnet blocks..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
@@ -62,7 +62,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks) {
-    std::cout << "Beginning propagation..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Beginning propagation...";
     
     // Seed MRT announcements and propagate
     uint32_t announcement_count = 0; 
@@ -77,8 +77,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
 
     auto ext_finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> e = ext_finish - ext_start;
-    std::cout << "Block elapsed time: " << e.count() << std::endl;
-    std::cout << "Announcement count: " << announcement_count << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Block elapsed time: " << e.count();
+    BOOST_LOG_TRIVIAL(info) << "Announcement count: " << announcement_count;
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -145,7 +145,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
                                                                                                     std::vector<Prefix<>*> *prefix_set) {
     // For each unprocessed block of announcements 
     for (Prefix<>* prefix : *prefix_set) {
-        std::cout << "Selecting Announcements..." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Selecting Announcements...";
         auto prefix_start = std::chrono::high_resolution_clock::now();
         
         // Handle prefix blocks or subnet blocks of announcements
@@ -164,7 +164,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             break;
         announcement_count += bsize;
         
-        std::cout << "Seeding announcements..." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Seeding announcements...";
         // For all announcements in this block
         for (pqxx::result::size_type i = 0; i < bsize; i++) {
             // Get row origin
@@ -215,14 +215,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             delete as_path;
         }
         // Propagate for this subnet
-        std::cout << "Propagating..." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Propagating...";
         this->propagate_up();
         this->propagate_down();
         this->save_results(iteration);
         this->graph->clear_announcements();
         iteration++;
         
-        std::cout << prefix->to_cidr() << " completed." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << prefix->to_cidr() << " completed.";
         auto prefix_finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> q = prefix_finish - prefix_start;
     }

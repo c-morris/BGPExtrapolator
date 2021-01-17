@@ -27,8 +27,6 @@
 #include <thread>
 #include <semaphore.h>
 
-#include "Logger.h"
-
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
@@ -50,9 +48,9 @@
 
 void intro() {
     // This needs to be finished
-    std::cout << "***** Routing Extrapolator v0.3 *****" << std::endl;
-    std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
-    std::cout << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "***** Routing Extrapolator v0.3 *****";
+    BOOST_LOG_TRIVIAL(info) << "This is free software: you are free to change and redistribute it.";
+    BOOST_LOG_TRIVIAL(info) << "There is NO WARRANTY, to the extent permitted by law.";
 }
 
 int main(int argc, char *argv[]) {
