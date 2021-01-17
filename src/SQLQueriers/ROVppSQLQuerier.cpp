@@ -33,8 +33,9 @@ ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> policy_tables /* = std
                                     std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
                                     std::string tracked_ases_table /* = TRACKED_ASES_TABLE */,
                                     std::string simulation_table /* = ROVPP_SIMULATION_TABLE */,
-                                    std::string config_section)
-    : SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, config_section) {
+                                    int exclude_as_number /* = -1 */,
+                                    std::string config_section /* = "bgp" */)
+    : SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, exclude_as_number, config_section) {
     
     this->policy_tables = policy_tables;
     this->results_table = results_table;

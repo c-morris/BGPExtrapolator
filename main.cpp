@@ -118,7 +118,12 @@ int main(int argc, char *argv[]) {
         ("severity-level,c",
          po::value<unsigned int>()->default_value(0),
          "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
-        ("config-section", po::value<string>()->default_value("bgp"), "section of the config file");
+        ("config-section", po::value<string>()->default_value("bgp"), "section of the config file")
+        ("exclude-asn,e", po::value<int>()->default_value(-1), 
+         "exclude all announcements from a particular ASN")
+        ("mh-propagation-mode", 
+         po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
+         "multi-home propagation mode, 0 - off, 1 - propagate from mh to providers in some cases (automatic), 2 - no propagation from mh, 3 - propagation from mh to peers");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -159,7 +164,8 @@ int main(int argc, char *argv[]) {
             (vm.count("simulation-table") ?
                 vm["simulation-table"].as<string>() : 
                 ROVPP_SIMULATION_TABLE),
-            vm["config-section"].as<string>());
+            vm["config-section"].as<string>(),
+            vm["exclude-asn"].as<int>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -187,7 +193,9 @@ int main(int argc, char *argv[]) {
             vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
             vm["ezbgpsec"].as<uint32_t>(),
-            vm["num-in-between"].as<uint32_t>());
+            vm["num-in-between"].as<uint32_t>(),
+            vm["exclude-asn"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
@@ -212,7 +220,9 @@ int main(int argc, char *argv[]) {
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
             vm["config-section"].as<string>(),
-            vm["iteration-size"].as<uint32_t>());
+            vm["iteration-size"].as<uint32_t>(),
+            vm["exclude-asn"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();

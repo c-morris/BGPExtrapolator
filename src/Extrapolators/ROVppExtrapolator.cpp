@@ -31,17 +31,18 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string results_table,
                                         std::string tracked_ases_table,
                                         std::string simulation_table,
-                                        std::string config_section)
+                                        std::string config_section,
+                                        int exclude_as_number)
     : BaseExtrapolator(false, false, false) {
         
     this->graph = new ROVppASGraph();
 
     // fix rovpp extrapolation results table name, the default arg doesn't work right here
     results_table = !results_table.compare(RESULTS_TABLE) ? ROVPP_RESULTS_TABLE : results_table;
-    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, tracked_ases_table, simulation_table, config_section);
+    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, tracked_ases_table, simulation_table, exclude_as_number, config_section);
 }
 
-ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION) { }
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1) { }
 ROVppExtrapolator::~ROVppExtrapolator() { }
 
 void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
