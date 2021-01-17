@@ -136,6 +136,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     }
     
     uint32_t i = 0;
+    uint32_t path_l = as_path->size();
     uint32_t origin_asn = as_path->back();
     
     // Announcement at origin for checking along the path
@@ -162,16 +163,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         cur_path.insert(cur_path.begin(), asn_on_path);
         // Find the current AS on the path
         ROVppAS *as_on_path = graph->ases->find(asn_on_path)->second;
-        // Check if already received this prefix
-        if (as_on_path->already_received(ann_to_check_for)) {
-            // update path vector
-            if (cur_path.back() == as_on_path->asn) {
-                continue;
-            }
-            // Find the already received announcement and delete it
-            as_on_path->delete_ann(ann_to_check_for);
-        }
-        
+
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
@@ -191,10 +183,37 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
             }
         }
 
-
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
         uint32_t priority = received_from + path_len_weighted;
+
+        // Check if already received this prefix
+        if (as_on_path->already_received(ann_to_check_for)) {
+            // update path vector
+            if (cur_path.back() == as_on_path->asn) {
+                continue;
+            }
+
+            // Position of previous AS on path
+            uint32_t prevPos = path_l - i + 1;
+
+            // Position of the current AS on path
+            uint32_t currPos = path_l - i;
+
+            // Skip announcement if there exists one with a higher priority
+            ROVppAS *current_as = this->graph->ases->find(as_path->at(currPos))->second;
+            if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                continue;
+            }
+
+            // Prepending check, use original priority
+            if (prevPos < path_l && prevPos >= 0 && as_path->at(prevPos) == as_on_path->asn) {
+                continue;
+            }
+
+            // Find the already received announcement and delete it
+            as_on_path->delete_ann(ann_to_check_for);
+        }
 
         uint32_t received_from_asn = 0;
         

@@ -260,52 +260,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
 
         auto announcement_search = as_on_path->all_anns->find(prefix);
 
-        // Check if already received this prefix
-        if (announcement_search != as_on_path->all_anns->end()) {
-            AnnouncementType& second_announcement = announcement_search->second;
-
-            // If the current timestamp is newer (worse)
-            if (timestamp > second_announcement.tstamp) {
-                // Skip it
-                continue;
-            } else if (timestamp == second_announcement.tstamp) {
-                // Tie breaker for equal timestamp
-                bool keep_first = true;
-                // Random tiebreak if enabled
-                if (this->random_tiebraking) {
-                    keep_first = as_on_path->get_random();
-                }
-
-                // Log annoucements with equal timestamps 
-                // Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
-                //     ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
-                //     ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
-
-                // First come, first saved if random is disabled
-                if (keep_first) {
-                    continue;
-                } else {
-                    // Position of previous AS on path
-                    uint32_t pos = path_l - i + 1;
-                    // Prepending check, use original priority
-                    if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
-                        continue;
-                    }
-                    as_on_path->delete_ann(prefix);
-                }
-            } else {
-                // Log announcements that arent handled by sorting
-                // Logger::getInstance().log("Unsorted_Announcements") 
-                //     << "This announcement is being deleted and is not handled by sorting." 
-                //     << " Prefix: " << prefix.to_cidr() 
-                //     << ", tstamp: " << timestamp 
-                //     << ", origin: " << as_path->at(path_l-1);
-
-                // Delete worse MRT announcement, proceed with seeding
-                as_on_path->delete_ann(prefix);
-            }
-        }
-        
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
@@ -328,6 +282,65 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
         uint32_t priority = received_from + path_len_weighted;
+
+        // Check if already received this prefix
+        if (announcement_search != as_on_path->all_anns->end()) {
+            AnnouncementType& second_announcement = announcement_search->second;
+
+            // If the current timestamp is newer (worse)
+            if (timestamp > second_announcement.tstamp) {
+                // Skip it
+                continue;
+            } else if (timestamp == second_announcement.tstamp) {
+                // Position of previous AS on path
+                uint32_t prevPos = path_l - i + 1;
+
+                // Position of the current AS on path
+                uint32_t currPos = path_l - i;
+
+                // Tie breaker for equal timestamp
+                bool keep_first = true;
+                // Random tiebreak if enabled
+                if (this->random_tiebraking) {
+                    keep_first = as_on_path->get_random();
+                }
+
+                // Skip announcement if there exists one with a higher priority
+                ASType *current_as = this->graph->ases->find(as_path->at(currPos))->second;
+                if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                    continue;
+                // If the new announcement has a higher priority, change keep_first to false to make sure we save it
+                } else if (current_as->all_anns->find(prefix)->second.priority < priority) {
+                    keep_first = false;
+                }
+
+                // Log annoucements with equal timestamps 
+                // Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
+                //     ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
+                //     ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
+
+                // First come, first saved if random is disabled
+                if (keep_first) {
+                    continue;
+                } else {
+                    // Prepending check, use original priority
+                    if (prevPos < path_l && prevPos >= 0 && as_path->at(prevPos) == as_on_path->asn) {
+                        continue;
+                    }
+                    as_on_path->delete_ann(prefix);
+                }
+            } else {
+                // Log announcements that arent handled by sorting
+                // Logger::getInstance().log("Unsorted_Announcements") 
+                //     << "This announcement is being deleted and is not handled by sorting." 
+                //     << " Prefix: " << prefix.to_cidr() 
+                //     << ", tstamp: " << timestamp 
+                //     << ", origin: " << as_path->at(path_l-1);
+
+                // Delete worse MRT announcement, proceed with seeding
+                as_on_path->delete_ann(prefix);
+            }
+        }
         
         uint32_t received_from_asn = 0;
         // If this AS is the origin
