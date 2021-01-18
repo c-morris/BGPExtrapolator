@@ -49,7 +49,7 @@ void EZExtrapolator::init() {
 void EZExtrapolator::perform_propagation() {
     init();
 
-    std::cout << "Generating subnet blocks..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
@@ -72,7 +72,7 @@ void EZExtrapolator::perform_propagation() {
         successful_connections = 0;
         disconnections = 0;
 
-        std::cout << "Round #" << round << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Round #" << round;
 
         extrapolate(prefix_blocks, subnet_blocks);
 
@@ -116,7 +116,7 @@ void EZExtrapolator::perform_propagation() {
             //Re calculate the components with these new relationships
             graph->process(querier);
         } else {
-            std::cout << "Round #" << round << ": No more attacks" << std::endl;
+            BOOST_LOG_TRIVIAL(info) << "Round #" << round << ": No more attacks";
         }
     } while(successful_attacks > 0 && round <= num_rounds - 1);
     

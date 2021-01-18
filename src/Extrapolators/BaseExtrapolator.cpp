@@ -60,7 +60,7 @@ std::vector<uint32_t>* BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementT
         try {
             as_path->push_back(std::stoul(token));
         } catch(...) {
-            std::cerr << "Parse path error, token was: " << token << std::endl;
+            BOOST_LOG_TRIVIAL(error) << "Parse path error, token was: " << token;
         }
         path_as_string.erase(0,pos + delimiter.length());
     }
@@ -68,7 +68,7 @@ std::vector<uint32_t>* BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementT
     try {
         as_path->push_back(std::stoul(path_as_string));
     } catch(...) {
-        std::cerr << "Parse path error, token was: " << path_as_string << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "Parse path error, token was: " << path_as_string;
     }
     return as_path;
 }
@@ -207,12 +207,12 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
     if (store_invert_results) {
-        std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Saving Inverse Results From Iteration: " << iteration;
     } else {
-        std::cout << "Saving Results From Iteration: " << iteration << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Saving Results From Iteration: " << iteration;
     }
     if (store_depref_results) {
-        std::cout << "Saving Depref Results From Iteration: " << iteration << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Saving Depref Results From Iteration: " << iteration;
     }
     std::vector<std::thread> threads;
     int cpus = std::thread::hardware_concurrency();

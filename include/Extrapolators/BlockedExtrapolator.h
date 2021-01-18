@@ -2,7 +2,7 @@
 #define BLOCKED_EXTRAPOLATOR_H
 
 #define DEFAULT_ITERATION_SIZE 50000
-#define DEFAULT_MH_MODE 0
+#define DEFAULT_MH_MODE 1
 
 #include "Extrapolators/BaseExtrapolator.h"
 
