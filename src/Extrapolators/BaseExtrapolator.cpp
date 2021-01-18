@@ -257,21 +257,26 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::stream_as_path(AnnouncementType &ann, uint32_t asn){
-    int depth = 0;
-    int max_depth = 63; // Prevent infinite loops
     std::stringstream as_path;
-    as_path << '{' << asn << ',';
+    std::vector<uint32_t> as_path_vect;
 
     // Trace back until one of these conditions
     // 1. The origin is the received from ASN
     // 2. The received from ASN does not exist in the graph
-    // 3. Max depth is exceeded--- this likely indicates a loop in the topology
+    // 3. A loop in the topology is detected
     while (ann.origin != ann.received_from_asn && 
-           graph->ases->find(ann.received_from_asn) != graph->ases->end() &&
-           depth < max_depth) {
-        depth++;
-        as_path << ann.received_from_asn << ',';
+           graph->ases->find(ann.received_from_asn) != graph->ases->end()) {
+        if (std::find(as_path_vect.begin(), as_path_vect.end(), ann.received_from_asn) != as_path_vect.end()) {
+            BOOST_LOG_TRIVIAL(warning) << "Loop detected in AS_PATH from AS " << asn << " to prefix " << ann.prefix.to_cidr();
+            break;
+        }
+        as_path_vect.push_back(ann.received_from_asn);
         ann = graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix)->second;
+    }
+    // Stringify
+    as_path << '{' << asn << ',';
+    for (uint32_t path_asn : as_path_vect) {
+        as_path << path_asn << ',';
     }
     // Add the last AS on the path
     as_path << ann.received_from_asn << '}';
