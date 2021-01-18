@@ -420,29 +420,7 @@ bool test_rovpp_give_ann_to_as_path_origin_only() {
         return false;
     }
 
-    // // Test timestamp tie breaking
-    // std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
-    // as_path_b->push_back(1);
-    // as_path_b->push_back(2);
-    // as_path_b->push_back(4);
-    // as_path_b->push_back(4);
-
-    // e.give_ann_to_as_path(as_path_b, p, 1, 0);
-
-    // // This value is supposed to be uniform random in the ROV++, so this is an invalid test here
-    // //if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
-    // //    return false;
-    // //}
-    
-    // // Test prepending calculation
-    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 298) {
-    //     std::cerr << "Priority calculation in loc_rib failed" << std::endl;
-    //     std::cerr << e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority << std::endl;
-    //     return false;
-    // }
-
     delete as_path;
-    //delete as_path_b;
     return true;
 }
 
