@@ -246,11 +246,9 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/as" + std::to_string(asn) + ".csv";
     outfile.open(file_name);
-    if (as.asn == asn) {
-        for (auto &ann : *as.all_anns) {
-            AnnouncementType &a = ann.second;
-            outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ",\"" << this->stream_as_path(a, asn) << "\"\n";
-        }
+    for (auto &ann : *as.all_anns) {
+        AnnouncementType &a = ann.second;
+        outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ",\"" << this->stream_as_path(a, asn) << "\"\n";
     }
     outfile.close();
     this->querier->copy_single_results_to_db(file_name);
@@ -260,7 +258,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::stream_as_path(AnnouncementType &ann, uint32_t asn){
     int depth = 0;
-    int max_depth = 1023; // Prevent infinite loops
+    int max_depth = 63; // Prevent infinite loops
     std::stringstream as_path;
     as_path << '{' << asn << ',';
 

@@ -946,6 +946,8 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
  *  4 5--6 
  *
  *  Starting propagation at 1, everyone should see the announcement.
+ *
+ *  This test is currently requires manual verification that the results in the database are correct.
  */
 bool test_save_results_parallel() {
     Extrapolator e = Extrapolator(false, true, false, false, "ignored", "test_extrapolation_results", "unused", "unused", "unused", "bgp", 10000, -1, 0, NULL);
@@ -974,6 +976,8 @@ bool test_save_results_parallel() {
     e.querier->create_results_tbl();
     e.save_results(0);
 
+    // This test requires manual verification of correctness.
+
     return true;
 }
 
@@ -988,6 +992,8 @@ bool test_save_results_parallel() {
  *  4 5--6 
  *
  *  Starting propagation at 1, everyone should see the announcement.
+ *
+ *  This test is currently requires manual verification that the results in the database are correct.
  */
 bool test_save_results_at_asn() {
     Extrapolator e = Extrapolator(false, false, false, true, "ignored", "unused", "unused", "unused", "test_extrapolation_single_results", "bgp", 10000, -1, 0, NULL);
@@ -1015,6 +1021,8 @@ bool test_save_results_at_asn() {
     e.querier->clear_full_path_from_db();
     e.querier->create_full_path_results_tbl();
     e.save_results_at_asn(5);
+
+    // This test requires manual verification of correctness.
 
     return true;
 }
