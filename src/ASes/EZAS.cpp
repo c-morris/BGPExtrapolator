@@ -25,8 +25,9 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
 
         //TODO This could use some improvement
         for(auto &blacklisted_path : community_detection->blacklist_paths) {
-            if(std::includes(ann.as_path.begin(), ann.as_path.end(), blacklisted_path.begin(), blacklisted_path.end()))
+            if(std::includes(ann.as_path.begin(), ann.as_path.end(), blacklisted_path.begin(), blacklisted_path.end())) {
                 return;
+            }
         }
     }
 

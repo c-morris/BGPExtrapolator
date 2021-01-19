@@ -99,7 +99,9 @@ void EZExtrapolator::perform_propagation() {
     // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
     for(round = 1; round <= num_rounds; round++) {
         std::cout << "Round #" << round << std::endl;
-
+        for (auto &as : *this->graph->ases) {
+            as.second->community_detection = communityDetection;
+        }
         this->extrapolate(prefix_blocks, subnet_blocks);
 
         communityDetection->process_reports(graph);

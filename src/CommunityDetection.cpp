@@ -342,31 +342,43 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
     //Store the index of the adopter next to the invalid MAC so the range can be stored if/when an adopter is found on the other side
     int as_index_invalid_relationship = 0;
 
+    unsigned int cur_pol;
+    unsigned int prev_pol;
+
     //There is an invalid MAC, keep an eye out for an adopter on the other side of the invalid MAC
     bool search_for_adopter = false;
 
     for(int i = as_path.size() - 2; i >= 0; i--) {
+        bool nbrs = true;
         auto current_search = graph->ases->find(as_path.at(i));
         if(current_search == graph->ases->end()) {
-            return;
+            cur_pol = EZAS_TYPE_BGP;
+            nbrs = false;
+        } else {
+            EZAS *current_as = current_search->second;
+            cur_pol = current_as->policy;
         }
 
         auto previous_search = graph->ases->find(as_path.at(i + 1));
         if(previous_search == graph->ases->end()) {
-            return;
+            prev_pol = EZAS_TYPE_BGP;
+            nbrs = false;
+        } else {
+            EZAS *previous_as = previous_search->second;
+            prev_pol = previous_as->policy;
+            if (nbrs)
+                nbrs = previous_as->has_neighbor(current_search->second->asn);
         }
 
-        EZAS *current_as = current_search->second;
-        EZAS *previous_as = previous_search->second;
 
         //Previous AS is an adopter and does not have an actual relationship to this AS (invalid MAC)
-        if(previous_as->policy != EZAS_TYPE_BGP && !previous_as->has_neighbor(current_as->asn)) {
+        if(prev_pol != EZAS_TYPE_BGP && !nbrs) {
             as_index_invalid_relationship = i + 1;
             search_for_adopter = true;
             continue;
         }
 
-        if(current_as->policy != EZAS_TYPE_BGP && search_for_adopter) {
+        if(cur_pol != EZAS_TYPE_BGP && search_for_adopter) {
             search_for_adopter = false;
             hyper_edge_ranges.push_back(std::make_pair(i, as_index_invalid_relationship));
         }
@@ -385,7 +397,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         //Add the hyper edge to the component it belongs to (ASes on the path belong to no existing component and thos that do all belong to the same component)
         //Or merge components if the path contains more than one AS that belong to different components already (an AS can be in 1 component only)
         //Or create a whole new component if none of the ASes belong to an existing component
-        // add_hyper_edge(hyper_edge);
+        add_hyper_edge(hyper_edge);
         
         bool contains = false;
         for(auto &temp_edge : edges_to_proccess) {
@@ -397,6 +409,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
 
         if(contains)
             continue;
+
 
         edges_to_proccess.push_back(hyper_edge);
     }
@@ -436,13 +449,15 @@ void CommunityDetection::process_reports(EZASGraph *graph) {
 
         blacklist_paths.push_back(edge);
 
-        unsigned int reporter_policy = graph->ases->find(edge.at(edge.size() - 1))->second->policy;
+        unsigned int reporter_policy = graph->ases->find(edge.at(0))->second->policy;
 
         if(reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL) {
-            add_hyper_edge(edge);
+            std::vector<uint32_t> truncated = std::vector<uint32_t>(edge.begin()+1, edge.end());
+            add_hyper_edge(truncated);
         }
     }
 
     local_threshold_filtering();
+    // TODO fix spelling, process 
     edges_to_proccess.clear();
 }
