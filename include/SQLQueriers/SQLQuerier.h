@@ -75,6 +75,11 @@ public:
     void close_connection();
     pqxx::result execute(std::string sql, bool insert = false);
     
+    std::string copy_to_db_string(std::string file_name, std::string table_name, std::string column_names);
+    std::string select_prefix_string(Prefix<>* p, bool subnet = false, std::string selection = "COUNT(*)");
+    std::string exclude_asn_string();
+    std::string clear_table_string(std::string table_name);
+
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);
     pqxx::result select_prefix_count(Prefix<>*);
