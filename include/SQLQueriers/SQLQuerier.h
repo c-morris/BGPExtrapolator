@@ -79,6 +79,7 @@ public:
     std::string select_prefix_string(Prefix<>* p, bool subnet = false, std::string selection = "COUNT(*)");
     std::string exclude_asn_string();
     std::string clear_table_string(std::string table_name);
+    std::string create_table_string(std::string table_name, std::string column_names, bool unlogged = false, std::string grant_all_user = "");
 
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);
