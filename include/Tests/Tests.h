@@ -156,8 +156,12 @@ bool test_rovpp_prepending_priority_beginning_existing_ann2();
 bool ezbgpsec_test_path_propagation();
 
 //SQLQuerier
-bool test_parse_config_buildup();
-bool test_parse_config_teardown();
+bool test_querier_buildup();
+bool test_querier_teardown();
 bool test_parse_config();
+bool test_copy_to_db_string();
+bool test_select_prefix_string();
+bool test_clear_table_string();
+bool test_create_table_string();
 
 #endif
