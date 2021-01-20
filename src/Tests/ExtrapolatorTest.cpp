@@ -1469,7 +1469,7 @@ bool test_extrapolate_blocks() {
 
     // Vector that contains correct extrapolation results
     // Format: (asn prefix origin received_from_asn time)
-    std::vector<std::string> trueResults {
+    std::vector<std::string> true_results {
         "1 137.99.0.0/16 1 1 0 ",
         "2 137.99.0.0/16 1 1 0 ",
         "4 137.99.0.0/16 1 2 0 ",
@@ -1485,22 +1485,22 @@ bool test_extrapolate_blocks() {
     // Get extrapolation results
     pqxx::result r = e.querier->select_from_table(results_table);
 
-    // If the number of rows is different from trueResults, we already know that something is not right
-    if (r.size() != trueResults.size()) {
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
         std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
         return false;
     }
 
-    // Convert every row in results to a string separated by spaces (same format as trueResults)
-    // Make sure the results match those in trueResults
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
     for (auto const &row: r) {
         std::string rowStr = "";
         for (auto const &field: row) { 
             rowStr = rowStr + field.c_str() + " ";
         }
-        std::vector<std::string>::iterator it = std::find(trueResults.begin(), trueResults.end(), rowStr);
-        if (it != trueResults.end()) {
-            trueResults.erase(it);
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
         } else {
             std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
             return false;
