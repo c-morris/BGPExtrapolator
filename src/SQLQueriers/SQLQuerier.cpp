@@ -195,30 +195,25 @@ std::string SQLQuerier::copy_to_db_string(std::string file_name, std::string tab
  *  @param subnet True - SELECT the announcements the prefixes contained within the passed subnet
  *                False - SELECT announcements for the prefix
  *  @param selection Comma separated list of column names to be selected,
- *                      Ex: host(prefix), netmask(prefix), as_path, origin, time
+ *                   Ex: host(prefix), netmask(prefix), as_path, origin, time
+ *                   Replaced by COUNT(*) if unspecified
  */
 std::string SQLQuerier::select_prefix_string(Prefix<>* p, bool subnet, std::string selection) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT " + selection + " FROM " + announcements_table;
     if (subnet) {
-        sql += " WHERE prefix <<= \'" + cidr + "\'" + exclude_asn_string();
+        sql += " WHERE prefix <<= \'" + cidr + "\'";
     } else {
-        sql += " WHERE prefix = \'" + cidr + "\'" + exclude_asn_string();
+        sql += " WHERE prefix = \'" + cidr + "\'";
+    }
+
+    if (exclude_as_number > -1) {
+        sql += " and monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += ";";
     }
 
     return sql;
-}
-
-/** Returns a string with ASN that needs to be excluded
- *  If there isn't one, returns a semicolon
- *  This helps to simplify SELECT functions
-*/  
-std::string SQLQuerier::exclude_asn_string() {
-    if (exclude_as_number > -1) {
-        return " and monitor_asn != " + std::to_string(exclude_as_number) + ";";
-    } else {
-        return ";";
-    }
 }
 
 // Returns a string with a DROP TABLE query
