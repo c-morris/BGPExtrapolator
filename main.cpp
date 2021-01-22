@@ -48,7 +48,7 @@
 
 void intro() {
     // This needs to be finished
-    BOOST_LOG_TRIVIAL(info) << "***** Routing Extrapolator v0.3 *****";
+    BOOST_LOG_TRIVIAL(info) << "***** BGP Extrapolator v0.3 *****";
     BOOST_LOG_TRIVIAL(info) << "This is free software: you are free to change and redistribute it.";
     BOOST_LOG_TRIVIAL(info) << "There is NO WARRANTY, to the extent permitted by law.";
 }
@@ -74,12 +74,15 @@ int main(int argc, char *argv[]) {
         ("random,b", 
          po::value<bool>()->default_value(DEFAULT_RANDOM_TIEBRAKING), 
          "disables random tiebraking for testing")
-        ("invert-results,i", 
+        ("store-results", 
+         po::value<bool>()->default_value(DEFAULT_STORE_RESULTS), 
+         "save results allowing reconstruction of local RIBs.")
+        ("store-inverse-results,i", 
          po::value<bool>()->default_value(DEFAULT_STORE_INVERT_RESULTS), 
-         "record ASNs which do *not* have a route to a prefix-origin")
-        ("store-depref,d", 
+         "save ASNs which do *not* have a route to a prefix-origin")
+        ("store-depref,d",
          po::value<bool>()->default_value(DEFAULT_STORE_DEPREF_RESULTS), 
-         "store depref results")
+         "record the second-best announcements for each prefix")
         ("iteration-size,s", 
          po::value<uint32_t>()->default_value(DEFAULT_ITERATION_SIZE), 
          "number of prefixes to be used in one iteration cycle")
@@ -92,6 +95,9 @@ int main(int argc, char *argv[]) {
         ("inverse-results-table,o",
          po::value<string>()->default_value(INVERSE_RESULTS_TABLE),
          "name of the inverse results table")
+        ("full-path-results-table",
+         po::value<string>()->default_value(FULL_PATH_RESULTS_TABLE),
+         "name of the full path results table")
         ("announcements-table,a",
          po::value<string>()->default_value(ANNOUNCEMENTS_TABLE),
          "name of announcements table")
@@ -106,7 +112,7 @@ int main(int argc, char *argv[]) {
          "space-separated names of ROVpp policy tables")
         ("prop-twice,k",
          po::value<bool>()->default_value(true),
-         "flag whether or not to propagate twice")
+         "flag whether or not to propagate twice (ROVpp only)")
         ("log-std-out,l",
          po::value<bool>()->default_value(true),
          "enables logging into the console, best used for debugging only")
@@ -117,8 +123,11 @@ int main(int argc, char *argv[]) {
          po::value<unsigned int>()->default_value(0),
          "severity of errors to be logged, from 0 (trace) to 5 (fatal)")
         ("config-section", po::value<string>()->default_value("bgp"), "section of the config file")
-        ("exclude-asn,e", po::value<int>()->default_value(-1), 
-         "exclude all announcements from a particular ASN")
+        ("exclude-monitor", po::value<int>()->default_value(-1),
+         "exclude announcements from a particular monitor ASN")
+        ("full-path-asns",
+         po::value<vector<uint32_t>>(),
+         "output these ASNs with their full AS_PATH in a separate table")
         ("mh-propagation-mode", 
          po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
          "multi-home propagation mode, 0 - off, 1 - propagate from mh to providers in some cases (automatic), 2 - no propagation from mh, 3 - propagation from mh to peers");
@@ -143,6 +152,14 @@ int main(int argc, char *argv[]) {
 
     // Handle intro information
     intro();
+
+    // Record full path asns
+    vector<uint32_t> *full_path_asns = NULL;
+    vector<uint32_t> asn_vect;
+    if (vm.count("full-path-asns")) {
+        asn_vect = vm["full-path-asns"].as<vector<uint32_t>>();
+        full_path_asns = &asn_vect;
+    }
     
     // Check for ROV++ mode
     if (vm["rovpp"].as<bool>()) {
@@ -156,6 +173,9 @@ int main(int argc, char *argv[]) {
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 ROVPP_RESULTS_TABLE),
+            (vm.count("full-path-results-table") ?
+                vm["full-path-results-table"].as<string>() :
+                FULL_PATH_RESULTS_TABLE),
             (vm.count("tracked-ases-table") ?
                 vm["tracked-ases-table"].as<string>() : 
                 ROVPP_TRACKED_ASES_TABLE),
@@ -163,7 +183,7 @@ int main(int argc, char *argv[]) {
                 vm["simulation-table"].as<string>() : 
                 ROVPP_SIMULATION_TABLE),
             vm["config-section"].as<string>(),
-            vm["exclude-asn"].as<int>());
+            vm["exclude-monitor"].as<int>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -174,7 +194,8 @@ int main(int argc, char *argv[]) {
         // Instantiate Extrapolator
         EZExtrapolator *extrap = new EZExtrapolator(
             vm["random"].as<bool>(),
-            vm["invert-results"].as<bool>(),
+            vm["store-results"].as<bool>(),
+            vm["store-inverse-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
             (vm.count("announcements-table") ? 
                 vm["announcements-table"].as<string>() : 
@@ -188,12 +209,16 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
+            (vm.count("full-path-results-table") ?
+                vm["full-path-results-table"].as<string>() :
+                FULL_PATH_RESULTS_TABLE),
             vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
-            vm["ezbgpsec"].as<uint32_t>(),
+            vm["ezbgpsec"].as<uint32_t>(), // number of rounds
             vm["num-in-between"].as<uint32_t>(),
-            vm["exclude-asn"].as<int>(),
-            vm["mh-propagation-mode"].as<uint32_t>());
+            vm["exclude-monitor"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>(),
+            full_path_asns);
             
         // Run propagation
         extrap->perform_propagation();
@@ -203,7 +228,8 @@ int main(int argc, char *argv[]) {
     } else {
         // Instantiate Extrapolator
         Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
-            vm["invert-results"].as<bool>(),
+            vm["store-results"].as<bool>(),
+            vm["store-inverse-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
             (vm.count("announcements-table") ? 
                 vm["announcements-table"].as<string>() : 
@@ -217,10 +243,14 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
+            (vm.count("full-path-results-table") ?
+                vm["full-path-results-table"].as<string>() :
+                FULL_PATH_RESULTS_TABLE),
             vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
-            vm["exclude-asn"].as<int>(),
-            vm["mh-propagation-mode"].as<uint32_t>());
+            vm["exclude-monitor"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>(),
+            full_path_asns);
             
         // Run propagation
         extrap->perform_propagation();
