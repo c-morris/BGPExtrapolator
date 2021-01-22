@@ -26,6 +26,7 @@
 
 //Vanilla Tables
 #define RESULTS_TABLE "extrapolation_results"
+#define FULL_PATH_RESULTS_TABLE "full_path_extrapolation_results"
 #define DEPREF_RESULTS_TABLE "extrapolation_deprefer_results"
 #define INVERSE_RESULTS_TABLE "extrapolation_inverse_results"
 #define PEERS_TABLE "peers"
