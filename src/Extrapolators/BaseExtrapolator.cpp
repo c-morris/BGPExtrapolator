@@ -145,17 +145,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     std::ofstream outfile;
     std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
     outfile.open(file_name);
-
-    // Handle standard results
-    if (store_results) {
-        for (auto &as : *graph->ases){
-            if (counter++ % num_threads == 0) {
-                as.second->stream_announcements(outfile);
-            }
-        }
-        outfile.close();
-        querier_copy.copy_results_to_db(file_name);
-    }
     
     // Handle inverse results
     if (store_invert_results) {
@@ -173,10 +162,19 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         outfile.close();
         querier_copy.copy_inverse_results_to_db(file_name);
     
-    }    
+    // Handle standard results
+    } else {
+        for (auto &as : *graph->ases){
+            if (counter++ % num_threads == 0) {
+                as.second->stream_announcements(outfile);
+            }
+        }
+        outfile.close();
+        querier_copy.copy_results_to_db(file_name);
 
+    }
     std::remove(file_name.c_str());
-
+    
     // Handle depref results
     if (store_depref_results) {
         std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
@@ -190,16 +188,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         querier_copy.copy_depref_to_db(depref_name);
         std::remove(depref_name.c_str());
     }
-
-    // Handle full_path results
-    if (full_path_asns != NULL) {
-        for (uint32_t asn : *full_path_asns){
-            if (counter++ % num_threads == 0) {
-                this->save_results_at_asn(asn);
-            }
-        }
-    }
-
     querier_copy.close_connection();
     sem_post(&worker_thread_count);
 }
@@ -233,54 +221,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     } else {
         this->save_results_thread(iteration, 0, 1);
     }
-}
-
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_at_asn(uint32_t asn){
-    auto search = graph->ases->find(asn); 
-    if (search == graph->ases->end()) {
-        // If the asn does not exist, return
-        return;
-    }
-    ASType &as = *search->second;
-    std::ofstream outfile;
-    std::string file_name = "/dev/shm/bgp/as" + std::to_string(asn) + ".csv";
-    outfile.open(file_name);
-    for (auto &ann : *as.all_anns) {
-        AnnouncementType &a = ann.second;
-        outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ",\"" << this->stream_as_path(a, asn) << "\"\n";
-    }
-    outfile.close();
-    this->querier->copy_single_results_to_db(file_name);
-    std::remove(file_name.c_str());
-}
-
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::stream_as_path(AnnouncementType &ann, uint32_t asn){
-    std::stringstream as_path;
-    std::vector<uint32_t> as_path_vect;
-
-    // Trace back until one of these conditions
-    // 1. The origin is the received from ASN
-    // 2. The received from ASN does not exist in the graph
-    // 3. A loop in the topology is detected
-    while (ann.origin != ann.received_from_asn && 
-           graph->ases->find(ann.received_from_asn) != graph->ases->end()) {
-        if (std::find(as_path_vect.begin(), as_path_vect.end(), ann.received_from_asn) != as_path_vect.end()) {
-            BOOST_LOG_TRIVIAL(warning) << "Loop detected in AS_PATH from AS " << asn << " to prefix " << ann.prefix.to_cidr();
-            break;
-        }
-        as_path_vect.push_back(ann.received_from_asn);
-        ann = graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix)->second;
-    }
-    // Stringify
-    as_path << '{' << asn << ',';
-    for (uint32_t path_asn : as_path_vect) {
-        as_path << path_asn << ',';
-    }
-    // Add the last AS on the path
-    as_path << ann.received_from_asn << '}';
-    return as_path.str();
 }
 
 //We love C++ class templating. Please find another way to do this. I want to be wrong.

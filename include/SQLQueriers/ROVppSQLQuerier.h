@@ -37,7 +37,6 @@ public:
                     std::string results_table = ROVPP_RESULTS_TABLE,
                     std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
                     std::string depref_results_table = DEPREF_RESULTS_TABLE,
-                    std::string full_path_results_table = FULL_PATH_RESULTS_TABLE,
                     std::string tracked_ases_table = ROVPP_TRACKED_ASES_TABLE,
                     std::string simulation_table = ROVPP_SIMULATION_TABLE,
                     int exclude_as_number = -1,

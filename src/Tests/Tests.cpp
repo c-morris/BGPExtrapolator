@@ -141,9 +141,8 @@ BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down2 ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down_multihomed_standard ) {
         BOOST_CHECK( test_propagate_down_multihomed_standard() );
 }
-BOOST_AUTO_TEST_CASE( Extrapolator_save_results ) {
+BOOST_AUTO_TEST_CASE( Extrapolator_save_results_parallel ) {
         BOOST_CHECK( test_save_results_parallel() );
-        BOOST_CHECK( test_save_results_at_asn() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );

@@ -16,24 +16,17 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::i
     }
 
     // Generate required tables
-    if (this->store_results) {
-        this->querier->clear_results_from_db();
-        this->querier->create_results_tbl();
-    }
-
     if (this->store_invert_results) {
         this->querier->clear_inverse_from_db();
         this->querier->create_inverse_results_tbl();
+    } else {
+        this->querier->clear_results_from_db();
+        this->querier->create_results_tbl();
     }
 
     if (this->store_depref_results) {
         this->querier->clear_depref_from_db();
         this->querier->create_depref_tbl();
-    }
-
-    if (this->full_path_asns != NULL) {
-        this->querier->clear_full_path_from_db();
-        this->querier->create_full_path_results_tbl();
     }
 
     this->querier->clear_stubs_from_db();

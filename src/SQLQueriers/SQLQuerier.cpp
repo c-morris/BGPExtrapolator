@@ -27,7 +27,6 @@ SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE 
                         std::string results_table /* = RESULTS_TABLE */, 
                         std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                         std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
-                        std::string full_path_results_table /* = FULL_PATH_RESULTS_TABLE */,
                         int exclude_as_number, /* = -1 */
                         std::string config_section /* = "bgp" */,
                         std::string config_path /* = "/etc/bgp/bgp.conf" */,
@@ -36,7 +35,6 @@ SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE 
     this->results_table = results_table;
     this->depref_table = depref_results_table;
     this->inverse_results_table = inverse_results_table;
-    this->full_path_results_table = full_path_results_table;
     this->config_section = config_section;
     this->config_path = config_path;
     this->exclude_as_number = exclude_as_number;
@@ -397,12 +395,6 @@ void SQLQuerier::clear_inverse_from_db() {
     execute(sql);
 }
 
-/** Drop the Querier's full path results table.
- */
-void SQLQuerier::clear_full_path_from_db() {
-    std::string sql = std::string("DROP TABLE IF EXISTS " + full_path_results_table + ";");
-    execute(sql);
-}
 
 /** Instantiates a new, empty results table in the database, dropping the old table.
  */
@@ -413,17 +405,6 @@ void SQLQuerier::create_results_tbl() {
     execute(sql, false);
 }
 
-/** Instantiates a new, empty full path results table in the database, dropping the old table.
- *
- * In addition to all of the columns in the results table, this table includes the as_path.
- */
-void SQLQuerier::create_full_path_results_tbl() {
-    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + full_path_results_table + " (\
-    asn bigint,prefix cidr, origin bigint, received_from_asn \
-    bigint, time bigint, as_path bigint[]); GRANT ALL ON TABLE " + full_path_results_table + " TO bgp_user;");
-    std::cout << "Creating full path results table..." << std::endl;
-    execute(sql, false);
-}
 
 /** Instantiates a new, empty depref table in the database, dropping the old table.
  */
@@ -452,13 +433,6 @@ void SQLQuerier::copy_results_to_db(std::string file_name) {
     execute(sql);
 }
 
-/** Similar to copy_results_to_db, but for a single AS result which includes an AS_PATH column.
- */
-void SQLQuerier::copy_single_results_to_db(std::string file_name) {
-    std::string sql = std::string("COPY " + full_path_results_table + "(asn, prefix, origin, received_from_asn, time, as_path)") +
-                                  "FROM '" + file_name + "' WITH (FORMAT csv)";
-    execute(sql);
-}
 
 /** Takes a .csv filename and bulk copies all elements to the depref table.
  */
