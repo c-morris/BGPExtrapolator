@@ -228,7 +228,7 @@ public:
      * @param asn AS number of the AS to start at
      * @return The AS_PATH as a string, formatted as a postgres array literal
      */
-    virtual std::string stream_as_path(AnnouncementType &ann, uint32_t asn);
+    virtual std::string stream_as_path(AnnouncementType ann, uint32_t asn);
 
 };
 #endif
