@@ -4,22 +4,25 @@
 //Attacker is checked for this, the origin needs to as well
 
 EZExtrapolator::EZExtrapolator(bool random_tiebraking,
+                                bool store_results, 
                                 bool store_invert_results, 
                                 bool store_depref_results, 
                                 std::string announcement_table,
                                 std::string results_table, 
                                 std::string inverse_results_table, 
                                 std::string depref_results_table, 
+                                std::string full_path_results_table, 
                                 std::string config_section,
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
                                 uint32_t num_between,
                                 int exclude_as_number,
                                 uint32_t mh_mode,
-                                bool origin_only) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size, mh_mode, origin_only) {
+                                bool origin_only,
+                                std::vector<uint32_t> *full_path_asns) : BlockedExtrapolator(random_tiebraking, store_results, store_invert_results, store_depref_results, iteration_size, mh_mode, origin_only, full_path_asns) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, exclude_as_number, config_section);
+    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, full_path_results_table, exclude_as_number, config_section);
     
     this->successful_attacks = 0;
     this->successful_connections = 0;
@@ -30,9 +33,9 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
 }
 
 EZExtrapolator::EZExtrapolator() 
-    : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY) { }
+    : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, 
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL) { }
 
 EZExtrapolator::~EZExtrapolator() { }
 
@@ -47,7 +50,7 @@ void EZExtrapolator::init() {
 void EZExtrapolator::perform_propagation() {
     init();
 
-    std::cout << "Generating subnet blocks..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
@@ -70,7 +73,7 @@ void EZExtrapolator::perform_propagation() {
         successful_connections = 0;
         disconnections = 0;
 
-        std::cout << "Round #" << round << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Round #" << round;
 
         extrapolate(prefix_blocks, subnet_blocks);
 
@@ -114,7 +117,7 @@ void EZExtrapolator::perform_propagation() {
             //Re calculate the components with these new relationships
             graph->process(querier);
         } else {
-            std::cout << "Round #" << round << ": No more attacks" << std::endl;
+            BOOST_LOG_TRIVIAL(info) << "Round #" << round << ": No more attacks";
         }
     } while(successful_attacks > 0 && round <= num_rounds - 1);
     

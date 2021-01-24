@@ -16,17 +16,24 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::i
     }
 
     // Generate required tables
+    if (this->store_results) {
+        this->querier->clear_results_from_db();
+        this->querier->create_results_tbl();
+    }
+
     if (this->store_invert_results) {
         this->querier->clear_inverse_from_db();
         this->querier->create_inverse_results_tbl();
-    } else {
-        this->querier->clear_results_from_db();
-        this->querier->create_results_tbl();
     }
 
     if (this->store_depref_results) {
         this->querier->clear_depref_from_db();
         this->querier->create_depref_tbl();
+    }
+
+    if (this->full_path_asns != NULL) {
+        this->querier->clear_full_path_from_db();
+        this->querier->create_full_path_results_tbl();
     }
 
     this->querier->clear_stubs_from_db();
@@ -44,7 +51,7 @@ template <class SQLQuerierType, class GraphType, class AnnouncementType, class A
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::perform_propagation() {
     init();
 
-    std::cout << "Generating subnet blocks..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
@@ -62,7 +69,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks) {
-    std::cout << "Beginning propagation..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Beginning propagation...";
     
     // Seed MRT announcements and propagate
     uint32_t announcement_count = 0; 
@@ -77,8 +84,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
 
     auto ext_finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> e = ext_finish - ext_start;
-    std::cout << "Block elapsed time: " << e.count() << std::endl;
-    std::cout << "Announcement count: " << announcement_count << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Block elapsed time: " << e.count();
+    BOOST_LOG_TRIVIAL(info) << "Announcement count: " << announcement_count;
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -145,7 +152,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
                                                                                                     std::vector<Prefix<>*> *prefix_set) {
     // For each unprocessed block of announcements 
     for (Prefix<>* prefix : *prefix_set) {
-        std::cout << "Selecting Announcements..." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Selecting Announcements...";
         auto prefix_start = std::chrono::high_resolution_clock::now();
         
         // Handle prefix blocks or subnet blocks of announcements
@@ -164,7 +171,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             break;
         announcement_count += bsize;
         
-        std::cout << "Seeding announcements..." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Seeding announcements...";
         // For all announcements in this block
         for (pqxx::result::size_type i = 0; i < bsize; i++) {
             // Get row origin
@@ -215,14 +222,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             delete as_path;
         }
         // Propagate for this subnet
-        std::cout << "Propagating..." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Propagating...";
         this->propagate_up();
         this->propagate_down();
         this->save_results(iteration);
         this->graph->clear_announcements();
         iteration++;
         
-        std::cout << prefix->to_cidr() << " completed." << std::endl;
+        BOOST_LOG_TRIVIAL(info) << prefix->to_cidr() << " completed.";
         auto prefix_finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> q = prefix_finish - prefix_start;
     }
@@ -265,52 +272,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
 
         auto announcement_search = as_on_path->all_anns->find(prefix);
 
-        // Check if already received this prefix
-        if (announcement_search != as_on_path->all_anns->end()) {
-            AnnouncementType& second_announcement = announcement_search->second;
-
-            // If the current timestamp is newer (worse)
-            if (timestamp > second_announcement.tstamp) {
-                // Skip it
-                continue;
-            } else if (timestamp == second_announcement.tstamp) {
-                // Tie breaker for equal timestamp
-                bool keep_first = true;
-                // Random tiebreak if enabled
-                if (this->random_tiebraking) {
-                    keep_first = as_on_path->get_random();
-                }
-
-                // Log annoucements with equal timestamps 
-                // Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
-                //     ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
-                //     ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
-
-                // First come, first saved if random is disabled
-                if (keep_first) {
-                    continue;
-                } else {
-                    // Position of previous AS on path
-                    uint32_t pos = path_l - i + 1;
-                    // Prepending check, use original priority
-                    if (pos < path_l && as_path->at(pos) == as_on_path->asn) {
-                        continue;
-                    }
-                    as_on_path->delete_ann(prefix);
-                }
-            } else {
-                // Log announcements that arent handled by sorting
-                // Logger::getInstance().log("Unsorted_Announcements") 
-                //     << "This announcement is being deleted and is not handled by sorting." 
-                //     << " Prefix: " << prefix.to_cidr() 
-                //     << ", tstamp: " << timestamp 
-                //     << ", origin: " << as_path->at(path_l-1);
-
-                // Delete worse MRT announcement, proceed with seeding
-                as_on_path->delete_ann(prefix);
-            }
-        }
-        
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
@@ -333,6 +294,65 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
         uint32_t priority = received_from + path_len_weighted;
+
+        // Check if already received this prefix
+        if (announcement_search != as_on_path->all_anns->end()) {
+            AnnouncementType& second_announcement = announcement_search->second;
+
+            // If the current timestamp is newer (worse)
+            if (timestamp > second_announcement.tstamp) {
+                // Skip it
+                continue;
+            } else if (timestamp == second_announcement.tstamp) {
+                // Position of previous AS on path
+                uint32_t prevPos = path_l - i + 1;
+
+                // Position of the current AS on path
+                uint32_t currPos = path_l - i;
+
+                // Tie breaker for equal timestamp
+                bool keep_first = true;
+                // Random tiebreak if enabled
+                if (this->random_tiebraking) {
+                    keep_first = as_on_path->get_random();
+                }
+
+                // Skip announcement if there exists one with a higher priority
+                ASType *current_as = this->graph->ases->find(as_path->at(currPos))->second;
+                if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                    continue;
+                // If the new announcement has a higher priority, change keep_first to false to make sure we save it
+                } else if (current_as->all_anns->find(prefix)->second.priority < priority) {
+                    keep_first = false;
+                }
+
+                // Log annoucements with equal timestamps 
+                // Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
+                //     ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
+                //     ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
+
+                // First come, first saved if random is disabled
+                if (keep_first) {
+                    continue;
+                } else {
+                    // Prepending check, use original priority
+                    if (prevPos < path_l && prevPos >= 0 && as_path->at(prevPos) == as_on_path->asn) {
+                        continue;
+                    }
+                    as_on_path->delete_ann(prefix);
+                }
+            } else {
+                // Log announcements that arent handled by sorting
+                // Logger::getInstance().log("Unsorted_Announcements") 
+                //     << "This announcement is being deleted and is not handled by sorting." 
+                //     << " Prefix: " << prefix.to_cidr() 
+                //     << ", tstamp: " << timestamp 
+                //     << ", origin: " << as_path->at(path_l-1);
+
+                // Delete worse MRT announcement, proceed with seeding
+                as_on_path->delete_ann(prefix);
+            }
+        }
         
         uint32_t received_from_asn = 0;
         // If this AS is the origin

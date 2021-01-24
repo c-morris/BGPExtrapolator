@@ -29,17 +29,20 @@
 class Extrapolator : public BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS> {
 public:
     Extrapolator(bool random_tiebraking,
+                    bool store_results, 
                     bool store_invert_results, 
                     bool store_depref_results, 
                     std::string announcement_table,
                     std::string results_table, 
                     std::string inverse_results_table, 
                     std::string depref_results_table,
+                    std::string full_path_results_table,
                     std::string config_section, 
                     uint32_t iteration_size,
                     int exclude_as_number,
                     uint32_t mh_mode,
-                    bool origin_only);
+                    bool origin_only,
+                    std::vector<uint32_t> *full_path_asns);
 
     Extrapolator();
     ~Extrapolator();
