@@ -41,6 +41,7 @@ public:
                     uint32_t iteration_size,
                     int exclude_as_number,
                     uint32_t mh_mode,
+                    bool origin_only,
                     std::vector<uint32_t> *full_path_asns);
 
     Extrapolator();
