@@ -512,17 +512,20 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
                     if (edge.size() >= 2) {
                         if (edge[1] == suspect.first) {
                             std::vector<uint32_t> tmp(next(edge.begin()), edge.end());
-                            if (!(it+1)->insert(tmp).second) {
-                                std::cout << "caught a duplicate" << std::endl;
-                            }
+                            (it+1)->insert(tmp).second;
                         }
                     }
                 }
             }
         }
     }
-    // test
+    // Blacklist all edges that were fully collapsed
     for (const auto &edge : buckets[1]) {
+        for (const auto asn : edge) {
+            community_detection->blacklist_asns.insert(asn);
+        }
+    }
+    for (const auto &edge : buckets[2]) {
         for (const auto asn : edge) {
             std::cout << asn;
         }
