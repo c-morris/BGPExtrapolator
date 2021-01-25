@@ -1017,6 +1017,7 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     std::vector<uint32_t> edge2 = {5, 1};
     std::vector<uint32_t> edge3 = {6, 1};
     std::vector<uint32_t> edge4 = {7, 1};
+    std::vector<uint32_t> edge5 = {1};
 
     CommunityDetection cd(2);
     CommunityDetection::Component c(edge1);
@@ -1025,6 +1026,9 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     c.add_hyper_edge(edge4);
 
     c.local_threshold_approx_filtering(&cd);
+    if (cd.blacklist_asns.find(1) == cd.blacklist_asns.end()) {
+        return false;
+    }
 
     edge1 = {4, 2, 1}; 
     edge2 = {5, 2, 1};
@@ -1032,12 +1036,59 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     edge4 = {7, 2, 1};
 
     c = CommunityDetection::Component(edge1);
+    cd = CommunityDetection(2);
     c.add_hyper_edge(edge2);
     c.add_hyper_edge(edge3);
     c.add_hyper_edge(edge4);
 
-    std::cout << "about to do the thing" << std::endl;
     c.local_threshold_approx_filtering(&cd);
+    if (cd.blacklist_paths.find(std::vector<uint32_t>({2, 1})) == cd.blacklist_paths.end()) {
+        return false;
+    }
+
+    edge1 = {7, 666, 2, 1}; 
+    edge2 = {8, 666, 3, 1};
+    edge3 = {9, 666, 4, 1};
+    edge4 = {6, 666, 5, 1};
+
+    c = CommunityDetection::Component(edge1);
+    cd = CommunityDetection(2);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+
+    //c.local_threshold_approx_filtering(&cd);
+
+    edge1 = {20, 666, 11, 2, 1}; 
+    edge2 = {21, 666, 11, 3, 1};
+    edge3 = {22, 666, 12, 4, 1};
+    edge4 = {23, 666, 12, 5, 1};
+    edge5 = {24, 666, 13, 6, 1};
+
+    c = CommunityDetection::Component(edge1);
+    cd = CommunityDetection(2);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+    c.add_hyper_edge(edge5);
+
+    //c.local_threshold_approx_filtering(&cd);
+    
+    edge1 = {20, 666, 11, 2, 1}; 
+    edge2 = {21, 666, 11, 3, 1};
+    edge3 = {22, 666, 12, 4, 1};
+    edge4 = {23, 666, 12, 5, 1};
+
+    c = CommunityDetection::Component(edge1);
+    cd = CommunityDetection(2);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+
+    c.local_threshold_approx_filtering(&cd);
+    
+
+    
 
     return true;
 }

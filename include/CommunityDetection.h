@@ -153,7 +153,7 @@ public:
     //TODO: The identifier is currently based on the first ASN in the first hyper edge that the component is initialized with. This can brake. Do better.
     std::unordered_map<uint32_t, Component*> identifier_to_component;
 
-    std::vector<std::vector<uint32_t>> blacklist_paths;
+    std::set<std::vector<uint32_t>> blacklist_paths;
     std::unordered_set<uint32_t> blacklist_asns;
 
     std::vector<std::vector<uint32_t>> edges_to_proccess;

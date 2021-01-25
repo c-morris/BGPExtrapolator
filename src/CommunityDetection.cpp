@@ -449,7 +449,7 @@ void CommunityDetection::process_reports(EZASGraph *graph) {
             blacklist_asns.insert(edge.at(1));
         }
 
-        blacklist_paths.push_back(edge);
+        blacklist_paths.insert(edge);
 
         unsigned int reporter_policy = graph->ases->find(edge.at(0))->second->policy;
 
@@ -513,20 +513,56 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
                     if (edge.size() >= 2) {
                         if (edge[1] == suspect.first) {
                             std::vector<uint32_t> tmp(next(edge.begin()), edge.end());
-                            (it+1)->insert(tmp).second;
+                            (it+1)->insert(tmp);
                         }
                     }
                 }
             }
         }
     }
+    // Now check the other direction (except for the origin)
+    for (int i = 2; i < num_buckets; i++) {
+        std::map<uint32_t, std::set<uint32_t>> counts;
+        for (const auto &edge : buckets[i]) {
+            for (int j = 0; j < i-2; j++) {
+                counts[edge[j]].insert(edge[j+1]);
+                if (edge[j] == 666) {
+                    std::cout << "got one i = " << i << " and j = " << j << "and the edge was " << edge[j+1] << "\n";
+                }
+            }
+        }
+        for (const auto &suspect : counts) {
+            if (suspect.second.size() > community_detection->local_threshold) {
+                // Add all the edges (to make sure none are missed)
+                // This is one area that needs to be re-done for muiltiple attackers
+                 for (const auto &edge : buckets[i]) {
+                    for (int j = 0; j < i-2; j++) {
+                        if (edge[j] == suspect.first) {
+                            std::vector<uint32_t> tmp(edge.begin(), edge.begin()+j+1);
+                            buckets[tmp.size()].insert(tmp);
+                            if (tmp.size() > 0) 
+                                std::cout << "adding " << tmp[0] << " to bucket " << tmp.size() << "\n";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     // Blacklist all edges that were fully collapsed
     for (const auto &edge : buckets[1]) {
         for (const auto asn : edge) {
             community_detection->blacklist_asns.insert(asn);
         }
     }
-    for (const auto &edge : buckets[2]) {
+    // Blacklist all the paths that were partially collapsed
+    for (auto it = buckets.begin()+2; it != buckets.end(); ++it) {
+        for (const auto &edge : *it) {
+            community_detection->blacklist_paths.insert(edge);
+        }
+    }
+    for (const auto &edge : buckets[1]) {
         for (const auto asn : edge) {
             std::cout << asn << ',';
         }
