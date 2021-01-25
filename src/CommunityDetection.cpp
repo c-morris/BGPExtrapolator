@@ -520,7 +520,21 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
             }
         }
     }
-    // Now check the other direction (except for the origin)
+    /* Now check the other direction (except for the origin)
+       NOTE: DOES NOT WORK FOR MULTIPLE ATTACKERS (yet)
+       
+       Ex: AS 666 fakes attacks from three customers (a, b, c) where thresh=2
+      
+                 a 
+                /
+         ...-666-b
+                \
+                 c
+      
+       This will be detected here, and the edge will be collapsed to one size smaller
+       (e. g., 666 and the rest of the path). 
+    */
+
     for (int i = 2; i < num_buckets; i++) {
         std::map<uint32_t, std::set<uint32_t>> counts;
         for (const auto &edge : buckets[i]) {
