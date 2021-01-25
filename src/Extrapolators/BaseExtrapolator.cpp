@@ -152,6 +152,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
                 for (uint32_t asn : *po.second) {
                     outfile << asn << ','
                             << po.first.first.to_cidr() << ','
+                            << po.first.first.id << ','
                             << po.first.second << '\n';
                 }
             }

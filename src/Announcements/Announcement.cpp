@@ -54,13 +54,13 @@ Announcement::Announcement(const Announcement& ann) : prefix(ann.prefix) {
 
 std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
     os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
-        ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
+        ann.prefix.netmask << std::endl << "Prefix_ID:\t\t" << ann.prefix.id << std::endl << "Origin:\t\t" << std::dec << ann.origin
         << std::endl << "Priority:\t" << ann.priority << std::endl 
         << "Recv'd from:\t" << std::dec << ann.received_from_asn;
     return os;
 }
 
 std::ostream& Announcement::to_csv(std::ostream &os) const {
-    os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
+    os << prefix.to_cidr() << ',' << prefix.id << "," << origin << ',' << received_from_asn << ',' << tstamp << '\n';
     return os;
 }

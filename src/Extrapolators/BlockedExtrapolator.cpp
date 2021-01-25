@@ -178,7 +178,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             uint32_t prefix_block_id;
 
             ann_block[i]["prefix_id"].to(prefix_id);
-            ann_block[i]["prefix_block_id"].to(prefix_block_id);
+            ann_block[i]["block_prefix_id"].to(prefix_block_id);
 
             Prefix<> cur_prefix(ip, mask, prefix_id, prefix_block_id);
             // Get row AS path
