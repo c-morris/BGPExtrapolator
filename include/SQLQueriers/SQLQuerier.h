@@ -77,10 +77,10 @@ public:
     void close_connection();
     pqxx::result execute(std::string sql, bool insert = false);
     
-    std::string copy_to_db_string(std::string file_name, std::string table_name, std::string column_names);
-    std::string select_prefix_string(Prefix<>* p, bool subnet = false, std::string selection = "COUNT(*)");
-    std::string clear_table_string(std::string table_name);
-    std::string create_table_string(std::string table_name, std::string column_names, bool unlogged = false, std::string grant_all_user = "");
+    std::string copy_to_db_query_string(std::string file_name, std::string table_name, std::string column_names);
+    std::string select_prefix_query_string(Prefix<>* p, bool subnet = false, std::string selection = "COUNT(*)");
+    std::string clear_table_query_string(std::string table_name);
+    std::string create_table_query_string(std::string table_name, std::string column_names, bool unlogged = false, std::string grant_all_user = "");
 
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);

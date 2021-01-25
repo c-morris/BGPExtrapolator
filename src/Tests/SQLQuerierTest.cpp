@@ -67,7 +67,7 @@ bool test_parse_config() {
 bool test_copy_to_db_string() {
     SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
 
-    if (querier->copy_to_db_string("test", "stubs", "(stub_asn,parent_asn)") != 
+    if (querier->copy_to_db_query_string("test", "stubs", "(stub_asn,parent_asn)") != 
                                     "COPY stubs(stub_asn,parent_asn) FROM 'test' WITH (FORMAT csv)") {
         std::cerr << "test_copy_to_db failed" << std::endl;
         return false;
@@ -88,22 +88,22 @@ bool test_select_prefix_string() {
         "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM announcement_table WHERE prefix <<= '137.99.0.0/16';"
     };
 
-    if (querier->select_prefix_string(p) != true_results[0]) {
+    if (querier->select_prefix_query_string(p) != true_results[0]) {
         std::cerr << "test_select_prefix failed (query from select_prefix_count)" << std::endl;
         return false;
     }
 
-    if (querier->select_prefix_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time") != true_results[1]) {
+    if (querier->select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time") != true_results[1]) {
         std::cerr << "test_select_prefix failed (query from select_prefix_ann)" << std::endl;
         return false;
     }
 
-    if (querier->select_prefix_string(p, true) != true_results[2]) {
+    if (querier->select_prefix_query_string(p, true) != true_results[2]) {
         std::cerr << "test_select_prefix failed (query from select_subnet_count)" << std::endl;
         return false;
     }
 
-    if (querier->select_prefix_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time") != true_results[3]) {
+    if (querier->select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time") != true_results[3]) {
         std::cerr << "test_select_prefix failed (query from select_subnet_ann)" << std::endl;
         return false;
     }
@@ -115,7 +115,7 @@ bool test_select_prefix_string() {
 bool test_clear_table_string() {
     SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
 
-    if (querier->clear_table_string("test_table") != "DROP TABLE IF EXISTS test_table;") {
+    if (querier->clear_table_query_string("test_table") != "DROP TABLE IF EXISTS test_table;") {
         std::cerr << "test_clear_table_string failed" << std::endl;
         return false;
     }
@@ -133,19 +133,19 @@ bool test_create_table_string() {
         "CREATE UNLOGGED TABLE IF NOT EXISTS test_table (stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint); GRANT ALL ON TABLE test_table TO test_user;"
     };
 
-    std::string sql = querier->create_table_string("test_table", "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)");
+    std::string sql = querier->create_table_query_string("test_table", "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)");
     if (sql != true_results[0]) {
         std::cerr << "test_create_table_string failed" << std::endl;
         return false;
     }
 
-    sql = querier->create_table_string("test_table", "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)", true);
+    sql = querier->create_table_query_string("test_table", "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)", true);
     if (sql != true_results[1]) {
         std::cerr << "test_create_table_string failed" << std::endl;
         return false;
     }
 
-    sql = querier->create_table_string("test_table", "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)", true, "test_user");
+    sql = querier->create_table_query_string("test_table", "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)", true, "test_user");
     if (sql != true_results[2]) {
         std::cerr << "test_create_table_string failed" << std::endl;
         return false;
