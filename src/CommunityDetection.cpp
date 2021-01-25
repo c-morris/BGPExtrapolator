@@ -527,7 +527,7 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
             for (int j = 0; j < i-2; j++) {
                 counts[edge[j]].insert(edge[j+1]);
                 if (edge[j] == 666) {
-                    std::cout << "got one i = " << i << " and j = " << j << "and the edge was " << edge[j+1] << "\n";
+                    //std::cout << "got one i = " << i << " and j = " << j << "and the edge was " << edge[j+1] << "\n";
                 }
             }
         }
@@ -540,8 +540,9 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
                         if (edge[j] == suspect.first) {
                             std::vector<uint32_t> tmp(edge.begin(), edge.begin()+j+1);
                             buckets[tmp.size()].insert(tmp);
-                            if (tmp.size() > 0) 
-                                std::cout << "adding " << tmp[0] << " to bucket " << tmp.size() << "\n";
+                            if (tmp.size() > 0) {
+                            //    std::cout << "adding " << tmp[0] << " to bucket " << tmp.size() << "\n";
+                            }
                         }
                     }
                 }
@@ -561,11 +562,5 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
         for (const auto &edge : *it) {
             community_detection->blacklist_paths.insert(edge);
         }
-    }
-    for (const auto &edge : buckets[1]) {
-        for (const auto asn : edge) {
-            std::cout << asn << ',';
-        }
-        std::cout << std::endl;
     }
 }
