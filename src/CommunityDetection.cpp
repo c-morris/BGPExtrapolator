@@ -454,7 +454,8 @@ void CommunityDetection::process_reports(EZASGraph *graph) {
         unsigned int reporter_policy = graph->ases->find(edge.at(0))->second->policy;
 
         if(reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL) {
-            std::vector<uint32_t> truncated = std::vector<uint32_t>(edge.begin()+1, edge.end());
+            //std::vector<uint32_t> truncated = std::vector<uint32_t>(edge.begin()+1, edge.end());
+            std::vector<uint32_t> truncated = std::vector<uint32_t>(edge.begin(), edge.end());
             add_hyper_edge(truncated);
         }
     }
@@ -527,7 +528,7 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
     }
     for (const auto &edge : buckets[2]) {
         for (const auto asn : edge) {
-            std::cout << asn;
+            std::cout << asn << ',';
         }
         std::cout << std::endl;
     }

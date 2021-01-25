@@ -1024,6 +1024,18 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     c.add_hyper_edge(edge3);
     c.add_hyper_edge(edge4);
 
+    c.local_threshold_approx_filtering(&cd);
+
+    edge1 = {4, 2, 1}; 
+    edge2 = {5, 2, 1};
+    edge3 = {6, 2, 1};
+    edge4 = {7, 2, 1};
+
+    c = CommunityDetection::Component(edge1);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+
     std::cout << "about to do the thing" << std::endl;
     c.local_threshold_approx_filtering(&cd);
 
