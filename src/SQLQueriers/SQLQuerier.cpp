@@ -404,9 +404,6 @@ void SQLQuerier::clear_full_path_from_db() {
 void SQLQuerier::create_results_tbl() {
     std::string sql = create_table_query_string(results_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
     true, user);
-
-    std::cout << sql << std::endl;
-    
     BOOST_LOG_TRIVIAL(info) << "Creating results table...";
     execute(sql, false);
 }
@@ -416,16 +413,9 @@ void SQLQuerier::create_results_tbl() {
  * In addition to all of the columns in the results table, this table includes the as_path.
  */
 void SQLQuerier::create_full_path_results_tbl() {
-    // std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + full_path_results_table + " (\
-    // asn bigint,prefix cidr, origin bigint, received_from_asn \
-    // bigint, time bigint, as_path bigint[]); GRANT ALL ON TABLE " + full_path_results_table + " TO " + user + ";");
-
     std::string sql = create_table_query_string(full_path_results_table, 
     "(asn bigint, prefix cidr, origin bigint, received_from_asn bigint, time bigint, as_path bigint[])", true, user);
-
-    std::cout << sql << std::endl;
-
-    std::cout << "Creating full path results table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating full path results table...";
     execute(sql, false);
 }
 
@@ -434,9 +424,6 @@ void SQLQuerier::create_full_path_results_tbl() {
 void SQLQuerier::create_depref_tbl() {
     std::string sql = create_table_query_string(depref_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
     true, user);
-
-    std::cout << sql << std::endl;
-
     BOOST_LOG_TRIVIAL(info) << "Creating depref table...";
     execute(sql, false);
 }
@@ -447,9 +434,6 @@ void SQLQuerier::create_depref_tbl() {
 void SQLQuerier::create_inverse_results_tbl() {
     std::string sql = create_table_query_string(inverse_results_table, "(asn bigint,prefix cidr, origin bigint)",
     true, user);
-
-    std::cout << sql << std::endl;
-
     BOOST_LOG_TRIVIAL(info) << "Creating inverse results table...";
     execute(sql, false);
 }
@@ -465,13 +449,7 @@ void SQLQuerier::copy_results_to_db(std::string file_name) {
 /** Similar to copy_results_to_db, but for a single AS result which includes an AS_PATH column.
  */
 void SQLQuerier::copy_single_results_to_db(std::string file_name) {
-    // std::string sql = std::string("COPY " + full_path_results_table + "(asn, prefix, origin, received_from_asn, time, as_path)") +
-    //                               "FROM '" + file_name + "' WITH (FORMAT csv)";
-
     std::string sql = copy_to_db_query_string(file_name, full_path_results_table, "(asn, prefix, origin, received_from_asn, time, as_path)");
-
-    std::cout << sql << std::endl;
-
     execute(sql);
 }
 
