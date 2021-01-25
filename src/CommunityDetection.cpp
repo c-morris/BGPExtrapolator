@@ -149,6 +149,8 @@ uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t roo
     return 1 + best_result;
 }
 
+
+
 uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn, uint32_t thresh) {
     std::vector<std::vector<uint32_t>> hyper_edges_to_find;
 
@@ -460,4 +462,70 @@ void CommunityDetection::process_reports(EZASGraph *graph) {
     local_threshold_filtering();
     // TODO fix spelling, process 
     edges_to_proccess.clear();
+}
+
+
+void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDetection *community_detection) {
+
+    // 1. Sort hyperedges from longest to shortest
+    // 2. Collapse edges from longest to shortest
+    // 3. Add results to blacklists
+
+    // The AS graph is shallow, we can use bucket sort for linear time sorting.
+    // Path length is capped at 64. 
+    // Justification: a path length exceeding the default TTL of many machines is of little practical use
+    const int num_buckets = 64;
+    std::vector<std::set<std::vector<uint32_t>>> buckets(num_buckets); 
+
+    for(const auto &edge : this->hyper_edges) {
+        if (edge.size() <= 64) {
+            buckets[edge.size()].insert(edge);
+        }
+    }
+
+    /* Collapse Hyperedges (locally)
+       NOTE: DOES NOT WORK FOR MULTIPLE ATTACKERS (yet)
+       
+       Ex: AS 666 forwards an attack to three of its neighbors (x, y, z) where thresh=2
+      
+           x 
+            \
+           y-666-...
+            /  
+           z
+      
+       This will be detected here, and the edge will be collapsed to one size smaller
+       (e. g., 666 and the rest of the path). 
+    */
+    for (auto it = buckets.rbegin(); it != buckets.rend(); ++it) {
+        std::map<uint32_t, std::set<uint32_t>> counts;
+        for (const auto &edge : *it) {
+            if (edge.size() >= 2) {
+                counts[edge[1]].insert(edge[0]);
+            }
+        }
+        for (const auto &suspect : counts) {
+            if (suspect.second.size() > community_detection->local_threshold) {
+                // Add all the edges (to make sure none are missed)
+                // This is one area that needs to be re-done for muiltiple attackers
+                 for (const auto &edge : *it) {
+                    if (edge.size() >= 2) {
+                        if (edge[1] == suspect.first) {
+                            std::vector<uint32_t> tmp(next(edge.begin()), edge.end());
+                            if (!(it+1)->insert(tmp).second) {
+                                std::cout << "caught a duplicate" << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // test
+    for (const auto &edge : buckets[1]) {
+        for (const auto asn : edge) {
+            std::cout << asn;
+        }
+        std::cout << std::endl;
+    }
 }

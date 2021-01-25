@@ -1010,3 +1010,22 @@ bool ezbgpsec_test_mvc2() {
 
     return true;
 }
+
+
+bool ezbgpsec_test_threshold_filtering_approx() {
+    std::vector<uint32_t> edge1 = {4, 1}; 
+    std::vector<uint32_t> edge2 = {5, 1};
+    std::vector<uint32_t> edge3 = {6, 1};
+    std::vector<uint32_t> edge4 = {7, 1};
+
+    CommunityDetection cd(2);
+    CommunityDetection::Component c(edge1);
+    c.add_hyper_edge(edge2);
+    c.add_hyper_edge(edge3);
+    c.add_hyper_edge(edge4);
+
+    std::cout << "about to do the thing" << std::endl;
+    c.local_threshold_approx_filtering(&cd);
+
+    return true;
+}

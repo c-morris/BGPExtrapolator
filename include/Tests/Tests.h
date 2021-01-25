@@ -141,6 +141,7 @@ bool ezbgpsec_test_mvc2();
 bool ezbgpsec_test_local_mvc();
 
 bool ezbgpsec_test_threshold_filtering();
+bool ezbgpsec_test_threshold_filtering_approx();
 
 //SQLQuerier
 bool test_parse_config_buildup();

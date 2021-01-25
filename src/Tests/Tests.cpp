@@ -257,6 +257,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_local_mvc ) {
 
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_threshold_filtering ) {
         BOOST_CHECK( ezbgpsec_test_threshold_filtering() );
+        BOOST_CHECK( ezbgpsec_test_threshold_filtering_approx() );
 }
 
 //SQLQuerier Tests

@@ -137,6 +137,13 @@ public:
          * @param graph -> EZASGraph to remove attackers from if they are detected
          */
         void virtual_pair_removal(CommunityDetection *community_detection);
+
+        /**
+         * Approximation for local MVC that runs in polynomial time.
+         * 
+         * @param community_detection -> Pointer to the community detection object 
+         */
+        void local_threshold_approx_filtering(CommunityDetection *community_detection);
     };
 
 public:
