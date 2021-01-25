@@ -143,11 +143,11 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     SQLQuerierType querier_copy(*querier);
     querier_copy.open_connection();
     std::ofstream outfile;
-    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
-    outfile.open(file_name);
 
     // Handle standard results
     if (store_results) {
+        std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+        outfile.open(file_name);
         for (auto &as : *graph->ases){
             if (counter++ % num_threads == 0) {
                 as.second->stream_announcements(outfile);
@@ -155,10 +155,13 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         }
         outfile.close();
         querier_copy.copy_results_to_db(file_name);
+        std::remove(file_name.c_str());
     }
     
     // Handle inverse results
     if (store_invert_results) {
+        std::string inverse_file_name = "/dev/shm/bgp/inverse" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+        outfile.open(inverse_file_name);
         for (auto po : *graph->inverse_results){
             // The results are divided into num_threads CSVs. For example, with 
             // four threads, this loop will save every fourth item in the loop.
@@ -171,11 +174,10 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
             }
         }
         outfile.close();
-        querier_copy.copy_inverse_results_to_db(file_name);
-    
+        querier_copy.copy_inverse_results_to_db(inverse_file_name);
+        std::remove(inverse_file_name.c_str());
     }    
 
-    std::remove(file_name.c_str());
 
     // Handle depref results
     if (store_depref_results) {
