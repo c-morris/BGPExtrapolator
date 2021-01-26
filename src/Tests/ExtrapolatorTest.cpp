@@ -1518,25 +1518,25 @@ bool test_save_results_at_asn() {
     e.querier->create_full_path_results_tbl();
     e.save_results_at_asn(5);
 
-    // // Get extrapolation results
-    // pqxx::result r = e.querier->select_from_table(full_path_results_table);
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(full_path_results_table);
 
-    // // If the number of rows is more than 1, we already know that something is not right
-    // if (r.size() != 1) {
-    //     std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
-    //     return false;
-    // }
+    // If the number of rows is more than 1, we already know that something is not right
+    if (r.size() != 1) {
+        std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+        return false;
+    }
 
-    // // Convert reslut to a string separated by spaces
-    // std::string result = "";
-    // for (auto const &field: r[0]) { 
-    //     result = result + field.c_str() + " ";
-    // }
-    // std::cout << result << std::endl;
-    // if (result != "5 137.99.0.0/16 13796 2 0 {5,2,1,22742} ") {
-    //     std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
-    //     return false;
-    // }
+    // Convert reslut to a string separated by spaces
+    std::string result = "";
+    for (auto const &field: r[0]) { 
+        result = result + field.c_str() + " ";
+    }
+    std::cout << result << std::endl;
+    if (result != "5 137.99.0.0/16 13796 2 0 {5,2,1,22742} ") {
+        std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+        return false;
+    }
 
     return true;
 }
