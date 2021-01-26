@@ -1019,7 +1019,7 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     std::vector<uint32_t> edge4 = {7, 1};
     std::vector<uint32_t> edge5 = {1};
 
-    CommunityDetection cd(2);
+    CommunityDetection cd(NULL, 2);
     CommunityDetection::Component c(edge1);
     c.add_hyper_edge(edge2);
     c.add_hyper_edge(edge3);
@@ -1036,7 +1036,7 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     edge4 = {7, 2, 1};
 
     c = CommunityDetection::Component(edge1);
-    cd = CommunityDetection(2);
+    cd = CommunityDetection(NULL, 2);
     c.add_hyper_edge(edge2);
     c.add_hyper_edge(edge3);
     c.add_hyper_edge(edge4);
@@ -1052,7 +1052,7 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     edge4 = {6, 666, 5, 1};
 
     c = CommunityDetection::Component(edge1);
-    cd = CommunityDetection(2);
+    cd = CommunityDetection(NULL, 2);
     c.add_hyper_edge(edge2);
     c.add_hyper_edge(edge3);
     c.add_hyper_edge(edge4);
@@ -1066,7 +1066,7 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     edge5 = {24, 666, 13, 6, 1};
 
     c = CommunityDetection::Component(edge1);
-    cd = CommunityDetection(2);
+    cd = CommunityDetection(NULL, 2);
     c.add_hyper_edge(edge2);
     c.add_hyper_edge(edge3);
     c.add_hyper_edge(edge4);
@@ -1080,7 +1080,7 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     edge4 = {23, 666, 12, 5, 1};
 
     c = CommunityDetection::Component(edge1);
-    cd = CommunityDetection(2);
+    cd = CommunityDetection(NULL, 2);
     c.add_hyper_edge(edge2);
     c.add_hyper_edge(edge3);
     c.add_hyper_edge(edge4);

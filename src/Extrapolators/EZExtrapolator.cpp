@@ -22,7 +22,7 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, policy_tables, exclude_as_number, config_section);
-    communityDetection = new CommunityDetection(community_detection_local_threshold);
+    communityDetection = new CommunityDetection(this, community_detection_local_threshold);
     
     this->num_rounds = num_rounds;
     this->round = 1;

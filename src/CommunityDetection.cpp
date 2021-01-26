@@ -237,7 +237,7 @@ void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *com
 
     //For all removal sequences...
     for(size_t i = 0; i < hyper_edges.size(); i++) {
-        CommunityDetection temp_community_detection(community_detection->global_threshold - 1);
+        CommunityDetection temp_community_detection(community_detection->extrapolator, community_detection->global_threshold - 1);
 
         for(size_t j = 0; j < hyper_edges.size(); j++) {
             if(i == j) continue;
@@ -251,7 +251,7 @@ void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *com
 
 //**************** Community Detection ****************//
 
-CommunityDetection::CommunityDetection(uint32_t local_threshold) : local_threshold(local_threshold) { }
+CommunityDetection::CommunityDetection(EZExtrapolator *extrapolator, uint32_t local_threshold) : extrapolator(extrapolator), local_threshold(local_threshold) { }
 CommunityDetection::~CommunityDetection() {
     clear();
 }

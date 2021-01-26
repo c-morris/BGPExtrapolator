@@ -7,6 +7,9 @@
 #include "Announcements/EZAnnouncement.h"
 #include "Graphs/EZASGraph.h"
 
+//Forward declaration to handle circular dependency
+class EZExtrapolator;
+
 /**
  *  For EZBGPsec only!
  * 
@@ -147,6 +150,8 @@ public:
     };
 
 public:
+    EZExtrapolator *extrapolator;
+
     uint32_t local_threshold;
     uint32_t global_threshold;
 
@@ -172,7 +177,7 @@ public:
      * The end goal is for every component to filter out attackers with threshold filtering an perform virtual removals to filter out more attackers 
      *      (see paper for conceptual details) 
      */
-    CommunityDetection(uint32_t local_threshold);
+    CommunityDetection(EZExtrapolator *extrapolator, uint32_t local_threshold);
     virtual ~CommunityDetection();
 
     /**

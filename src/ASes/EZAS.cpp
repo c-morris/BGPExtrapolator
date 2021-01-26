@@ -1,5 +1,6 @@
 #include "ASes/EZAS.h"
 #include "CommunityDetection.h"
+#include "Extrapolators/EZExtrapolator.h"
 
 EZAS::EZAS(CommunityDetection *community_detection, uint32_t asn) : BaseAS<EZAnnouncement>(asn, false, NULL), community_detection(community_detection) {
 
@@ -17,7 +18,73 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
     if(std::find(ann.as_path.begin(), ann.as_path.end(), asn) != ann.as_path.end())
         return;
 
-    if (community_detection != NULL && (policy == EZAS_TYPE_DIRECTORY_ONLY || policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL)) {
+    ann.as_path.insert(ann.as_path.begin(), asn);
+
+    if(policy == EZAS_TYPE_BGPSEC) {
+        auto origin_search = community_detection->extrapolator->graph->ases->find(ann.as_path.at(ann.as_path.size() - 1));
+
+        if(origin_search == community_detection->extrapolator->graph->ases->end()) {
+            //not sure what to do here....
+            std::cerr << "ORIGIN IN EZAS PATH DOES NOT EXIST!!!" << std::endl;
+            return;
+        }
+
+        EZAS *origin_as = origin_search->second;
+        //Assume that the attacker is causing an invalid MAC (this is what we are simulating)
+        //If this AS is an adopter and there is an invalid MAC, then reject
+        if(origin_as->policy == EZAS_TYPE_BGPSEC && ann.from_attacker) {
+            return;
+        } 
+
+        //Now, the announcement has no *visible* invalid relationship
+
+        //Accept if there is nothing to compete
+        auto ann_search = all_anns->find(ann.prefix);
+        if(ann_search == all_anns->end()) {
+            all_anns->insert(std::make_pair(ann.prefix, ann));
+            return;
+        }
+
+        EZAnnouncement &accepted_announcement = ann_search->second;
+
+        //IF this is the case, decide based on which has more signatures (more adopters essentially)
+        if(accepted_announcement.priority / 100 == ann.priority / 100) {
+            int num_adopters_new = 0;
+            int num_adopters_accepted = 0;
+
+            for(uint32_t i = 0; i < ann.as_path.size(); i++) {
+                auto search = community_detection->extrapolator->graph->ases->find(i);
+                //assume that an AS that does not exist is not an adopter
+                if(search != community_detection->extrapolator->graph->ases->end()) {
+                    if(search->second->policy == EZAS_TYPE_BGPSEC) {
+                        num_adopters_new++;
+                    }
+                }
+            }
+
+            for(uint32_t i = 0; i < accepted_announcement.as_path.size(); i++) {
+                auto search = community_detection->extrapolator->graph->ases->find(accepted_announcement.as_path.at(i));
+                //assume that an AS that does not exist is not an adopter
+                if(search != community_detection->extrapolator->graph->ases->end()) {
+                    if(search->second->policy == EZAS_TYPE_BGPSEC) {
+                        num_adopters_accepted++;
+                    }
+                }
+            }
+
+            if(num_adopters_new > num_adopters_accepted) {
+                all_anns->insert(std::make_pair(ann.prefix, ann));
+                return;
+            }
+        }
+
+        //If security is the same, then compare based on priority
+        if(ann.priority > accepted_announcement.priority) {
+            all_anns->insert(std::make_pair(ann.prefix, ann));
+        }
+
+        return;
+    } else if (community_detection != NULL && (policy == EZAS_TYPE_DIRECTORY_ONLY || policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL)) {
         for(uint32_t asn : ann.as_path) {
             if(community_detection->blacklist_asns.find(asn) != community_detection->blacklist_asns.end())
                 return;
@@ -30,8 +97,6 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             }
         }
     }
-
-    ann.as_path.insert(ann.as_path.begin(), asn);
 
     BaseAS::process_announcement(ann, ran);
 }
