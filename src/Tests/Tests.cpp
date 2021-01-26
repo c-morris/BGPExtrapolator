@@ -114,6 +114,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_constructor ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path ) {
         BOOST_CHECK( test_give_ann_to_as_path() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path_origin_only ) {
+        BOOST_CHECK( test_give_ann_to_as_path_origin_only() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up_no_multihomed ) {
         BOOST_CHECK( test_propagate_up_no_multihomed() );
 }
@@ -201,6 +204,9 @@ BOOST_AUTO_TEST_CASE( ROVppExtrapolator_constructor ) {
 }
 BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path ) {
         BOOST_CHECK( test_rovpp_give_ann_to_as_path() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path_origin_only ) {
+        BOOST_CHECK( test_rovpp_give_ann_to_as_path_origin_only() );
 }
 BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_up ) {
         BOOST_CHECK( test_rovpp_propagate_up() );

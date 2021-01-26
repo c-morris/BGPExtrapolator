@@ -256,7 +256,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::stream_as_path(AnnouncementType &ann, uint32_t asn){
+std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::stream_as_path(AnnouncementType ann, uint32_t asn){
     std::stringstream as_path;
     std::vector<uint32_t> as_path_vect;
 

@@ -130,7 +130,10 @@ int main(int argc, char *argv[]) {
          "output these ASNs with their full AS_PATH in a separate table")
         ("mh-propagation-mode", 
          po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
-         "multi-home propagation mode, 0 - off, 1 - propagate from mh to providers in some cases (automatic), 2 - no propagation from mh, 3 - propagation from mh to peers");
+         "multi-home propagation mode, 0 - off, 1 - propagate from mh to providers in some cases (automatic), 2 - no propagation from mh, 3 - propagation from mh to peers")
+         ("origin-only",
+         po::value<bool>()->default_value(DEFAULT_ORIGIN_ONLY),
+         "seed announcements only at the origin");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -183,7 +186,8 @@ int main(int argc, char *argv[]) {
                 vm["simulation-table"].as<string>() : 
                 ROVPP_SIMULATION_TABLE),
             vm["config-section"].as<string>(),
-            vm["exclude-monitor"].as<int>());
+            vm["exclude-monitor"].as<int>(),
+            vm["origin-only"].as<bool>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -218,6 +222,7 @@ int main(int argc, char *argv[]) {
             vm["num-in-between"].as<uint32_t>(),
             vm["exclude-monitor"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>(),
+            vm["origin-only"].as<bool>(),
             full_path_asns);
             
         // Run propagation
@@ -250,6 +255,7 @@ int main(int argc, char *argv[]) {
             vm["iteration-size"].as<uint32_t>(),
             vm["exclude-monitor"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>(),
+            vm["origin-only"].as<bool>(),
             full_path_asns);
             
         // Run propagation

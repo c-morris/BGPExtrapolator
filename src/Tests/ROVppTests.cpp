@@ -364,6 +364,66 @@ bool test_rovpp_give_ann_to_as_path() {
     return true;
 }
 
+/** Test seeding the graph with announcements from monitors with origin only option enabled. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  The test path vect is [3, 2, 5]. 
+ *  When AS 5 is the origin, an announcement should only be seeded at 5
+ */
+bool test_rovpp_give_ann_to_as_path_origin_only() {
+    ROVppExtrapolator e = ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1, true);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    // Test that monitor annoucements were received
+    if(!e.graph->ases->find(5)->second->loc_rib->find(p)->second.from_monitor) {
+        std::cerr << "Monitor flag failed." << std::endl;
+        return false;
+    }
+    
+    // Test announcement priority calculation
+    if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 400) {
+        std::cerr << "Priority calculation failed." << std::endl;
+        return false;
+    }
+
+    // Test that only path received the announcement
+    if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(2)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(4)->second->loc_rib->size() == 0 &&
+        e.graph->ases->find(5)->second->loc_rib->size() == 1 &&
+        e.graph->ases->find(6)->second->loc_rib->size() == 0)) {
+        std::cerr << "MRT overseeding check failed." << std::endl;
+        return false;
+    }
+
+    delete as_path;
+    return true;
+}
+
 /** Test propagating up in the following test graph.
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 

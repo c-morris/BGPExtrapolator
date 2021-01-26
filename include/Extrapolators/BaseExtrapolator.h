@@ -29,6 +29,8 @@
 #define DEFAULT_STORE_INVERT_RESULTS false
 #define DEFAULT_STORE_DEPREF_RESULTS false
 
+#define DEFAULT_ORIGIN_ONLY false
+
 #include <vector>
 #include <bits/stdc++.h>
 #include <iostream>
@@ -122,17 +124,20 @@ public:
     std::vector<uint32_t> *full_path_asns; // Limit output to these ASNs
     sem_t worker_thread_count; // Worker thread semaphore
     int max_workers;           // Max number of worker threads that can run concurrently
+    bool origin_only;          // Only seed at the origin AS
 
     BaseExtrapolator(bool random_tiebraking,
                         bool store_results, 
                         bool store_invert_results, 
                         bool store_depref_results,
+                        bool origin_only,
                         std::vector<uint32_t> *full_path_asns) {
 
         this->random_tiebraking = random_tiebraking;       // True to enable random tiebreaks
         this->store_results = store_results; // True to store regular results
         this->store_invert_results = store_invert_results; // True to store the results inverted
         this->store_depref_results = store_depref_results; // True to store the second best ann for depref
+        this->origin_only = origin_only;                   // True to only seed at the origin AS
         this->full_path_asns = full_path_asns;
 
         // Init worker thread semaphore to one minus the number of CPU cores available
@@ -154,7 +159,7 @@ public:
      *  - store_invert_results = true
      *  - store_depref_results = false
      */
-    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, NULL) { }
+    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ORIGIN_ONLY, NULL) { }
 
     virtual ~BaseExtrapolator();
 
@@ -223,7 +228,7 @@ public:
      * @param asn AS number of the AS to start at
      * @return The AS_PATH as a string, formatted as a postgres array literal
      */
-    virtual std::string stream_as_path(AnnouncementType &ann, uint32_t asn);
+    virtual std::string stream_as_path(AnnouncementType ann, uint32_t asn);
 
 };
 #endif
