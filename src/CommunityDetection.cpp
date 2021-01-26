@@ -418,8 +418,10 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
 }
 
 void CommunityDetection::local_threshold_filtering() {
-    for(auto &p : identifier_to_component)
-        p.second->local_threshold_filtering(this);
+    for(auto &p : identifier_to_component) {
+        //p.second->local_threshold_filtering(this);
+        p.second->local_threshold_approx_filtering(this);
+    }
 }
 
 void CommunityDetection::global_threshold_filtering() {
@@ -521,7 +523,6 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
         }
     }
     /* Now check the other direction (except for the origin)
-       NOTE: DOES NOT WORK FOR MULTIPLE ATTACKERS (yet)
        
        Ex: AS 666 fakes attacks from three customers (a, b, c) where thresh=2
       
@@ -531,8 +532,8 @@ void CommunityDetection::Component::local_threshold_approx_filtering(CommunityDe
                 \
                  c
       
-       This will be detected here, and the edge will be collapsed to one size smaller
-       (e. g., 666 and the rest of the path). 
+       This will be detected here, and the edge will be collapsed to as small as possible
+       (e. g., the rest of the path followed by 666). 
     */
 
     for (int i = 2; i < num_buckets; i++) {

@@ -59,6 +59,7 @@ public:
 
     uint32_t num_rounds; // Number of rounds in simulation
     uint32_t round; // Current round
+    uint32_t next_unused_asn; // Unused ASNs to populate attacker announcements
 
     EZExtrapolator(bool random_tiebraking,
                     bool store_invert_results, 
@@ -94,6 +95,12 @@ public:
      *      is to be attacked, then have the attacker process a malicous announcement and send it out (muahahaa).
      */
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
+
+
+    /**
+     * Return a never-before-seen ASN
+     */
+    uint32_t get_unused_asn();
 
     /*
     * A quick overwrite that removes the traditional saving functionality since we are 

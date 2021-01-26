@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "Extrapolators/EZExtrapolator.h"
 
 //Need to check if the origin can reach the victim!
@@ -24,6 +26,7 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
     
     this->num_rounds = num_rounds;
     this->round = 1;
+    this->next_unused_asn = 65434;
 }
 
 EZExtrapolator::EZExtrapolator(uint32_t community_detection_local_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
@@ -139,7 +142,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     auto result = attacker_prefix_pairs.find(po);
 
     if(result == attacker_prefix_pairs.end()) {
-        // If not attacker
+        // Not attacker
         auto as_search = graph->ases->find(path_origin_asn);
         if(as_search == graph->ases->end())
             return;
@@ -153,7 +156,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         announcement.received_from_asn = NOTHIJACKED;
         as->process_announcement(announcement, this->random_tiebraking);
     } else {
-    // If attacker
+    // Attacker
         //uint32_t victim2_asn = result->second.second;
 
         //Check if we have a prefix set to attack already, don't announce attack
@@ -175,10 +178,33 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 300 - as_path->size(), path_origin_asn, timestamp, true, true);
         // Remove first element of as_path so the attacker doesn't see itself on the path (and reject the announcement because of that)
         as_path->erase(as_path->begin());
+
+        /**  Swap out ASNs on the path each round.
+          *  
+          *  With a fixed k in a k-hop origin hijack, the attacker wants to 
+          *  maintain the largest collection of adjacent suspects as possible
+          *  without exceeding the threshold. 
+          */
+        for (unsigned int exp = 0; exp < as_path->size() - 1; exp++) {
+            if (round % static_cast<uint32_t>(pow(this->communityDetection->local_threshold, exp)) == 0) {
+                (*as_path)[as_path->size()-2-exp] = get_unused_asn();
+            }
+        }
+        // debug
+        //for (auto a : *as_path) {
+        //    std::cout << a << ',';
+        //}
+        //std::cout << std::endl;
+
         attackAnnouncement.as_path = *as_path;
         attackAnnouncement.received_from_asn = HIJACKED;
         attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
     }
+}
+
+uint32_t EZExtrapolator::get_unused_asn() {
+    // This will start to cause problems near round 1000
+    return next_unused_asn--;
 }
 
 void EZExtrapolator::save_results(int iteration) {
