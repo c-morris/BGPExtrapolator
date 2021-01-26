@@ -1346,12 +1346,12 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
  *   /|   
  *  4 5--6 
  *
- *  Starting propagation at 1, everyone should see the announcement.
- *
- *  This test is currently requires manual verification that the results in the database are correct.
+ *  Starting propagation at 1, everyone but 3 and 6 should see the announcement.
  */
 bool test_save_results_parallel() {
-    Extrapolator e = Extrapolator(false, true, false, false, "ignored", "test_extrapolation_results", "unused", "unused", "unused", "bgp", 10000, -1, 0, NULL);
+    std::string results_table = "test_extrapolation_results";
+
+    Extrapolator e = Extrapolator(false, true, false, false, "ignored", results_table, "unused", "unused", "unused", "bgp", 10000, -1, 0, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1377,7 +1377,39 @@ bool test_save_results_parallel() {
     e.querier->create_results_tbl();
     e.save_results(0);
 
-    // This test requires manual verification of correctness.
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time)
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 13796 22742 0 ",
+        "2 137.99.0.0/16 13796 1 0 ",
+        "4 137.99.0.0/16 13796 2 0 ",
+        "5 137.99.0.0/16 13796 2 0 "
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Save results failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Save results failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
 
     return true;
 }
@@ -1397,7 +1429,9 @@ bool test_save_results_parallel() {
  *  This test is currently requires manual verification that the results in the database are correct.
  */
 bool test_save_results_at_asn() {
-    Extrapolator e = Extrapolator(false, false, false, true, "ignored", "unused", "unused", "unused", "test_extrapolation_single_results", "bgp", 10000, -1, 0, NULL);
+    std::string full_path_results_table = "test_extrapolation_single_results";
+
+    Extrapolator e = Extrapolator(false, false, false, true, "ignored", "unused", "unused", "unused", full_path_results_table, "bgp", 10000, -1, 0, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1423,7 +1457,25 @@ bool test_save_results_at_asn() {
     e.querier->create_full_path_results_tbl();
     e.save_results_at_asn(5);
 
-    // This test requires manual verification of correctness.
+    // // Get extrapolation results
+    // pqxx::result r = e.querier->select_from_table(full_path_results_table);
+
+    // // If the number of rows is more than 1, we already know that something is not right
+    // if (r.size() != 1) {
+    //     std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+    //     return false;
+    // }
+
+    // // Convert reslut to a string separated by spaces
+    // std::string result = "";
+    // for (auto const &field: r[0]) { 
+    //     result = result + field.c_str() + " ";
+    // }
+    // std::cout << result << std::endl;
+    // if (result != "5 137.99.0.0/16 13796 2 0 {5,2,1,22742} ") {
+    //     std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+    //     return false;
+    // }
 
     return true;
 }
