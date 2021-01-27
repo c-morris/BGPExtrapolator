@@ -31,6 +31,8 @@
 
 #define DEFAULT_ORIGIN_ONLY false
 
+#define DEFAULT_MAX_THREADS 0
+
 #include <vector>
 #include <bits/stdc++.h>
 #include <iostream>
@@ -131,7 +133,8 @@ public:
                         bool store_invert_results, 
                         bool store_depref_results,
                         bool origin_only,
-                        std::vector<uint32_t> *full_path_asns) {
+                        std::vector<uint32_t> *full_path_asns,
+                        int max_threads) {
 
         this->random_tiebraking = random_tiebraking;       // True to enable random tiebreaks
         this->store_results = store_results; // True to store regular results
@@ -140,11 +143,22 @@ public:
         this->origin_only = origin_only;                   // True to only seed at the origin AS
         this->full_path_asns = full_path_asns;
 
-        // Init worker thread semaphore to one minus the number of CPU cores available
+        // Get the number of CPU cores available
         int cpus = std::thread::hardware_concurrency();
-        max_workers = cpus > 1 ? cpus - 1 : 1;
+        if (max_threads <= 0 || max_threads >= cpus)
+        {
+            // If a user doesn't provide a number of max threads (or if it's invalid),
+            // max_workers is one minus the number of CPU cores available
+            max_workers = cpus > 1 ? cpus - 1 : 1;
+        } else {
+            // Set max_workers to max_threads
+            // if max_threads is less than total number of threads and if it's more than 0
+            max_workers = max_threads;
+        }
+
+        // Init worker thread semaphore
         sem_init(&worker_thread_count, 0, max_workers);
-        
+
         // The child will initialize these properly right after this constructor returns
         // That way they can give the variable a proper type
         graph = NULL;
@@ -159,7 +173,7 @@ public:
      *  - store_invert_results = true
      *  - store_depref_results = false
      */
-    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ORIGIN_ONLY, NULL) { }
+    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
 
     virtual ~BaseExtrapolator();
 

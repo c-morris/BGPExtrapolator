@@ -215,9 +215,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         BOOST_LOG_TRIVIAL(info) << "Saving Depref Results From Iteration: " << iteration;
     }
     std::vector<std::thread> threads;
-    int cpus = std::thread::hardware_concurrency();
-    // Ensure we have at least one worker even when only one cpu core is avaliable
-    int max_workers = cpus > 1 ? cpus - 1 : 1;
     if (max_workers > 1) {
         for (int i = 0; i < max_workers; i++) {
             // Start the worker threads
