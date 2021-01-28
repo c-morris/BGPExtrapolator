@@ -111,6 +111,9 @@ BOOST_AUTO_TEST_CASE( ASGraph_combine_components_test ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_constructor ) {
         BOOST_CHECK( test_Extrapolator_constructor() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_parse_path ) {
+        BOOST_CHECK( test_parse_path() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path ) {
         BOOST_CHECK( test_give_ann_to_as_path() );
 }
