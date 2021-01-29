@@ -399,8 +399,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         //Add the hyper edge to the component it belongs to (ASes on the path belong to no existing component and thos that do all belong to the same component)
         //Or merge components if the path contains more than one AS that belong to different components already (an AS can be in 1 component only)
         //Or create a whole new component if none of the ASes belong to an existing component
-        add_hyper_edge(hyper_edge);
-        
+
         bool contains = false;
         for(auto &temp_edge : edges_to_proccess) {
             if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin())) {

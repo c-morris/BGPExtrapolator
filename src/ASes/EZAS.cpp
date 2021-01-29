@@ -85,9 +85,11 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
 
         return;
     } else if (community_detection != NULL && (policy == EZAS_TYPE_DIRECTORY_ONLY || policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL)) {
-        for(uint32_t asn : ann.as_path) {
-            if(community_detection->blacklist_asns.find(asn) != community_detection->blacklist_asns.end())
-                return;
+        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL) {
+            for(uint32_t asn : ann.as_path) {
+                if(community_detection->blacklist_asns.find(asn) != community_detection->blacklist_asns.end())
+                    return;
+            }
         }
 
         //TODO This could use some improvement
