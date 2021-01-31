@@ -149,7 +149,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         
         EZAS* as = as_search->second;
 
-        EZAnnouncement announcement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299, path_origin_asn, timestamp, true, true);
+        EZAnnouncement announcement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299, path_origin_asn, timestamp, true, false);
         // Remove first element of as_path so the as doesn't see itself on the path (and reject the announcement because of that)
         as_path->erase(as_path->begin());
         announcement.as_path = *as_path;

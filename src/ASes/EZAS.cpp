@@ -52,7 +52,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             int num_adopters_new = 0;
             int num_adopters_accepted = 0;
 
-            for(uint32_t i = 0; i < ann.as_path.size(); i++) {
+            for (uint32_t i : ann.as_path) {
                 auto search = community_detection->extrapolator->graph->ases->find(i);
                 //assume that an AS that does not exist is not an adopter
                 if(search != community_detection->extrapolator->graph->ases->end()) {
@@ -62,8 +62,8 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                 }
             }
 
-            for(uint32_t i = 0; i < accepted_announcement.as_path.size(); i++) {
-                auto search = community_detection->extrapolator->graph->ases->find(accepted_announcement.as_path.at(i));
+            for(uint32_t i : accepted_announcement.as_path) {
+                auto search = community_detection->extrapolator->graph->ases->find(i);
                 //assume that an AS that does not exist is not an adopter
                 if(search != community_detection->extrapolator->graph->ases->end()) {
                     if(search->second->policy == EZAS_TYPE_BGPSEC) {
@@ -73,14 +73,14 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             }
 
             if(num_adopters_new > num_adopters_accepted) {
-                all_anns->insert(std::make_pair(ann.prefix, ann));
+                ann_search->second = ann;
                 return;
             }
         }
 
         //If security is the same, then compare based on priority
         if(ann.priority > accepted_announcement.priority) {
-            all_anns->insert(std::make_pair(ann.prefix, ann));
+            ann_search->second = ann;
         }
 
         return;
