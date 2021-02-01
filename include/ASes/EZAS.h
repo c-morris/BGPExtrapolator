@@ -10,6 +10,7 @@
 #define EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL 66       // Global CD Only (future work)
 #define EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL 67 // Local and Global (future work)
 #define EZAS_TYPE_BGPSEC 68
+#define EZAS_TYPE_BGPSEC_TRANSITIVE 69
 
 //Forward Declaration to deal with circular dependency
 class CommunityDetection;
