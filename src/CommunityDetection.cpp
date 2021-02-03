@@ -401,7 +401,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         //Or create a whole new component if none of the ASes belong to an existing component
 
         bool contains = false;
-        for(auto &temp_edge : edges_to_proccess) {
+        for(auto &temp_edge : edges_to_process) {
             if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin())) {
                 contains = true;
                 break;
@@ -412,7 +412,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
             continue;
 
 
-        edges_to_proccess.push_back(hyper_edge);
+        edges_to_process.push_back(hyper_edge);
     }
 }
 
@@ -437,7 +437,7 @@ void CommunityDetection::virtual_pair_removal() {
 }
 
 void CommunityDetection::process_reports(EZASGraph *graph) {
-    for(auto &edge : edges_to_proccess) {
+    for(auto &edge : edges_to_process) {
         /**
          * Attacker directly in between two adopters. This edge only got this far if it went through add_report which checks for *visible* invalid MACs 
          * 
@@ -463,7 +463,7 @@ void CommunityDetection::process_reports(EZASGraph *graph) {
 
     local_threshold_filtering();
     // TODO fix spelling, process 
-    edges_to_proccess.clear();
+    edges_to_process.clear();
 }
 
 

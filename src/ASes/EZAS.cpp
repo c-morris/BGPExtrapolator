@@ -148,6 +148,19 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                 return;
             }
         }
+
+        /*
+         *  This path does not contain anything that is blacklisted
+         *  However, if it is from an attacker, send it to Community Detection
+         * 
+         *  Do not fret, this is not cheating since CD will check to see if the 
+         *      invalid MAC is actually visable.
+         * 
+         *  In addition, CD will delay adding the hyper edge until the end of the round
+         */
+        if(ann.from_attacker) {
+            community_detection->add_report(ann, community_detection->extrapolator->graph);
+        }
     }
 
     BaseAS::process_announcement(ann, ran);

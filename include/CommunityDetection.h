@@ -161,7 +161,7 @@ public:
     std::set<std::vector<uint32_t>> blacklist_paths;
     std::unordered_set<uint32_t> blacklist_asns;
 
-    std::vector<std::vector<uint32_t>> edges_to_proccess;
+    std::vector<std::vector<uint32_t>> edges_to_process;
 
     /**
      * This will simply store this threshold into a member variable.
