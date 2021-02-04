@@ -30,8 +30,10 @@
 ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> g,
                                  std::string r,
                                  std::string e, 
-                                 std::string f) 
-    : SQLQuerier() {
+                                 std::string f,
+                                 std::string cs,
+                                 std::string cp) 
+    : SQLQuerier(ANNOUNCEMENTS_TABLE, r, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, cs, cp) {
     results_table = r;
     victim_table = e;
     attack_table = f;

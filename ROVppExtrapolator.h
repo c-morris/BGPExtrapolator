@@ -36,7 +36,8 @@ struct ROVppExtrapolator: public Extrapolator {
                       std::string r=RESULTS_TABLE,
                       std::string e=VICTIM_TABLE,
                       std::string f=ATTACKER_TABLE,
-                      uint32_t iteration_size=false);
+                      uint32_t iteration_size=false,
+                      std::string config_section=DEFAULT_QUERIER_CONFIG_SECTION);
     ~ROVppExtrapolator();
 
     void process_withdrawal(uint32_t asn, Announcement ann, ROVppAS *neighbor);

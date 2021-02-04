@@ -53,13 +53,14 @@ Extrapolator::Extrapolator(bool random_b,
                            std::string r, 
                            std::string i,
                            std::string d,
-                           uint32_t iteration_size) {
+                           uint32_t iteration_size,
+                           std::string config_section) {
     random = random_b;                          // True to enable random tiebreaks
     invert = invert_results;                    // True to store the results inverted
     depref = store_depref;                      // True to store the second best ann for depref
     it_size = iteration_size;                   // Number of prefix to be precessed per iteration
     graph = new ASGraph;
-    querier = new SQLQuerier(a, r, i, d);
+    querier = new SQLQuerier(a, r, i, d, config_section);
 }
 
 Extrapolator::~Extrapolator(){

@@ -62,7 +62,8 @@ public:
                  std::string r=RESULTS_TABLE,
                  std::string i=INVERSE_RESULTS_TABLE,
                  std::string d=DEPREF_RESULTS_TABLE,
-                 uint32_t iteration_size=false);
+                 uint32_t iteration_size=false,
+                 std::string config_section=DEFAULT_QUERIER_CONFIG_SECTION);
     virtual ~Extrapolator();
 
     virtual void perform_propagation();

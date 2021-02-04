@@ -32,7 +32,8 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
                                      std::string r,
                                      std::string e,
                                      std::string f,
-                                     uint32_t iteration_size)
+                                     uint32_t iteration_size,
+                                     std::string config_section)
     : Extrapolator() {
     // ROVpp specific functions should use the rovpp_graph variable
     // The graph variable maintains backwards compatibility
@@ -41,7 +42,7 @@ ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
     random = false;          // FIX ME
     // TODO fix this memory leak
     graph = new ROVppASGraph();
-    querier = new ROVppSQLQuerier(g, r, e, f);
+    querier = new ROVppSQLQuerier(g, r, e, f, config_section);
     rovpp_graph = dynamic_cast<ROVppASGraph*>(graph);
     rovpp_querier = dynamic_cast<ROVppSQLQuerier*>(querier);
 }

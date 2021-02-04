@@ -23,11 +23,13 @@
 
 #include "SQLQuerier.h"
 
-SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string d) {
+SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string d, std::string cs, std::string cp, bool create_connection) {
     announcements_table = a;
     results_table = r;
     depref_table = d;
     inverse_results_table = i;
+    config_section = cs;
+    config_path = cp;
     
     // Default host and port numbers
     // Strings for connection arg
@@ -35,7 +37,10 @@ SQLQuerier::SQLQuerier(std::string a, std::string r, std::string i, std::string 
     port = "5432";
 
     read_config();
-    open_connection();
+
+    if (create_connection){
+        open_connection();
+    }
 }
 
 SQLQuerier::~SQLQuerier(){
@@ -46,49 +51,55 @@ SQLQuerier::~SQLQuerier(){
 
 /** Reads credentials/connection info from .conf file
  */
-void SQLQuerier::read_config(){
+void SQLQuerier::read_config() {
     using namespace std;
-    string file_location = "/etc/bgp/bgp.conf";
-    ifstream cFile(file_location);
+
+    cout << "Config section: " << config_section << std::endl;
+    
+    program_options::variables_map var_map;
+
+    // Specify config parameters to parse
+    program_options::options_description file_options("File options");
+    file_options.add_options()
+        ((config_section + ".user").c_str(), program_options::value<string>(), "username")
+        ((config_section + ".password").c_str(), program_options::value<string>(), "password")
+        ((config_section + ".database").c_str(), program_options::value<string>(), "db")
+        ((config_section + ".host").c_str(), program_options::value<string>(), "host")
+        ((config_section + ".port").c_str(), program_options::value<string>(), "port")
+        ;
+
+    program_options::notify(var_map);
+
+    ifstream cFile(config_path);
     if (cFile.is_open()) {
         // Map config variables to settings in file
-        map<string,string> config;
-        string line;
-        
-        while(getline(cFile, line)) {
-            // Remove whitespace and check to ignore line
-            line.erase(remove_if(line.begin(),line.end(),::isspace), line.end());
-            if (line.empty() || line[0] == '#' || line[0] == '[') {
-                continue;
-            }
-            auto delim_index = line.find("=");
-            std::string var_name = line.substr(0,delim_index);
-            std::string value = line.substr(delim_index+1);
-            config.insert(std::pair<std::string,std::string>(var_name, value));
+        program_options::store(program_options::parse_config_file(cFile, file_options, true), var_map);
+
+        if (var_map.count(config_section + ".user")){
+            user = var_map[config_section + ".user"].as<string>();
         }
 
-        for (auto const& setting : config){
-            if(setting.first == "user") {
-                user = setting.second;
-            } else if(setting.first == "password") {
-                pass = setting.second;
-            } else if(setting.first == "database") {
-                db_name = setting.second;
-            } else if(setting.first == "host") {
-                if (setting.second == "localhost") {
-                    host = "127.0.0.1";
-                } else {
-                    host = setting.second;
-                }
-            } else if(setting.first == "port") {
-                port = setting.second;
+        if (var_map.count(config_section + ".password")){
+            pass = var_map[config_section + ".password"].as<string>();
+        }
+
+        if (var_map.count(config_section + ".database")){
+            db_name = var_map[config_section + ".database"].as<string>();
+        }
+
+        if (var_map.count(config_section + ".host")){
+            if (var_map[config_section + ".host"].as<string>() == "localhost") {
+                host = "127.0.0.1";
             } else {
-                // This outputs extraneous setting found in the config file
-                // std::cerr << "Setting \"" << setting.first << "\" undefined." << std::endl;
+                host = var_map[config_section + ".host"].as<string>();
             }
         }
+
+        if (var_map.count(config_section + ".port")){
+            port = var_map[config_section + ".port"].as<string>();
+        }
     } else {
-        std::cerr << "Error loading config file \"" << file_location << "\"" << std::endl;
+        std::cerr << "Error loading config file \"" << config_path << "\"" << std::endl;
     }
 }
 

@@ -91,7 +91,10 @@ int main(int argc, char *argv[]) {
          "space-separated names of ROVpp policy tables")
        ("prop-twice,k",
         po::value<bool>()->default_value(true),
-        "flag whether or not to propagate twice");
+        "flag whether or not to propagate twice")
+        ("config-section", 
+        po::value<string>()->default_value("bgp"), 
+        "section of the config file");
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
     po::notify(vm);
@@ -119,7 +122,8 @@ int main(int argc, char *argv[]) {
             (vm.count("attacker-table") ?
                 vm["attacker-table"].as<string>() : 
                 ATTACKER_TABLE),
-            (vm["iteration-size"].as<uint32_t>()));
+            (vm["iteration-size"].as<uint32_t>()),
+            vm["config-section"].as<string>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -143,7 +147,8 @@ int main(int argc, char *argv[]) {
             (vm.count("depref-table") ?
                 vm["depref-table"].as<string>() : 
                 DEPREF_RESULTS_TABLE),
-            (vm["iteration-size"].as<uint32_t>()));
+            (vm["iteration-size"].as<uint32_t>()),
+            vm["config-section"].as<string>());
             
         // Run propagation
         extrap->perform_propagation();

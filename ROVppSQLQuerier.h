@@ -35,7 +35,9 @@ public:
     ROVppSQLQuerier(std::vector<std::string> g,
                     std::string r=RESULTS_TABLE,
                     std::string e=VICTIM_TABLE,
-                    std::string f=ATTACKER_TABLE);
+                    std::string f=ATTACKER_TABLE,
+                    std::string cs = DEFAULT_QUERIER_CONFIG_SECTION,
+                    std::string cp = "/etc/bgp/bgp.conf");
     ~ROVppSQLQuerier();
 
     pqxx::result select_AS_flags(std::string const& flag_table = std::string("rovpp_ases"));
