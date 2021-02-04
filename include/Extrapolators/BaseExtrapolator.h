@@ -50,6 +50,7 @@
 #include "Prefix.h"
 #include "SQLQueriers/SQLQuerier.h"
 #include "TableNames.h"
+#include "ProgressBar.h"
 
 #include "SQLQueriers/ROVppSQLQuerier.h"
 #include "Graphs/ROVppASGraph.h"
