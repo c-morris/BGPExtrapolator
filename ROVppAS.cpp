@@ -365,8 +365,8 @@ void ROVppAS::process_announcements(bool ran) {
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
                         } else {
                             process_announcement(best_alternative_ann, false);
@@ -391,8 +391,8 @@ void ROVppAS::process_announcements(bool ran) {
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
                             blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
                         } else {
                             process_announcement(best_alternative_ann, false);
@@ -441,8 +441,8 @@ void ROVppAS::process_announcements(bool ran) {
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
                             blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
                         } else {
                             process_announcement(best_alternative_ann, false);
@@ -471,8 +471,8 @@ void ROVppAS::process_announcements(bool ran) {
                         if (best_alternative_route(ann) == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
                             blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            // ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann);
                         } else {
                             // Move entire prefix to alternative
@@ -600,8 +600,8 @@ void ROVppAS::check_preventives(Announcement ann) {
                 if (best_alternative_route(ann) == ann) { // If no alternative
                     // Mark as blackholed and accept this announcement
                     blackholes->insert(ann);
-                    ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                    ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                    // ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                    // ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                     process_announcement(ann);
                 } else {
                     // Make preventive announcement
