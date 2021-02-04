@@ -313,7 +313,7 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                 // Get timestamp
                 int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
                 // Get ROA Validity
-                uint32_t roa_validity = ann_block[i]["as_path"].as<std::uint32_t>();
+                uint32_t roa_validity = 2; //ann_block[i]["as_path"].as<std::uint32_t>();
                 
                 // Assemble pair
                 auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
