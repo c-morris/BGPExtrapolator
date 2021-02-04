@@ -63,9 +63,9 @@ public:
                std::string r=RESULTS_TABLE,
                std::string i=INVERSE_RESULTS_TABLE,
                std::string d=DEPREF_RESULTS_TABLE,
-               std::string cs = DEFAULT_QUERIER_CONFIG_SECTION,
-               std::string cp = "/etc/bgp/bgp.conf",
-               bool create_connection = true);
+               std::string cs=DEFAULT_QUERIER_CONFIG_SECTION,
+               std::string cp="/etc/bgp/bgp.conf",
+               bool create_connection=true);
     virtual ~SQLQuerier();
     
     // Setup
