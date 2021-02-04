@@ -194,6 +194,14 @@ BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
         BOOST_CHECK( test_rovpp_full_path() );
 }
 
+//SQLQuerier Tests
+BOOST_AUTO_TEST_CASE( SQLQuerier_test_parse_config ) {
+        BOOST_CHECK ( test_parse_config_buildup() );
+        BOOST_CHECK( test_parse_config() );
+        BOOST_CHECK ( test_parse_config_teardown() );
+}
+
+
 #endif // RUN_TESTS
 
 

@@ -89,6 +89,10 @@ bool test_rovpp_tiebreak_override();
 bool test_withdrawal();
 bool test_tiny_hash();
 bool test_rovpp_full_path();
+
 // Prototypes for SQLQuerierTest.cpp
+bool test_parse_config_buildup();
+bool test_parse_config_teardown();
+bool test_parse_config();
 
 #endif

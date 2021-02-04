@@ -53,13 +53,14 @@ Extrapolator::Extrapolator(bool random_b,
                            std::string r, 
                            std::string i,
                            std::string d,
-                           uint32_t iteration_size) {
+                           uint32_t iteration_size,
+                           std::string config_section) {
     random = random_b;                          // True to enable random tiebreaks
     invert = invert_results;                    // True to store the results inverted
     depref = store_depref;                      // True to store the second best ann for depref
     it_size = iteration_size;                   // Number of prefix to be precessed per iteration
     graph = new ASGraph;
-    querier = new SQLQuerier(a, r, i, d);
+    querier = new SQLQuerier(a, r, i, d, config_section);
 }
 
 Extrapolator::~Extrapolator(){
@@ -312,7 +313,7 @@ void Extrapolator::extrapolate_blocks(uint32_t &announcement_count,
                 // Get timestamp
                 int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
                 // Get ROA Validity
-                uint32_t roa_validity = ann_block[i]["as_path"].as<std::uint32_t>();
+                uint32_t roa_validity = 2; //ann_block[i]["as_path"].as<std::uint32_t>();
                 
                 // Assemble pair
                 auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
