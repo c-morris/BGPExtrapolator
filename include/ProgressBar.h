@@ -2,6 +2,7 @@
 #define PROGRESS_BAR_H
 #include <cstdint>
 #include <string>
+#include <chrono>
 #include "Logger.h"
 
 class ProgressBar {
@@ -17,16 +18,16 @@ public:
     ProgressBar(const ProgressBar& p) = delete;
     ProgressBar& operator=(const ProgressBar& p) = delete;
 
-    // Overload prefix increment, used to iterate through the progress bar
-    void operator++();
+    // Increment the progress bar
+    void increment();
 
     /**
      * Prints a message above the progress bar
      * 
      * @param message -> A message to print
-     * @param priority -> Message priority (passed into the logger)
+     * @param severity -> Priority for the logger (ex: boost::log::trivial::info)
      */
-    void print_new_line(std::string message, std::string severity);
+    void print_new_line(std::string message, boost::log::trivial::severity_level severity);
     void end_progress_bar();
 private:
     uint32_t progress;
@@ -34,18 +35,19 @@ private:
     uint32_t current_iterations;
     uint32_t width;
     uint32_t window_width;
+    double seconds_remaining;
     bool finished;
     std::chrono::time_point<std::chrono::high_resolution_clock> start;
-    std::chrono::time_point<std::chrono::high_resolution_clock> finish;
 
     /**
      * Forms the progress bar string
      * 
-     * @param percentage -> Current percentage of the progress bar
+     * @param force_full_bar -> If the number of bars remains the same, the function only returns time remaining. "True" to override that behavior
      */
-    std::string generate_progress_bar();
+    std::string generate_progress_bar(bool force_full_bar = false);
 
-    std::string format_seconds(uint32_t seconds);
+    // Generate a string with time remaining
+    std::string format_seconds();
 
     // Calculates the current percentage of the progress bar 
     uint32_t calculate_percentage();

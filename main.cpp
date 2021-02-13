@@ -153,30 +153,6 @@ int main(int argc, char *argv[]) {
        Logger::init_logger(log_std_out, log_folder, severity_level);
     }
 
-
-    ProgressBar bar(150);
-    //bar.calculate_time_remaining();
-
-    // sleep(1);
-    // ++bar;
-    // sleep(1);
-    // ++bar;
-
-    for (int i = 0; i < 151; i++) {
-        sleep(1);
-        if (i % 25 == 0) {
-            bar.print_new_line("test", "");
-        }
-        ++bar;
-    }
-
-    std::cout << std::endl;
-
-    // std::cout << "Testing over" << std::endl;
-
-
-    return 0;
-
     // Handle intro information
     intro();
 

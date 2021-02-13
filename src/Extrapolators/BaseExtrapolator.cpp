@@ -26,7 +26,6 @@
 #include <sys/wait.h>
 #include <cstring>
 #include <thread>
-#include <chrono>
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -111,6 +110,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
+            bar->increment();
             if (!is_empty) {
                 send_all_announcements(asn, false, true, false);
             }
@@ -127,6 +127,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
             auto search = graph->ases->find(asn);
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
+            bar->increment();
             if (!is_empty) {
                 send_all_announcements(asn, false, false, true);
             }
@@ -207,12 +208,12 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
 void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
     if (store_invert_results) {
-        BOOST_LOG_TRIVIAL(info) << "Saving Inverse Results From Iteration: " << iteration;
+        bar->print_new_line("Saving Inverse Results From Iteration: " + std::to_string(iteration), boost::log::trivial::info);
     } else {
-        BOOST_LOG_TRIVIAL(info) << "Saving Results From Iteration: " << iteration;
+        bar->print_new_line("Saving Results From Iteration: " + std::to_string(iteration), boost::log::trivial::info);
     }
     if (store_depref_results) {
-        BOOST_LOG_TRIVIAL(info) << "Saving Depref Results From Iteration: " << iteration;
+        bar->print_new_line("Saving Depref Results From Iteration: " + std::to_string(iteration), boost::log::trivial::info);
     }
     std::vector<std::thread> threads;
     int cpus = std::thread::hardware_concurrency();

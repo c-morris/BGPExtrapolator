@@ -117,6 +117,7 @@ class BaseExtrapolator {
 public:
     GraphType *graph;
     SQLQuerierType *querier;
+    ProgressBar *bar;
 
     bool random_tiebraking;    // If randomness is enabled
     bool store_results; // If results are enabled
