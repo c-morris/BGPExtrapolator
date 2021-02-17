@@ -486,7 +486,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     for (auto &ann : *source_as->loc_rib) {
         // ROV++ 0.1 do not forward blackhole announcements
         if (rovpp_as != NULL && 
-            ann.second.origin == 64512 && 
+            rovpp_as->blackholes.find(ann) != rovpp_as->blackholes.end() && 
             rovpp_as->policy_vector.size() > 0 &&
             (rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP ||
              rovpp_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP_LITE)) {
