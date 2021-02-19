@@ -525,9 +525,9 @@ void ROVppAS::process_announcements(bool ran) {
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
         if (pass_rovpp(candidate_ann) && !candidate_ann.withdraw) {
-            if (policy != ROVPPAS_TYPE_ROVPP_LITE || 
-                policy != ROVPPAS_TYPE_ROVPPB_LITE ||
-                policy != ROVPPAS_TYPE_ROVPPBIS_LITE) {
+            if (!(policy == ROVPPAS_TYPE_ROVPP_LITE || 
+                policy == ROVPPAS_TYPE_ROVPPB_LITE ||
+                policy == ROVPPAS_TYPE_ROVPPBIS_LITE)) {
                 if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
                     candidates.push_back(candidate_ann);
                 }
@@ -539,10 +539,10 @@ void ROVppAS::process_announcements(bool ran) {
         }
     }
     // Find the best alternative to ann
-    if (policy != ROVPPAS_TYPE_ROVPP_LITE || 
-        policy != ROVPPAS_TYPE_ROVPPB_LITE ||
-        policy != ROVPPAS_TYPE_ROVPPBP_LITE ||
-        policy != ROVPPAS_TYPE_ROVPPBIS_LITE) {
+    if (!(policy == ROVPPAS_TYPE_ROVPP_LITE || 
+        policy == ROVPPAS_TYPE_ROVPPB_LITE ||
+        policy == ROVPPAS_TYPE_ROVPPBP_LITE ||
+        policy == ROVPPAS_TYPE_ROVPPBIS_LITE)) {
         for (auto &candidate : candidates) {
           // Is there a valid alternative?
           if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
@@ -561,7 +561,10 @@ void ROVppAS::process_announcements(bool ran) {
                  // Else check for one with a higher priority
                  if (best_alternative_ann == ann) {
                      best_alternative_ann = candidate;
-                 } else if (best_alternative_ann.priority < candidate.priority) {
+                 } else if (
+                    (best_alternative_ann.prefix.netmask < candidate.prefix.netmask) ||
+                    (best_alternative_ann.priority < candidate.priority && best_alternative_ann.prefix == candidate.prefix)
+                 ) {
                      best_alternative_ann = candidate;
                  }
              }
