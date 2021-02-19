@@ -29,17 +29,17 @@
 // These are the ROVppAS type flags
 // They can be used to identify the type of ROVppAS
 // and the in the set_rovpp_as_type function to set the type.
-#define ROVPPAS_TYPE_BGP 0        // Regular BGP
-#define ROVPPAS_TYPE_ROV 1        // Just standard ROV
-#define ROVPPAS_TYPE_ROVPP0 7      // ROVpp 0 (Just don't send to bad neighbors)
-#define ROVPPAS_TYPE_ROVPP 2      // ROVpp 0.1 (Just Blackholing)
-#define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
-#define ROVPPAS_TYPE_ROVPPBP 4    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
-#define ROVPPAS_TYPE_ROVPPBIS 5    // ROVpp 0.2bis (Blackhole Ann to Customers Only)
-#define ROVPPAS_TYPE_ROVPP_LITE 8      // ROVpp 0.1 (Just Blackholing)
-#define ROVPPAS_TYPE_ROVPPB_LITE 9     // ROVpp 0.2 (Blackhole Announcements)
-#define ROVPPAS_TYPE_ROVPPBP_LITE 10    // ROVpp 0.3 (Preventive Ann with Blackhole Ann)
-#define ROVPPAS_TYPE_ROVPPBIS_LITE 11    // ROVpp 0.2bis (Blackhole Ann to Customers Only)
+#define ROVPPAS_TYPE_BGP 1        // Regular BGP (it's also 0)
+#define ROVPPAS_TYPE_ROV 2        // Just standard ROV
+#define ROVPPAS_TYPE_ROVPP0 3      // ROVpp 0 (Just don't send to bad neighbors)
+#define ROVPPAS_TYPE_ROVPP 4      // ROVpp 1 (Just Blackholing)
+#define ROVPPAS_TYPE_ROVPPB 6     // ROVpp 2a (Blackhole Announcements)
+#define ROVPPAS_TYPE_ROVPPBP 7    // ROVpp 3 (Preventive Ann with Blackhole Ann)
+#define ROVPPAS_TYPE_ROVPPBIS 5    // ROVpp 2 (Blackhole Ann to Customers Only)
+#define ROVPPAS_TYPE_ROVPP_LITE 8      // ROVpp Lite 1 (Just Blackholing)
+#define ROVPPAS_TYPE_ROVPPB_LITE 10     // ROVpp Lite 2a (Blackhole Announcements)
+#define ROVPPAS_TYPE_ROVPPBP_LITE 9    // ROVpp Lite 3 (Preventive Ann with Blackhole Ann)
+#define ROVPPAS_TYPE_ROVPPBIS_LITE 11    // ROVpp Lite 2 (Blackhole Ann to Customers Only)
 
 // Special Constants 
 // This is used for ROVpp 0.1+ to 
