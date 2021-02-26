@@ -47,12 +47,6 @@
 // We're also using this in contrl plane in pass_rovpp
 // Constant was agreed upon with Simulation code.
 #define UNUSED_ASN_FLAG_FOR_BLACKHOLES 64512  
-// This flag is used to denote that along this
-// path an attacker's announcement was seen, but
-// the /16 is still going to be routed through here.
-// Othr ROVppASes will take this into consideration 
-// making decisions on what path is better.
-#define ATTACKER_ON_ROUTE_FLAG 64570
 
 struct ROVppAS : public AS {
     std::vector<uint32_t> policy_vector;

@@ -356,7 +356,6 @@ void ROVppAS::process_announcements(bool ran) {
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP &&
                             bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
                         } else {
                           process_announcement(ann, false);
                         }
@@ -381,7 +380,6 @@ void ROVppAS::process_announcements(bool ran) {
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB &&
                             bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
                         } else {
                           process_announcement(ann, false);
                         }
@@ -429,7 +427,6 @@ void ROVppAS::process_announcements(bool ran) {
                         // Add received from bad neighbor flag (i.e. alt flag repurposed)
                         if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS &&
                             bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
                         } else {
                           process_announcement(ann, false);
                         }
@@ -459,7 +456,6 @@ void ROVppAS::process_announcements(bool ran) {
                         if ((policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
                             policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) &&
                             bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
                         } else {
                           process_announcement(ann, false);
                         }
@@ -525,17 +521,9 @@ void ROVppAS::process_announcements(bool ran) {
      // For each possible alternative
      for (auto candidate_ann : *ribs_in) {
         if (pass_rovpp(candidate_ann) && !candidate_ann.withdraw) {
-            if (!(policy == ROVPPAS_TYPE_ROVPP_LITE || 
-                policy == ROVPPAS_TYPE_ROVPPB_LITE ||
-                policy == ROVPPAS_TYPE_ROVPPBIS_LITE)) {
-                if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
-                    candidates.push_back(candidate_ann);
-                }
-            } else {
-                candidates.push_back(candidate_ann);
-            }
+          candidates.push_back(candidate_ann);
         } else {
-           baddies.insert(candidate_ann);
+          baddies.insert(candidate_ann);
         }
     }
     // Find the best alternative to ann
