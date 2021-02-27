@@ -194,7 +194,7 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit) {
  *
  * @param p The prefix for which we SELECT
  */
-pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
+pqxx::result SQLQuerier::select_prefix_count(Prefix* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
 
@@ -213,7 +213,7 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
  *
  * @param p The prefix for which we SELECT
  */
-pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
+pqxx::result SQLQuerier::select_prefix_ann(Prefix* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
 
@@ -231,7 +231,7 @@ pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
  *
  * @param p The prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
+pqxx::result SQLQuerier::select_subnet_count(Prefix* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT COUNT(*) FROM " + announcements_table;
 
@@ -249,7 +249,7 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
  *
  * @param p The prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
+pqxx::result SQLQuerier::select_subnet_ann(Prefix* p) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT host(prefix), netmask(prefix), as_path, origin, time FROM " + announcements_table;
 

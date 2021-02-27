@@ -26,12 +26,13 @@
 
 #include "Graphs/BaseGraph.h"
 
-class ASGraph : public BaseGraph<AS> {
+template <typename PrefixType = uint32_t>
+class ASGraph : public BaseGraph<AS<PrefixType>, PrefixType> {
 public:
     ASGraph(bool store_inverse_results, bool store_depref_results);
     virtual ~ASGraph();
 
-    virtual AS* createNew(uint32_t asn);
+    virtual AS<PrefixType>* createNew(uint32_t asn);
 };
 
 #endif

@@ -26,8 +26,11 @@
 
 #include "Extrapolators/BlockedExtrapolator.h"
 
-class Extrapolator : public BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS> {
+template <typename PrefixType = uint32_t>
+class Extrapolator : public BlockedExtrapolator<SQLQuerier, ASGraph<PrefixType>, Announcement<PrefixType>, AS<PrefixType>, Prefix<PrefixType>> {
 public:
+    Extrapolator();
+
     Extrapolator(bool random_tiebraking,
                     bool store_results, 
                     bool store_invert_results, 
@@ -44,8 +47,7 @@ public:
                     bool origin_only,
                     std::vector<uint32_t> *full_path_asns);
 
-    Extrapolator();
-    ~Extrapolator();
+    virtual ~Extrapolator();
 };
 
 #endif

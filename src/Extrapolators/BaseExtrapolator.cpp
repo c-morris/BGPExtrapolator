@@ -284,6 +284,7 @@ std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType
 }
 
 //We love C++ class templating. Please find another way to do this. I want to be wrong.
-template class BaseExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
+template class BaseExtrapolator<SQLQuerier, ASGraph<>, Announcement<>, AS<>>;
+template class BaseExtrapolator<SQLQuerier, ASGraph<uint128_t>, Announcement<uint128_t>, AS<uint128_t>>;
 template class BaseExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;
 template class BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph, ROVppAnnouncement, ROVppAS>;

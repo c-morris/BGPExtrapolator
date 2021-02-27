@@ -1,12 +1,13 @@
 #include "Extrapolators/BlockedExtrapolator.h"
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::~BlockedExtrapolator() {
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::~BlockedExtrapolator() {
 
 }
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::init() {
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::init() {
         // Make tmp directory if it does not exist
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
@@ -47,16 +48,16 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::i
     this->graph->create_graph_from_db(this->querier);
 }
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::perform_propagation() {
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::perform_propagation() {
     init();
 
     BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     // Generate iteration blocks
-    std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
-    std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>; // Subnet blocks
-    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
+    std::vector<Prefix<PrefixType>*> *prefix_blocks = new std::vector<Prefix<PrefixType>*>; // Prefix blocks
+    std::vector<Prefix<PrefixType>*> *subnet_blocks = new std::vector<Prefix<PrefixType>*>; // Subnet blocks
+    Prefix<PrefixType> *cur_prefix = new Prefix<PrefixType>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
 
@@ -67,8 +68,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     delete subnet_blocks;
 }
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks) {
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::extrapolate(std::vector<Prefix<PrefixType>*> *prefix_blocks, std::vector<Prefix<PrefixType>*> *subnet_blocks) {
     BOOST_LOG_TRIVIAL(info) << "Beginning propagation...";
     
     // Seed MRT announcements and propagate
@@ -88,10 +89,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
     BOOST_LOG_TRIVIAL(info) << "Announcement count: " << announcement_count;
 }
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::populate_blocks(Prefix<>* p,
-                                                                            std::vector<Prefix<>*>* prefix_vector,
-                                                                            std::vector<Prefix<>*>* bloc_vector) { 
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::populate_blocks(Prefix<PrefixType>* p,
+                                                                            std::vector<Prefix<PrefixType>*>* prefix_vector,
+                                                                            std::vector<Prefix<PrefixType>*>* bloc_vector) { 
     // Find the number of announcements within the subnet
     pqxx::result r = this->querier->select_subnet_count(p);
     
@@ -104,14 +105,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     if (r[0][0].as<uint32_t>() < this->iteration_size) {
         // Add to subnet block vector
         if (r[0][0].as<uint32_t>() > 0) {
-            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask);
+            Prefix<PrefixType>* p_copy = new Prefix<PrefixType>(p->addr, p->netmask);
             bloc_vector->push_back(p_copy);
         }
     } else {
         // Store the prefix if there are announcements for it specifically
         pqxx::result r2 = this->querier->select_prefix_count(p);
         if (r2[0][0].as<uint32_t>() > 0) {
-            Prefix<>* p_copy = new Prefix<>(p->addr, p->netmask);
+            Prefix<PrefixType>* p_copy = new Prefix<PrefixType>(p->addr, p->netmask);
             prefix_vector->push_back(p_copy);
         }
 
@@ -123,7 +124,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
         } else {
             new_mask = (p->netmask >> 1) | p->netmask;
         }
-        Prefix<>* p1 = new Prefix<>(p->addr, new_mask);
+        Prefix<PrefixType>* p1 = new Prefix<PrefixType>(p->addr, new_mask);
         
         // Second half: increase the prefix length by 1 and flip previous length bit
         int8_t sz = 0;
@@ -134,7 +135,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
             }
         }
         new_addr |= 1UL << (32 - sz - 1);
-        Prefix<>* p2 = new Prefix<>(new_addr, new_mask);
+        Prefix<PrefixType>* p2 = new Prefix<PrefixType>(new_addr, new_mask);
 
         // Recursive call on each new prefix subnet
         populate_blocks(p1, prefix_vector, bloc_vector);
@@ -145,13 +146,13 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::p
     }
 }
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::extrapolate_blocks(uint32_t &announcement_count, 
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::extrapolate_blocks(uint32_t &announcement_count, 
                                                                                                     int &iteration, 
                                                                                                     bool subnet, 
-                                                                                                    std::vector<Prefix<>*> *prefix_set) {
+                                                                                                    std::vector<Prefix<PrefixType>*> *prefix_set) {
     // For each unprocessed block of announcements 
-    for (Prefix<>* prefix : *prefix_set) {
+    for (Prefix<PrefixType>* prefix : *prefix_set) {
         BOOST_LOG_TRIVIAL(info) << "Selecting Announcements...";
         auto prefix_start = std::chrono::high_resolution_clock::now();
         
@@ -180,7 +181,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
             // Get row prefix
             std::string ip = ann_block[i]["host"].c_str();
             std::string mask = ann_block[i]["netmask"].c_str();
-            Prefix<> cur_prefix(ip, mask);
+            Prefix<PrefixType> cur_prefix(ip, mask);
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = this->parse_path(path_as_string);
@@ -201,12 +202,12 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
 
             if(this->graph->inverse_results != NULL) {
                 // Assemble pair
-                auto prefix_origin = std::pair<Prefix<>, uint32_t>(cur_prefix, origin);
+                auto prefix_origin = std::pair<Prefix<PrefixType>, uint32_t>(cur_prefix, origin);
                 
                 // Insert the inverse results for this prefix
                 if (this->graph->inverse_results->find(prefix_origin) == this->graph->inverse_results->end()) {
                     // This is horrifying
-                    this->graph->inverse_results->insert(std::pair<std::pair<Prefix<>, uint32_t>, 
+                    this->graph->inverse_results->insert(std::pair<std::pair<Prefix<PrefixType>, uint32_t>, 
                                                             std::set<uint32_t>*>
                                                             (prefix_origin, new std::set<uint32_t>()));
                     
@@ -235,8 +236,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
     }
 }
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp) {
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -376,7 +377,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
             as_on_path->process_announcement(ann, this->random_tiebraking);
             if (this->graph->inverse_results != NULL) {
                 auto set = this->graph->inverse_results->find(
-                        std::pair<Prefix<>,uint32_t>(ann.prefix, ann.origin));
+                        std::pair<Prefix<PrefixType>,uint32_t>(ann.prefix, ann.origin));
                 // Remove the AS from the prefix's inverse results
                 if (set != this->graph->inverse_results->end()) {
                     set->second->erase(as_on_path->asn);
@@ -396,8 +397,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
     }
 }
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::send_all_announcements(uint32_t asn, 
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::send_all_announcements(uint32_t asn, 
                                                                                                         bool to_providers, 
                                                                                                         bool to_peers, 
                                                                                                         bool to_customers) {
@@ -599,5 +600,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
     }
 }
 
-template class BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
+template class BlockedExtrapolator<SQLQuerier, ASGraph<>, Announcement<>, AS<>>;
+template class BlockedExtrapolator<SQLQuerier, ASGraph<uint128_t>, Announcement<uint128_t>, AS<uint128_t>, uint128_t>;
 template class BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;

@@ -45,7 +45,6 @@
 // #include <boost/log/sources/global_logger_storage.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 
-
 void intro() {
     // This needs to be finished
     BOOST_LOG_TRIVIAL(info) << "***** BGP Extrapolator v0.3 *****";
@@ -133,7 +132,10 @@ int main(int argc, char *argv[]) {
          "multi-home propagation mode, 0 - off, 1 - propagate from mh to providers in some cases (automatic), 2 - no propagation from mh, 3 - propagation from mh to peers")
          ("origin-only",
          po::value<bool>()->default_value(DEFAULT_ORIGIN_ONLY),
-         "seed announcements only at the origin");
+         "seed announcements only at the origin")
+         ("ipv6-mode",
+         po::value<bool>()->default_value(DEFAULT_IPV6_MODE),
+         "enables IPv6 mode");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);
@@ -142,6 +144,14 @@ int main(int argc, char *argv[]) {
         cout << desc << endl;
         exit(0);
     }
+
+    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0");
+    std::cout << cur_prefix->to_cidr() << std::endl; 
+
+    cur_prefix = new Prefix<>("192.8.0.1", "255.255.0.0");
+    std::cout << cur_prefix->to_cidr() << std::endl;
+
+    return 0;
 
     // Logging
     unsigned int severity_level = vm["severity-level"].as<unsigned int>();
@@ -230,9 +240,41 @@ int main(int argc, char *argv[]) {
 
         // Clean up
         delete extrap;
+    } else if (vm["ipv6-mode"].as<bool>()) {
+        // Instantiate Extrapolator
+        Extrapolator<Prefix<uint128_t>> *extrap = new Extrapolator<Prefix<uint128_t>> (vm["random"].as<bool>(),
+            vm["store-results"].as<bool>(),
+            vm["store-inverse-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm.count("full-path-results-table") ?
+                vm["full-path-results-table"].as<string>() :
+                FULL_PATH_RESULTS_TABLE),
+            vm["config-section"].as<string>(),
+            vm["iteration-size"].as<uint32_t>(),
+            vm["exclude-monitor"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>(),
+            vm["origin-only"].as<bool>(),
+            full_path_asns);
+            
+        // Run propagation
+        extrap->perform_propagation();
+        // Clean up
+        delete extrap;
     } else {
         // Instantiate Extrapolator
-        Extrapolator *extrap = new Extrapolator(vm["random"].as<bool>(),
+        Extrapolator<> *extrap = new Extrapolator<> (vm["random"].as<bool>(),
             vm["store-results"].as<bool>(),
             vm["store-inverse-results"].as<bool>(),
             vm["store-depref"].as<bool>(),

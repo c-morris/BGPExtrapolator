@@ -26,7 +26,7 @@
 
 #include "SQLQueriers/SQLQuerier.h"
 
-class ROVppSQLQuerier: public SQLQuerier {
+class ROVppSQLQuerier: public SQLQuerier<> {
 public:
     std::string simulation_table;
     std::string tracked_ases_table;

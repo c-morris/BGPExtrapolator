@@ -3,7 +3,7 @@
 
 #include "SQLQueriers/SQLQuerier.h"
 
-class EZSQLQuerier : public SQLQuerier {
+class EZSQLQuerier : public SQLQuerier<> {
 public:
     EZSQLQuerier(std::string a=ANNOUNCEMENTS_TABLE, 
                     std::string r=RESULTS_TABLE,

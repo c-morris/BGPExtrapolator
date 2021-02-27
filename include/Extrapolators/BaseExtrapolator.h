@@ -30,6 +30,7 @@
 #define DEFAULT_STORE_DEPREF_RESULTS false
 
 #define DEFAULT_ORIGIN_ONLY false
+#define DEFAULT_IPV6_MODE false
 
 #include <vector>
 #include <bits/stdc++.h>

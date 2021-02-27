@@ -26,7 +26,7 @@
 
 #include "Announcements/Announcement.h"
 
-class ROVppAnnouncement : public Announcement {
+class ROVppAnnouncement : public Announcement<> {
 public:
     uint32_t alt;               // flag meaning a "hole" along the path
     uint32_t tiebreak_override; // ensure tiebreaks propagate where they should
