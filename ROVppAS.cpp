@@ -510,61 +510,78 @@ void ROVppAS::process_announcements(bool ran) {
  * @return     The best alternative announcement (i.e. an announcement which came from a neighbor who hadn't shared
  *             an attacker announcemnt with us).
  */
- Announcement ROVppAS::best_alternative_route(Announcement &ann) {
-     // Initialize the default answer of (No best alternative with the current given ann)
-     // This variable will update with the best ann if it exists
-     Announcement best_alternative_ann = ann;
-     // Create an ultimate list of good candidate announcemnts (ribs_in)
-     std::vector<Announcement> candidates;
-     std::set<Announcement> baddies = *failed_rov;
-     uint32_t policy = policy_vector.at(0);
-     // For each possible alternative
-     for (auto candidate_ann : *ribs_in) {
-        if (pass_rovpp(candidate_ann) && !candidate_ann.withdraw) {
-          candidates.push_back(candidate_ann);
-        } else {
-          baddies.insert(candidate_ann);
+Announcement ROVppAS::best_alternative_route(Announcement &ann) {
+    // Initialize the default answer of (No best alternative with the current given ann)
+    // This variable will update with the best ann if it exists
+    Announcement best_alternative_ann = ann;
+    // Create an ultimate list of good candidate announcemnts (ribs_in)
+    std::vector<Announcement> candidates;
+    std::set<Announcement> baddies = *failed_rov;
+    uint32_t policy = policy_vector.at(0);
+    // For each possible alternative
+    // For LITE Versions
+    if (policy == ROVPPAS_TYPE_ROVPP_LITE || 
+        policy == ROVPPAS_TYPE_ROVPPB_LITE ||
+        policy == ROVPPAS_TYPE_ROVPPBP_LITE ||
+        policy == ROVPPAS_TYPE_ROVPPBIS_LITE) {
+       // Check if the local rib announcement we currently have is still good (if we have one)
+       // 1. Search local rib for good announcement
+       for (auto candidate_ann_pair : *loc_rib) {
+           auto candidate_ann = candidate_ann_pair.second;
+           // 2. Is our good announcement received_from_asn the same as the attacker ann
+           // Check if the candidate announcement comes from the same neighbor from which we received the attacker announcement from
+           if (candidate_ann.received_from_asn == ann.received_from_asn && 
+                (ann.prefix.contained_in_or_equal_to(candidate_ann.prefix) || candidate_ann.prefix.contained_in_or_equal_to(ann.prefix))) {
+                return ann;
+           } else {
+                candidates.push_back(candidate_ann);
+           }
+       }
+       // Since we preocessed all the candidates above, picking the first on the list here is appropriate
+       // Any candidate announcement is acceptable (it's already in the loc_rib, and we don't want to modify the loc_rib)
+       return candidates.at(0);
+    }
+    
+    // NOTE:
+    // The rest of the function only works for Non_LITE versions
+
+    // For Non_LITE Versions
+    else { 
+        for (auto candidate_ann : *ribs_in) {
+            if (pass_rovpp(candidate_ann) && !candidate_ann.withdraw) {
+              candidates.push_back(candidate_ann);
+            } else {
+              baddies.insert(candidate_ann);
+            }
         }
     }
     // Find the best alternative to ann
-    if (!(policy == ROVPPAS_TYPE_ROVPP_LITE || 
-        policy == ROVPPAS_TYPE_ROVPPB_LITE ||
-        policy == ROVPPAS_TYPE_ROVPPBP_LITE ||
-        policy == ROVPPAS_TYPE_ROVPPBIS_LITE)) {
-        for (auto &candidate : candidates) {
-          // Is there a valid alternative?
-          if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
-             // Is the candidate safe?
-             bool safe = true;
-             for (auto &curr_bad_ann : baddies) {
-                 if (curr_bad_ann.prefix.contained_in_or_equal_to(candidate.prefix) &&
-                     curr_bad_ann.received_from_asn == candidate.received_from_asn) {
-                     // Well yes, but actually no
-                     safe = false;
-                     break;
-                 }
+    for (auto &candidate : candidates) {
+      // Is there a valid alternative?
+      if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
+         // Is the candidate safe?
+         bool safe = true;
+         for (auto &curr_bad_ann : baddies) {
+             if (curr_bad_ann.prefix.contained_in_or_equal_to(candidate.prefix) &&
+                 curr_bad_ann.received_from_asn == candidate.received_from_asn) {
+                 // Well yes, but actually no
+                 safe = false;
+                 break;
              }
-             if (safe) {
-                 // Always replace the initial bad ann if we have an alternative
-                 // Else check for one with a higher priority
-                 if (best_alternative_ann == ann) {
-                     best_alternative_ann = candidate;
-                 } else if (
-                    (best_alternative_ann.prefix.netmask < candidate.prefix.netmask) ||
-                    (best_alternative_ann.priority < candidate.priority && best_alternative_ann.prefix == candidate.prefix)
-                 ) {
-                     best_alternative_ann = candidate;
-                 }
+         }
+         if (safe) {
+             // Always replace the initial bad ann if we have an alternative
+             // Else check for one with a higher priority
+             if (best_alternative_ann == ann) {
+                 best_alternative_ann = candidate;
+             } else if (
+                (best_alternative_ann.prefix.netmask < candidate.prefix.netmask) ||
+                (best_alternative_ann.priority < candidate.priority && best_alternative_ann.prefix == candidate.prefix)
+             ) {
+                 best_alternative_ann = candidate;
              }
-          }
-        }
-    } else {
-        // Just pick one of the candidates (in this case the first one)
-        // TODO: If needed we can randomize this, but for now this is sufficient
-        // because it's deterministic.
-        if (candidates.size() > 0) {
-          best_alternative_ann = candidates.at(0);
-        }
+         }
+      }
     }
     return best_alternative_ann;
 }
