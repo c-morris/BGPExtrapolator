@@ -242,21 +242,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports ) {
         BOOST_CHECK( ezbgpsec_test_gather_reports() );
 }
 
-BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports_merge ) {
-        BOOST_CHECK( ezbgpsec_test_gather_reports_merge() );
-}
-
-BOOST_AUTO_TEST_CASE( EZBGPsec_test_mvc ) {
-        BOOST_CHECK( ezbgpsec_test_mvc() );
-        BOOST_CHECK( ezbgpsec_test_mvc2() );
-}
-
-BOOST_AUTO_TEST_CASE( EZBGPsec_test_local_mvc ) {
-        BOOST_CHECK( ezbgpsec_test_local_mvc() );
-}
-
-BOOST_AUTO_TEST_CASE( EZBGPsec_test_threshold_filtering ) {
-        BOOST_CHECK( ezbgpsec_test_threshold_filtering() );
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_threshold_filtering_approx ) {
         BOOST_CHECK( ezbgpsec_test_threshold_filtering_approx() );
 }
 
