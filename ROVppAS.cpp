@@ -99,6 +99,32 @@ void ROVppAS::withdraw(Announcement &ann) {
     AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
+/** Checks if the given announcement lies within the hole of a bad_neighbor
+ *
+ * To do this, it takes the given ann and evaluates against all the classified 
+ * bad_neighbors (for each loop), whether or not the given ann is contained_in_or_equal
+ * to the bad_neighbor annoucement for which the hole was created for.
+ *
+ * TODO: to optimize this function, it can be upgraded by using a hash table mapping received_from_asn
+ * of bad_neighbors to their corresponding announcements. <received_from_asn_of_bad_neighbor, corresponding_announcement>
+ */
+bool ROVppAS::within_bad_neighbor_hole(Announcement &ann) {
+    // Check if the ann is within the bad_neighbors set
+    if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+        // Find the corresponding ann from the bad_neigbhor
+        for (auto &bad_ann : *failed_rov) {
+            // Identify if it's from the corresponding bad_neighbor by checking the received_from_asn
+            if (bad_ann.received_from_asn == ann.received_from_asn) {
+                // Check if the given ann is contained_in_or_equal to the bad_neighbor announcement
+                if (ann.prefix.contained_in_or_equal_to(bad_ann.prefix)) {
+                    return true;
+                } 
+            }
+        }
+    }
+    return false;
+}
+
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
  *
  * Approximates BGP best path selection based on announcement priority.
@@ -292,6 +318,7 @@ void ROVppAS::process_announcements(bool ran) {
     for (auto &ann : *ribs_in) {
         if (!pass_rovpp(ann)) {
             bad_neighbors->insert(ann.received_from_asn);
+            failed_rov->insert(ann);
         }
     }
     
@@ -342,7 +369,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // Just doesn't creat blackholes
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        if (bad_neighbors->find(ann.received_from_asn) == bad_neighbors->end()) {
+                        if (!within_bad_neighbor_hole(ann)) {
                             process_announcement(ann, false);
                         }
                     }
@@ -353,14 +380,12 @@ void ROVppAS::process_announcements(bool ran) {
                     // Only in the data plane changes
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        // Only process announcements that are not within holes 
                         if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP &&
-                            bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                        } else {
-                          process_announcement(ann, false);
+                            !within_bad_neighbor_hole(ann)) {
+                            process_announcement(ann, false);
                         }
                     } else {
-                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             blackholes->insert(ann);
@@ -377,14 +402,12 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        // Only process announcements that are not within holes 
                         if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB &&
-                            bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                        } else {
-                          process_announcement(ann, false);
+                            !within_bad_neighbor_hole(ann)) {
+                            process_announcement(ann, false);
                         }
                     } else {
-                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
@@ -424,16 +447,14 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
+                        // Only process announcements that are not within holes 
                         if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS &&
-                            bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                        } else {
-                          process_announcement(ann, false);
+                            !within_bad_neighbor_hole(ann)) {
+                            process_announcement(ann, false);
                         }
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
-                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
@@ -452,18 +473,15 @@ void ROVppAS::process_announcements(bool ran) {
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Add received from bad neighbor flag (i.e. alt flag repurposed)
-                        if ((policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP ||
-                            policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) &&
-                            bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-                        } else {
-                          process_announcement(ann, false);
+                        // Only process announcements that are not within holes 
+                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP &&
+                            !within_bad_neighbor_hole(ann)) {
+                            process_announcement(ann, false);
                         }
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
                         Announcement best_alternative_ann = best_alternative_route(ann); 
-                        failed_rov->insert(ann);  // why does this come after
                         if (best_alternative_route(ann) == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
                             blackholes->insert(ann);

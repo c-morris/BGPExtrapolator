@@ -78,6 +78,7 @@ struct ROVppAS : public AS {
     void withdraw(Announcement &ann);
     void withdraw(Announcement &ann, AS &neighbor);
     uint8_t tiny_hash(uint32_t);
+    bool within_bad_neighbor_hole(Announcement &ann);
     void check_preventives(Announcement ann);
     Announcement best_alternative_route(Announcement &ann);  // help find a good alternative route 
                                                         // (i.e. an ann from a neighbor which 
