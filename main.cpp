@@ -86,6 +86,9 @@ int main(int argc, char *argv[]) {
         ("iteration-size,s", 
          po::value<uint32_t>()->default_value(DEFAULT_ITERATION_SIZE), 
          "number of prefixes to be used in one iteration cycle")
+         ("max-threads,m", 
+         po::value<uint32_t>()->default_value(DEFAULT_MAX_THREADS), 
+         "limits number of threads to a specified amount, uses all threads by default")
         ("results-table,r",
          po::value<string>()->default_value(RESULTS_TABLE),
          "name of the results table")
@@ -187,7 +190,8 @@ int main(int argc, char *argv[]) {
                 ROVPP_SIMULATION_TABLE),
             vm["config-section"].as<string>(),
             vm["exclude-monitor"].as<int>(),
-            vm["origin-only"].as<bool>());
+            vm["origin-only"].as<bool>(),
+            vm["max-threads"].as<uint32_t>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
@@ -223,7 +227,8 @@ int main(int argc, char *argv[]) {
             vm["exclude-monitor"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>(),
             vm["origin-only"].as<bool>(),
-            full_path_asns);
+            full_path_asns,
+            vm["max-threads"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
@@ -256,7 +261,8 @@ int main(int argc, char *argv[]) {
             vm["exclude-monitor"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>(),
             vm["origin-only"].as<bool>(),
-            full_path_asns);
+            full_path_asns,
+            vm["max-threads"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
