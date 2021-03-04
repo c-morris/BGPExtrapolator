@@ -557,7 +557,11 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
        }
        // Since we preocessed all the candidates above, picking the first on the list here is appropriate
        // Any candidate announcement is acceptable (it's already in the loc_rib, and we don't want to modify the loc_rib)
-       return candidates.at(0);
+       if (candidates.size() != 0) {    
+            return candidates.at(0);
+       } else {
+            return ann;
+       }
     }
     
     // NOTE:
