@@ -30,7 +30,11 @@
 
 #include "Prefix.h"
 
-template <typename PrefixType = uint32_t>
+template <typename PrefixType = uint32_t> class Announcement;
+
+template <typename PrefixType = uint32_t> 
+std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann);
+template <typename PrefixType>
 class Announcement {
 public:
     Prefix<PrefixType> prefix;            // encoded with subnet mask
@@ -66,7 +70,7 @@ public:
      * @param ann Specifies the announcement from which data is pulled.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    friend std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann);
+    friend std::ostream& operator<<<> (std::ostream &os, const Announcement<PrefixType>& ann);
 
     /** Passes the announcement struct data to an output stream to csv generation.
      *
@@ -75,4 +79,5 @@ public:
      */ 
     virtual std::ostream& to_csv(std::ostream &os);
 };
+
 #endif
