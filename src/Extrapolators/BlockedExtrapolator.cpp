@@ -600,6 +600,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
     }
 }
 
-template class BlockedExtrapolator<SQLQuerier, ASGraph<>, Announcement<>, AS<>>;
-template class BlockedExtrapolator<SQLQuerier, ASGraph<uint128_t>, Announcement<uint128_t>, AS<uint128_t>, uint128_t>;
-template class BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;
+template class BlockedExtrapolator<SQLQuerier<>, ASGraph<>, Announcement<>, AS<>, uint32_t>;
+template class BlockedExtrapolator<SQLQuerier<uint128_t>, ASGraph<uint128_t>, Announcement<uint128_t>, AS<uint128_t>, uint128_t>;
+template class BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS, uint32_t>;

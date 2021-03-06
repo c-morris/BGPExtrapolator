@@ -167,7 +167,7 @@ bool test_give_ann_to_as_path() {
 bool test_give_ann_to_as_path_origin_only() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, true, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, true, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -228,7 +228,7 @@ bool test_give_ann_to_as_path_origin_only() {
 bool test_propagate_up_no_multihomed() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -245,7 +245,7 @@ bool test_propagate_up_no_multihomed() {
     e.graph->decide_ranks();
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(5)->second->process_announcement(ann, true);
@@ -304,7 +304,7 @@ bool test_propagate_up() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(5)->second->process_announcement(ann, true);
@@ -348,7 +348,7 @@ bool test_propagate_up() {
 bool test_propagate_up_multihomed_standard() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
@@ -363,7 +363,7 @@ bool test_propagate_up_multihomed_standard() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(3)->second->process_announcement(ann, true);
@@ -401,7 +401,7 @@ bool test_propagate_up_multihomed_standard() {
 bool test_propagate_up_multihomed_peer_mode() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
@@ -416,7 +416,7 @@ bool test_propagate_up_multihomed_peer_mode() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(3)->second->process_announcement(ann, true);
@@ -455,7 +455,7 @@ bool test_propagate_up_multihomed_peer_mode() {
 bool test_propagate_down_no_multihomed() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -470,7 +470,7 @@ bool test_propagate_down_no_multihomed() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(2)->second->process_announcement(ann, true);
@@ -510,7 +510,7 @@ bool test_propagate_down_no_multihomed() {
 bool test_propagate_down_no_multihomed2() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -525,7 +525,7 @@ bool test_propagate_down_no_multihomed2() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(1)->second->process_announcement(ann, true);
@@ -581,7 +581,7 @@ bool test_propagate_down() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(2)->second->process_announcement(ann, true);
@@ -634,7 +634,7 @@ bool test_propagate_down2() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(1)->second->process_announcement(ann, true);
@@ -675,7 +675,7 @@ bool test_propagate_down2() {
 bool test_propagate_down_multihomed_standard() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
@@ -690,7 +690,7 @@ bool test_propagate_down_multihomed_standard() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(1)->second->process_announcement(ann, true);
@@ -961,7 +961,7 @@ bool test_send_all_announcements3() {
 bool test_send_all_announcements_no_multihomed() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1055,7 +1055,7 @@ bool test_send_all_announcements_no_multihomed() {
 bool test_send_all_announcements_multihomed_standard1() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1150,7 +1150,7 @@ bool test_send_all_announcements_multihomed_standard1() {
 bool test_send_all_announcements_multihomed_standard2() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1235,7 +1235,7 @@ bool test_send_all_announcements_multihomed_standard2() {
 bool test_send_all_announcements_multihomed_peer_mode1() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1329,7 +1329,7 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
 bool test_send_all_announcements_multihomed_peer_mode2() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1419,7 +1419,7 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
  *  This test is currently requires manual verification that the results in the database are correct.
  */
 bool test_save_results_parallel() {
-    Extrapolator<> e = Extrapolator<>(false, true, false, false, "ignored", "test_extrapolation_results", "unused", "unused", "unused", "bgp", 10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, "ignored", "test_extrapolation_results", "unused", "unused", "unused", "bgp", 10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1434,7 +1434,7 @@ bool test_save_results_parallel() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(1)->second->process_announcement(ann, true);
@@ -1465,7 +1465,7 @@ bool test_save_results_parallel() {
  *  This test is currently requires manual verification that the results in the database are correct.
  */
 bool test_save_results_at_asn() {
-    Extrapolator<> e = Extrapolator<>(false, false, false, true, "ignored", "unused", "unused", "unused", "test_extrapolation_single_results", "bgp", 10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_IPV6_MODE);
+    Extrapolator<> e = Extrapolator<>(false, false, false, true, "ignored", "unused", "unused", "unused", "test_extrapolation_single_results", "bgp", 10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1480,7 +1480,7 @@ bool test_save_results_at_asn() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(1)->second->process_announcement(ann, true);

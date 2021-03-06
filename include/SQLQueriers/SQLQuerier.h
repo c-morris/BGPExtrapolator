@@ -43,6 +43,7 @@
 #include <boost/program_options.hpp>
 namespace program_options = boost::program_options;
 
+template <typename PrefixType = uint32_t>
 class SQLQuerier {
 public:
     std::string results_table;
@@ -79,10 +80,10 @@ public:
     
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);
-    pqxx::result select_prefix_count(Prefix<>*);
-    virtual pqxx::result select_prefix_ann(Prefix<>*);
-    pqxx::result select_subnet_count(Prefix<>*);
-    virtual pqxx::result select_subnet_ann(Prefix<>*);
+    pqxx::result select_prefix_count(Prefix<PrefixType>*);
+    virtual pqxx::result select_prefix_ann(Prefix<PrefixType>*);
+    pqxx::result select_subnet_count(Prefix<PrefixType>*);
+    virtual pqxx::result select_subnet_ann(Prefix<PrefixType>*);
     
     // Preprocessing Tables
     void clear_stubs_from_db();

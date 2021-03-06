@@ -145,6 +145,8 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
+    // *** testing *** //
+
     Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0");
     std::cout << cur_prefix->to_cidr() << std::endl; 
 
@@ -152,6 +154,8 @@ int main(int argc, char *argv[]) {
     std::cout << cur_prefix->to_cidr() << std::endl;
 
     return 0;
+
+    // *** testing *** //
 
     // Logging
     unsigned int severity_level = vm["severity-level"].as<unsigned int>();
@@ -242,7 +246,7 @@ int main(int argc, char *argv[]) {
         delete extrap;
     } else if (vm["ipv6-mode"].as<bool>()) {
         // Instantiate Extrapolator
-        Extrapolator<Prefix<uint128_t>> *extrap = new Extrapolator<Prefix<uint128_t>> (vm["random"].as<bool>(),
+        Extrapolator<uint128_t> *extrap = new Extrapolator<uint128_t> (vm["random"].as<bool>(),
             vm["store-results"].as<bool>(),
             vm["store-inverse-results"].as<bool>(),
             vm["store-depref"].as<bool>(),
