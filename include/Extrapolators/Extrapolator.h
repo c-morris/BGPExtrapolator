@@ -29,25 +29,7 @@
 template <typename PrefixType = uint32_t>
 class Extrapolator : public BlockedExtrapolator<SQLQuerier<PrefixType>, ASGraph<PrefixType>, Announcement<PrefixType>, AS<PrefixType>, PrefixType> {
 public:
-    Extrapolator() : Extrapolator<PrefixType>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL) { };
-
-    // Extrapolator(bool random_tiebraking,
-    //                 bool store_results, 
-    //                 bool store_invert_results, 
-    //                 bool store_depref_results, 
-    //                 std::string announcement_table,
-    //                 std::string results_table, 
-    //                 std::string inverse_results_table, 
-    //                 std::string depref_results_table,
-    //                 std::string full_path_results_table,
-    //                 std::string config_section, 
-    //                 uint32_t iteration_size,
-    //                 int exclude_as_number,
-    //                 uint32_t mh_mode,
-    //                 bool origin_only,
-    //                 std::vector<uint32_t> *full_path_asns);
+    Extrapolator();
 
     Extrapolator(bool random_tiebraking,
                     bool store_results, 
@@ -63,14 +45,9 @@ public:
                     int exclude_as_number,
                     uint32_t mh_mode,
                     bool origin_only,
-                    std::vector<uint32_t> *full_path_asns) : 
-                    BlockedExtrapolator<SQLQuerier<PrefixType>, ASGraph<PrefixType>, Announcement<PrefixType>, AS<PrefixType>, PrefixType>
-                    (random_tiebraking, store_results, store_invert_results, store_depref_results, iteration_size, mh_mode, origin_only, full_path_asns) {
+                    std::vector<uint32_t> *full_path_asns);
 
-    this->graph = new ASGraph<PrefixType>(store_invert_results, store_depref_results);
-    this->querier = new SQLQuerier<PrefixType>
-    (announcement_table, results_table, inverse_results_table, depref_results_table, full_path_results_table, exclude_as_number, config_section);
-};
+    
 
     virtual ~Extrapolator();
 };
