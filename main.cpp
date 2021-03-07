@@ -145,18 +145,6 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    // *** testing *** //
-
-    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0");
-    std::cout << cur_prefix->to_cidr() << std::endl; 
-
-    cur_prefix = new Prefix<>("192.8.0.1", "255.255.0.0");
-    std::cout << cur_prefix->to_cidr() << std::endl;
-
-    return 0;
-
-    // *** testing *** //
-
     // Logging
     unsigned int severity_level = vm["severity-level"].as<unsigned int>();
     bool log_std_out = vm["log-std-out"].as<bool>();
