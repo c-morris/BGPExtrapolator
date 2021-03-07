@@ -403,7 +403,7 @@ void SQLQuerier<PrefixType>::create_results_tbl() {
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (ann_id serial PRIMARY KEY,\
     */
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
-    asn bigint,prefix cidr, origin bigint, received_from_asn \
+    asn bigint,prefix inet, origin bigint, received_from_asn \
     bigint, time bigint); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
     BOOST_LOG_TRIVIAL(info) << "Creating results table...";
     execute(sql, false);
@@ -416,7 +416,7 @@ void SQLQuerier<PrefixType>::create_results_tbl() {
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::create_full_path_results_tbl() {
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + full_path_results_table + " (\
-    asn bigint,prefix cidr, origin bigint, received_from_asn \
+    asn bigint,prefix inet, origin bigint, received_from_asn \
     bigint, time bigint, as_path bigint[]); GRANT ALL ON TABLE " + full_path_results_table + " TO bgp_user;");
     std::cout << "Creating full path results table..." << std::endl;
     execute(sql, false);
@@ -427,7 +427,7 @@ void SQLQuerier<PrefixType>::create_full_path_results_tbl() {
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::create_depref_tbl() {
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + depref_table + " (\
-    asn bigint,prefix cidr, origin bigint, received_from_asn \
+    asn bigint,prefix inet, origin bigint, received_from_asn \
     bigint, time bigint); GRANT ALL ON TABLE " + depref_table + " TO bgp_user;");
     BOOST_LOG_TRIVIAL(info) << "Creating depref table...";
     execute(sql, false);
@@ -440,7 +440,7 @@ template <typename PrefixType>
 void SQLQuerier<PrefixType>::create_inverse_results_tbl() {
     std::string sql;
     sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS ") + inverse_results_table + 
-    "(asn bigint,prefix cidr, origin bigint) ";
+    "(asn bigint,prefix inet, origin bigint) ";
     sql += ";";
     sql += "GRANT ALL ON TABLE " + inverse_results_table + " TO bgp_user;";
     BOOST_LOG_TRIVIAL(info) << "Creating inverse results table...";
