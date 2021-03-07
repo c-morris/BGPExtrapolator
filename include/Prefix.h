@@ -46,7 +46,7 @@ public:
 
     /** Integer input constructor
      */
-    Prefix(uint32_t addr_in, uint32_t mask_in) {
+    Prefix(Integer addr_in, Integer mask_in) {
         addr = addr_in;
         netmask = mask_in;
     }
@@ -180,6 +180,12 @@ public:
                         int blocks_left = s.size() / 5;
                         // Calculate the amount of zero blocks suppressed
                         int zero_blocks = 8 - (counter + blocks_left);
+
+                        // Shortcut if the rest of the blocks are zeros only
+                        if (blocks_left == 0) {
+                            ipv6_ip_int = ipv6_ip_int << (16 * (zero_blocks - 1));    
+                            return ipv6_ip_int;
+                        }
                         // Shift the result by the amount of bits in zero_blocks
                         ipv6_ip_int = ipv6_ip_int << (16 * zero_blocks);
 
@@ -299,6 +305,30 @@ public:
         return "";
     }
     
+    /** operator<< is not defined for 128 bit integers
+     *  Those two functions convert the address and netmask to strings
+     *  They should only be used for debugging since they are pretty slow
+     */
+    std::string addr_to_string() const {
+        std::string str;
+        uint128_t num = addr;
+        do {
+            int digit = num % 10;
+            str = std::to_string(digit) + str;
+            num /= 10;
+        } while (num != 0);
+        return str;
+    }
+    std::string netmask_to_string() const {
+        std::string str;
+        uint128_t num = netmask;
+        do {
+            int digit = num % 10;
+            str = std::to_string(digit) + str;
+            num /= 10;
+        } while (num != 0);
+        return str;
+    }
 
     /** Defined comparison operators for maps
      *
@@ -308,15 +338,23 @@ public:
      * @return true If the operation holds, otherwise false
      */
     bool operator<(const Prefix<Integer> &b) const {
-        uint128_t combined = 0;
-        combined |= addr;
-        combined = combined << 32;
-        combined |= netmask; 
-        uint128_t combined_b = 0;
-        combined_b |= b.addr;
-        combined_b = combined_b << 32;
-        combined_b |= b.netmask; 
-        return combined < combined_b;
+        if (std::is_same<Integer, uint128_t>::value) {
+            if (addr != b.addr) {
+                return addr < b.addr;
+            } else {
+                return netmask < b.netmask;
+            }
+        } else {
+            uint64_t combined = 0;
+            combined |= addr;
+            combined = combined << 32;
+            combined |= netmask; 
+            uint64_t combined_b = 0;
+            combined_b |= b.addr;
+            combined_b = combined_b << 32;
+            combined_b |= b.netmask; 
+            return combined < combined_b;
+        }
     }
     bool operator==(const Prefix<Integer> &b) const {
         return !(*this < b || b < *this);

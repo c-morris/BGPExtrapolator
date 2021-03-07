@@ -59,8 +59,8 @@ Announcement<PrefixType>::Announcement(const Announcement<PrefixType>& ann) {
 //****************** FILE I/O ******************//
 template <typename PrefixType>
 std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann) {
-    os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
-        ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
+    os << "Prefix:\t\t" << std::hex << ann.prefix.addr_to_string() << " & " << std::hex << 
+        ann.prefix.netmask_to_string() << std::endl << "Origin:\t\t" << std::dec << ann.origin
         << std::endl << "Priority:\t" << ann.priority << std::endl 
         << "Recv'd from:\t" << std::dec << ann.received_from_asn;
     return os;
