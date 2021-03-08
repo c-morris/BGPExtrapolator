@@ -153,6 +153,7 @@ public:
      */
     uint128_t ipv6_to_int(std::string addr_str) const {
         int counter = 0;                // Check for proper addr length
+        int omit_zeros_pos = -1;        // Stores the position of ommited blocks of zeros
         size_t pos = 0;                 // Position in string addr
         uint128_t ipv6_ip_int = 0;       // Stores the address as an int
         std::string token;              // Buffer subseciton of addr
@@ -174,32 +175,18 @@ public:
                 // Token is one 4-byte int
                 token = s.substr(0, pos);
                 try {
-                    // Encountered suppressed zeros
+                    // Encountered suppressed blocks of zeros
                     if (token.size() == 0) {
-                        // Calculate the amount of blocks left in s (5 = 4 hex numbers + 1 colon)
-                        int blocks_left = s.size() / 5;
-                        // Calculate the amount of zero blocks suppressed
-                        int zero_blocks = 8 - (counter + blocks_left);
-
-                        // Shortcut if the rest of the blocks are zeros only
-                        if (blocks_left == 0) {
-                            ipv6_ip_int = ipv6_ip_int << (16 * (zero_blocks - 1));    
-                            return ipv6_ip_int;
-                        }
-                        // Shift the result by the amount of bits in zero_blocks
-                        ipv6_ip_int = ipv6_ip_int << (16 * zero_blocks);
-
-                        // Trim token from addr
-                        if (s.size() > 0) {
-                            s.erase(0, pos + delimiter.length());
-                        }
-                        counter += zero_blocks;
+                        // Save the position
+                        omit_zeros_pos = counter;
+                        // Erase next semicolon
+                        s.erase(0, pos + delimiter.length());
                         continue;
                     }
                     uint32_t token_int = std::stoi(token, 0, 16);
 
-                    // Catch out of range ints, default to 65536
-                    if (token_int > 65536) {
+                    // Catch out of range ints, default to 65535
+                    if (token_int > 65535) {
                         error_f = true;
                         break;
                     }
@@ -218,13 +205,10 @@ public:
             // Catch short malformed input
             if (counter > 7) {
                 error_f = true;
-            } else if (counter < 7) {
-                // If counter < 7, there were multiple suppressed groups of zeros
-                // Shift left by the total amount of bits suppressed
-                ipv6_ip_int = ipv6_ip_int << ((7 - counter) * 16);
-            }
-            // Add the last 16-bit token
+            } 
+
             try {
+                // Add the last 16-bit token
                 if (s.size() != 0) {
                     uint32_t s_int = std::stoi(s, 0, 16);
                     if (s_int > 65536) {
@@ -234,8 +218,23 @@ public:
                         ipv6_ip_int += s_int;
                     }
                 }
-            }
-            catch (...) {
+
+                // Insert ommited blocks of zeros
+                if (omit_zeros_pos != -1) {
+                    // Calculate the number of ommited blocks
+                    int omit_blocks = 7 - counter;
+                    // Split ipv6_ip_int into two separate numbers (split at the position of omitted blocks)
+                    int shift_amount = (16 * (8 - (omit_blocks + omit_zeros_pos)));
+                    // Shift left half right and move it back to clear the right half
+                    uint128_t left_half = ipv6_ip_int >> shift_amount;
+                    left_half = left_half << (16 * (8 - (omit_blocks + omit_zeros_pos)));
+                    uint128_t right_half = left_half ^ ipv6_ip_int;
+                    // Shift left half to add zeros in place of omitted blocks
+                    left_half = left_half << (omit_blocks * 16);
+                    // Reconstruct the address from the two halves
+                    ipv6_ip_int = left_half | right_half;
+                }
+            } catch (...) {
                 error_f = true;
             }
         }
