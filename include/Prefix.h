@@ -273,7 +273,7 @@ public:
             // Not sure if that is what we are looking for
             uint32_t sz = 0;
             for (int i = 0; i < 128; i++) {
-                if (netmask & (1 << i)) {
+                if (netmask & ((uint128_t) 1 << i)) {
                     sz++;
                 }
             }
