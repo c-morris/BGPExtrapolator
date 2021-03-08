@@ -241,7 +241,7 @@ public:
         // Default errors to ::
         if (error_f == true) {
             ipv6_ip_int = 0;
-            std::cout << "Caught malformed IPv6 address: " << addr_str << std::endl;
+            BOOST_LOG_TRIVIAL(error) << "Caught malformed IPv4 address: " << addr_str;
         }
         return ipv6_ip_int;
     }
