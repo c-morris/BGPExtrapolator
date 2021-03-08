@@ -381,10 +381,13 @@ void ROVppAS::process_announcements(bool ran) {
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
                         // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP &&
-                            !within_bad_neighbor_hole(ann)) {
-                            process_announcement(ann, false);
-                        }
+						if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
+							if (!within_bad_neighbor_hole(ann)) {
+								process_announcement(ann, false);
+							}
+						} else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP_LITE) {
+							process_announcement(ann, false);
+						}	
                     } else {
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
@@ -403,10 +406,13 @@ void ROVppAS::process_announcements(bool ran) {
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
                         // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB &&
-                            !within_bad_neighbor_hole(ann)) {
-                            process_announcement(ann, false);
-                        }
+                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
+							if (!within_bad_neighbor_hole(ann)) {
+                            	process_announcement(ann, false);
+							}
+						} else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB_LITE) {
+							process_announcement(ann, false);
+						}
                     } else {
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
@@ -448,10 +454,13 @@ void ROVppAS::process_announcements(bool ran) {
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
                         // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS &&
-                            !within_bad_neighbor_hole(ann)) {
-                            process_announcement(ann, false);
-                        }
+                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
+							if (!within_bad_neighbor_hole(ann)) {
+                            	process_announcement(ann, false);
+							}
+						} else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE) {
+							process_announcement(ann, false);
+						}
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
@@ -474,10 +483,13 @@ void ROVppAS::process_announcements(bool ran) {
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
                         // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP &&
-                            !within_bad_neighbor_hole(ann)) {
-                            process_announcement(ann, false);
-                        }
+                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
+							if (!within_bad_neighbor_hole(ann)) {
+                            	process_announcement(ann, false);
+							}		
+						} else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) {
+							process_announcement(ann, false);
+						}
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
