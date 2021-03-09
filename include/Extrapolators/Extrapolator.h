@@ -29,8 +29,6 @@
 template <typename PrefixType = uint32_t>
 class Extrapolator : public BlockedExtrapolator<SQLQuerier<PrefixType>, ASGraph<PrefixType>, Announcement<PrefixType>, AS<PrefixType>, PrefixType> {
 public:
-    Extrapolator();
-
     Extrapolator(bool random_tiebraking,
                     bool store_results, 
                     bool store_invert_results, 
@@ -47,9 +45,8 @@ public:
                     bool origin_only,
                     std::vector<uint32_t> *full_path_asns);
 
-    
-
-    virtual ~Extrapolator();
+    Extrapolator();
+    ~Extrapolator();
 };
 
 #endif
