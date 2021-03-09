@@ -42,22 +42,39 @@ BOOST_GLOBAL_FIXTURE( Config );
 BOOST_AUTO_TEST_CASE( Prefix_constructor ) {
         BOOST_CHECK( test_prefix() );
 }
+BOOST_AUTO_TEST_CASE( Prefix_constructor_ipv6 ) {
+        BOOST_CHECK( test_prefix_ipv6() );
+}
 BOOST_AUTO_TEST_CASE( Prefix_to_cidr ) {
         BOOST_CHECK( test_string_to_cidr() );
+}
+BOOST_AUTO_TEST_CASE( Prefix_to_cidr_ipv6 ) {
+        BOOST_CHECK( test_string_to_cidr_ipv6() );
 }
 BOOST_AUTO_TEST_CASE( Prefix_less_than_operator ) {
         BOOST_CHECK( test_prefix_lt_operator() );
 }
+BOOST_AUTO_TEST_CASE( Prefix_less_than_operator_ipv6 ) {
+        BOOST_CHECK( test_prefix_lt_operator_ipv6() );
+}
 BOOST_AUTO_TEST_CASE( Prefix_greater_than_operator ) {
         BOOST_CHECK( test_prefix_gt_operator() );
+}
+BOOST_AUTO_TEST_CASE( Prefix_greater_than_operator_ipv6 ) {
+        BOOST_CHECK( test_prefix_gt_operator_ipv6() );
 }
 BOOST_AUTO_TEST_CASE( Prefix_equivalence_operator ) {
         BOOST_CHECK( test_prefix_eq_operator() );
 }
+BOOST_AUTO_TEST_CASE( Prefix_equivalence_operator_ipv6 ) {
+        BOOST_CHECK( test_prefix_eq_operator_ipv6() );
+}
 BOOST_AUTO_TEST_CASE( Prefix_contained_in_or_equal_to_operator ) {
         BOOST_CHECK( test_prefix_contained_in_or_equal_to_operator() );
 }
-
+BOOST_AUTO_TEST_CASE( Prefix_contained_in_or_equal_to_operator_ipv6 ) {
+        BOOST_CHECK( test_prefix_contained_in_or_equal_to_operator_ipv6() );
+}
 
 // Announcement.h
 BOOST_AUTO_TEST_CASE( Announcement_constructor ) {

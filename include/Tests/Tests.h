@@ -53,11 +53,17 @@
 
 // Prototypes for PrefixTest.cpp
 bool test_prefix();
+bool test_prefix_ipv6();
 bool test_string_to_cidr();
+bool test_string_to_cidr_ipv6();
 bool test_prefix_lt_operator();
+bool test_prefix_lt_operator_ipv6();
 bool test_prefix_gt_operator();
+bool test_prefix_gt_operator_ipv6();
 bool test_prefix_eq_operator();
+bool test_prefix_eq_operator_ipv6();
 bool test_prefix_contained_in_or_equal_to_operator();
+bool test_prefix_contained_in_or_equal_to_operator_ipv6();
 
 // Prototypes for AnnouncementTest.cpp
 bool test_announcement();
