@@ -239,24 +239,44 @@ bool test_rovpp_pass_rovpp() {
     graph.add_relationship(1, 2, AS_REL_PROVIDER);
     graph.add_relationship(2, 1, AS_REL_CUSTOMER);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement ann_valid = Announcement(13796, p.addr, p.netmask, 22742, 0, ROA_VALID);
+    Announcement ann_unknown = Announcement(13796, p.addr, p.netmask, 22742, 0, ROA_UNKNOWN);
+    Announcement ann_invalid_1 = Announcement(13796, p.addr, p.netmask, 22742, 0, ROA_INVALID_1);
+    Announcement ann_invalid_2 = Announcement(13796, p.addr, p.netmask, 22742, 0, ROA_INVALID_2);
+    Announcement ann_invalid_3 = Announcement(13796, p.addr, p.netmask, 22742, 0, ROA_INVALID_3);
+    
+    ///////////////////////////////////////////
+    // Valid Announcements
+    ///////////////////////////////////////////
 
-    // no attackers should pass all announcements
-    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann) != true) {
+    // If ROA_VALID does not pass we have a problem
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann_valid) != true) {
+        return false;
+    }
+    // If ROA_UKNOWN does not pass we have a problem
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann_unknown) != true) {
         return false;
     }
 
-    // not an attacker, should pass
-    graph.attackers->insert(666);
-    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann) != true) {
-        return false;
-    }
+    
+    ////////////////////////////////////////
+    // Invalid Announcements 
+    ////////////////////////////////////////
 
-    // 13796 is attacker, should fail
-    graph.attackers->insert(13796);
-    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann) != false) {
+    // ROA_INVALID_1 should fail
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann_invalid_1) != false) {
         return false;
     }
+    // ROA_INVALID_2 should fail
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann_invalid_2) != false) {
+        return false;
+    }
+    // ROA_INVALID_3 should fail
+    if (dynamic_cast<ROVppAS*>(graph.ases->find(1)->second)->pass_rovpp(ann_invalid_3) != false) {
+        return false;
+    }
+    
+    // Everything checks out!
     return true;
 }
 
@@ -813,6 +833,7 @@ bool test_rovpp_process_announcement(){
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
     ROVppAS as = ROVppAS(1);
+    as.policy_vector.push_back(ROVPPAS_TYPE_BGP);
     as.process_announcement(ann);
     Prefix<> old_prefix = ann.prefix;
     ann.prefix.addr = 0x321C9F00;
@@ -827,6 +848,7 @@ bool test_rovpp_process_announcement(){
     // Check priority
     Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
     std::vector<uint32_t> x;
+    x.push_back(0);
     Announcement a1 = Announcement(111, p.addr, p.netmask, 199, 222, 0, 1, x);
     Announcement a2 = Announcement(111, p.addr, p.netmask, 298, 223, 0, 1, x);
     as.process_announcement(a1);
@@ -864,6 +886,7 @@ bool test_rovpp_process_announcements(){
     Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
     Prefix<> ann2_prefix = ann2.prefix;
     ROVppAS as = ROVppAS(1);
+    as.policy_vector.push_back(ROVPPAS_TYPE_BGP); 
     // build a vector of announcements
     std::vector<Announcement> vect = std::vector<Announcement>();
     ann1.priority = 100;
@@ -967,6 +990,7 @@ bool test_rovpp_already_received(){
  */
 bool test_rovpp_announcement(){
     std::vector<uint32_t> x;
+    x.push_back(0);
     ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 0, 222, 100, 1, 1, x);
     if (ann.origin != 111 
         || ann.prefix.addr != 0x01010101 
@@ -1019,19 +1043,19 @@ bool test_best_alternative_route_chosen() {
     // Notice the priorities
     // The Announcements will be handled in this order
     std::vector<uint32_t> x;
-    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, 1, x);  // If done incorrectly it will end up with this one
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, ROA_VALID, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, 1, x);  // or this one
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, ROA_VALID, x);  // or this one
     a2.priority = 292;
-    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, 1, x);  // It should end up with this one if done correctly
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, ROA_VALID, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
     Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
     // The difference between the following is the received_from_asn
-    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, 1, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, ROA_INVALID_2, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, 1, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, ROA_INVALID_2, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
@@ -1044,7 +1068,7 @@ bool test_best_alternative_route_chosen() {
     // See if it ended up with the correct one
     Announcement selected_ann = as.loc_rib->find(p1)->second;
     // Note, this test is currently broken, correct behavior is choosing a1
-    return selected_ann == a1;
+    return selected_ann == a3;
 }
 
 /**
@@ -1072,19 +1096,19 @@ bool test_best_alternative_route() {
     // Notice the priorities
     // The Announcements will be handled in this order
     std::vector<uint32_t> x;
-    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, 1, x);  // If done incorrectly it will end up with this one
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, ROA_VALID, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, 1, x);  // or this one
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, ROA_VALID, x);  // or this one
     a2.priority = 292;
-    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, 1, x);  // It should end up with this one if done correctly
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, ROA_VALID, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
     Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
     // The difference between the following is the received_from_asn
-    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, 1, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, ROA_INVALID_2, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, 1, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, ROA_INVALID_2, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
@@ -1123,6 +1147,11 @@ bool test_rovpp_tiebreak_override() {
     e.graph->add_relationship(5, 4, AS_REL_PROVIDER);
     e.graph->add_relationship(4, 5, AS_REL_CUSTOMER);
     e.graph->decide_ranks();
+    
+    // Assign policy_vector values
+    for (auto as : *(e.graph->ases)) {
+        dynamic_cast<ROVppAS*>(as.second)->add_policy(ROVPPAS_TYPE_BGP);
+    }
 
     std::vector<uint32_t> *as_path1 = new std::vector<uint32_t>();
     as_path1->push_back(1);
@@ -1179,7 +1208,12 @@ bool test_withdrawal() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
     e.graph->decide_ranks();
-    
+   
+    // Assign policy_vector values
+    for (auto as : *(e.graph->ases)) {
+        dynamic_cast<ROVppAS*>(as.second)->add_policy(ROVPPAS_TYPE_BGP);
+    }
+
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(5);
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
