@@ -1476,3 +1476,54 @@ bool test_tiny_hash() {
     std::cout << (int) ROVppAS(5).tiny_hash(5) << std::endl;
     return true;
 }
+
+/**
+ * Test relationships over blackhole preference
+ */
+bool test_best_alternative_route2() {
+    // Initialize AS
+    ROVppAS as = ROVppAS(1);
+    as.attackers = new std::set<uint32_t>();
+    
+    uint32_t attacker_asn = 666;
+    uint32_t victim_asn = 99;
+    
+    // Initialize Attacker set
+    as.attackers->insert(attacker_asn); 
+    // Set the policy
+    as.add_policy(ROVPPAS_TYPE_ROVPP);  // ROVpp0.1
+    
+    // Announcements from victim
+    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0");
+    // The difference between the following three is the received_from_asn
+    // Notice the priorities
+    // The Announcements will be handled in this order
+    std::vector<uint32_t> x;
+    Announcement a1 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, ROA_VALID, x);  // If done correctly it will end up with this one
+    a1.priority = 293;
+    Announcement a2 = Announcement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, ROA_VALID, x);  // or this one
+    a2.priority = 292;
+    Announcement a3 = Announcement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, ROA_VALID, x);  // This one should not be chosen because it's from a peer
+    a3.priority = 191;
+    
+    // Subprefix Hijack
+    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
+    // The difference between the following is the received_from_asn
+    Announcement a4 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, ROA_INVALID_2, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    a4.priority = 294;
+    Announcement a5 = Announcement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, ROA_INVALID_2, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    a5.priority = 295;
+    
+    // Notice the victim's ann come first, then the attackers
+    for (Announcement a : {a1, a2, a3, a4, a5}) {
+        as.ribs_in->push_back(a);
+    }
+    
+    if (!(as.best_alternative_route(a4) == a1) ||
+        !(as.best_alternative_route(a5) == a1)) {
+        return false;
+    }
+    return true; 
+}
+
+

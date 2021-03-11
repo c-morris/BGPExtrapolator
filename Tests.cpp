@@ -177,6 +177,7 @@ BOOST_AUTO_TEST_CASE( ROVppAnnouncement_constructor ) {
 }
 BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route ) {
         BOOST_CHECK( test_best_alternative_route() );
+        BOOST_CHECK( test_best_alternative_route2() );
 }
 BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route_chosen ) {
         BOOST_CHECK( test_best_alternative_route_chosen() );
