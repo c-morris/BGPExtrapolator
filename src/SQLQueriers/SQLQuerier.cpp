@@ -182,7 +182,7 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert) {
  *  @param column_names Comma separated list of column names to be copied,
  *                      surrounded by parentheses, Ex: (stub_asn,parent_asn)
  */
-std::string SQLQuerier::copy_to_db_string(std::string file_name, std::string table_name, std::string column_names) {
+std::string SQLQuerier::copy_to_db_query_string(std::string file_name, std::string table_name, std::string column_names) {
     std::string sql = "COPY " + table_name + column_names + " FROM '" +
                       file_name + "' WITH (FORMAT csv)";
 
@@ -198,7 +198,7 @@ std::string SQLQuerier::copy_to_db_string(std::string file_name, std::string tab
  *                   Ex: host(prefix), netmask(prefix), as_path, origin, time
  *                   Replaced by COUNT(*) if unspecified
  */
-std::string SQLQuerier::select_prefix_string(Prefix<>* p, bool subnet, std::string selection) {
+std::string SQLQuerier::select_prefix_query_string(Prefix<>* p, bool subnet, std::string selection) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT " + selection + " FROM " + announcements_table;
     if (subnet) {
@@ -217,7 +217,7 @@ std::string SQLQuerier::select_prefix_string(Prefix<>* p, bool subnet, std::stri
 }
 
 // Returns a string with a DROP TABLE query
-std::string SQLQuerier::clear_table_string(std::string table_name) {
+std::string SQLQuerier::clear_table_query_string(std::string table_name) {
     return "DROP TABLE IF EXISTS " + table_name + ";";
 }
 
@@ -230,7 +230,7 @@ std::string SQLQuerier::clear_table_string(std::string table_name) {
  *  @param grant_all_user User to grant privileges to,
  *                        if left empty GRANT ALL won't be included in the query
  */
-std::string SQLQuerier::create_table_string(std::string table_name, std::string column_names, bool unlogged, std::string grant_all_user) {
+std::string SQLQuerier::create_table_query_string(std::string table_name, std::string column_names, bool unlogged, std::string grant_all_user) {
     std::string unlogged_string = unlogged ? " UNLOGGED " : " ";
     std::string grant_all_string = (grant_all_user == "") ? "" : " GRANT ALL ON TABLE " + table_name + " TO " + grant_all_user + ";";
 
@@ -259,7 +259,7 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit) {
  * @param p The prefix for which we SELECT
  */
 pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
-    std::string sql = select_prefix_string(p);
+    std::string sql = select_prefix_query_string(p);
     return execute(sql);
 }
 
@@ -269,7 +269,7 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
  * @param p The prefix for which we SELECT
  */
 pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
-    std::string sql = select_prefix_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time");
+    std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time");
     return execute(sql);
 }
 
@@ -279,7 +279,7 @@ pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
  * @param p The prefix defining the subnet
  */
 pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
-    std::string sql = select_prefix_string(p, true);
+    std::string sql = select_prefix_query_string(p, true);
     return execute(sql);
 }
 
@@ -289,7 +289,7 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
  * @param p The prefix defining the subnet
  */
 pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
-    std::string sql = select_prefix_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time");
+    std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time");
     return execute(sql);
 }
 
@@ -297,7 +297,7 @@ pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
 /** Drops the stubs table
  */
 void SQLQuerier::clear_stubs_from_db() {
-    std::string sql = clear_table_string(STUBS_TABLE);
+    std::string sql = clear_table_query_string(STUBS_TABLE);
     execute(sql);
 }
 
@@ -305,7 +305,7 @@ void SQLQuerier::clear_stubs_from_db() {
 /** Drops the non stubs table
  */
 void SQLQuerier::clear_non_stubs_from_db() {
-    std::string sql = clear_table_string(NON_STUBS_TABLE);
+    std::string sql = clear_table_query_string(NON_STUBS_TABLE);
     execute(sql);
 }
 
@@ -313,7 +313,7 @@ void SQLQuerier::clear_non_stubs_from_db() {
 /** Drops the supernodes table
  */
 void SQLQuerier::clear_supernodes_from_db() {
-    std::string sql = clear_table_string(SUPERNODES_TABLE);
+    std::string sql = clear_table_query_string(SUPERNODES_TABLE);
     execute(sql);
 }
 
@@ -321,7 +321,7 @@ void SQLQuerier::clear_supernodes_from_db() {
 /** Instantiates a new, empty stubs table in the database, if it doesn't exist.
  */
 void SQLQuerier::create_stubs_tbl() {
-    std::string sql = create_table_string(STUBS_TABLE, "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)");
+    std::string sql = create_table_query_string(STUBS_TABLE, "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)");
     BOOST_LOG_TRIVIAL(info) << "Creating stubs table...";
     execute(sql, false);
 }
@@ -330,7 +330,7 @@ void SQLQuerier::create_stubs_tbl() {
 /** Instantiates a new, empty non_stubs table in the database, if it doesn't exist.
  */
 void SQLQuerier::create_non_stubs_tbl() {
-    std::string sql = create_table_string(NON_STUBS_TABLE, "(non_stub_asn BIGSERIAL PRIMARY KEY)");
+    std::string sql = create_table_query_string(NON_STUBS_TABLE, "(non_stub_asn BIGSERIAL PRIMARY KEY)");
     BOOST_LOG_TRIVIAL(info) << "Creating non_stubs table...";
     execute(sql, false);
 }
@@ -339,7 +339,7 @@ void SQLQuerier::create_non_stubs_tbl() {
 /**  Instantiates a new, empty supernodes table in the database, if it doesn't exist.
  */
 void SQLQuerier::create_supernodes_tbl() {
-    std::string sql = create_table_string(SUPERNODES_TABLE, "(supernode_asn BIGSERIAL PRIMARY KEY, supernode_lowest_asn bigint)");
+    std::string sql = create_table_query_string(SUPERNODES_TABLE, "(supernode_asn BIGSERIAL PRIMARY KEY, supernode_lowest_asn bigint)");
     BOOST_LOG_TRIVIAL(info) << "Creating supernodes table...";
     execute(sql, false);
 }
@@ -348,7 +348,7 @@ void SQLQuerier::create_supernodes_tbl() {
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
 void SQLQuerier::copy_stubs_to_db(std::string file_name) {
-    std::string sql = copy_to_db_string(file_name, STUBS_TABLE, "(stub_asn,parent_asn)");
+    std::string sql = copy_to_db_query_string(file_name, STUBS_TABLE, "(stub_asn,parent_asn)");
     execute(sql);
 }
 
@@ -356,7 +356,7 @@ void SQLQuerier::copy_stubs_to_db(std::string file_name) {
 /** Takes a .csv filename and bulk copies all elements to the non-stubs table.
  */
 void SQLQuerier::copy_non_stubs_to_db(std::string file_name) {
-    std::string sql = copy_to_db_string(file_name, NON_STUBS_TABLE, "(non_stub_asn)");
+    std::string sql = copy_to_db_query_string(file_name, NON_STUBS_TABLE, "(non_stub_asn)");
     execute(sql);
 }
 
@@ -364,7 +364,7 @@ void SQLQuerier::copy_non_stubs_to_db(std::string file_name) {
 /** Takes a .csv filename and bulk copies all elements to the supernodes table.
  */
 void SQLQuerier::copy_supernodes_to_db(std::string file_name) {
-    std::string sql = copy_to_db_string(file_name, SUPERNODES_TABLE, "(supernode_asn,supernode_lowest_asn)");
+    std::string sql = copy_to_db_query_string(file_name, SUPERNODES_TABLE, "(supernode_asn,supernode_lowest_asn)");
     execute(sql);
 }
 
@@ -372,7 +372,7 @@ void SQLQuerier::copy_supernodes_to_db(std::string file_name) {
 /** Drop the Querier's results table.
  */
 void SQLQuerier::clear_results_from_db() {
-    std::string sql = clear_table_string(results_table);
+    std::string sql = clear_table_query_string(results_table);
     execute(sql);
 }
 
@@ -380,7 +380,7 @@ void SQLQuerier::clear_results_from_db() {
 /** Drop the Querier's depref table.
  */
 void SQLQuerier::clear_depref_from_db() {
-    std::string sql = clear_table_string(depref_table);
+    std::string sql = clear_table_query_string(depref_table);
     execute(sql);
 }
 
@@ -388,7 +388,7 @@ void SQLQuerier::clear_depref_from_db() {
 /** Drop the Querier's inverse results table.
  */
 void SQLQuerier::clear_inverse_from_db() {
-    std::string sql = clear_table_string(inverse_results_table);
+    std::string sql = clear_table_query_string(inverse_results_table);
     execute(sql);
 }
 
@@ -402,8 +402,8 @@ void SQLQuerier::clear_full_path_from_db() {
 /** Instantiates a new, empty results table in the database, dropping the old table.
  */
 void SQLQuerier::create_results_tbl() {
-    std::string sql = create_table_string(results_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
-    true, "bgp_user");
+    std::string sql = create_table_query_string(results_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
+    true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating results table...";
     execute(sql, false);
 }
@@ -413,18 +413,17 @@ void SQLQuerier::create_results_tbl() {
  * In addition to all of the columns in the results table, this table includes the as_path.
  */
 void SQLQuerier::create_full_path_results_tbl() {
-    std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + full_path_results_table + " (\
-    asn bigint,prefix cidr, origin bigint, received_from_asn \
-    bigint, time bigint, as_path bigint[]); GRANT ALL ON TABLE " + full_path_results_table + " TO bgp_user;");
-    std::cout << "Creating full path results table..." << std::endl;
+    std::string sql = create_table_query_string(full_path_results_table, 
+    "(asn bigint, prefix cidr, origin bigint, received_from_asn bigint, time bigint, as_path bigint[])", true, user);
+    BOOST_LOG_TRIVIAL(info) << "Creating full path results table...";
     execute(sql, false);
 }
 
 /** Instantiates a new, empty depref table in the database, dropping the old table.
  */
 void SQLQuerier::create_depref_tbl() {
-    std::string sql = create_table_string(depref_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
-    true, "bgp_user");
+    std::string sql = create_table_query_string(depref_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
+    true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating depref table...";
     execute(sql, false);
 }
@@ -433,8 +432,8 @@ void SQLQuerier::create_depref_tbl() {
 /** Instantiates a new, empty inverse results table in the database, dropping the old table.
  */
 void SQLQuerier::create_inverse_results_tbl() {
-    std::string sql = create_table_string(inverse_results_table, "(asn bigint,prefix cidr, origin bigint)",
-    true, "bgp_user");
+    std::string sql = create_table_query_string(inverse_results_table, "(asn bigint,prefix cidr, origin bigint)",
+    true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating inverse results table...";
     execute(sql, false);
 }
@@ -443,22 +442,21 @@ void SQLQuerier::create_inverse_results_tbl() {
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
 void SQLQuerier::copy_results_to_db(std::string file_name) {
-    std::string sql = copy_to_db_string(file_name, results_table, "(asn, prefix, origin, received_from_asn, time)");
+    std::string sql = copy_to_db_query_string(file_name, results_table, "(asn, prefix, origin, received_from_asn, time)");
     execute(sql);
 }
 
 /** Similar to copy_results_to_db, but for a single AS result which includes an AS_PATH column.
  */
 void SQLQuerier::copy_single_results_to_db(std::string file_name) {
-    std::string sql = std::string("COPY " + full_path_results_table + "(asn, prefix, origin, received_from_asn, time, as_path)") +
-                                  "FROM '" + file_name + "' WITH (FORMAT csv)";
+    std::string sql = copy_to_db_query_string(file_name, full_path_results_table, "(asn, prefix, origin, received_from_asn, time, as_path)");
     execute(sql);
 }
 
 /** Takes a .csv filename and bulk copies all elements to the depref table.
  */
 void SQLQuerier::copy_depref_to_db(std::string file_name) {
-    std::string sql = copy_to_db_string(file_name, depref_table, "(asn, prefix, origin, received_from_asn, time)");
+    std::string sql = copy_to_db_query_string(file_name, depref_table, "(asn, prefix, origin, received_from_asn, time)");
     execute(sql);
 }
 
@@ -466,7 +464,7 @@ void SQLQuerier::copy_depref_to_db(std::string file_name) {
 /** Takes a .csv filename and bulk copies all elements to the inverse results table.
  */
 void SQLQuerier::copy_inverse_results_to_db(std::string file_name) {
-    std::string sql = copy_to_db_string(file_name, inverse_results_table, "(asn, prefix, origin)");
+    std::string sql = copy_to_db_query_string(file_name, inverse_results_table, "(asn, prefix, origin)");
     execute(sql);
 }
 
