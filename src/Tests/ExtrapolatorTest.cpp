@@ -1536,12 +1536,11 @@ bool test_save_results_at_asn() {
         return false;
     }
 
-    // Convert reslut to a string separated by spaces
+    // Convert result to a string separated by spaces
     std::string result = "";
     for (auto const &field: r[0]) { 
         result = result + field.c_str() + " ";
     }
-    std::cout << result << std::endl;
     if (result != "5 137.99.0.0/16 13796 2 0 {5,2,1,22742} ") {
         std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
         return false;
