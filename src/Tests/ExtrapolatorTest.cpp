@@ -1458,6 +1458,9 @@ bool test_save_results_parallel() {
     // Get extrapolation results
     pqxx::result r = e.querier->select_from_table(results_table);
 
+    // Remove results from db
+    e.querier->clear_results_from_db();
+
     // If the number of rows is different from true_results, we already know that something is not right
     if (r.size() != true_results.size()) {
         std::cerr << "Save results failed. Results are incorrect" << std::endl;
@@ -1529,6 +1532,9 @@ bool test_save_results_at_asn() {
 
     // Get extrapolation results
     pqxx::result r = e.querier->select_from_table(full_path_results_table);
+
+    // Remove full path results from db
+    e.querier->clear_full_path_from_db();
 
     // If the number of rows is more than 1, we already know that something is not right
     if (r.size() != 1) {
