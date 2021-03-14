@@ -55,7 +55,11 @@ std::vector<uint32_t>* BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementT
     std::stringstream str_stream(path_as_string);
     std::string tokenN;
     while(getline(str_stream, tokenN, ',')) {
-        as_path->push_back(std::stoul(tokenN));
+        try {
+            as_path->push_back(std::stoul(tokenN));
+        } catch(...) {
+            BOOST_LOG_TRIVIAL(error) << "Parse path error, token was: " << tokenN;
+        }
     }
     return as_path;
 }
