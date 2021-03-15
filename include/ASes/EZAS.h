@@ -1,6 +1,10 @@
 #ifndef EZ_AS_H
 #define EZ_AS_H
 
+#include <vector>
+#include <set>
+#include <unordered_set>
+
 #include "ASes/BaseAS.h"
 #include "Announcements/EZAnnouncement.h"
 
@@ -18,6 +22,8 @@ class CommunityDetection;
 class EZAS : public BaseAS<EZAnnouncement> {
 public:
     CommunityDetection *community_detection;
+    std::set<std::vector<uint32_t>> blacklist_paths;
+    std::unordered_set<uint32_t> blacklist_asns;
     unsigned int policy;
 
     EZAS(CommunityDetection *community_detection, uint32_t asn);

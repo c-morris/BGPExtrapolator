@@ -113,9 +113,9 @@ bool ezbgpsec_test_gather_reports() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    e.graph->ases->find(2)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
-    e.graph->ases->find(4)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
-    e.graph->ases->find(3)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_LOCAL;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_LOCAL;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_LOCAL;
 
     e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
@@ -137,19 +137,30 @@ bool ezbgpsec_test_gather_reports() {
     e.communityDetection->process_reports(e.graph);
 
     std::vector<uint32_t> test_vector = { 2, 5, 3 };
-    if(e.communityDetection->hyper_edges.size() != 1) {
+    std::vector<uint32_t> test_vectorb = { 4, 2, 5, 3 };
+
+    if(e.communityDetection->hyper_edges.size() != 2) {
         std::cerr << "The hyper edge was not added to the component properly!" << std::endl;
+        std::cerr << "hyper_edges contains " << std::endl;
+        for (auto path : e.communityDetection->hyper_edges) {
+            for (auto asn : path) {
+                std::cerr << asn << ' ';
+            }
+            std::cerr << std::endl;
+        }
         return false;
     }
 
-    if(e.communityDetection->hyper_edges[0] != test_vector) {
-        std::cerr << "The hyper edge path is not correct! Path is currently: { ";
-
-        for(uint32_t asn : e.communityDetection->hyper_edges[0]) {
-            std::cerr << asn << ", ";
+    if(e.communityDetection->hyper_edges[0] != test_vector || e.communityDetection->hyper_edges[1] != test_vectorb) {
+        std::cerr << "The hyper edge path(s) are not correct! Paths are currently:\n";
+        for (auto path : e.communityDetection->hyper_edges) {
+            for (auto asn : path) {
+                std::cerr << asn << ' ';
+            }
+            std::cerr << std::endl;
         }
 
-        std::cerr << "}" << std::endl;
+        std::cerr << std::endl;
         return false;
     }
 
@@ -168,32 +179,40 @@ bool ezbgpsec_test_gather_reports() {
     e.gather_community_detection_reports();
     e.communityDetection->process_reports(e.graph);
 
-    if(e.communityDetection->hyper_edges.size() != 2) {
+    if(e.communityDetection->hyper_edges.size() != 4) {
         std::cerr << "The hyper edge was not added to the component properly after the second announcement!" << std::endl;
+        std::cerr << "Paths are currently:\n";
+        for (auto path : e.communityDetection->hyper_edges) {
+            for (auto asn : path) {
+                std::cerr << asn << ' ';
+            }
+            std::cerr << std::endl;
+        }
+
         return false;
     }
 
     std::vector<uint32_t> test_vector2 = { 2, 1, 3 };
-    if(e.communityDetection->hyper_edges[0] != test_vector && e.communityDetection->hyper_edges[0] != test_vector2) {
+    if(e.communityDetection->hyper_edges[2] != test_vector2) {
+        std::cerr << "The hyper edge (index 2) path is not correct after second announcement! Path is currently: { ";
+
+        for(uint32_t asn : e.communityDetection->hyper_edges[2]) {
+            std::cerr << asn << ", ";
+        }
+
+        std::cerr << "}" << std::endl;
+
+        return false;
+    }
+
+    if(e.communityDetection->hyper_edges[0] != test_vector) {
         std::cerr << "The hyper edge (index 0) path is not correct after second announcement! Path is currently: { ";
 
         for(uint32_t asn : e.communityDetection->hyper_edges[0]) {
             std::cerr << asn << ", ";
         }
 
-        std::cerr << "}" << std::endl;
-
-        return false;
-    }
-
-    if(e.communityDetection->hyper_edges[1] != test_vector && e.communityDetection->hyper_edges[1] != test_vector2) {
-        std::cerr << "The hyper edge (index 1) path is not correct after second announcement! Path is currently: { ";
-
-        for(uint32_t asn : e.communityDetection->hyper_edges[1]) {
-            std::cerr << asn << ", ";
-        }
-
-        std::cerr << "}" << std::endl;
+        std::cerr << std::endl;
 
         return false;
     }
@@ -252,8 +271,26 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     cd3.add_hyper_edge(edge3);
     cd3.add_hyper_edge(edge4);
 
-    //c.local_threshold_approx_filtering(&cd);
-
+    cd3.local_threshold_approx_filtering();
+    // Check first level of collapsing
+    if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 2, 1})) == cd3.blacklist_paths.end()) {
+        return false;
+    }
+    if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 5, 1})) == cd3.blacklist_paths.end()) {
+        return false;
+    }
+    if (cd3.blacklist_paths.find(std::vector<uint32_t>({7, 666, 1})) == cd3.blacklist_paths.end()) {
+        return false;
+    }
+    // Check second level of collapsing
+    if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd3.blacklist_paths.end()) {
+        return false;
+    }
+    // No ASNs should be blacklisted here
+    if (cd3.blacklist_asns.size() > 0) {
+        return false;
+    }
+    
     edge1 = {20, 666, 11, 2, 1}; 
     edge2 = {21, 666, 11, 3, 1};
     edge3 = {22, 666, 12, 4, 1};
@@ -267,8 +304,17 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     cd4.add_hyper_edge(edge4);
     cd4.add_hyper_edge(edge5);
 
-    //c.local_threshold_approx_filtering(&cd);
-    
+    cd4.local_threshold_approx_filtering();
+
+    // Check second level of collapsing
+    if (cd4.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd4.blacklist_paths.end()) {
+        return false;
+    }
+    // No ASNs should be blacklisted here
+    if (cd4.blacklist_asns.size() > 0) {
+        return false;
+    }
+ 
     edge1 = {20, 666, 11, 2, 1}; 
     edge2 = {21, 666, 11, 3, 1};
     edge3 = {22, 666, 12, 4, 1};
@@ -281,6 +327,29 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     cd5.add_hyper_edge(edge4);
 
     cd5.local_threshold_approx_filtering();
+
+    // Check second level of collapsing (should not have found anything here)
+    if (cd5.blacklist_paths.find(std::vector<uint32_t>({666, 1})) != cd5.blacklist_paths.end()) {
+        return false;
+    }
+    // No ASNs should be blacklisted here
+    if (cd5.blacklist_asns.size() > 0) {
+        return false;
+    }
+    
+    // Uncomment for debug
+    //std::cerr << "blacklisted paths\n";
+    //for (auto path : cd5.blacklist_paths) {
+    //    for (auto asn : path) {
+    //        std::cerr << asn << ' ';
+    //    }
+    //    std::cerr << std::endl;
+    //}
+    //std::cerr << "blacklisted asns\n";
+    //for (auto asn : cd5.blacklist_asns) {
+    //    std::cerr << asn << ' ';
+    //}
+    //std::cerr << std::endl;
 
     return true;
 }

@@ -24,7 +24,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         auto origin_search = community_detection->extrapolator->graph->ases->find(ann.as_path.at(ann.as_path.size() - 1));
 
         if(origin_search == community_detection->extrapolator->graph->ases->end()) {
-            //not sure what to do here....
+            // This indicates invalid input tables
             std::cerr << "ORIGIN IN EZAS PATH DOES NOT EXIST!!!" << std::endl;
             return;
         }
@@ -35,17 +35,6 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         if(origin_as->policy == EZAS_TYPE_BGPSEC_TRANSITIVE && ann.from_attacker) {
             return;
         } 
-
-        //Now, the announcement has no *visible* invalid relationship
-
-        //Accept if there is nothing to compete
-        auto ann_search = all_anns->find(ann.prefix);
-        if(ann_search == all_anns->end()) {
-            all_anns->insert(std::make_pair(ann.prefix, ann));
-            return;
-        }
-
-        EZAnnouncement &accepted_announcement = ann_search->second;
 
         // Regular BGPsec requires a path of un-broken adopters to the origin
         if(origin_as->policy == EZAS_TYPE_BGPSEC) {
@@ -71,8 +60,22 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                 // reject
                 return;
             }
-            // Check existing announcement for security second
-            contiguous = true;
+        }
+
+        //Now, the announcement has no *visible* invalid relationship
+
+        //Accept if there is nothing to compete
+        auto ann_search = all_anns->find(ann.prefix);
+        if(ann_search == all_anns->end()) {
+            all_anns->insert(std::make_pair(ann.prefix, ann));
+            return;
+        }
+
+        EZAnnouncement &accepted_announcement = ann_search->second;
+
+        // BGPsec now needs to check security second with the existing announcement
+        if(origin_as->policy == EZAS_TYPE_BGPSEC) {
+            bool contiguous = true;
             for (uint32_t i : accepted_announcement.as_path) {
                 auto search = community_detection->extrapolator->graph->ases->find(i);
                 // assume that an AS that does not exist is not an adopter
@@ -97,7 +100,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             }
         }
 
-        // If this is the case, decide based on which has more signatures (more adopters essentially)
+        // If this is the case, decide based on which has more signatures (more adopters on the path)
         if(accepted_announcement.priority / 100 == ann.priority / 100) {
             int num_adopters_new = 0;
             int num_adopters_accepted = 0;
@@ -134,18 +137,33 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         }
 
         return;
-    } else if (community_detection != NULL && (policy == EZAS_TYPE_DIRECTORY_ONLY || policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL)) {
+    } else if (community_detection != NULL) {
         if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL) {
+            // Check for blacklisted paths from CD
             for(uint32_t asn : ann.as_path) {
                 if(community_detection->blacklist_asns.find(asn) != community_detection->blacklist_asns.end())
                     return;
             }
+            //TODO This could use some improvement
+            for(auto &blacklisted_path : community_detection->blacklist_paths) {
+                if (ann.as_path.size() < blacklisted_path.size())
+                    continue;
+                if(std::includes(ann.as_path.begin(), ann.as_path.end(), blacklisted_path.begin(), blacklisted_path.end())) {
+                    return;
+                }
+            }
         }
-
-        //TODO This could use some improvement
-        for(auto &blacklisted_path : community_detection->blacklist_paths) {
-            if(std::includes(ann.as_path.begin(), ann.as_path.end(), blacklisted_path.begin(), blacklisted_path.end())) {
-                return;
+        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || policy == EZAS_TYPE_DIRECTORY_ONLY) {
+            // Check for blacklisted paths seen by this AS
+            for(uint32_t asn : ann.as_path) {
+                if(blacklist_asns.find(asn) != blacklist_asns.end())
+                    return;
+            }
+            //TODO This could use some improvement
+            for(auto &blacklisted_path : blacklist_paths) {
+                if(std::includes(ann.as_path.begin(), ann.as_path.end(), blacklisted_path.begin(), blacklisted_path.end())) {
+                    return;
+                }
             }
         }
 
@@ -154,7 +172,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
          *  However, if it is from an attacker, send it to Community Detection
          * 
          *  Do not fret, this is not cheating since CD will check to see if the 
-         *      invalid MAC is actually visable.
+         *      invalid MAC is actually visible.
          * 
          *  In addition, CD will delay adding the hyper edge until the end of the round
          */

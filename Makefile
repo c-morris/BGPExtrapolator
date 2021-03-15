@@ -9,6 +9,10 @@ OBJECT_FILES := o
 CC       := g++
 CPPFLAGS := -std=c++14 -g -O3 -Wall -DBOOST_LOG_DYN_LINK -I $(HEADER_DIR)
 LDFLAGS  := -lpqxx -lpq -lboost_program_options -lboost_unit_test_framework -lboost_log -lboost_filesystem -lboost_thread -lpthread -lboost_system -lboost_log_setup
+DANGEROUSFLAGS := -fno-stack-protector
+
+# Uncomment to sacrifice security for potential modest speed improvement
+CPPFLAGS += $(DANGEROUSFLAGS)
 
 SOURCES := $(shell find $(SRC_DIR) -name "*.$(SOURCE_FILES)")
 HEADERS := $(shell find $(HEADER_DIR) -name "*.$(HEADER_FILES)")

@@ -53,11 +53,12 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
     for(int i = as_path.size() - 2; i >= 0; i--) {
         bool nbrs = true;
         auto current_search = graph->ases->find(as_path.at(i));
+        EZAS *current_as;
         if(current_search == graph->ases->end()) {
             cur_pol = EZAS_TYPE_BGP;
             nbrs = false;
         } else {
-            EZAS *current_as = current_search->second;
+            current_as = current_search->second;
             cur_pol = current_as->policy;
         }
 
@@ -81,8 +82,15 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         }
 
         if(cur_pol != EZAS_TYPE_BGP && search_for_adopter) {
-            search_for_adopter = false;
+            //search_for_adopter = false;
             hyper_edge_ranges.push_back(std::make_pair(i, as_index_invalid_relationship));
+            // Also add this edge to the Adopter's own edges (excluding its own ASN)
+            std::vector<uint32_t> hyper_edge_at_current_as(as_path.begin() + i, as_path.begin() + as_index_invalid_relationship);
+            if (hyper_edge_at_current_as.size() == 1) {
+                current_as->blacklist_asns.insert(hyper_edge_at_current_as[0]);
+            } else {
+                current_as->blacklist_paths.insert(hyper_edge_at_current_as);
+            }
         }
     }
 
@@ -94,7 +102,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
     for(std::pair<int, int> &range : hyper_edge_ranges) {
         std::vector<uint32_t> hyper_edge(as_path.begin() + range.first, as_path.begin() + range.second + 1);
 
-        //check if we have this edge already
+        //check if we have this edge already in the directory
         bool contains = false;
         for(auto &temp_edge : edges_to_process) {
             if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin())) {
@@ -214,6 +222,9 @@ void CommunityDetection::local_threshold_approx_filtering() {
                     for (int j = 0; j < i-2; j++) {
                         if (edge[j] == suspect.first) {
                             std::vector<uint32_t> tmp(edge.begin(), edge.begin()+j+1);
+                            // In this case, when going backwards, we must always add the origin
+                            // This is a hacky heuristic optimization that works only for one origin being attacked
+                            tmp.push_back(*edge.rbegin());
                             buckets[tmp.size()].insert(tmp);
                             if (tmp.size() > 0) {
                             //    std::cout << "adding " << tmp[0] << " to bucket " << tmp.size() << "\n";

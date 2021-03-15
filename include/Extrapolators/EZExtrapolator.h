@@ -18,7 +18,7 @@
 #include "CommunityDetection.h"
 
 /**
- * The idea here is to estimate the probability that an "edge" AS can pull off an attacck
+ * The idea here is to estimate the probability that an "edge" AS can pull off an attack
  * 
  * "Edge" AS: an AS with at least one provider and no customers.
  * 
