@@ -337,19 +337,47 @@ bool ezbgpsec_test_threshold_filtering_approx() {
         return false;
     }
     
+    edge1 = {30, 20, 666, 11, 1}; 
+    edge2 = {30, 21, 666, 11, 1};
+    edge3 = {30, 22, 666, 12, 1};
+    edge4 = {30, 23, 666, 12, 1};
+
+    CommunityDetection cd6(NULL, 2);
+    cd6.add_hyper_edge(edge1);
+    cd6.add_hyper_edge(edge2);
+    cd6.add_hyper_edge(edge3);
+    cd6.add_hyper_edge(edge4);
+
+    cd6.local_threshold_approx_filtering();
+
+    // Check second level of collapsing (should not have found anything here)
+    if (cd6.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd5.blacklist_paths.end()) {
+        return false;
+    }
+    // Make sure the incorrectly collapsed edge is not here
+    if (cd6.blacklist_paths.find(std::vector<uint32_t>({30, 1})) != cd5.blacklist_paths.end()) {
+        return false;
+    }
+    // No ASNs should be blacklisted here
+    if (cd6.blacklist_asns.size() > 0) {
+        return false;
+    }
+    
     // Uncomment for debug
     //std::cerr << "blacklisted paths\n";
-    //for (auto path : cd5.blacklist_paths) {
+    //for (auto path : cd6.blacklist_paths) {
     //    for (auto asn : path) {
     //        std::cerr << asn << ' ';
     //    }
     //    std::cerr << std::endl;
     //}
     //std::cerr << "blacklisted asns\n";
-    //for (auto asn : cd5.blacklist_asns) {
+    //for (auto asn : cd6.blacklist_asns) {
     //    std::cerr << asn << ' ';
     //}
     //std::cerr << std::endl;
+
+
 
     return true;
 }
