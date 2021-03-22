@@ -73,7 +73,6 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
                 nbrs = previous_as->has_neighbor(current_search->second->asn);
         }
 
-
         //Previous AS is an adopter and does not have an actual relationship to this AS (invalid MAC)
         if(prev_pol != EZAS_TYPE_BGP && !nbrs) {
             as_index_invalid_relationship = i + 1;
@@ -86,11 +85,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
             hyper_edge_ranges.push_back(std::make_pair(i, as_index_invalid_relationship));
             // Also add this edge to the Adopter's own edges (excluding its own ASN)
             std::vector<uint32_t> hyper_edge_at_current_as(as_path.begin() + i, as_path.begin() + as_index_invalid_relationship);
-            if (hyper_edge_at_current_as.size() == 1) {
-                current_as->blacklist_asns.insert(hyper_edge_at_current_as[0]);
-            } else {
-                current_as->blacklist_paths.insert(hyper_edge_at_current_as);
-            }
+            current_as->edges_to_process.push_back(hyper_edge_at_current_as);
         }
     }
 
@@ -130,10 +125,63 @@ void CommunityDetection::process_reports(EZASGraph *graph) {
         }
     }
 
+    // Now process local edges at each AS
+    for (auto const& as : *graph->ases) {
+        for (auto &edge : as.second->edges_to_process) {
+            // Must be sorted for std::includes
+            // (this is still correctly testing for a subset of the path)
+            std::sort(edge.begin(), edge.end());
+            as.second->blacklist_paths.insert(std::move(edge));
+        }
+        as.second->edges_to_process.clear();
+    }
+
     if(hyper_edges.size() > 0)
         local_threshold_approx_filtering();
     
     edges_to_process.clear();
+}
+
+bool CommunityDetection::is_cover(std::set<uint32_t> sprime, std::set<uint32_t> s) {
+    // does s prime form a set cover over s
+    std::set<uint32_t> covered;
+    for (auto prime_candidate : sprime) {
+        for (const auto &edge : this->hyper_edges) {
+            // if this prime candidate is in the edge, add these ASNs to covered set
+            if (std::find(edge.begin(), edge.end(), prime_candidate) != edge.end()) {
+                for (auto edge_asn : edge) {
+                    covered.insert(edge_asn);
+                }
+                continue;
+            }
+        }
+    }
+    // QUESTION: if s is supposed to be the set of all ASNs in this component, this works
+    // if s is the set of all ASNs excluding those of s prime, this does not work
+    return std::includes(covered.begin(), covered.end(), s.begin(), s.end());
+}
+
+// return a map of ASN to set of those it is indistinguishable from
+std::map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn(std::set<uint32_t> s, std::vector<std::vector<uint32_t>> edges) {
+    std::map<uint32_t, std::set<uint32_t>> retval;
+    for (uint32_t asn : s) {
+        auto s_copy = s;
+        for (auto edge : edges) {
+            if (std::find(edge.begin(), edge.end(), asn) != edge.end()) {
+                // if asn in edge, only save other ASNs also in the edge
+                for (auto it = s_copy.begin(); it != s_copy.end() ;) {
+                    if (*it != asn && std::find(edge.begin(), edge.end(), *it) == edge.end()) {
+                        // if asn missing from edge but present in s_copy, remove from s_copy
+                        it = s_copy.erase(it);
+                    } else { 
+                        ++it;
+                    }
+                }
+            }
+        }
+        retval.insert(std::pair<uint32_t, std::set<uint32_t>>(asn, s_copy));
+    }
+    return retval;
 }
 
 void CommunityDetection::local_threshold_approx_filtering() {

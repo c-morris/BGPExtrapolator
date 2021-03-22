@@ -2,6 +2,7 @@
 #define COMMUNITY_DETECTION_H
 
 #include <limits.h>
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -90,7 +91,23 @@ public:
      */
     void add_report(EZAnnouncement &announcement, EZASGraph *graph);
 
+    /**
+     * Test if the given ASes in sprime form a cover over s.
+     *
+     * @return true if sprime covers s, false otherwise.
+     */
+    bool is_cover(std::set<uint32_t> sprime, std::set<uint32_t> s);
+
+    /**
+     * Generate a map of ASNs to other ASNs which are indistinguishable from them.
+     *
+     * @return the map described above 
+     */
+    std::map<uint32_t, std::set<uint32_t>> gen_ind_asn(std::set<uint32_t> s, std::vector<std::vector<uint32_t>> edges);
+
+    // Deprecated
     void local_threshold_approx_filtering();
+
 
     void process_reports(EZASGraph *graph);
 };

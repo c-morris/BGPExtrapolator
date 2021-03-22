@@ -139,6 +139,8 @@ bool ezbgpsec_test_gather_reports_merge();
 bool ezbgpsec_test_mvc();
 bool ezbgpsec_test_mvc2();
 bool ezbgpsec_test_local_mvc();
+bool ezbgpsec_test_is_cover();
+bool ezbgpsec_test_gen_ind_asn();
 
 bool ezbgpsec_test_threshold_filtering();
 bool ezbgpsec_test_threshold_filtering_approx();

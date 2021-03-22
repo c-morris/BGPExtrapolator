@@ -22,8 +22,8 @@ class CommunityDetection;
 class EZAS : public BaseAS<EZAnnouncement> {
 public:
     CommunityDetection *community_detection;
+    std::vector<std::vector<uint32_t>> edges_to_process;
     std::set<std::vector<uint32_t>> blacklist_paths;
-    std::unordered_set<uint32_t> blacklist_asns;
     unsigned int policy;
 
     EZAS(CommunityDetection *community_detection, uint32_t asn);

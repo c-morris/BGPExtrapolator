@@ -135,33 +135,44 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         if(ann.priority > accepted_announcement.priority) {
             ann_search->second = ann;
         }
-
         return;
     } else if (community_detection != NULL) {
-        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL) {
-            // Check for blacklisted paths from CD
-            for(uint32_t asn : ann.as_path) {
-                if(community_detection->blacklist_asns.find(asn) != community_detection->blacklist_asns.end())
-                    return;
-            }
+        auto path_copy = ann.as_path;
+        std::sort(path_copy.begin(), path_copy.end());
+        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || policy == EZAS_TYPE_DIRECTORY_ONLY) {
+            // Check for blacklisted paths seen by this AS
             //TODO This could use some improvement
-            for(auto &blacklisted_path : community_detection->blacklist_paths) {
-                if (ann.as_path.size() < blacklisted_path.size())
-                    continue;
-                if(std::includes(ann.as_path.begin(), ann.as_path.end(), blacklisted_path.begin(), blacklisted_path.end())) {
+            for(auto &blacklisted_path : blacklist_paths) {
+                if(std::includes(path_copy.begin(), path_copy.end(), blacklisted_path.begin(), blacklisted_path.end())) {
+                    std::cout << "LOC REJECT PATH at " << asn << std::endl;
                     return;
                 }
             }
         }
-        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || policy == EZAS_TYPE_DIRECTORY_ONLY) {
-            // Check for blacklisted paths seen by this AS
+        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL) {
+            // Check for blacklisted paths from CD
             for(uint32_t asn : ann.as_path) {
-                if(blacklist_asns.find(asn) != blacklist_asns.end())
+                if(community_detection->blacklist_asns.find(asn) != community_detection->blacklist_asns.end()) {
+                    std::cout << "REJECT ASN at " << asn << std::endl;
                     return;
+                }
             }
             //TODO This could use some improvement
-            for(auto &blacklisted_path : blacklist_paths) {
-                if(std::includes(ann.as_path.begin(), ann.as_path.end(), blacklisted_path.begin(), blacklisted_path.end())) {
+            for(auto &blacklisted_path : community_detection->blacklist_paths) {
+                if (ann.as_path.size() < blacklisted_path.size()) {
+                    continue;
+                }
+                if(std::includes(path_copy.begin(), path_copy.end(), blacklisted_path.begin(), blacklisted_path.end())) {
+                    std::cout << "REJECT PATH ";
+                    for (auto asn : ann.as_path) {
+                        std::cout << asn << ' ';
+                    }
+                    std::cout << "(blacklist path: ";
+                    for (auto asn : blacklisted_path) {
+                        std::cout << asn << ' ';
+                    }
+                    std::cout << ")";
+                    std::cout << " at " << asn << std::endl;
                     return;
                 }
             }

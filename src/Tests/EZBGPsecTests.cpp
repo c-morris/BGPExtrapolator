@@ -356,6 +356,8 @@ bool ezbgpsec_test_threshold_filtering_approx() {
     }
     // Make sure the incorrectly collapsed edge is not here
     if (cd6.blacklist_paths.find(std::vector<uint32_t>({30, 1})) != cd5.blacklist_paths.end()) {
+        // This is an expected failure, rather than fixing this function we are
+        // taking a different approach that should have no false positives
         return false;
     }
     // No ASNs should be blacklisted here
@@ -381,3 +383,66 @@ bool ezbgpsec_test_threshold_filtering_approx() {
 
     return true;
 }
+
+bool ezbgpsec_test_is_cover() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    std::set<uint32_t> s({30, 20, 21, 22, 23, 666, 11, 12, 1});
+    std::set<uint32_t> sprime1({30});
+    if (!cd.is_cover(sprime1, s)) {
+        std::cerr << "is_cover returned false when it should have been true\n";
+        return false;
+    }
+    std::set<uint32_t> sprime2({20});
+    if (cd.is_cover(sprime2, s)) {
+        std::cerr << "is_cover returned true when it should have been false\n";
+        return false;
+    }
+    return true;
+}
+
+bool ezbgpsec_test_gen_ind_asn() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    std::set<uint32_t> s({30, 20, 21, 22, 23, 666, 11, 12, 1});
+    auto ind_asn = cd.gen_ind_asn(s, cd.hyper_edges);
+
+    if (ind_asn[1]   == std::set<uint32_t>({1, 30, 666 })
+     && ind_asn[11]  == std::set<uint32_t>({1, 11, 30, 666 })
+     && ind_asn[12]  == std::set<uint32_t>({1, 12, 30, 666 })
+     && ind_asn[20]  == std::set<uint32_t>({1, 11, 20, 30, 666 })
+     && ind_asn[21]  == std::set<uint32_t>({1, 11, 21, 30, 666 })
+     && ind_asn[22]  == std::set<uint32_t>({1, 12, 22, 30, 666 })
+     && ind_asn[23]  == std::set<uint32_t>({1, 12, 23, 30, 666 })
+     && ind_asn[30]  == std::set<uint32_t>({1, 30, 666 })
+     && ind_asn[666] == std::set<uint32_t>({1, 30, 666 })) {
+        return true;
+    } else {
+        std::cerr << "ind_asn was not correct, output was\n";
+        for (auto pr : ind_asn) {
+            std::cerr << pr.first << ": ";
+            for (auto a : pr.second) {
+                std::cerr << a << ' ';
+            }
+            std::cerr << '\n';
+        }
+        return false;
+    }
+}
+

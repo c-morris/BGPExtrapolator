@@ -211,7 +211,7 @@ void EZExtrapolator::save_results(int iteration) {
     this->save_results_round(iteration);
 
     // Adopters will now report in their process_announcement function since add_report pushes to a delayed data structure
-    // gather_community_detection_reports();
+    //gather_community_detection_reports();
 }
 
 void EZExtrapolator::save_results_round(int iteration) {

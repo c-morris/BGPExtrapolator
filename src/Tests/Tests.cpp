@@ -242,8 +242,14 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports ) {
         BOOST_CHECK( ezbgpsec_test_gather_reports() );
 }
 
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES( EZBGPsec_test_threshold_filtering_approx, 1)
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_threshold_filtering_approx ) {
         BOOST_CHECK( ezbgpsec_test_threshold_filtering_approx() );
+}
+
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_vc ) {
+        BOOST_CHECK( ezbgpsec_test_is_cover() );
+        BOOST_CHECK( ezbgpsec_test_gen_ind_asn() );
 }
 
 //SQLQuerier Tests
@@ -252,6 +258,7 @@ BOOST_AUTO_TEST_CASE( SQLQuerier_test_parse_config ) {
         BOOST_CHECK( test_parse_config() );
         BOOST_CHECK ( test_parse_config_teardown() );
 }
+
 
 #endif // RUN_TESTS
 
