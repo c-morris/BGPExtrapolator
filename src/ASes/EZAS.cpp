@@ -144,7 +144,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             //TODO This could use some improvement
             for(auto &blacklisted_path : blacklist_paths) {
                 if(std::includes(path_copy.begin(), path_copy.end(), blacklisted_path.begin(), blacklisted_path.end())) {
-                    std::cout << "LOC REJECT PATH at " << asn << std::endl;
+                    //std::cout << "LOC REJECT PATH at " << asn << std::endl;
                     return;
                 }
             }
@@ -153,7 +153,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             // Check for blacklisted paths from CD
             for(uint32_t asn : ann.as_path) {
                 if(community_detection->blacklist_asns.find(asn) != community_detection->blacklist_asns.end()) {
-                    std::cout << "REJECT ASN at " << asn << std::endl;
+                    //std::cout << "REJECT ASN at " << asn << std::endl;
                     return;
                 }
             }
@@ -163,16 +163,16 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                     continue;
                 }
                 if(std::includes(path_copy.begin(), path_copy.end(), blacklisted_path.begin(), blacklisted_path.end())) {
-                    std::cout << "REJECT PATH ";
-                    for (auto asn : ann.as_path) {
-                        std::cout << asn << ' ';
-                    }
-                    std::cout << "(blacklist path: ";
-                    for (auto asn : blacklisted_path) {
-                        std::cout << asn << ' ';
-                    }
-                    std::cout << ")";
-                    std::cout << " at " << asn << std::endl;
+                    //std::cout << "REJECT PATH ";
+                    //for (auto asn : ann.as_path) {
+                    //    std::cout << asn << ' ';
+                    //}
+                    //std::cout << "(blacklist path: ";
+                    //for (auto asn : blacklisted_path) {
+                    //    std::cout << asn << ' ';
+                    //}
+                    //std::cout << ")";
+                    //std::cout << " at " << asn << std::endl;
                     return;
                 }
             }
