@@ -162,7 +162,7 @@ bool CommunityDetection::is_cover(std::set<uint32_t> sprime, std::set<uint32_t> 
 }
 
 // return a map of ASN to set of those it is indistinguishable from
-std::map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn(std::set<uint32_t> s, std::vector<std::vector<uint32_t>> edges) {
+std::map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
     std::map<uint32_t, std::set<uint32_t>> retval;
     for (uint32_t asn : s) {
         auto s_copy = s;
@@ -193,6 +193,20 @@ std::set<uint32_t> CommunityDetection::get_unique_asns(std::vector<std::vector<u
         }
     }
     return unique_asns;
+}
+
+// return a map of ASN to its degree in the specified set of edges
+std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
+    std::map<uint32_t, uint32_t> retval;
+    for (uint32_t asn : s) {
+        retval.insert(std::pair<uint32_t,uint32_t>(asn, 0));
+    }
+    for (auto edge : edges) {
+        for (auto asn : edge) {
+            retval[asn]++;
+        }
+    }
+    return retval;
 }
 
 void CommunityDetection::local_threshold_approx_filtering() {

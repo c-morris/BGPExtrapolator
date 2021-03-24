@@ -251,6 +251,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_vc ) {
         BOOST_CHECK( ezbgpsec_test_is_cover() );
         BOOST_CHECK( ezbgpsec_test_gen_ind_asn() );
         BOOST_CHECK( ezbgpsec_test_get_unique_asns() );
+        BOOST_CHECK( ezbgpsec_test_get_degrees() );
 }
 
 //SQLQuerier Tests

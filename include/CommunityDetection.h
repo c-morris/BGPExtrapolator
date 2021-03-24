@@ -103,8 +103,14 @@ public:
      *
      * @return the map described above 
      */
-    std::map<uint32_t, std::set<uint32_t>> gen_ind_asn(std::set<uint32_t> s, std::vector<std::vector<uint32_t>> edges);
+    std::map<uint32_t, std::set<uint32_t>> gen_ind_asn(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges);
 
+    /**
+     * Generate a map of ASNs to its degree in this set of edges.
+     *
+     * @return the map described above 
+     */
+    std::map<uint32_t, uint32_t> get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges);
 
     /**
      * Generate the universal set of ASNs that exist in a vector of edges.

@@ -467,3 +467,30 @@ bool ezbgpsec_test_get_unique_asns() {
     return true;
 }
 
+
+bool ezbgpsec_test_get_degrees() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    auto test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
+
+    if (!(test_degrees[1] == 4
+       && test_degrees[11] == 2
+       && test_degrees[12] == 2
+       && test_degrees[20] == 1
+       && test_degrees[21] == 1
+       && test_degrees[22] == 1
+       && test_degrees[23] == 1
+       && test_degrees[30] == 4
+       && test_degrees[666] == 4)) {
+        return false;
+    }
+    return true;
+}
