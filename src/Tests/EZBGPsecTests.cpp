@@ -446,3 +446,24 @@ bool ezbgpsec_test_gen_ind_asn() {
     }
 }
 
+
+bool ezbgpsec_test_get_unique_asns() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    auto test_s = cd.get_unique_asns(cd.hyper_edges);
+
+    std::set<uint32_t> expected_s({30, 20, 21, 22, 23, 666, 11, 12, 1});
+    if (test_s != expected_s) {
+        return false;
+    }
+    return true;
+}
+

@@ -105,6 +105,14 @@ public:
      */
     std::map<uint32_t, std::set<uint32_t>> gen_ind_asn(std::set<uint32_t> s, std::vector<std::vector<uint32_t>> edges);
 
+
+    /**
+     * Generate the universal set of ASNs that exist in a vector of edges.
+     *
+     * @return the set of unique ASNs that exist in a list of edges
+     */
+    std::set<uint32_t> get_unique_asns(std::vector<std::vector<uint32_t>> edges);
+
     // Deprecated
     void local_threshold_approx_filtering();
 

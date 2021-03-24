@@ -184,6 +184,17 @@ std::map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn(std::set<
     return retval;
 }
 
+// generate a set of unique ASNs in the set of edges
+std::set<uint32_t> CommunityDetection::get_unique_asns(std::vector<std::vector<uint32_t>> edges) {
+    std::set<uint32_t> unique_asns;
+    for (auto edge : edges) {
+        for (auto asn : edge) {
+            unique_asns.insert(asn);
+        }
+    }
+    return unique_asns;
+}
+
 void CommunityDetection::local_threshold_approx_filtering() {
 
     // 1. Sort hyperedges from longest to shortest
