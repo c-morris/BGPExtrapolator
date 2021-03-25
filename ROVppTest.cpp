@@ -303,6 +303,14 @@ bool test_rovpp_give_ann_to_as_path() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    // Add BGP policy to all ASes
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(1)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(2)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(3)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(4)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(5)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(6)->second)->add_policy(ROVPPAS_TYPE_BGP);
+
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -513,6 +521,14 @@ bool test_rovpp_send_all_announcements() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    // Add BGP policy to all ASes
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(1)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(2)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(3)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(4)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(5)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(6)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(7)->second)->add_policy(ROVPPAS_TYPE_BGP);
 
     e.graph->decide_ranks();
 
