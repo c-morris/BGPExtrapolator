@@ -387,6 +387,14 @@ bool test_rovpp_propagate_up() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    // Add BGP policy to all ASes
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(1)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(2)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(3)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(4)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(5)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(6)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(7)->second)->add_policy(ROVPPAS_TYPE_BGP);
 
     e.graph->decide_ranks();
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
@@ -444,6 +452,13 @@ bool test_rovpp_propagate_down() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    // Add BGP policy to all ASes
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(1)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(2)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(3)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(4)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(5)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(6)->second)->add_policy(ROVPPAS_TYPE_BGP);
 
     e.graph->decide_ranks();
     
@@ -957,6 +972,7 @@ bool test_rovpp_clear_announcements(){
     Announcement ann = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     // AS must hve a non-zero ASN in order to accept this announcement
     ROVppAS as = ROVppAS(1);
+    as.add_policy(ROVPPAS_TYPE_BGP);
     as.process_announcement(ann);
     if (as.loc_rib->size() != 1) {
         return false;
@@ -976,6 +992,7 @@ bool test_rovpp_already_received(){
     Announcement ann1 = Announcement(13796, 0x89630000, 0xFFFF0000, 22742);
     Announcement ann2 = Announcement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
     ROVppAS as = ROVppAS(1);
+    as.add_policy(ROVPPAS_TYPE_BGP);
     // if receive_announcement is broken, this test will also be broken
     as.process_announcement(ann1);
     if (as.already_received(ann1) && !as.already_received(ann2)) {
@@ -1352,6 +1369,14 @@ bool test_rovpp_full_path() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    // Add BGP policy to all ASes
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(1)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(2)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(3)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(4)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(5)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(6)->second)->add_policy(ROVPPAS_TYPE_BGP);
+    dynamic_cast<ROVppAS*>(e.graph->ases->find(7)->second)->add_policy(ROVPPAS_TYPE_BGP);
 
     e.graph->decide_ranks();
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
@@ -1518,9 +1543,18 @@ bool test_best_alternative_route2() {
     for (Announcement a : {a1, a2, a3, a4, a5}) {
         as.ribs_in->push_back(a);
     }
+
+    // Process the announcements
+    as.process_announcements(false);
     
-    if (!(as.best_alternative_route(a4) == a1) ||
-        !(as.best_alternative_route(a5) == a1)) {
+    // Check if the local RIB has the correct announcement 
+    // What should happen:
+    // After the first 3 ROA_VALID announcements are processed the loc_rib should only have the a1 announcement (because it has the best priority)
+    // After the last ROA_INVALID_2 announcement (i.e. a5) the best_alternative_route function should output a3 because the received_from_asn of a1 and a2
+    // are in conflict with a4 and a5 respectively. So the safest one left is a3. When that announcement is sent to process_announcement function it 
+    // see that this proposed alternative is not better in terms of relationship to the currently used announcemnt a1. So it will keep using a1.
+    if (as.loc_rib->find(p1)->second == a1) {
+        std::cerr << "Prefer relationship over safety" << "\n";
         return false;
     }
     return true; 
