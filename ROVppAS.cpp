@@ -132,7 +132,7 @@ bool ROVppAS::within_bad_neighbor_hole(Announcement &ann) {
  * 
  * @param ann The announcement to be processed
  */ 
-void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
+void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     // Check for existing announcement for prefix
     auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
@@ -150,20 +150,6 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran, bool override) {
                 set->second->erase(asn);
             }
         }
-    // If overrid is true, the replace whatever is the current announcement regardless
-    } else if (override) {
-      /*// Disabled this to get some runs to see if we get data plane loops (this block may need to be deleted)
-      // May 13, 2020: Reynaldo Morillo 
-      // Update inverse results
-      swap_inverse_result(
-          std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-          std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-      // Insert depref ann
-      depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
-                                                            search->second));
-      withdraw(search->second);
-      search->second = ann;
-      */
 	} else if ((policy == ROVPPAS_TYPE_BGP || policy == ROVPPAS_TYPE_ROV) && 
 			   (ann.priority == search->second.priority && ann != search->second)) {
 		// Random tiebraker
@@ -573,8 +559,6 @@ void ROVppAS::process_announcements(bool ran) {
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann);
                         } else {
-                            // Move entire prefix to alternative
-                            process_announcement(best_alternative_ann, false, true);
                             // Make preventive announcement
                             Announcement preventive_ann = best_alternative_ann;
                             preventive_ann.prefix = ann.prefix;
