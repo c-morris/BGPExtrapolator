@@ -494,7 +494,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     for (uint32_t provider_asn : *source_as->providers) {
         // For each provider, give the vector of announcements
         auto *recving_as = graph->ases->find(provider_asn)->second;
-        // NOTE SENT TO ASN IS NO LONGER SET
         recving_as->receive_announcements(anns_to_providers);
     }
     for (uint32_t peer_asn : *source_as->peers) {
@@ -555,16 +554,6 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // For each customer, give the vector of announcements
             auto *recving_as = graph->ases->find(customer_asn)->second;
             recving_as->receive_announcements(anns_to_customers);
-        }
-    }
-
-    // TODO Remove this?
-    // Clear withdrawals except for withdrawals
-    for (auto it = source_as->withdrawals->begin(); it != source_as->withdrawals->end();) {
-        if (!it->withdraw) {
-            it = source_as->withdrawals->erase(it);
-        } else {
-            ++it;
         }
     }
 }
