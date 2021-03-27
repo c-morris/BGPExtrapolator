@@ -75,12 +75,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  * @return bool  return false if from attacker, true otherwise
  */
 bool ROVppAS::pass_rovpp(Announcement &ann) {
-    if (ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) { return false; }
-    if (ann.roa_validity == ROA_VALID || ann.roa_validity == ROA_UNKNOWN) {
-      return true;
-    } else {
-      return false;
-    }
+    return this->pass_rov(ann);
 }
 
 /** Add the announcement to the vector of withdrawals to be processed.
