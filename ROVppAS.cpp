@@ -566,17 +566,6 @@ void ROVppAS::process_announcements(bool ran) {
             }
         }
     }
-    
-    // TODO Remove this?
-    // Withdrawals are deleted after processing above
-    // Remove withdrawals
-    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
-        if (it->withdraw) {
-            it = ribs_in->erase(it);
-        } else {
-            ++it;
-        }
-    }
 }
 
 /** Will return the best alternative announcemnt if it exists. If it doesn't exist, it will return the 
