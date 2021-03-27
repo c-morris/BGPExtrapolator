@@ -40,8 +40,6 @@ struct ROVppExtrapolator: public Extrapolator {
                       std::string config_section=DEFAULT_QUERIER_CONFIG_SECTION);
     ~ROVppExtrapolator();
 
-    void process_withdrawal(uint32_t asn, Announcement ann, ROVppAS *neighbor);
-    void process_withdrawals(ROVppAS *as);
     bool loop_check(Prefix<> p, const AS& cur_as, uint32_t a, int d); 
     ////////////////////////////////////////////////////////////////////
     // Overidden Methods
