@@ -473,28 +473,6 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, false);
                         }
                     }
-                /* // Temporarily comment out to test out new v0.2bis   
-                // ROV++ V0.2bis
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
-                    // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
-                    if (pass_rovpp(ann)) {
-                        passed_rov->insert(ann);
-                        process_announcement(ann, false);
-                    } else {
-                        failed_rov->insert(ann);
-                        Announcement best_alternative_ann = best_alternative_route(ann); 
-                        if (best_alternative_ann == ann) { // If no alternative
-                            // Mark as blackholed and accept this announcement
-                            blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann, false);
-                        } else {
-                            process_announcement(best_alternative_ann, false);
-                        }
-                    }
-                
-                 */
                 // New ROV++ V0.2bis (drops hijack announcements silently like v0.3)
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS || 
                          policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE) {
