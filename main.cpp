@@ -33,6 +33,7 @@
 #include "Extrapolators/Extrapolator.h"
 #include "Extrapolators/ROVppExtrapolator.h"
 #include "Extrapolators/EZExtrapolator.h"
+#include "Extrapolators/ROVExtrapolator.h"
 #include "Tests/Tests.h"
 
 #include <boost/log/core.hpp>
@@ -65,6 +66,9 @@ int main(int argc, char *argv[]) {
         ("rovpp,v", 
          po::value<bool>()->default_value(false), 
          "flag for rovpp run")
+        ("rov", 
+         po::value<bool>()->default_value(false), 
+         "flag for rov run")
         ("ezbgpsec,z", 
          po::value<uint32_t>()->default_value(0), 
          "number of rounds for ezbgpsec run")
@@ -196,6 +200,43 @@ int main(int argc, char *argv[]) {
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
         extrap->perform_propagation(prop_twice);
+        // Clean up
+        delete extrap;
+    } else if (vm["rov"].as<bool>()) {
+        // Instantiate Extrapolator
+        ROVExtrapolator *extrap = new ROVExtrapolator(
+            vm["random"].as<bool>(),
+            vm["store-results"].as<bool>(),
+            vm["store-inverse-results"].as<bool>(),
+            vm["store-depref"].as<bool>(),
+            (vm.count("policy-tables") ?
+                vm["policy-tables"].as<vector<string>>() : 
+                vector<string>()),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                RESULTS_TABLE),
+            (vm.count("inverse-results-table") ?
+                vm["inverse-results-table"].as<string>() : 
+                INVERSE_RESULTS_TABLE),
+            (vm.count("depref-table") ?
+                vm["depref-table"].as<string>() : 
+                DEPREF_RESULTS_TABLE),
+            (vm.count("full-path-results-table") ?
+                vm["full-path-results-table"].as<string>() :
+                FULL_PATH_RESULTS_TABLE),
+            vm["config-section"].as<string>(),
+            vm["iteration-size"].as<uint32_t>(),
+            vm["exclude-monitor"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>(),
+            vm["origin-only"].as<bool>(),
+            full_path_asns,
+            vm["max-threads"].as<uint32_t>());
+            
+        // Run propagation
+        extrap->perform_propagation();
         // Clean up
         delete extrap;
     } else if(vm["ezbgpsec"].as<uint32_t>()) {

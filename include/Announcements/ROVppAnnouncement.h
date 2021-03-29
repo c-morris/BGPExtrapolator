@@ -21,8 +21,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef ROV_ANNOUNCEMENT_H
-#define ROV_ANNOUNCEMENT_H
+#ifndef ROVPP_ANNOUNCEMENT_H
+#define ROVPP_ANNOUNCEMENT_H
 
 #include "Announcements/Announcement.h"
 
