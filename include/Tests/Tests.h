@@ -143,6 +143,7 @@ bool ezbgpsec_test_is_cover();
 bool ezbgpsec_test_gen_ind_asn();
 bool ezbgpsec_test_get_unique_asns();
 bool ezbgpsec_test_get_degrees();
+bool ezbgpsec_test_gen_cover_candidates();
 
 bool ezbgpsec_test_threshold_filtering();
 bool ezbgpsec_test_threshold_filtering_approx();

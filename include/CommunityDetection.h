@@ -119,6 +119,12 @@ public:
      */
     std::set<uint32_t> get_unique_asns(std::vector<std::vector<uint32_t>> edges);
 
+
+    std::vector<std::set<uint32_t>> gen_cover_candidates(size_t sz, 
+        const std::set<uint32_t> &s, 
+        std::map<uint32_t, std::set<uint32_t>> ind_map,
+        std::map<uint32_t, uint32_t> degrees);
+
     // Deprecated
     void local_threshold_approx_filtering();
 

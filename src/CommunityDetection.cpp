@@ -209,6 +209,47 @@ std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> 
     return retval;
 }
 
+// generate all possible cover candidates of size sz with given indistinguishability map
+std::vector<std::set<uint32_t>> CommunityDetection::gen_cover_candidates(size_t sz, 
+        const std::set<uint32_t> &s, 
+        std::map<uint32_t, std::set<uint32_t>> ind_map,
+        std::map<uint32_t, uint32_t> degrees) {
+
+    std::vector<std::set<uint32_t>> retval;
+    std::vector<std::pair<uint32_t,uint32_t>> sorted_degrees(degrees.begin(), degrees.end());
+    std::sort(sorted_degrees.begin(), sorted_degrees.end(), [](auto a, auto b) {
+        // Sort from greatest degree to least
+        return a.second > b.second;
+    });
+
+    auto distinguishable_subsets = sorted_degrees;
+    // Indistinguishable nodes must be grouped together, so remove 'duplicates'
+    for (auto it = distinguishable_subsets.begin(); it != distinguishable_subsets.end(); ++it) {
+        for (auto it2 = it+1; it2 != distinguishable_subsets.end();) {
+            if (std::find(ind_map[it->first].begin(), ind_map[it->first].end(), it2->first) != ind_map[it->first].end()) {
+                it2 = distinguishable_subsets.erase(it2);
+            } else {
+                ++it2;
+            }
+        }
+    }
+
+    // This greedy approach only works with one attacker
+    // Start with the node with the highest degree plus all nodes it is indistinguishable from
+    std::set<uint32_t> tmp;
+    int count = 0;
+    for (auto d : distinguishable_subsets) {
+        for (auto asn : ind_map[d.first]) {
+            tmp.insert(asn);
+        }
+        retval.push_back(tmp);
+        if (++count > sz) { break; }
+    }
+
+    return retval;
+}
+
+
 void CommunityDetection::local_threshold_approx_filtering() {
 
     // 1. Sort hyperedges from longest to shortest

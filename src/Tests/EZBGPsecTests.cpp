@@ -494,3 +494,30 @@ bool ezbgpsec_test_get_degrees() {
     }
     return true;
 }
+
+bool ezbgpsec_test_gen_cover_candidates() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    auto test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
+    auto test_s = cd.get_unique_asns(cd.hyper_edges);
+    auto test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
+
+    std::vector<std::set<uint32_t>> test_cover_candidates = cd.gen_cover_candidates(
+        3, test_s, test_ind_map, test_degrees);
+
+    for (auto a : test_cover_candidates) {
+        for (auto b : a) {
+            std::cout << b << ' ';
+        }
+        std::cout << '\n';
+    }
+    return true;
+}
