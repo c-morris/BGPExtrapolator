@@ -111,7 +111,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
     auto search = loc_rib->find(ann.prefix);
     auto search_depref = depref_anns->find(ann.prefix);
     uint32_t relationship = ann.priority / 100;
-	uint32_t policy = policy_vector.at(0); 
+    uint32_t policy = policy_vector.at(0); 
     
     // No announcement found for incoming announcement prefix
     if (search == loc_rib->end()) {
@@ -124,82 +124,80 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 set->second->erase(asn);
             }
         }
-	} else if ((policy == ROVPPAS_TYPE_BGP || 
+    } else if ((policy == ROVPPAS_TYPE_BGP || 
                 policy == ROVPPAS_TYPE_ROV ||
                 policy == ROVPPAS_TYPE_ROVPP_LITE || 
                 policy == ROVPPAS_TYPE_ROVPPB_LITE ||
                 policy == ROVPPAS_TYPE_ROVPPBP_LITE ||
                 policy == ROVPPAS_TYPE_ROVPPBIS_LITE) && 
-			   (ann.priority == search->second.priority && ann != search->second)) {
-		// Random tiebraker
-		// std::minstd_rand ran_bool(asn);
-		ran = false;
-		bool value = (ran ? get_random() : tiny_hash(ann.received_from_asn) < tiny_hash(search->second.received_from_asn) );
-		// TODO This sets first come, first kept
-		// value = false;
-		if (value) {
-			// Use the new announcement and record it won the tiebreak
-			if (search_depref == depref_anns->end()) {
-				// Update inverse results
-				swap_inverse_result(
-					std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-					std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-				// Insert depref ann
-				depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
-																	  search->second));
-				withdraw(search->second);
-				search->second = ann;
-				check_preventives(search->second);
-			} else {
-				swap_inverse_result(
-					std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
-					std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
-				search_depref->second = search->second;
-				withdraw(search->second);
-				search->second = ann;
-				check_preventives(search->second);
-			}
-		} else {
-			// Use the old announcement
-			if (search_depref == depref_anns->end()) {
-				depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
-																	  ann));
-			} else {
-				// Replace second best with the old priority announcement
-				search_depref->second = ann;
-			}
-		}
+               (ann.priority == search->second.priority && ann != search->second)) {
+        // Random tiebraker
+        // std::minstd_rand ran_bool(asn);
+        ran = false;
+        bool value = (ran ? get_random() : tiny_hash(ann.received_from_asn) < tiny_hash(search->second.received_from_asn) );
+        // TODO This sets first come, first kept
+        // value = false;
+        if (value) {
+            // Use the new announcement and record it won the tiebreak
+            if (search_depref == depref_anns->end()) {
+                // Update inverse results
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                // Insert depref ann
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
+                                                                      search->second));
+                withdraw(search->second);
+                search->second = ann;
+                check_preventives(search->second);
+            } else {
+                swap_inverse_result(
+                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
+                search_depref->second = search->second;
+                withdraw(search->second);
+                search->second = ann;
+                check_preventives(search->second);
+            }
+        } else {
+            // Use the old announcement
+            if (search_depref == depref_anns->end()) {
+                depref_anns->insert(std::pair<Prefix<>, Announcement>(ann.prefix, 
+                                                                      ann));
+            } else {
+                // Replace second best with the old priority announcement
+                search_depref->second = ann;
+            }
+        }
     // Tiebraker for equal relationship between old and new ann (but not if they're the same ann)
-    } else if ((policy != ROVPPAS_TYPE_BGP && 
-                policy != ROVPPAS_TYPE_ROV &&
-                policy != ROVPPAS_TYPE_ROVPP_LITE && 
-                policy != ROVPPAS_TYPE_ROVPPB_LITE &&
-                policy != ROVPPAS_TYPE_ROVPPBP_LITE &&
-                policy != ROVPPAS_TYPE_ROVPPBIS_LITE) && 
-			   (relationship == (search->second.priority / 100) && ann != search->second)) {
+    } else if ((policy == ROVPPAS_TYPE_ROVPP ||
+                policy == ROVPPAS_TYPE_ROVPPB ||
+                policy == ROVPPAS_TYPE_ROVPPBP ||
+                policy == ROVPPAS_TYPE_ROVPPBIS) &&
+               (relationship == (search->second.priority / 100) && ann != search->second)) {
         // Instead of tiebreak, we should pick the safest
-		// Evaluate how safe are the two announcements
-		std::set<Announcement> safe_announcements;
-		Announcement curr_ann = search->second;
-		// Is the curr_ann safe?
-		bool is_curr_ann_safe  = true;
-		for (const auto &curr_bad_ann : *failed_rov) {
-			if (curr_bad_ann.prefix.contained_in_or_equal_to(curr_ann.prefix) &&
-				curr_bad_ann.received_from_asn == curr_ann.received_from_asn) {
-				is_curr_ann_safe  = false;
-				break;
-			}
-		}
-		// Check which annoucements are safe
-		// Is our current ann NOT safe and the new ann safe?	
-		if (!is_curr_ann_safe) {
-			// Replace our curr not safe announcement with the new safe announcement
+        // Evaluate how safe are the two announcements
+        std::set<Announcement> safe_announcements;
+        Announcement curr_ann = search->second;
+        // Is the curr_ann safe?
+        bool is_curr_ann_safe  = true;
+        for (const auto &curr_bad_ann : *failed_rov) {
+            if (curr_bad_ann.prefix.contained_in_or_equal_to(curr_ann.prefix) &&
+                curr_bad_ann.received_from_asn == curr_ann.received_from_asn) {
+                is_curr_ann_safe  = false;
+                break;
+            }
+        }
+        // Check which annoucements are safe
+        // Is our current ann NOT safe and the new ann safe?    
+        if (!is_curr_ann_safe) {
+            // Replace our curr not safe announcement with the new safe announcement
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
         // If they're both equally safe, then pick the one with the shortest path (i.e. if new one has better path length)
         } else if (ann.priority > search->second.priority) {
-			// Replace our curr not safe announcement with the new safe announcement
+            // Replace our curr not safe announcement with the new safe announcement
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
