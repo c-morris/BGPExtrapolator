@@ -84,7 +84,7 @@ bool test_rovpp_announcement();
 bool test_rovpp_pass_rovpp();
 bool test_rovpp_rov_receive_announcements();
 bool test_best_alternative_route();
-bool test_best_alternative_route2();
+bool test_process_announcement2();
 bool test_best_alternative_route_chosen();
 bool test_rovpp_tiebreak_override();
 bool test_withdrawal();

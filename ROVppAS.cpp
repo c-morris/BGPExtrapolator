@@ -99,32 +99,6 @@ void ROVppAS::withdraw(Announcement &ann) {
     AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
-/** Checks if the given announcement lies within the hole of a bad_neighbor
- *
- * To do this, it takes the given ann and evaluates against all the classified 
- * bad_neighbors (for each loop), whether or not the given ann is contained_in_or_equal
- * to the bad_neighbor annoucement for which the hole was created for.
- *
- * TODO: to optimize this function, it can be upgraded by using a hash table mapping received_from_asn
- * of bad_neighbors to their corresponding announcements. <received_from_asn_of_bad_neighbor, corresponding_announcement>
- */
-bool ROVppAS::within_bad_neighbor_hole(Announcement &ann) {
-    // Check if the ann is within the bad_neighbors set
-    if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
-        // Find the corresponding ann from the bad_neigbhor
-        for (auto &bad_ann : *failed_rov) {
-            // Identify if it's from the corresponding bad_neighbor by checking the received_from_asn
-            if (bad_ann.received_from_asn == ann.received_from_asn) {
-                // Check if the given ann is contained_in_or_equal to the bad_neighbor announcement
-                if (ann.prefix.contained_in_or_equal_to(bad_ann.prefix)) {
-                    return true;
-                } 
-            }
-        }
-    }
-    return false;
-}
-
 /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
  *
  * Approximates BGP best path selection based on announcement priority.
@@ -150,7 +124,12 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 set->second->erase(asn);
             }
         }
-	} else if ((policy == ROVPPAS_TYPE_BGP || policy == ROVPPAS_TYPE_ROV) && 
+	} else if ((policy == ROVPPAS_TYPE_BGP || 
+                policy == ROVPPAS_TYPE_ROV ||
+                policy == ROVPPAS_TYPE_ROVPP_LITE || 
+                policy == ROVPPAS_TYPE_ROVPPB_LITE ||
+                policy == ROVPPAS_TYPE_ROVPPBP_LITE ||
+                policy == ROVPPAS_TYPE_ROVPPBIS_LITE) && 
 			   (ann.priority == search->second.priority && ann != search->second)) {
 		// Random tiebraker
 		// std::minstd_rand ran_bool(asn);
@@ -191,7 +170,12 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
 			}
 		}
     // Tiebraker for equal relationship between old and new ann (but not if they're the same ann)
-    } else if ((policy != ROVPPAS_TYPE_BGP && policy != ROVPPAS_TYPE_ROV) && 
+    } else if ((policy != ROVPPAS_TYPE_BGP && 
+                policy != ROVPPAS_TYPE_ROV &&
+                policy != ROVPPAS_TYPE_ROVPP_LITE && 
+                policy != ROVPPAS_TYPE_ROVPPB_LITE &&
+                policy != ROVPPAS_TYPE_ROVPPBP_LITE &&
+                policy != ROVPPAS_TYPE_ROVPPBIS_LITE) && 
 			   (relationship == (search->second.priority / 100) && ann != search->second)) {
         // Instead of tiebreak, we should pick the safest
 		// Evaluate how safe are the two announcements
@@ -427,9 +411,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // Just doesn't creat blackholes
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        if (!within_bad_neighbor_hole(ann)) {
-                            process_announcement(ann, false);
-                        }
+                        process_announcement(ann, false);
                     }
                 // ROV++ V0.1
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP ||
@@ -438,14 +420,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // Only in the data plane changes
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
-                            if (!within_bad_neighbor_hole(ann)) {
-                                process_announcement(ann, false);
-                            }
-                        } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPP_LITE) {
-                            process_announcement(ann, false);
-                        }   
+                        process_announcement(ann, false);
                     } else {
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
@@ -463,35 +438,8 @@ void ROVppAS::process_announcements(bool ran) {
                     // For ROVpp 0.2, forward a blackhole ann if there is no alt route.
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB) {
-                            if (!within_bad_neighbor_hole(ann)) {
-                                process_announcement(ann, false);
-                            }
-                        } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPB_LITE) {
-                            process_announcement(ann, false);
-                        }
-                    } else {
-                        Announcement best_alternative_ann = best_alternative_route(ann); 
-                        if (best_alternative_ann == ann) { // If no alternative
-                            // Mark as blackholed and accept this announcement
-                            blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann, false);
-                        } else {
-                            process_announcement(best_alternative_ann, false);
-                        }
-                    }
-                /* // Temporarily comment out to test out new v0.2bis   
-                // ROV++ V0.2bis
-                } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
-                    // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
-                    if (pass_rovpp(ann)) {
-                        passed_rov->insert(ann);
                         process_announcement(ann, false);
                     } else {
-                        failed_rov->insert(ann);
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
@@ -504,21 +452,13 @@ void ROVppAS::process_announcements(bool ran) {
                         }
                     }
                 
-                 */
                 // New ROV++ V0.2bis (drops hijack announcements silently like v0.3)
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS || 
                          policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE) {
                     // For ROVpp 0.2bis, forward a blackhole ann to customers if there is no alt route.
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS) {
-                            if (!within_bad_neighbor_hole(ann)) {
-                                process_announcement(ann, false);
-                            }
-                        } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE) {
-                            process_announcement(ann, false);
-                        }
+                        process_announcement(ann, false);
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
@@ -540,14 +480,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
-                        // Only process announcements that are not within holes 
-                        if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
-                            if (!within_bad_neighbor_hole(ann)) {
-                                process_announcement(ann, false);
-                            }       
-                        } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP_LITE) {
-                            process_announcement(ann, false);
-                        }
+                        process_announcement(ann, false);
                     } else {
                         // If it is from a customer, silently drop it
                         if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
@@ -602,7 +535,7 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
     Announcement best_alternative_ann = ann;
     // Create an ultimate list of good candidate announcemnts (ribs_in)
     std::vector<Announcement> candidates;
-    std::set<Announcement> baddies = *failed_rov;
+    std::set<Announcement> bad_ases_tmp = *failed_rov;
     uint32_t policy = policy_vector.at(0);
     // For each possible alternative
     // For LITE Versions
@@ -641,7 +574,7 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
             if (pass_rovpp(candidate_ann) && !candidate_ann.withdraw) {
               candidates.push_back(candidate_ann);
             } else {
-              baddies.insert(candidate_ann);
+              bad_ases_tmp.insert(candidate_ann);
             }
         }
     }
@@ -651,7 +584,7 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
       if (ann.prefix.contained_in_or_equal_to(candidate.prefix)) {
          // Is the candidate safe?
          bool safe = true;
-         for (auto &curr_bad_ann : baddies) {
+         for (auto &curr_bad_ann : bad_ases_tmp) {
              if (curr_bad_ann.prefix.contained_in_or_equal_to(candidate.prefix) &&
                  curr_bad_ann.received_from_asn == candidate.received_from_asn) {
                  // Well yes, but actually no

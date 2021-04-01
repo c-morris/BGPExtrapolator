@@ -1521,7 +1521,7 @@ bool test_tiny_hash() {
 /**
  * Test relationships over blackhole preference
  */
-bool test_best_alternative_route2() {
+bool test_process_announcement2() {
     // Initialize AS
     ROVppAS as = ROVppAS(1);
     as.attackers = new std::set<uint32_t>();
