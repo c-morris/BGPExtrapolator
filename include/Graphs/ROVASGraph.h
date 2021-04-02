@@ -10,7 +10,7 @@ public:
     ROVASGraph(bool store_inverse_results, bool store_depref_results);
     ROVASGraph();
     ~ROVASGraph();
-    ROVAS* create_new(uint32_t asn);
+    ROVAS* createNew(uint32_t asn);
     void process(SQLQuerier *querier);
     void create_graph_from_db(ROVSQLQuerier *querier);
     void add_attacker(uint32_t asn);

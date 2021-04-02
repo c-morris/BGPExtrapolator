@@ -3,15 +3,13 @@
 ROVASGraph::ROVASGraph(bool store_inverse_results, bool store_depref_results) : BaseGraph(store_inverse_results, store_depref_results) {
     attackers = new std::set<uint32_t>();
 }
-ROVASGraph::ROVASGraph() : BaseGraph(false, false) {
-    attackers = new std::set<uint32_t>();
-}
+ROVASGraph::ROVASGraph() : ROVASGraph(false, false) {}
 ROVASGraph::~ROVASGraph() {
     if (attackers != NULL)
         delete attackers;
 }
 
-ROVAS* ROVASGraph::create_new(uint32_t asn) {
+ROVAS* ROVASGraph::createNew(uint32_t asn) {
     std::cout << "*** create new rov" << std::endl;
     return new ROVAS(asn, attackers, store_depref_results, inverse_results);
 }

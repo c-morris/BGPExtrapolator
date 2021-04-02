@@ -7,32 +7,10 @@ ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_
     // ROV adoption is false by default
     adopts_rov = false;
 }
-ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results) 
-: BaseAS<ROVAnnouncement>(asn, store_depref_results, NULL) { 
-    // Save reference to attackers
-    attackers = rov_attackers;
-    // ROV adoption is false by default
-    adopts_rov = false;
-}
-ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers)
-: BaseAS<ROVAnnouncement>(asn, false, NULL) { 
-    // Save reference to attackers
-    attackers = rov_attackers;
-    // ROV adoption is false by default
-    adopts_rov = false;
-}
-ROVAS::ROVAS(uint32_t asn)
-: BaseAS<ROVAnnouncement>(asn, false, NULL) { 
-    // Save reference to attackers
-    attackers = new std::set<uint32_t>();
-    // ROV adoption is false by default
-    adopts_rov = false;
-}
-ROVAS::ROVAS() : ROVAS(0, NULL, false, NULL) {
-    attackers = new std::set<uint32_t>();
-    // ROV adoption is false by default
-    adopts_rov = false;
- }
+ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results) : ROVAS(asn, rov_attackers, store_depref_results, NULL) {}
+ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers) : ROVAS(asn, rov_attackers, false, NULL) {}
+ROVAS::ROVAS(uint32_t asn) : ROVAS(asn, NULL, false, NULL) {}
+ROVAS::ROVAS() : ROVAS(0, NULL, false, NULL) {}
 
 ROVAS::~ROVAS() {}
 
