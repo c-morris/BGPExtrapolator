@@ -13,6 +13,7 @@ public:
     ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
     ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results);
     ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers);
+    ROVAS(uint32_t asn);
     ROVAS();
     ~ROVAS();
 
@@ -41,7 +42,7 @@ public:
     // Returns ROV adoption of the AS
     bool get_rov_adoption();
 
-protected: 
+private: 
     // Set of all known attackers
     std::set<uint32_t> *attackers;
     // Variable that specifies if this AS adopts the ROV policy

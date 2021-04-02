@@ -4,19 +4,37 @@ ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_
 : BaseAS<ROVAnnouncement>(asn, store_depref_results, inverse_results) { 
     // Save reference to attackers
     attackers = rov_attackers;
+    // ROV adoption is false by default
+    adopts_rov = false;
 }
 ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results) 
 : BaseAS<ROVAnnouncement>(asn, store_depref_results, NULL) { 
     // Save reference to attackers
     attackers = rov_attackers;
+    // ROV adoption is false by default
+    adopts_rov = false;
 }
 ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers)
 : BaseAS<ROVAnnouncement>(asn, false, NULL) { 
     // Save reference to attackers
     attackers = rov_attackers;
+    // ROV adoption is false by default
+    adopts_rov = false;
 }
-ROVAS::ROVAS() : ROVAS(0, NULL, false, NULL) { }
-ROVAS::~ROVAS() { }
+ROVAS::ROVAS(uint32_t asn)
+: BaseAS<ROVAnnouncement>(asn, false, NULL) { 
+    // Save reference to attackers
+    attackers = new std::set<uint32_t>();
+    // ROV adoption is false by default
+    adopts_rov = false;
+}
+ROVAS::ROVAS() : ROVAS(0, NULL, false, NULL) {
+    attackers = new std::set<uint32_t>();
+    // ROV adoption is false by default
+    adopts_rov = false;
+ }
+
+ROVAS::~ROVAS() {}
 
 void ROVAS::process_announcement(ROVAnnouncement &ann, bool ran) {
     std::cout << "processing ann" << std::endl;

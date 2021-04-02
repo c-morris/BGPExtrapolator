@@ -7,10 +7,11 @@ ROVASGraph::ROVASGraph() : BaseGraph(false, false) {
     attackers = new std::set<uint32_t>();
 }
 ROVASGraph::~ROVASGraph() {
-    delete attackers;
+    if (attackers != NULL)
+        delete attackers;
 }
 
-ROVAS* ROVASGraph::createNew(uint32_t asn) {
+ROVAS* ROVASGraph::create_new(uint32_t asn) {
     std::cout << "*** create new rov" << std::endl;
     return new ROVAS(asn, attackers, store_depref_results, inverse_results);
 }
