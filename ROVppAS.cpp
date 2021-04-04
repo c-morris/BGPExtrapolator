@@ -65,12 +65,7 @@ void ROVppAS::add_policy(uint32_t p) {
  * @return bool  return false if from attacker, true otherwise
  */
 bool ROVppAS::pass_rov(Announcement &ann) {
-    if (ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) { return false; }
-    if (ann.roa_validity == ROA_VALID || ann.roa_validity == ROA_UNKNOWN) {
-      return true;
-    } else {
-      return false;
-    }
+    return ann.roa_validity == ROA_VALID || ann.roa_validity == ROA_UNKNOWN;
 }
 
 
@@ -80,12 +75,7 @@ bool ROVppAS::pass_rov(Announcement &ann) {
  * @return bool  return false if from attacker, true otherwise
  */
 bool ROVppAS::pass_rovpp(Announcement &ann) {
-    if (ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) { return false; }
-    if (ann.roa_validity == ROA_VALID || ann.roa_validity == ROA_UNKNOWN) {
-      return true;
-    } else {
-      return false;
-    }
+    return this->pass_rov(ann);
 }
 
 /** Add the announcement to the vector of withdrawals to be processed.
@@ -451,7 +441,6 @@ void ROVppAS::process_announcements(bool ran) {
                             process_announcement(best_alternative_ann, false);
                         }
                     }
-                
                 // New ROV++ V0.2bis (drops hijack announcements silently like v0.3)
                 } else if (policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS || 
                          policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBIS_LITE) {
@@ -507,17 +496,6 @@ void ROVppAS::process_announcements(bool ran) {
             } else { // If there is no policy, default to bgp
                 process_announcement(ann, false);
             }
-        }
-    }
-    
-    // TODO Remove this?
-    // Withdrawals are deleted after processing above
-    // Remove withdrawals
-    for (auto it = ribs_in->begin(); it != ribs_in->end();) {
-        if (it->withdraw) {
-            it = ribs_in->erase(it);
-        } else {
-            ++it;
         }
     }
 }
