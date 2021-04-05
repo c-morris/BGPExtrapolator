@@ -511,13 +511,44 @@ bool ezbgpsec_test_gen_cover_candidates() {
     auto test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
 
     std::vector<std::set<uint32_t>> test_cover_candidates = cd.gen_cover_candidates(
-        3, test_s, test_ind_map, test_degrees);
+        3, test_ind_map, test_degrees);
 
-    for (auto a : test_cover_candidates) {
-        for (auto b : a) {
-            std::cout << b << ' ';
+
+    std::set<uint32_t> sprime1 = {1, 30, 666};
+    for (auto sprime : test_cover_candidates) {
+        if (sprime != sprime1) {
+            return false;
         }
-        std::cout << '\n';
     }
+
+
+    std::vector<uint32_t> edge5 = {31, 24, 666, 13, 1};
+    std::vector<uint32_t> edge6 = {32, 25, 666, 14, 1};
+    std::vector<uint32_t> edge7 = {33, 26, 666, 15, 1};
+    cd.add_hyper_edge(edge5);
+    cd.add_hyper_edge(edge6);
+    cd.add_hyper_edge(edge7);
+
+
+    test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
+    test_s = cd.get_unique_asns(cd.hyper_edges);
+    test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
+
+    test_cover_candidates = cd.gen_cover_candidates(
+        3, test_ind_map, test_degrees);
+
+    std::set<uint32_t> sprime2 = {1, 666};
+    if (test_cover_candidates[0] != sprime2) {
+        return false;
+    }
+
+    // Uncomment for debug
+    //for (auto a : test_cover_candidates) {
+    //    for (auto b : a) {
+    //        std::cout << b << ' ';
+    //    }
+    //    std::cout << '\n';
+    //}
+
     return true;
 }

@@ -211,9 +211,8 @@ std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> 
 
 // generate all possible cover candidates of size sz with given indistinguishability map
 std::vector<std::set<uint32_t>> CommunityDetection::gen_cover_candidates(size_t sz, 
-        const std::set<uint32_t> &s, 
-        std::map<uint32_t, std::set<uint32_t>> ind_map,
-        std::map<uint32_t, uint32_t> degrees) {
+        std::map<uint32_t, std::set<uint32_t>> &ind_map,
+        std::map<uint32_t, uint32_t> &degrees) {
 
     std::vector<std::set<uint32_t>> retval;
     std::vector<std::pair<uint32_t,uint32_t>> sorted_degrees(degrees.begin(), degrees.end());
@@ -237,10 +236,14 @@ std::vector<std::set<uint32_t>> CommunityDetection::gen_cover_candidates(size_t 
     // This greedy approach only works with one attacker
     // Start with the node with the highest degree plus all nodes it is indistinguishable from
     std::set<uint32_t> tmp;
-    int count = 0;
+    unsigned count = 0;
     for (auto d : distinguishable_subsets) {
         for (auto asn : ind_map[d.first]) {
-            tmp.insert(asn);
+            if (degrees[asn] > local_threshold) {
+                tmp.insert(asn);
+            } else {
+                break;
+            }
         }
         retval.push_back(tmp);
         if (++count > sz) { break; }
