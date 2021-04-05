@@ -1,7 +1,12 @@
 #include "SQLQueriers/ROVSQLQuerier.h"
 
-ROVSQLQuerier::ROVSQLQuerier(std::vector<std::string> policy_tables, std::string a, std::string r, std::string i, std::string d, std::string f, int n, std::string s) 
-: SQLQuerier(a, r, i, d, f, n, s) {
+ROVSQLQuerier::ROVSQLQuerier(std::vector<std::string> policy_tables, 
+                    std::string announcements_table, 
+                    std::string results_table,
+                    std::string full_path_results_table,
+                    int exclude_as_number,
+                    std::string config_section) 
+: SQLQuerier(announcements_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, full_path_results_table, exclude_as_number, config_section) {
     this->policy_tables = policy_tables;
 }
 

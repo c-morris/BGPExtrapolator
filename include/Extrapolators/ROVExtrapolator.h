@@ -12,13 +12,9 @@ class ROVExtrapolator : public BlockedExtrapolator<ROVSQLQuerier, ROVASGraph, RO
 public:
     ROVExtrapolator(bool random_tiebraking,
                     bool store_results, 
-                    bool store_invert_results, 
-                    bool store_depref_results, 
                     std::vector<std::string> policy_tables,
                     std::string announcement_table,
                     std::string results_table, 
-                    std::string inverse_results_table, 
-                    std::string depref_results_table, 
                     std::string full_path_results_table, 
                     std::string config_section,
                     uint32_t iteration_size,

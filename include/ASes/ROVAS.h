@@ -6,7 +6,7 @@
 
 #define HIJACKED_ASN 64513
 #define NOTHIJACKED_ASN 64514
-#define ROVPPAS_TYPE_ROV 1 // Flag for the standard ROV policy
+#define ROVPPAS_TYPE_ROV 2 // Flag for the standard ROV policy
 
 class ROVAS : public BaseAS<ROVAnnouncement> {
 public:
@@ -21,7 +21,7 @@ public:
      *
      * Approximates BGP best path selection based on ROVAnnouncement priority
      * Simulates ROV if this AS adopts it
-     * Called by ?process_announcements? and ROVExtrapolator.give_ann_to_as_path()
+     * Called by process_announcements and ROVExtrapolator.give_ann_to_as_path()
      * 
      * @param &ann the rovannouncement to be processed
      * @param ran flag to enable random tiebreaks

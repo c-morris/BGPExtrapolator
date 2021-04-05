@@ -11,24 +11,17 @@ ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_
 ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers) : ROVAS(asn, rov_attackers, false, NULL) {}
 ROVAS::ROVAS(uint32_t asn) : ROVAS(asn, NULL, false, NULL) {}
 ROVAS::ROVAS() : ROVAS(0, NULL, false, NULL) {}
-
 ROVAS::~ROVAS() {}
 
 void ROVAS::process_announcement(ROVAnnouncement &ann, bool ran) {
-    std::cout << "processing ann" << std::endl;
-    std::cout << "asn: " << this->asn << ", adopts: " << adopts_rov << std::endl;
-
     if (!adopts_rov) {
         // If this AS doesn't adopt ROV, process the announcement
-        std::cout << "PROCESSED ann, doesn't adopt" << std::endl;
         BaseAS::process_announcement(ann, ran);
     } else if (is_attacker()) {
         // If this AS is an attacker, process the announcement
-        std::cout << "PROCESSED ann, attacker" << std::endl;
         BaseAS::process_announcement(ann, ran);
     } else if (adopts_rov && !is_from_attacker(ann)) {
         // If this AS adopts ROV, but the announcement is not from an attacker, process it
-        std::cout << "PROCESSED ann, not from attacker" << std::endl;
         BaseAS::process_announcement(ann, ran);
     }
 }

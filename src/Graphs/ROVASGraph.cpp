@@ -10,7 +10,6 @@ ROVASGraph::~ROVASGraph() {
 }
 
 ROVAS* ROVASGraph::createNew(uint32_t asn) {
-    std::cout << "*** create new rov" << std::endl;
     return new ROVAS(asn, attackers, store_depref_results, inverse_results);
 }
 

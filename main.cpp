@@ -207,8 +207,6 @@ int main(int argc, char *argv[]) {
         ROVExtrapolator *extrap = new ROVExtrapolator(
             vm["random"].as<bool>(),
             vm["store-results"].as<bool>(),
-            vm["store-inverse-results"].as<bool>(),
-            vm["store-depref"].as<bool>(),
             (vm.count("policy-tables") ?
                 vm["policy-tables"].as<vector<string>>() : 
                 vector<string>()),
@@ -218,12 +216,6 @@ int main(int argc, char *argv[]) {
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
                 RESULTS_TABLE),
-            (vm.count("inverse-results-table") ?
-                vm["inverse-results-table"].as<string>() : 
-                INVERSE_RESULTS_TABLE),
-            (vm.count("depref-table") ?
-                vm["depref-table"].as<string>() : 
-                DEPREF_RESULTS_TABLE),
             (vm.count("full-path-results-table") ?
                 vm["full-path-results-table"].as<string>() :
                 FULL_PATH_RESULTS_TABLE),
