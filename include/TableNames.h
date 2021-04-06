@@ -36,6 +36,9 @@
 #define SUPERNODES_TABLE "supernodes"
 #define ANNOUNCEMENTS_TABLE "mrt_w_roas"
 
+// Simulation Tables
+#define SIMULATION_RESULTS_TABLE "simulation_extrapolation_results_raw_round_1"
+
 // ROV++ Tables
 #define ROVPP_POLICY_TABLE "rovpp_ases"
 #define ROVPP_TOP_TABLE "rovpp_top_100_ases"
