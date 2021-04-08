@@ -225,7 +225,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         // If this AS is the origin
         if (it == as_path->rbegin()){
             // ROVpp: Set the recv_from to proper flag
-            if (roa_validity == ROA_INVALID_1 || roa_validity == ROA_INVALID_2 || roa_validity == ROA_INVALID_3) {
+            if (rovpp_graph->attackers->find(*it) != rovpp_graph->attackers->end()) {
                 received_from_asn = 64513;
             } else {
                 received_from_asn = 64514;
