@@ -115,7 +115,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
 
 void CommunityDetection::process_reports(EZASGraph *graph) {
     for(auto &edge : edges_to_process) {
-        blacklist_paths.insert(edge);
+        blacklist.insert(edge);
 
         unsigned int reporter_policy = graph->ases->find(edge.at(0))->second->policy;
 
@@ -136,29 +136,77 @@ void CommunityDetection::process_reports(EZASGraph *graph) {
         as.second->edges_to_process.clear();
     }
 
-    if(hyper_edges.size() > 0)
-        local_threshold_approx_filtering();
+    if(hyper_edges.size() > 0) {
+        //Community Detection
+
+        std::set<uint32_t> unique_asns = get_unique_asns(hyper_edges);
+        std::map<uint32_t, std::set<uint32_t>> ind_asn = gen_ind_asn(unique_asns, hyper_edges);
+        std::map<uint32_t, uint32_t> degrees = get_degrees(unique_asns, hyper_edges);
+
+        std::vector<std::vector<uint32_t>> suspect_candidates = gen_suspect_candidates(0, ind_asn, degrees);//sz has no meaning?
+
+        //if there is any subset of S/S' with length t that makes a cover over the hyper edges, then S' is a suspect -> blacklist
+        for(auto &suspect : suspect_candidates) {
+            auto unique_copy = unique_asns;
+
+            for(auto asn : suspect)
+                unique_copy.erase(asn);
+
+            bool is_suspect = true;
+
+            std::vector<std::unordered_set<uint32_t>> cover_candidates = generate_cover_candidates(unique_copy);
+            for(auto &cover_candidate : cover_candidates) {
+                if(is_cover(cover_candidate)) {
+                    is_suspect = false;
+                    break;
+                }
+            }
+
+            if(is_suspect) {
+                blacklist.insert(suspect);
+            }
+        }
+    }
     
     edges_to_process.clear();
 }
 
-bool CommunityDetection::is_cover(std::set<uint32_t> sprime, std::set<uint32_t> s) {
-    // does s prime form a set cover over s
-    std::set<uint32_t> covered;
-    for (auto prime_candidate : sprime) {
-        for (const auto &edge : this->hyper_edges) {
-            // if this prime candidate is in the edge, add these ASNs to covered set
-            if (std::find(edge.begin(), edge.end(), prime_candidate) != edge.end()) {
-                for (auto edge_asn : edge) {
-                    covered.insert(edge_asn);
-                }
-                continue;
+bool CommunityDetection::is_cover(std::unordered_set<uint32_t> &cover_candidate) {
+    // We are not testing if s prime makes a cover, we are testing for what the MVC is by testing if candidates in (S/S') of size t make a cover
+
+    // // does s prime form a set cover over s
+    // std::set<uint32_t> covered;
+    // for (auto prime_candidate : sprime) {
+    //     for (const auto &edge : this->hyper_edges) {
+    //         // if this prime candidate is in the edge, add these ASNs to covered set
+    //         if (std::find(edge.begin(), edge.end(), prime_candidate) != edge.end()) {
+    //             for (auto edge_asn : edge) {
+    //                 covered.insert(edge_asn);
+    //             }
+    //             continue;
+    //         }
+    //     }
+    // }
+    // // QUESTION: if s is supposed to be the set of all ASNs in this component, this works
+    // // if s is the set of all ASNs excluding those of s prime, this does not work
+    // return std::includes(covered.begin(), covered.end(), s.begin(), s.end());
+
+    //Check if each edge in the component contains an element of the candidate. If not, then the candidate does not make a cover
+    for(auto &edge : hyper_edges) {
+        bool contains_any = false;
+        for(uint32_t node : cover_candidate) {
+            //This could be better if this was a set rather than a vector 
+            if(std::find(edge.begin(), edge.end(), node) != edge.end()) {
+                contains_any = true;
             }
         }
+
+        //This edge does not contain any of the elements in the suspect list, thus this edge is not covered. 
+        if(!contains_any)
+            return false;
     }
-    // QUESTION: if s is supposed to be the set of all ASNs in this component, this works
-    // if s is the set of all ASNs excluding those of s prime, this does not work
-    return std::includes(covered.begin(), covered.end(), s.begin(), s.end());
+
+    return true;
 }
 
 // return a map of ASN to set of those it is indistinguishable from
@@ -195,6 +243,42 @@ std::set<uint32_t> CommunityDetection::get_unique_asns(std::vector<std::vector<u
     return unique_asns;
 }
 
+void CommunityDetection::generate_cover_candidates_helper(std::set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, 
+                                                            std::vector<std::unordered_set<uint32_t>> result, std::set<uint32_t>::iterator it, int subset_length) {
+
+    //The subset we are building has reached the neccessary length
+    if(building_subset.size() == subset_length) {
+        result.push_back(building_subset);
+        return;
+    }
+
+    //Reached the end of the nodes to choose from
+    if(it == nodes.end())
+        return;
+
+    uint32_t asn = *it;
+    it++;
+
+    //Make a choice: include or exclude this asn
+    building_subset.insert(asn);
+    generate_cover_candidates_helper(nodes, building_subset, result, it, subset_length);
+
+    building_subset.erase(asn);
+    generate_cover_candidates_helper(nodes, building_subset, result, it, subset_length);
+}
+
+//Generate all of the subsets of nodes with length of local_threshold
+//To be used to test MVC
+std::vector<std::unordered_set<uint32_t>> CommunityDetection::generate_cover_candidates(std::set<uint32_t> &nodes) {
+    std::vector<std::unordered_set<uint32_t>> toRet;
+
+    std::unordered_set<uint32_t> building_subset;
+
+    generate_cover_candidates_helper(nodes, building_subset, toRet, nodes.begin(), local_threshold);
+
+    return toRet;
+}
+
 // return a map of ASN to its degree in the specified set of edges
 std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
     std::map<uint32_t, uint32_t> retval;
@@ -210,11 +294,11 @@ std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> 
 }
 
 // generate all possible cover candidates of size sz with given indistinguishability map
-std::vector<std::set<uint32_t>> CommunityDetection::gen_cover_candidates(size_t sz, 
+std::vector<std::vector<uint32_t>> CommunityDetection::gen_suspect_candidates(size_t sz, 
         std::map<uint32_t, std::set<uint32_t>> &ind_map,
         std::map<uint32_t, uint32_t> &degrees) {
 
-    std::vector<std::set<uint32_t>> retval;
+    std::vector<std::vector<uint32_t>> retval;
     std::vector<std::pair<uint32_t,uint32_t>> sorted_degrees(degrees.begin(), degrees.end());
     std::sort(sorted_degrees.begin(), sorted_degrees.end(), [](auto a, auto b) {
         // Sort from greatest degree to least
@@ -235,134 +319,19 @@ std::vector<std::set<uint32_t>> CommunityDetection::gen_cover_candidates(size_t 
 
     // This greedy approach only works with one attacker
     // Start with the node with the highest degree plus all nodes it is indistinguishable from
-    std::set<uint32_t> tmp;
+    std::vector<uint32_t> tmp;
     unsigned count = 0;
     for (auto d : distinguishable_subsets) {
         for (auto asn : ind_map[d.first]) {
             if (degrees[asn] > local_threshold) {
-                tmp.insert(asn);
+                tmp.push_back(asn);
             } else {
                 break;
             }
         }
         retval.push_back(tmp);
-        if (++count > sz) { break; }
+        // if (++count > sz) { break; } //The only constraint is the degree of the ASes, not the number of ASes
     }
 
     return retval;
-}
-
-
-void CommunityDetection::local_threshold_approx_filtering() {
-
-    // 1. Sort hyperedges from longest to shortest
-    // 2. Collapse edges from longest to shortest
-    // 3. Add results to blacklists
-
-    // The AS graph is shallow, we can use bucket sort for linear time sorting.
-    // Path length is capped at 64. 
-    // Justification: a path length exceeding the default TTL of many machines is of little practical use
-    const int num_buckets = 64;
-    std::vector<std::set<std::vector<uint32_t>>> buckets(num_buckets); 
-
-    for(const auto &edge : this->hyper_edges) {
-        if (edge.size() <= 64) {
-            buckets[edge.size()].insert(edge);
-        }
-    }
-
-    /* Collapse Hyperedges (locally)
-       NOTE: DOES NOT WORK FOR MULTIPLE ATTACKERS (yet)
-       
-       Ex: AS 666 forwards an attack to three of its neighbors (x, y, z) where thresh=2
-      
-           x 
-            \
-           y-666-...
-            /  
-           z
-      
-       This will be detected here, and the edge will be collapsed to one size smaller
-       (e. g., 666 and the rest of the path). 
-    */
-    for (auto it = buckets.rbegin(); it != buckets.rend(); ++it) {
-        std::map<uint32_t, std::set<uint32_t>> counts;
-        for (const auto &edge : *it) {
-            if (edge.size() >= 2) {
-                counts[edge[1]].insert(edge[0]);
-            }
-        }
-        for (const auto &suspect : counts) {
-            if (suspect.second.size() > local_threshold) {
-                // Add all the edges (to make sure none are missed)
-                // This is one area that needs to be re-done for muiltiple attackers
-                 for (const auto &edge : *it) {
-                    if (edge.size() >= 2) {
-                        if (edge[1] == suspect.first) {
-                            std::vector<uint32_t> tmp(next(edge.begin()), edge.end());
-                            (it+1)->insert(tmp);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    /* Now check the other direction (except for the origin)
-       
-       Ex: AS 666 fakes attacks from three customers (a, b, c) where thresh=2
-      
-                 a 
-                /
-         ...-666-b
-                \
-                 c
-      
-       This will be detected here, and the edge will be collapsed to as small as possible
-       (e. g., the rest of the path followed by 666). 
-    */
-
-    for (int i = 2; i < num_buckets; i++) {
-        std::map<uint32_t, std::set<uint32_t>> counts;
-        for (const auto &edge : buckets[i]) {
-            for (int j = 0; j < i-2; j++) {
-                counts[edge[j]].insert(edge[j+1]);
-                if (edge[j] == 666) {
-                    //std::cout << "got one i = " << i << " and j = " << j << "and the edge was " << edge[j+1] << "\n";
-                }
-            }
-        }
-        for (const auto &suspect : counts) {
-            if (suspect.second.size() > local_threshold) {
-                // Add all the edges (to make sure none are missed)
-                // This is one area that needs to be re-done for muiltiple attackers
-                 for (const auto &edge : buckets[i]) {
-                    for (int j = 0; j < i-2; j++) {
-                        if (edge[j] == suspect.first) {
-                            std::vector<uint32_t> tmp(edge.begin(), edge.begin()+j+1);
-                            // In this case, when going backwards, we must always add the origin
-                            // This is a hacky heuristic optimization that works only for one origin being attacked
-                            tmp.push_back(*edge.rbegin());
-                            buckets[tmp.size()].insert(tmp);
-                            if (tmp.size() > 0) {
-                            //    std::cout << "adding " << tmp[0] << " to bucket " << tmp.size() << "\n";
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Blacklist all edges that were fully collapsed
-    for (const auto &edge : buckets[1]) {
-        for (const auto asn : edge) {
-            blacklist_asns.insert(asn);
-        }
-    }
-    // Blacklist all the paths that were partially collapsed
-    for (auto it = buckets.begin()+2; it != buckets.end(); ++it) {
-        for (const auto &edge : *it) {
-            blacklist_paths.insert(edge);
-        }
-    }
 }

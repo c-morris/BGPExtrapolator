@@ -25,8 +25,7 @@ private:
 public:
     EZExtrapolator *extrapolator;
 
-    std::set<std::vector<uint32_t>> blacklist_paths;
-    std::unordered_set<uint32_t> blacklist_asns;
+    std::set<std::vector<uint32_t>> blacklist;
 
     std::vector<std::vector<uint32_t>> hyper_edges;
 
@@ -96,7 +95,7 @@ public:
      *
      * @return true if sprime covers s, false otherwise.
      */
-    bool is_cover(std::set<uint32_t> sprime, std::set<uint32_t> s);
+    bool is_cover(std::unordered_set<uint32_t> &suspect);
 
     /**
      * Generate a map of ASNs to other ASNs which are indistinguishable from them.
@@ -104,6 +103,9 @@ public:
      * @return the map described above 
      */
     std::map<uint32_t, std::set<uint32_t>> gen_ind_asn(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges);
+
+    void generate_cover_candidates_helper(std::set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, std::vector<std::unordered_set<uint32_t>> result, std::set<uint32_t>::iterator it, int subset_length);
+    std::vector<std::unordered_set<uint32_t>> generate_cover_candidates(std::set<uint32_t> &nodes);
 
     /**
      * Generate a map of ASNs to its degree in this set of edges.
@@ -120,13 +122,9 @@ public:
     std::set<uint32_t> get_unique_asns(std::vector<std::vector<uint32_t>> edges);
 
 
-    std::vector<std::set<uint32_t>> gen_cover_candidates(size_t sz, 
+    std::vector<std::vector<uint32_t>> gen_suspect_candidates(size_t sz, 
         std::map<uint32_t, std::set<uint32_t>> &ind_map,
         std::map<uint32_t, uint32_t> &degrees);
-
-    // Deprecated
-    void local_threshold_approx_filtering();
-
 
     void process_reports(EZASGraph *graph);
 };
