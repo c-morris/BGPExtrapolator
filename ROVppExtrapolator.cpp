@@ -25,7 +25,9 @@
 #include "ROVppASGraph.h"
 #include "TableNames.h"
 #include "AS.h"
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> g,
                                      bool random_b,
@@ -126,7 +128,11 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         count++;
         if (count >= 100) {
             std::cout << "Exceeded max propagation cycles" << std::endl;
+            exit(100);
         }
+        // declaring argument of time()
+        time_t my_time = time(NULL);
+        std::cout << "[" << ctime(&my_time) << "] " << "Propagation Cycle: "<< count << std::endl;
     } while (AS::graph_changed && count < 100);
     std::cout << "Times propagated: " << count << std::endl;
     
