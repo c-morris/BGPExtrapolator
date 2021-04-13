@@ -124,8 +124,10 @@ public:
         std::map<uint32_t, std::set<uint32_t>> &ind_map,
         std::map<uint32_t, uint32_t> &degrees);
 
-    // Deprecated
     void local_threshold_approx_filtering();
+
+    // Deprecated
+    void local_threshold_approx_filtering_deprecated();
 
 
     void process_reports(EZASGraph *graph);

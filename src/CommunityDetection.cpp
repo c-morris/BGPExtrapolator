@@ -157,7 +157,8 @@ bool CommunityDetection::is_cover(std::set<uint32_t> sprime, std::set<uint32_t> 
         }
     }
     // QUESTION: if s is supposed to be the set of all ASNs in this component, this works
-    // if s is the set of all ASNs excluding those of s prime, this does not work
+    // if s is the set of all ASNs excluding those of s prime, this requires explicitly computing
+    // s = s - s prime
     return std::includes(covered.begin(), covered.end(), s.begin(), s.end());
 }
 
@@ -252,8 +253,10 @@ std::vector<std::set<uint32_t>> CommunityDetection::gen_cover_candidates(size_t 
     return retval;
 }
 
-
 void CommunityDetection::local_threshold_approx_filtering() {
+
+
+void CommunityDetection::local_threshold_approx_filtering_deprecated() {
 
     // 1. Sort hyperedges from longest to shortest
     // 2. Collapse edges from longest to shortest
