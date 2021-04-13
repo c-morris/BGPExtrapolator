@@ -212,10 +212,10 @@ int main(int argc, char *argv[]) {
                 vector<string>()),
             (vm.count("announcements-table") ? 
                 vm["announcements-table"].as<string>() : 
-                ANNOUNCEMENTS_TABLE),
+                ROV_ANNOUNCEMENTS_TABLE),
             (vm.count("results-table") ?
                 vm["results-table"].as<string>() :
-                RESULTS_TABLE),
+                SIMULATION_RESULTS_TABLE),
             (vm.count("full-path-results-table") ?
                 vm["full-path-results-table"].as<string>() :
                 FULL_PATH_RESULTS_TABLE),

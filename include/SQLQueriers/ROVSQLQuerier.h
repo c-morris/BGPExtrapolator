@@ -8,7 +8,7 @@ public:
     std::vector<std::string> policy_tables;
 
     ROVSQLQuerier(std::vector<std::string> policy_tables = std::vector<std::string>(),
-                    std::string announcements_table = ANNOUNCEMENTS_TABLE, 
+                    std::string announcements_table = ROV_ANNOUNCEMENTS_TABLE, 
                     std::string results_table = SIMULATION_RESULTS_TABLE,
                     std::string full_path_results_table = FULL_PATH_RESULTS_TABLE,
                     int exclude_as_number = -1,

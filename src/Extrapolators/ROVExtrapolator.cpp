@@ -21,7 +21,7 @@ ROVExtrapolator::ROVExtrapolator(bool random_tiebraking,
 
 ROVExtrapolator::ROVExtrapolator() 
     : ROVExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, std::vector<std::string>(),
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, 
+                        ROV_ANNOUNCEMENTS_TABLE, SIMULATION_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, 
                         DEFAULT_ITERATION_SIZE, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
 
 ROVExtrapolator::~ROVExtrapolator() { }
