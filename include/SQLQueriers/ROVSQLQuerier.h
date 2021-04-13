@@ -15,8 +15,22 @@ public:
                     std::string config_section = DEFAULT_QUERIER_CONFIG_SECTION);
     ~ROVSQLQuerier();
 
+    /** Pulls all ASes and policies they implement.
+     *
+     * @param policy_table The table name holding the list of ASNs with their policies, default is 'edge_ases'
+     */
     pqxx::result select_AS_flags(std::string const& policy_table = std::string("edge_ases"));
+
+    /** Pulls all announcements for the announcements for the given prefix.
+     *
+     * @param p The prefix for which we SELECT
+     */
     pqxx::result select_prefix_ann(Prefix<>* p);
+
+    /** Pulls all announcements for the prefixes contained within the passed subnet.
+     *
+     * @param p The prefix defining the subnet
+     */
     pqxx::result select_subnet_ann(Prefix<>* p);
 };
 

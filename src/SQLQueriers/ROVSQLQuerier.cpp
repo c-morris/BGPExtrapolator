@@ -12,28 +12,16 @@ ROVSQLQuerier::ROVSQLQuerier(std::vector<std::string> policy_tables,
 
 ROVSQLQuerier::~ROVSQLQuerier() { }
 
-/** Pulls all ASes and policies they implement.
- *
- * @param policy_table The table name holding the list of ASNs with their policies, default is 'edge_ases'
- */
 pqxx::result ROVSQLQuerier::select_AS_flags(std::string const& policy_table){
     std::string sql = "SELECT asn, as_type, impliment FROM " + policy_table + ";";
     return execute(sql);
 }
 
-/** Pulls all announcements for the announcements for the given prefix.
- *
- * @param p The prefix for which we SELECT
- */
 pqxx::result ROVSQLQuerier::select_prefix_ann(Prefix<>* p) {
     std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time, roa_validity");
     return execute(sql);
 }
 
-/** Pulls all announcements for the prefixes contained within the passed subnet.
- *
- * @param p The prefix defining the subnet
- */
 pqxx::result ROVSQLQuerier::select_subnet_ann(Prefix<>* p) {
     std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time, roa_validity");
     return execute(sql);
