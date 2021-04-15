@@ -86,6 +86,7 @@ void ROVppAS::withdraw(Announcement &ann) {
     Announcement copy = ann;
     copy.withdraw = true;
     withdrawals->push_back(copy);
+    //std::cout << "At 89" << std::endl;
     AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
@@ -137,6 +138,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 // Insert depref ann
                 depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                       search->second));
+                std::cout << "At 141" << std::endl;
                 withdraw(search->second);
                 search->second = ann;
                 check_preventives(search->second);
@@ -145,6 +147,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                     std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                 search_depref->second = search->second;
+                std::cout << "At 150" << std::endl;
                 withdraw(search->second);
                 search->second = ann;
                 check_preventives(search->second);
@@ -178,20 +181,35 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 break;
             }
         }
+        bool is_new_ann_safe = true;
+        for (const auto &curr_bad_ann : *failed_rov) {
+            if (curr_bad_ann.prefix.contained_in_or_equal_to(ann.prefix) &&
+                curr_bad_ann.received_from_asn == ann.received_from_asn) {
+                is_new_ann_safe  = false;
+                break;
+            }
+        }
         // Check which annoucements are safe
         // Is our current ann NOT safe and the new ann safe?    
-        if (!is_curr_ann_safe) {
+        if (!is_curr_ann_safe && is_new_ann_safe) {
             // Replace our curr not safe announcement with the new safe announcement
+            std::cout << "At 188, " << "ASN: " << asn << ", Ann: " << "Prefix: " << ann.prefix.to_cidr() << ", RecFrom: "<< ann.received_from_asn << ", Priority: " << ann.priority << std::endl;
+            std::cout << "At 188 curr, " << "ASN: " << asn << ", Ann: " << "Prefix: " << search->second.prefix.to_cidr() << ", RecFrom: "<< search->second.received_from_asn << ", Priority: " << search->second.priority << std::endl;
+
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
         // If they're both equally safe, then pick the one with the shortest path (i.e. if new one has better path length)
-        } else if (ann.priority > search->second.priority) {
+        } else if ((is_curr_ann_safe && is_new_ann_safe) &&
+                    ann.priority > search->second.priority) {
             // Replace our curr not safe announcement with the new safe announcement
+            std::cout << "At 195, " << "ASN: " << asn << ", Ann: " << "Prefix: " << ann.prefix.to_cidr() << ", RecFrom: "<< ann.received_from_asn << ", Priority: " << ann.priority << std::endl;
+            std::cout << "At 195 curr, " << "ASN: " << asn << ", Ann: " << "Prefix: " << search->second.prefix.to_cidr() << ", RecFrom: "<< search->second.received_from_asn << ", Priority: " << search->second.priority << std::endl;
+
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
-        // TODO (review): If they're bothe equally safe, and path lengths are same, then pick deterministically randomly
+        // TODO (review): If they're both equally safe, and path lengths are same, then pick deterministically randomly
         } else {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
@@ -209,6 +227,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                     // Insert depref ann
                     depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                           search->second));
+                    std::cout << "At 217" << std::endl;
                     withdraw(search->second);
                     search->second = ann;
                     check_preventives(search->second);
@@ -217,6 +236,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                         std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
                         std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
                     search_depref->second = search->second;
+                    std::cout << "At 226" << std::endl;
                     withdraw(search->second);
                     search->second = ann;
                     check_preventives(search->second);
@@ -243,6 +263,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             depref_anns->insert(std::pair<Prefix<>, Announcement>(search->second.prefix, 
                                                                   search->second));
             // Replace the old announcement with the higher priority
+            std::cout << "At 253" << std::endl;
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
@@ -254,6 +275,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             // Replace second best with the old priority announcement
             search_depref->second = search->second;
             // Replace the old announcement with the higher priority
+            std::cout << "At 265" << std::endl;
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
@@ -314,6 +336,7 @@ void ROVppAS::process_announcements(bool ran) {
                     auto search = loc_rib->find(it->prefix);
                     // Process withdrawal if it applies to loc_rib
                     if (search != loc_rib->end() && search->second == *it) {
+                        std::cout << "At 326" << std::endl;
                         withdraw(search->second);
                         // Put the best alternative announcement into the loc_rib
                         Announcement best_alternative_ann = best_alternative_route(search->second); 
@@ -322,6 +345,7 @@ void ROVppAS::process_announcements(bool ran) {
                         } else {
                             loc_rib->erase(it->prefix);    
                         }
+                        //std::cout << "At 326" << std::endl;
                         AS::graph_changed = true;  // This means we will need to do another propagation
                     }
                     // Process withdrawal in the ribs_in
@@ -360,6 +384,7 @@ void ROVppAS::process_announcements(bool ran) {
         // Process withdrawals, regardless of policy
         if (ann.withdraw) {
             if (search != loc_rib->end() && search->second == ann) {
+                std::cout << "At 374" << std::endl;
                 withdraw(search->second);
                 // Put the best alternative announcement into the loc_rib
                 Announcement best_alternative_ann = best_alternative_route(search->second); 
@@ -368,6 +393,7 @@ void ROVppAS::process_announcements(bool ran) {
                 } else {
                     loc_rib->erase(ann.prefix);    
                 }
+                //std::cout << "At 373" << std::endl;
                 AS::graph_changed = true;  // This means we will need to do another propagation
                 
             }
@@ -408,6 +434,7 @@ void ROVppAS::process_announcements(bool ran) {
                     // Only in the data plane changes
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
+                        //std::cout << "Mark: Pass ROV" << std::endl;
                         process_announcement(ann, false);
                     } else {
                         Announcement best_alternative_ann = best_alternative_route(ann); 
@@ -415,8 +442,11 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            //std::cout << "Mark: No alternative, " << "ASN: " << asn << ", Ann: " << "Prefix: " << ann.prefix.to_cidr() << ", RecFrom: "<< ann.received_from_asn << ", Priority: " << ann.priority << std::endl;
                             process_announcement(ann, false);
                         } else {
+                            //std::cout << "Mark: Found alternative,  " << "ASN: " << asn << ", Ann: " << "Prefix: " << best_alternative_ann.prefix.to_cidr() << ", RecFrom: "<< best_alternative_ann.received_from_asn << ", Priority: " << best_alternative_ann.priority << std::endl;
+
                             process_announcement(best_alternative_ann, false);
                         }
                     }
