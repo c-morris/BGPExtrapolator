@@ -226,144 +226,144 @@ bool ezbgpsec_test_gather_reports() {
     return true;
 }
 
-bool ezbgpsec_test_threshold_filtering_approx() {
-    std::vector<uint32_t> edge1 = {4, 1}; 
-    std::vector<uint32_t> edge2 = {5, 1};
-    std::vector<uint32_t> edge3 = {6, 1};
-    std::vector<uint32_t> edge4 = {7, 1};
-    std::vector<uint32_t> edge5 = {1};
+bool ezbgpsec_test_cd_algorithm() {
+    // std::vector<uint32_t> edge1 = {4, 1}; 
+    // std::vector<uint32_t> edge2 = {5, 1};
+    // std::vector<uint32_t> edge3 = {6, 1};
+    // std::vector<uint32_t> edge4 = {7, 1};
+    // std::vector<uint32_t> edge5 = {1};
 
-    CommunityDetection cd(NULL, 2);
-    cd.add_hyper_edge(edge1);
-    cd.add_hyper_edge(edge2);
-    cd.add_hyper_edge(edge3);
-    cd.add_hyper_edge(edge4);
+    // CommunityDetection cd(NULL, 2);
+    // cd.add_hyper_edge(edge1);
+    // cd.add_hyper_edge(edge2);
+    // cd.add_hyper_edge(edge3);
+    // cd.add_hyper_edge(edge4);
 
-    cd.local_threshold_approx_filtering();
-    if (cd.blacklist_asns.find(1) == cd.blacklist_asns.end()) {
-        return false;
-    }
+    // cd.local_threshold_approx_filtering();
+    // if (cd.blacklist_asns.find(1) == cd.blacklist_asns.end()) {
+    //     return false;
+    // }
 
-    edge1 = {4, 2, 1}; 
-    edge2 = {5, 2, 1};
-    edge3 = {6, 2, 1};
-    edge4 = {7, 2, 1};
+    // edge1 = {4, 2, 1}; 
+    // edge2 = {5, 2, 1};
+    // edge3 = {6, 2, 1};
+    // edge4 = {7, 2, 1};
 
-    CommunityDetection cd2(NULL, 2);
-    cd2.add_hyper_edge(edge1);
-    cd2.add_hyper_edge(edge2);
-    cd2.add_hyper_edge(edge3);
-    cd2.add_hyper_edge(edge4);
+    // CommunityDetection cd2(NULL, 2);
+    // cd2.add_hyper_edge(edge1);
+    // cd2.add_hyper_edge(edge2);
+    // cd2.add_hyper_edge(edge3);
+    // cd2.add_hyper_edge(edge4);
 
-    cd2.local_threshold_approx_filtering();
-    if (cd2.blacklist_paths.find(std::vector<uint32_t>({2, 1})) == cd2.blacklist_paths.end()) {
-        return false;
-    }
+    // cd2.local_threshold_approx_filtering();
+    // if (cd2.blacklist_paths.find(std::vector<uint32_t>({2, 1})) == cd2.blacklist_paths.end()) {
+    //     return false;
+    // }
 
-    edge1 = {7, 666, 2, 1}; 
-    edge2 = {8, 666, 3, 1};
-    edge3 = {9, 666, 4, 1};
-    edge4 = {6, 666, 5, 1};
+    // edge1 = {7, 666, 2, 1}; 
+    // edge2 = {8, 666, 3, 1};
+    // edge3 = {9, 666, 4, 1};
+    // edge4 = {6, 666, 5, 1};
 
-    CommunityDetection cd3(NULL, 2);
-    cd3.add_hyper_edge(edge1);
-    cd3.add_hyper_edge(edge2);
-    cd3.add_hyper_edge(edge3);
-    cd3.add_hyper_edge(edge4);
+    // CommunityDetection cd3(NULL, 2);
+    // cd3.add_hyper_edge(edge1);
+    // cd3.add_hyper_edge(edge2);
+    // cd3.add_hyper_edge(edge3);
+    // cd3.add_hyper_edge(edge4);
 
-    cd3.local_threshold_approx_filtering();
-    // Check first level of collapsing
-    if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 2, 1})) == cd3.blacklist_paths.end()) {
-        return false;
-    }
-    if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 5, 1})) == cd3.blacklist_paths.end()) {
-        return false;
-    }
-    if (cd3.blacklist_paths.find(std::vector<uint32_t>({7, 666, 1})) == cd3.blacklist_paths.end()) {
-        return false;
-    }
-    // Check second level of collapsing
-    if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd3.blacklist_paths.end()) {
-        return false;
-    }
-    // No ASNs should be blacklisted here
-    if (cd3.blacklist_asns.size() > 0) {
-        return false;
-    }
+    // cd3.local_threshold_approx_filtering();
+    // // Check first level of collapsing
+    // if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 2, 1})) == cd3.blacklist_paths.end()) {
+    //     return false;
+    // }
+    // if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 5, 1})) == cd3.blacklist_paths.end()) {
+    //     return false;
+    // }
+    // if (cd3.blacklist_paths.find(std::vector<uint32_t>({7, 666, 1})) == cd3.blacklist_paths.end()) {
+    //     return false;
+    // }
+    // // Check second level of collapsing
+    // if (cd3.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd3.blacklist_paths.end()) {
+    //     return false;
+    // }
+    // // No ASNs should be blacklisted here
+    // if (cd3.blacklist_asns.size() > 0) {
+    //     return false;
+    // }
     
-    edge1 = {20, 666, 11, 2, 1}; 
-    edge2 = {21, 666, 11, 3, 1};
-    edge3 = {22, 666, 12, 4, 1};
-    edge4 = {23, 666, 12, 5, 1};
-    edge5 = {24, 666, 13, 6, 1};
+    // edge1 = {20, 666, 11, 2, 1}; 
+    // edge2 = {21, 666, 11, 3, 1};
+    // edge3 = {22, 666, 12, 4, 1};
+    // edge4 = {23, 666, 12, 5, 1};
+    // edge5 = {24, 666, 13, 6, 1};
 
-    CommunityDetection cd4(NULL, 2);
-    cd4.add_hyper_edge(edge1);
-    cd4.add_hyper_edge(edge2);
-    cd4.add_hyper_edge(edge3);
-    cd4.add_hyper_edge(edge4);
-    cd4.add_hyper_edge(edge5);
+    // CommunityDetection cd4(NULL, 2);
+    // cd4.add_hyper_edge(edge1);
+    // cd4.add_hyper_edge(edge2);
+    // cd4.add_hyper_edge(edge3);
+    // cd4.add_hyper_edge(edge4);
+    // cd4.add_hyper_edge(edge5);
 
-    cd4.local_threshold_approx_filtering();
+    // cd4.local_threshold_approx_filtering();
 
-    // Check second level of collapsing
-    if (cd4.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd4.blacklist_paths.end()) {
-        return false;
-    }
-    // No ASNs should be blacklisted here
-    if (cd4.blacklist_asns.size() > 0) {
-        return false;
-    }
- 
-    edge1 = {20, 666, 11, 2, 1}; 
-    edge2 = {21, 666, 11, 3, 1};
-    edge3 = {22, 666, 12, 4, 1};
-    edge4 = {23, 666, 12, 5, 1};
+    // // Check second level of collapsing
+    // if (cd4.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd4.blacklist_paths.end()) {
+    //     return false;
+    // }
+    // // No ASNs should be blacklisted here
+    // if (cd4.blacklist_asns.size() > 0) {
+    //     return false;
+    // }
 
-    CommunityDetection cd5(NULL, 2);
-    cd5.add_hyper_edge(edge1);
-    cd5.add_hyper_edge(edge2);
-    cd5.add_hyper_edge(edge3);
-    cd5.add_hyper_edge(edge4);
+    // edge1 = {20, 666, 11, 2, 1}; 
+    // edge2 = {21, 666, 11, 3, 1};
+    // edge3 = {22, 666, 12, 4, 1};
+    // edge4 = {23, 666, 12, 5, 1};
 
-    cd5.local_threshold_approx_filtering();
+    // CommunityDetection cd5(NULL, 2);
+    // cd5.add_hyper_edge(edge1);
+    // cd5.add_hyper_edge(edge2);
+    // cd5.add_hyper_edge(edge3);
+    // cd5.add_hyper_edge(edge4);
 
-    // Check second level of collapsing (should not have found anything here)
-    if (cd5.blacklist_paths.find(std::vector<uint32_t>({666, 1})) != cd5.blacklist_paths.end()) {
-        return false;
-    }
-    // No ASNs should be blacklisted here
-    if (cd5.blacklist_asns.size() > 0) {
-        return false;
-    }
+    // cd5.local_threshold_approx_filtering();
+
+    // // Check second level of collapsing (should not have found anything here)
+    // if (cd5.blacklist_paths.find(std::vector<uint32_t>({666, 1})) != cd5.blacklist_paths.end()) {
+    //     return false;
+    // }
+    // // No ASNs should be blacklisted here
+    // if (cd5.blacklist_asns.size() > 0) {
+    //     return false;
+    // }
     
-    edge1 = {30, 20, 666, 11, 1}; 
-    edge2 = {30, 21, 666, 11, 1};
-    edge3 = {30, 22, 666, 12, 1};
-    edge4 = {30, 23, 666, 12, 1};
+    // edge1 = {30, 20, 666, 11, 1}; 
+    // edge2 = {30, 21, 666, 11, 1};
+    // edge3 = {30, 22, 666, 12, 1};
+    // edge4 = {30, 23, 666, 12, 1};
 
-    CommunityDetection cd6(NULL, 2);
-    cd6.add_hyper_edge(edge1);
-    cd6.add_hyper_edge(edge2);
-    cd6.add_hyper_edge(edge3);
-    cd6.add_hyper_edge(edge4);
+    // CommunityDetection cd6(NULL, 2);
+    // cd6.add_hyper_edge(edge1);
+    // cd6.add_hyper_edge(edge2);
+    // cd6.add_hyper_edge(edge3);
+    // cd6.add_hyper_edge(edge4);
 
-    cd6.local_threshold_approx_filtering();
+    // cd6.local_threshold_approx_filtering();
 
-    // Check second level of collapsing (should not have found anything here)
-    if (cd6.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd5.blacklist_paths.end()) {
-        return false;
-    }
-    // Make sure the incorrectly collapsed edge is not here
-    if (cd6.blacklist_paths.find(std::vector<uint32_t>({30, 1})) != cd5.blacklist_paths.end()) {
-        // This is an expected failure, rather than fixing this function we are
-        // taking a different approach that should have no false positives
-        return false;
-    }
-    // No ASNs should be blacklisted here
-    if (cd6.blacklist_asns.size() > 0) {
-        return false;
-    }
+    // // Check second level of collapsing (should not have found anything here)
+    // if (cd6.blacklist_paths.find(std::vector<uint32_t>({666, 1})) == cd5.blacklist_paths.end()) {
+    //     return false;
+    // }
+    // // Make sure the incorrectly collapsed edge is not here
+    // if (cd6.blacklist_paths.find(std::vector<uint32_t>({30, 1})) != cd5.blacklist_paths.end()) {
+    //     // This is an expected failure, rather than fixing this function we are
+    //     // taking a different approach that should have no false positives
+    //     return false;
+    // }
+    // // No ASNs should be blacklisted here
+    // if (cd6.blacklist_asns.size() > 0) {
+    //     return false;
+    // }
     
     // Uncomment for debug
     //std::cerr << "blacklisted paths\n";
@@ -395,18 +395,33 @@ bool ezbgpsec_test_is_cover() {
     cd.add_hyper_edge(edge3);
     cd.add_hyper_edge(edge4);
 
-    std::set<uint32_t> s({30, 20, 21, 22, 23, 666, 11, 12, 1});
-    std::set<uint32_t> sprime1({30});
-    if (!cd.is_cover(sprime1, s)) {
-        std::cerr << "is_cover returned false when it should have been true\n";
-        return false;
+    bool error = false;
+
+    std::vector<std::unordered_set<uint32_t>> true_covers = {{30}, {20, 21, 22, 23}, {666}, {666, 45}, {1}, {11, 12}, {666, 30, 1}};
+    for(auto &cover : true_covers) {
+        if(!cd.is_cover(cover)) {
+            error = true;
+
+            std::cerr << "The set: { ";
+            for(auto asn : cover)
+                std::cerr << asn << " ";
+            std::cerr << "} does not make a cover when it should" << std::endl;
+        }
     }
-    std::set<uint32_t> sprime2({20});
-    if (cd.is_cover(sprime2, s)) {
-        std::cerr << "is_cover returned true when it should have been false\n";
-        return false;
+
+    std::vector<std::unordered_set<uint32_t>> false_covers = {{4, 5, 6}, {11}, {11, 22}, {20, 22}, {12}, {12, 23}};
+    for(auto &cover : false_covers) {
+        if(cd.is_cover(cover)) {
+            error = true;
+
+            std::cerr << "The set: { ";
+            for(auto asn : cover)
+                std::cerr << asn << " ";
+            std::cerr << "} does make a cover when it should not" << std::endl;
+        }
     }
-    return true;
+
+    return !error;
 }
 
 bool ezbgpsec_test_gen_ind_asn() {
@@ -424,12 +439,12 @@ bool ezbgpsec_test_gen_ind_asn() {
     auto ind_asn = cd.gen_ind_asn(s, cd.hyper_edges);
 
     if (ind_asn[1]   == std::set<uint32_t>({1, 30, 666 })
-     && ind_asn[11]  == std::set<uint32_t>({1, 11, 30, 666 })
-     && ind_asn[12]  == std::set<uint32_t>({1, 12, 30, 666 })
-     && ind_asn[20]  == std::set<uint32_t>({1, 11, 20, 30, 666 })
-     && ind_asn[21]  == std::set<uint32_t>({1, 11, 21, 30, 666 })
-     && ind_asn[22]  == std::set<uint32_t>({1, 12, 22, 30, 666 })
-     && ind_asn[23]  == std::set<uint32_t>({1, 12, 23, 30, 666 })
+     && ind_asn[11]  == std::set<uint32_t>({11})
+     && ind_asn[12]  == std::set<uint32_t>({12})
+     && ind_asn[20]  == std::set<uint32_t>({20})
+     && ind_asn[21]  == std::set<uint32_t>({21})
+     && ind_asn[22]  == std::set<uint32_t>({22})
+     && ind_asn[23]  == std::set<uint32_t>({23})
      && ind_asn[30]  == std::set<uint32_t>({1, 30, 666 })
      && ind_asn[666] == std::set<uint32_t>({1, 30, 666 })) {
         return true;
@@ -495,7 +510,7 @@ bool ezbgpsec_test_get_degrees() {
     return true;
 }
 
-bool ezbgpsec_test_gen_cover_candidates() {
+bool ezbgpsec_test_gen_suspect_candidates() {
     std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
     std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
     std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
@@ -510,45 +525,81 @@ bool ezbgpsec_test_gen_cover_candidates() {
     auto test_s = cd.get_unique_asns(cd.hyper_edges);
     auto test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
 
-    std::vector<std::set<uint32_t>> test_cover_candidates = cd.gen_cover_candidates(
-        3, test_ind_map, test_degrees);
+    std::vector<std::vector<uint32_t>> test_suspect_candidates = cd.gen_suspect_candidates(test_ind_map, test_degrees);
 
+    std::vector<std::vector<uint32_t>> true_suspect_candidates = {{1, 30, 666}};
 
-    std::set<uint32_t> sprime1 = {1, 30, 666};
-    for (auto sprime : test_cover_candidates) {
-        if (sprime != sprime1) {
-            return false;
+    bool error = false;
+    for(auto &suspect : true_suspect_candidates) {
+        if(std::find(test_suspect_candidates.begin(), test_suspect_candidates.end(), suspect) == test_suspect_candidates.end()) {
+            error = true;
+
+            std::cerr << "The candidate suspect: { ";
+            for(auto asn : suspect)
+                std::cerr << asn << " ";
+            std::cerr << "} is not in the suspect list" << std::endl;
         }
     }
 
+    if(test_suspect_candidates.size() != true_suspect_candidates.size()) {
+        error = true;
 
-    std::vector<uint32_t> edge5 = {31, 24, 666, 13, 1};
-    std::vector<uint32_t> edge6 = {32, 25, 666, 14, 1};
+        std::cerr << "The elements of the candidates are not correct. Candidates are currently: ";
+
+        std::cerr << "{ ";
+        for(auto &suspect : test_suspect_candidates) {
+            std::cerr << "{ ";
+                for(auto asn : suspect)
+                    std::cerr << asn << " ";
+            std::cerr << "} ";
+        }
+        std::cerr << "} " << std::endl;;
+    }
+
+    // std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    // std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    // std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    // std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    std::vector<uint32_t> edge5 = {31, 20, 666, 13, 1};
+    std::vector<uint32_t> edge6 = {32, 20, 666, 14, 1};
     std::vector<uint32_t> edge7 = {33, 26, 666, 15, 1};
     cd.add_hyper_edge(edge5);
     cd.add_hyper_edge(edge6);
     cd.add_hyper_edge(edge7);
 
-
     test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
     test_s = cd.get_unique_asns(cd.hyper_edges);
     test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
 
-    test_cover_candidates = cd.gen_cover_candidates(
-        3, test_ind_map, test_degrees);
+    test_suspect_candidates = cd.gen_suspect_candidates(test_ind_map, test_degrees);
 
-    std::set<uint32_t> sprime2 = {1, 666};
-    if (test_cover_candidates[0] != sprime2) {
-        return false;
+    true_suspect_candidates = {{1, 666}, {1, 666, 30}, {1, 666, 30, 20}};
+
+    for(auto &suspect : true_suspect_candidates) {
+        if(std::find(test_suspect_candidates.begin(), test_suspect_candidates.end(), suspect) == test_suspect_candidates.end()) {
+            error = true;
+
+            std::cerr << "The candidate suspect: { ";
+            for(auto asn : suspect)
+                std::cerr << asn << " ";
+            std::cerr << "} is not in the suspect list (Pt 2.)" << std::endl;
+        }
     }
 
-    // Uncomment for debug
-    //for (auto a : test_cover_candidates) {
-    //    for (auto b : a) {
-    //        std::cout << b << ' ';
-    //    }
-    //    std::cout << '\n';
-    //}
+    if(test_suspect_candidates.size() != true_suspect_candidates.size()) {
+        error = true;
 
-    return true;
+        std::cerr << "The elements of the suspect candidates (Pt 2.) are not correct. Candidates are currently: ";
+
+        std::cerr << "{ ";
+        for(auto &suspect : test_suspect_candidates) {
+            std::cerr << "{ ";
+                for(auto asn : suspect)
+                    std::cerr << asn << " ";
+            std::cerr << "} ";
+        }
+        std::cerr << "} " << std::endl;;
+    }
+
+    return !error;
 }

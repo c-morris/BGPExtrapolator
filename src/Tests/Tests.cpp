@@ -242,9 +242,8 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports ) {
         BOOST_CHECK( ezbgpsec_test_gather_reports() );
 }
 
-BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES( EZBGPsec_test_threshold_filtering_approx, 1)
-BOOST_AUTO_TEST_CASE( EZBGPsec_test_threshold_filtering_approx ) {
-        BOOST_CHECK( ezbgpsec_test_threshold_filtering_approx() );
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_cd_algorithm ) {
+        BOOST_CHECK( ezbgpsec_test_cd_algorithm() );
 }
 
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_vc ) {
@@ -252,7 +251,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_vc ) {
         BOOST_CHECK( ezbgpsec_test_gen_ind_asn() );
         BOOST_CHECK( ezbgpsec_test_get_unique_asns() );
         BOOST_CHECK( ezbgpsec_test_get_degrees() );
-        BOOST_CHECK( ezbgpsec_test_gen_cover_candidates() );
+        BOOST_CHECK( ezbgpsec_test_gen_suspect_candidates() );
 }
 
 //SQLQuerier Tests

@@ -17,6 +17,173 @@ void CommunityDetection::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
     hyper_edges.push_back(hyper_edge);
 }
 
+bool CommunityDetection::is_cover(std::unordered_set<uint32_t> &cover_candidate) {
+    // We are not testing if s prime makes a cover, we are testing for what the MVC is by testing if any subset of S/S' with length threshold make a cover
+
+    // // does s prime form a set cover over s
+    // std::set<uint32_t> covered;
+    // for (auto prime_candidate : sprime) {
+    //     for (const auto &edge : this->hyper_edges) {
+    //         // if this prime candidate is in the edge, add these ASNs to covered set
+    //         if (std::find(edge.begin(), edge.end(), prime_candidate) != edge.end()) {
+    //             for (auto edge_asn : edge) {
+    //                 covered.insert(edge_asn);
+    //             }
+    //             continue;
+    //         }
+    //     }
+    // }
+    // // QUESTION: if s is supposed to be the set of all ASNs in this component, this works
+    // // if s is the set of all ASNs excluding those of s prime, this does not work
+    // return std::includes(covered.begin(), covered.end(), s.begin(), s.end());
+
+    //Check if each edge in the component contains an element of the candidate. If not, then the candidate does not make a cover
+    for(auto &edge : hyper_edges) {
+        bool contains_any = false;
+        for(uint32_t node : cover_candidate) {
+            //This could be better if this was a set rather than a vector 
+            if(std::find(edge.begin(), edge.end(), node) != edge.end()) {
+                contains_any = true;
+            }
+        }
+
+        //This edge does not contain any of the elements in the suspect list, thus this edge is not covered. 
+        if(!contains_any)
+            return false;
+    }
+
+    return true;
+}
+
+// return a map of ASN to set of those it is indistinguishable from
+std::map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
+    std::map<uint32_t, std::set<uint32_t>> retval;
+    for (uint32_t asn : s) {
+        auto s_copy = s;
+        for (auto edge : edges) {
+            if (std::find(edge.begin(), edge.end(), asn) != edge.end()) {
+                // if asn in edge, only save other ASNs also in the edge
+                for (auto it = s_copy.begin(); it != s_copy.end() ;) {
+                    if (*it != asn && std::find(edge.begin(), edge.end(), *it) == edge.end()) {
+                        // if asn missing from edge but present in s_copy, remove from s_copy
+                        it = s_copy.erase(it);
+                    } else { 
+                        ++it;
+                    }
+                }
+            } else {// If the asn is not in the list, remove everything that is there since they are not indistinguishable from the asn
+                for(auto asn : edge)
+                    s_copy.erase(asn);
+            }
+        }
+        retval.insert(std::pair<uint32_t, std::set<uint32_t>>(asn, s_copy));
+    }
+    return retval;
+}
+
+
+
+void CommunityDetection::generate_cover_candidates_helper(std::set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, 
+                                                            std::vector<std::unordered_set<uint32_t>> &result, std::set<uint32_t>::iterator it, uint32_t subset_length) {
+
+    //The subset we are building has reached the neccessary length
+    if(building_subset.size() == subset_length) {
+        result.push_back(building_subset);
+        return;
+    }
+
+    //Reached the end of the nodes to choose from
+    if(it == nodes.end())
+        return;
+
+    uint32_t asn = *it;
+    it++;
+
+    //Make a choice: include or exclude this asn
+    building_subset.insert(asn);
+    generate_cover_candidates_helper(nodes, building_subset, result, it, subset_length);
+
+    building_subset.erase(asn);
+    generate_cover_candidates_helper(nodes, building_subset, result, it, subset_length);
+}
+
+//Generate all of the subsets of nodes with length of local_threshold
+//To be used to test MVC
+std::vector<std::unordered_set<uint32_t>> CommunityDetection::generate_cover_candidates(std::set<uint32_t> &nodes) {
+    std::vector<std::unordered_set<uint32_t>> toRet;
+
+    std::unordered_set<uint32_t> building_subset;
+
+    generate_cover_candidates_helper(nodes, building_subset, toRet, nodes.begin(), local_threshold);
+
+    return toRet;
+}
+
+// return a map of ASN to its degree in the specified set of edges
+std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
+    std::map<uint32_t, uint32_t> retval;
+    for (uint32_t asn : s) {
+        retval.insert(std::pair<uint32_t,uint32_t>(asn, 0));
+    }
+    for (auto edge : edges) {
+        for (auto asn : edge) {
+            retval[asn]++;
+        }
+    }
+    return retval;
+}
+
+// generate a set of unique ASNs in the set of edges
+std::set<uint32_t> CommunityDetection::get_unique_asns(std::vector<std::vector<uint32_t>> edges) {
+    std::set<uint32_t> unique_asns;
+    for (auto edge : edges) {
+        for (auto asn : edge) {
+            unique_asns.insert(asn);
+        }
+    }
+    return unique_asns;
+}
+
+// generate all possible cover candidates of size sz with given indistinguishability map
+std::vector<std::vector<uint32_t>> CommunityDetection::gen_suspect_candidates( 
+        std::map<uint32_t, std::set<uint32_t>> &ind_map,
+        std::map<uint32_t, uint32_t> &degrees) {
+
+    std::vector<std::vector<uint32_t>> retval;
+    std::vector<std::pair<uint32_t,uint32_t>> sorted_degrees(degrees.begin(), degrees.end());
+    std::sort(sorted_degrees.begin(), sorted_degrees.end(), [](auto a, auto b) {
+        // Sort from greatest degree to least
+        return a.second > b.second;
+    });
+
+    auto distinguishable_subsets = sorted_degrees;
+    // Indistinguishable nodes must be grouped together, so remove 'duplicates'
+    for (auto it = distinguishable_subsets.begin(); it != distinguishable_subsets.end(); ++it) {
+        for (auto it2 = it+1; it2 != distinguishable_subsets.end();) {
+            if (std::find(ind_map[it->first].begin(), ind_map[it->first].end(), it2->first) != ind_map[it->first].end()) {
+                it2 = distinguishable_subsets.erase(it2);
+            } else {
+                ++it2;
+            }
+        }
+    }
+
+    // This greedy approach only works with one attacker
+    // Start with the node with the highest degree plus all nodes it is indistinguishable from
+    std::vector<uint32_t> tmp;
+    for (auto d : distinguishable_subsets) {
+        if(degrees[d.first] <= local_threshold)
+            break;
+
+        for (auto asn : ind_map[d.first])
+            tmp.push_back(asn);
+        
+        retval.push_back(tmp);
+    }
+
+    return retval;
+}
+
 void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *graph) {
     std::vector<uint32_t> as_path = announcement.as_path;
 
@@ -83,9 +250,6 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         if(cur_pol != EZAS_TYPE_BGP && search_for_adopter) {
             //search_for_adopter = false;
             hyper_edge_ranges.push_back(std::make_pair(i, as_index_invalid_relationship));
-            // Also add this edge to the Adopter's own edges (excluding its own ASN)
-            std::vector<uint32_t> hyper_edge_at_current_as(as_path.begin() + i, as_path.begin() + as_index_invalid_relationship);
-            current_as->edges_to_process.push_back(hyper_edge_at_current_as);
         }
     }
 
@@ -95,243 +259,74 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         return; 
 
     for(std::pair<int, int> &range : hyper_edge_ranges) {
-        std::vector<uint32_t> hyper_edge(as_path.begin() + range.first, as_path.begin() + range.second + 1);
+        // std::vector<uint32_t> hyper_edge(as_path.begin() + range.first, as_path.begin() + range.second + 1);
 
         //check if we have this edge already in the directory
-        bool contains = false;
-        for(auto &temp_edge : edges_to_process) {
-            if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin())) {
-                contains = true;
+        //When we go to add the edge later, we will check if we already have it in the total blacklisting list
+        //no need to check twice
+
+        // bool contains = false;
+        // for(auto &temp_edge : edges_to_process) {
+        //     if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin())) {
+        //         contains = true;
+        //         break;
+        //     }
+        // }
+
+        // if(contains)
+        //     continue;
+
+        edges_to_process.push_back(std::vector<uint32_t>(as_path.begin() + range.first, as_path.begin() + range.second + 1));
+    }
+}
+
+void CommunityDetection::CD_algorithm() {
+    //Community Detection
+    std::set<uint32_t> unique_asns = get_unique_asns(hyper_edges);
+    std::map<uint32_t, std::set<uint32_t>> ind_asn = gen_ind_asn(unique_asns, hyper_edges);
+    std::map<uint32_t, uint32_t> degrees = get_degrees(unique_asns, hyper_edges);
+
+    std::vector<std::vector<uint32_t>> suspect_candidates = gen_suspect_candidates(ind_asn, degrees);
+
+    //if there is any subset of S/S' with length t that makes a cover over the hyper edges, then S' is a suspect -> blacklist
+    for(auto &suspect : suspect_candidates) {
+        auto unique_copy = unique_asns;
+
+        for(auto asn : suspect)
+            unique_copy.erase(asn);
+
+        bool is_suspect = true;
+
+        std::vector<std::unordered_set<uint32_t>> cover_candidates = generate_cover_candidates(unique_copy);
+        for(auto &cover_candidate : cover_candidates) {
+            if(is_cover(cover_candidate)) {
+                is_suspect = false;
                 break;
             }
         }
 
-        if(contains)
-            continue;
-
-        edges_to_process.push_back(hyper_edge);
+        if(is_suspect)
+            blacklist.insert(suspect);
     }
 }
 
 void CommunityDetection::process_reports(EZASGraph *graph) {
     for(auto &edge : edges_to_process) {
-        blacklist.insert(edge);
-
         unsigned int reporter_policy = graph->ases->find(edge.at(0))->second->policy;
 
         if(reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL) {
-            //std::vector<uint32_t> truncated = std::vector<uint32_t>(edge.begin()+1, edge.end());
             add_hyper_edge(edge);
         }
+
+        // Must be sorted for std::includes
+        // (this is still correctly testing for a subset of the path)
+        std::sort(edge.begin(), edge.end());
+        blacklist.insert(std::move(edge));
     }
 
-    // Now process local edges at each AS
-    for (auto const& as : *graph->ases) {
-        for (auto &edge : as.second->edges_to_process) {
-            // Must be sorted for std::includes
-            // (this is still correctly testing for a subset of the path)
-            std::sort(edge.begin(), edge.end());
-            as.second->blacklist_paths.insert(std::move(edge));
-        }
-        as.second->edges_to_process.clear();
-    }
+    edges_to_process.clear();
 
     if(hyper_edges.size() > 0) {
-        //Community Detection
-
-        std::set<uint32_t> unique_asns = get_unique_asns(hyper_edges);
-        std::map<uint32_t, std::set<uint32_t>> ind_asn = gen_ind_asn(unique_asns, hyper_edges);
-        std::map<uint32_t, uint32_t> degrees = get_degrees(unique_asns, hyper_edges);
-
-        std::vector<std::vector<uint32_t>> suspect_candidates = gen_suspect_candidates(0, ind_asn, degrees);//sz has no meaning?
-
-        //if there is any subset of S/S' with length t that makes a cover over the hyper edges, then S' is a suspect -> blacklist
-        for(auto &suspect : suspect_candidates) {
-            auto unique_copy = unique_asns;
-
-            for(auto asn : suspect)
-                unique_copy.erase(asn);
-
-            bool is_suspect = true;
-
-            std::vector<std::unordered_set<uint32_t>> cover_candidates = generate_cover_candidates(unique_copy);
-            for(auto &cover_candidate : cover_candidates) {
-                if(is_cover(cover_candidate)) {
-                    is_suspect = false;
-                    break;
-                }
-            }
-
-            if(is_suspect) {
-                blacklist.insert(suspect);
-            }
-        }
+        CD_algorithm();
     }
-    
-    edges_to_process.clear();
-}
-
-bool CommunityDetection::is_cover(std::unordered_set<uint32_t> &cover_candidate) {
-    // We are not testing if s prime makes a cover, we are testing for what the MVC is by testing if candidates in (S/S') of size t make a cover
-
-    // // does s prime form a set cover over s
-    // std::set<uint32_t> covered;
-    // for (auto prime_candidate : sprime) {
-    //     for (const auto &edge : this->hyper_edges) {
-    //         // if this prime candidate is in the edge, add these ASNs to covered set
-    //         if (std::find(edge.begin(), edge.end(), prime_candidate) != edge.end()) {
-    //             for (auto edge_asn : edge) {
-    //                 covered.insert(edge_asn);
-    //             }
-    //             continue;
-    //         }
-    //     }
-    // }
-    // // QUESTION: if s is supposed to be the set of all ASNs in this component, this works
-    // // if s is the set of all ASNs excluding those of s prime, this does not work
-    // return std::includes(covered.begin(), covered.end(), s.begin(), s.end());
-
-    //Check if each edge in the component contains an element of the candidate. If not, then the candidate does not make a cover
-    for(auto &edge : hyper_edges) {
-        bool contains_any = false;
-        for(uint32_t node : cover_candidate) {
-            //This could be better if this was a set rather than a vector 
-            if(std::find(edge.begin(), edge.end(), node) != edge.end()) {
-                contains_any = true;
-            }
-        }
-
-        //This edge does not contain any of the elements in the suspect list, thus this edge is not covered. 
-        if(!contains_any)
-            return false;
-    }
-
-    return true;
-}
-
-// return a map of ASN to set of those it is indistinguishable from
-std::map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
-    std::map<uint32_t, std::set<uint32_t>> retval;
-    for (uint32_t asn : s) {
-        auto s_copy = s;
-        for (auto edge : edges) {
-            if (std::find(edge.begin(), edge.end(), asn) != edge.end()) {
-                // if asn in edge, only save other ASNs also in the edge
-                for (auto it = s_copy.begin(); it != s_copy.end() ;) {
-                    if (*it != asn && std::find(edge.begin(), edge.end(), *it) == edge.end()) {
-                        // if asn missing from edge but present in s_copy, remove from s_copy
-                        it = s_copy.erase(it);
-                    } else { 
-                        ++it;
-                    }
-                }
-            }
-        }
-        retval.insert(std::pair<uint32_t, std::set<uint32_t>>(asn, s_copy));
-    }
-    return retval;
-}
-
-// generate a set of unique ASNs in the set of edges
-std::set<uint32_t> CommunityDetection::get_unique_asns(std::vector<std::vector<uint32_t>> edges) {
-    std::set<uint32_t> unique_asns;
-    for (auto edge : edges) {
-        for (auto asn : edge) {
-            unique_asns.insert(asn);
-        }
-    }
-    return unique_asns;
-}
-
-void CommunityDetection::generate_cover_candidates_helper(std::set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, 
-                                                            std::vector<std::unordered_set<uint32_t>> result, std::set<uint32_t>::iterator it, int subset_length) {
-
-    //The subset we are building has reached the neccessary length
-    if(building_subset.size() == subset_length) {
-        result.push_back(building_subset);
-        return;
-    }
-
-    //Reached the end of the nodes to choose from
-    if(it == nodes.end())
-        return;
-
-    uint32_t asn = *it;
-    it++;
-
-    //Make a choice: include or exclude this asn
-    building_subset.insert(asn);
-    generate_cover_candidates_helper(nodes, building_subset, result, it, subset_length);
-
-    building_subset.erase(asn);
-    generate_cover_candidates_helper(nodes, building_subset, result, it, subset_length);
-}
-
-//Generate all of the subsets of nodes with length of local_threshold
-//To be used to test MVC
-std::vector<std::unordered_set<uint32_t>> CommunityDetection::generate_cover_candidates(std::set<uint32_t> &nodes) {
-    std::vector<std::unordered_set<uint32_t>> toRet;
-
-    std::unordered_set<uint32_t> building_subset;
-
-    generate_cover_candidates_helper(nodes, building_subset, toRet, nodes.begin(), local_threshold);
-
-    return toRet;
-}
-
-// return a map of ASN to its degree in the specified set of edges
-std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
-    std::map<uint32_t, uint32_t> retval;
-    for (uint32_t asn : s) {
-        retval.insert(std::pair<uint32_t,uint32_t>(asn, 0));
-    }
-    for (auto edge : edges) {
-        for (auto asn : edge) {
-            retval[asn]++;
-        }
-    }
-    return retval;
-}
-
-// generate all possible cover candidates of size sz with given indistinguishability map
-std::vector<std::vector<uint32_t>> CommunityDetection::gen_suspect_candidates(size_t sz, 
-        std::map<uint32_t, std::set<uint32_t>> &ind_map,
-        std::map<uint32_t, uint32_t> &degrees) {
-
-    std::vector<std::vector<uint32_t>> retval;
-    std::vector<std::pair<uint32_t,uint32_t>> sorted_degrees(degrees.begin(), degrees.end());
-    std::sort(sorted_degrees.begin(), sorted_degrees.end(), [](auto a, auto b) {
-        // Sort from greatest degree to least
-        return a.second > b.second;
-    });
-
-    auto distinguishable_subsets = sorted_degrees;
-    // Indistinguishable nodes must be grouped together, so remove 'duplicates'
-    for (auto it = distinguishable_subsets.begin(); it != distinguishable_subsets.end(); ++it) {
-        for (auto it2 = it+1; it2 != distinguishable_subsets.end();) {
-            if (std::find(ind_map[it->first].begin(), ind_map[it->first].end(), it2->first) != ind_map[it->first].end()) {
-                it2 = distinguishable_subsets.erase(it2);
-            } else {
-                ++it2;
-            }
-        }
-    }
-
-    // This greedy approach only works with one attacker
-    // Start with the node with the highest degree plus all nodes it is indistinguishable from
-    std::vector<uint32_t> tmp;
-    unsigned count = 0;
-    for (auto d : distinguishable_subsets) {
-        for (auto asn : ind_map[d.first]) {
-            if (degrees[asn] > local_threshold) {
-                tmp.push_back(asn);
-            } else {
-                break;
-            }
-        }
-        retval.push_back(tmp);
-        // if (++count > sz) { break; } //The only constraint is the degree of the ASes, not the number of ASes
-    }
-
-    return retval;
 }

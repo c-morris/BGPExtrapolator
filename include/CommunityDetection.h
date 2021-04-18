@@ -79,18 +79,6 @@ public:
     void add_hyper_edge(std::vector<uint32_t> &hyper_edge);
 
     /**
-     * An attacking announcement that an adopting EZBGPsec AS accepted. In theory, this announcement has an invalid MAC for the origin.
-     * This will extract the hyper edge(s) from the announcement path (if any are visible).
-     * It will take each of these hyper edges and add them to the hyper graph. Thereby incrementing their degree count in the hypergraph.
-     * 
-     * The EZASGraph is needed to check for invalid MACs and check who is an adopter. No modifications to the graph are made here.
-     * 
-     * @param announcement -> the malicious announcement to extract hyper edges from
-     * @param graph -> ASGraph to "confirm MACs" and get AS infromation from. 
-     */
-    void add_report(EZAnnouncement &announcement, EZASGraph *graph);
-
-    /**
      * Test if the given ASes in sprime form a cover over s.
      *
      * @return true if sprime covers s, false otherwise.
@@ -104,7 +92,8 @@ public:
      */
     std::map<uint32_t, std::set<uint32_t>> gen_ind_asn(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges);
 
-    void generate_cover_candidates_helper(std::set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, std::vector<std::unordered_set<uint32_t>> result, std::set<uint32_t>::iterator it, int subset_length);
+    void generate_cover_candidates_helper(std::set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, std::vector<std::unordered_set<uint32_t>> &result, std::set<uint32_t>::iterator it, uint32_t subset_length);
+
     std::vector<std::unordered_set<uint32_t>> generate_cover_candidates(std::set<uint32_t> &nodes);
 
     /**
@@ -121,10 +110,23 @@ public:
      */
     std::set<uint32_t> get_unique_asns(std::vector<std::vector<uint32_t>> edges);
 
-
-    std::vector<std::vector<uint32_t>> gen_suspect_candidates(size_t sz, 
+    std::vector<std::vector<uint32_t>> gen_suspect_candidates(
         std::map<uint32_t, std::set<uint32_t>> &ind_map,
         std::map<uint32_t, uint32_t> &degrees);
+
+    /**
+     * An attacking announcement that an adopting EZBGPsec AS accepted. In theory, this announcement has an invalid MAC for the origin.
+     * This will extract the hyper edge(s) from the announcement path (if any are visible).
+     * It will take each of these hyper edges and add them to the hyper graph. Thereby incrementing their degree count in the hypergraph.
+     * 
+     * The EZASGraph is needed to check for invalid MACs and check who is an adopter. No modifications to the graph are made here.
+     * 
+     * @param announcement -> the malicious announcement to extract hyper edges from
+     * @param graph -> ASGraph to "confirm MACs" and get AS infromation from. 
+     */
+    void add_report(EZAnnouncement &announcement, EZASGraph *graph);
+
+    void CD_algorithm();
 
     void process_reports(EZASGraph *graph);
 };
