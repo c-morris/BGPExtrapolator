@@ -194,7 +194,7 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             search->second = ann;
             check_preventives(search->second);
         // If they're both equally safe, then pick the one with the shortest path (i.e. if new one has better path length)
-        } else if ((is_curr_ann_safe && is_new_ann_safe) &&
+        } else if (((is_curr_ann_safe && is_new_ann_safe) || (!is_curr_ann_safe && !is_new_ann_safe)) &&
                     ann.priority > search->second.priority) {
             // Replace our curr not safe announcement with the new safe announcement
             withdraw(search->second);
