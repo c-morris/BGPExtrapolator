@@ -47,7 +47,6 @@ template <class AnnouncementType, typename PrefixType = uint32_t>
 class BaseAS {
 
 //Ensure that the Announcement class passed in through the template extends the Announcement class.
-//static_assert(std::is_base_of<Announcement<>, AnnouncementType>::value, "AnnouncementType must inherit from Announcement");
 static_assert(std::is_base_of<Announcement<PrefixType>, AnnouncementType>::value, "AnnouncementType must inherit from Announcement");
 
 public:

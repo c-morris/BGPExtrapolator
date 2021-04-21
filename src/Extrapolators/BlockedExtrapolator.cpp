@@ -95,7 +95,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                                                                             std::vector<Prefix<PrefixType>*>* bloc_vector) { 
     // Find the number of announcements within the subnet
     pqxx::result r = this->querier->select_subnet_count(p);
-    
+
     /** DEBUG
     std::cout << "Prefix: " << p->to_cidr() << std::endl;
     std::cout << "Count: "<< r[0][0].as<int>() << std::endl;
@@ -116,26 +116,52 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             prefix_vector->push_back(p_copy);
         }
 
-        // Split prefix
-        // First half: increase the prefix length by 1
-        uint32_t new_mask;
-        if (p->netmask == 0) {
-            new_mask = p->netmask | 0x80000000;
-        } else {
-            new_mask = (p->netmask >> 1) | p->netmask;
-        }
-        Prefix<PrefixType>* p1 = new Prefix<PrefixType>(p->addr, new_mask);
-        
-        // Second half: increase the prefix length by 1 and flip previous length bit
-        int8_t sz = 0;
-        uint32_t new_addr = p->addr;
-        for (int i = 0; i < 32; i++) {
-            if (p->netmask & (1 << i)) {
-                sz++;
+        Prefix<PrefixType>* p1;
+        Prefix<PrefixType>* p2;
+
+        if (std::is_same<PrefixType, uint32_t>::value) {
+            // Split prefix
+            // First half: increase the prefix length by 1
+            uint32_t new_mask;
+            if (p->netmask == 0) {
+                new_mask = p->netmask | 0x80000000;
+            } else {
+                new_mask = (p->netmask >> 1) | p->netmask;
             }
+            p1 = new Prefix<PrefixType>(p->addr, new_mask);
+
+            // Second half: increase the prefix length by 1 and flip previous length bit
+            int8_t sz = 0;
+            uint32_t new_addr = p->addr;
+            for (int i = 0; i < 32; i++) {
+                if (p->netmask & (1 << i)) {
+                    sz++;
+                }
+            }
+            new_addr |= 1UL << (32 - sz - 1);
+            p2 = new Prefix<PrefixType>(new_addr, new_mask);
+        } else {
+            // Split prefix
+            // First half: increase the prefix length by 1
+            uint128_t new_mask;
+            if (p->netmask == 0) {
+                new_mask = p->netmask | ((uint128_t) 1 << 127);  // 0x80000000000000000000000000000
+            } else {
+                new_mask = (p->netmask >> 1) | p->netmask;
+            }
+            p1 = new Prefix<PrefixType>(p->addr, new_mask);
+
+            // Second half: increase the prefix length by 1 and flip previous length bit
+            int32_t sz = 0;
+            uint128_t new_addr = p->addr;
+            for (int i = 0; i < 128; i++) {
+                if (p->netmask & ((uint128_t) 1 << i)) {
+                    sz++;
+                }
+            }
+            new_addr |= (uint128_t) 1 << (128 - sz - 1);;
+            p2 = new Prefix<PrefixType>(new_addr, new_mask);
         }
-        new_addr |= 1UL << (32 - sz - 1);
-        Prefix<PrefixType>* p2 = new Prefix<PrefixType>(new_addr, new_mask);
 
         // Recursive call on each new prefix subnet
         populate_blocks(p1, prefix_vector, bloc_vector);

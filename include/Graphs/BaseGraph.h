@@ -29,8 +29,6 @@
 #define AS_REL_PEER 100
 #define AS_REL_CUSTOMER 200
 
-//class SQLQuerier;
-
 #include <map>
 #include <unordered_map>
 #include <vector>

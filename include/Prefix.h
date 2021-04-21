@@ -241,15 +241,13 @@ public:
         // Default errors to ::
         if (error_f == true) {
             ipv6_ip_int = 0;
-            BOOST_LOG_TRIVIAL(error) << "Caught malformed IPv4 address: " << addr_str;
+            BOOST_LOG_TRIVIAL(error) << "Caught malformed IPv6 address: " << addr_str;
         }
         return ipv6_ip_int;
     }
 
 
     /** Converts this prefix into a cidr formatted string.
-     *
-     *  This is IPv4 only.
      *
      *  @return cidr A string in cidr format.
      */
@@ -270,7 +268,6 @@ public:
             cidr << '/';
             
             // Calculate the number of 1s in netmask
-            // Not sure if that is what we are looking for
             uint32_t sz = 0;
             for (int i = 0; i < 128; i++) {
                 if (netmask & ((uint128_t) 1 << i)) {
