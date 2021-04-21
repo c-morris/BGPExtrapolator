@@ -65,7 +65,7 @@ bool test_parse_config() {
 
 // Test for copy_to_db_string function
 bool test_copy_to_db_string() {
-    SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
+    SQLQuerier<> *querier = new SQLQuerier<>("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
 
     if (querier->copy_to_db_query_string("test", "stubs", "(stub_asn,parent_asn)") != 
                                     "COPY stubs(stub_asn,parent_asn) FROM 'test' WITH (FORMAT csv)") {
@@ -78,7 +78,7 @@ bool test_copy_to_db_string() {
 
 // Test for select_prefix_string function
 bool test_select_prefix_string() {
-    SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
+    SQLQuerier<> *querier = new SQLQuerier<>("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
     Prefix<> *p = new Prefix<>("137.99.0.0", "255.255.0.0");
 
     std::string true_results [4] = {
@@ -113,7 +113,7 @@ bool test_select_prefix_string() {
 
 // Test for clear_table_string
 bool test_clear_table_string() {
-    SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
+    SQLQuerier<> *querier = new SQLQuerier<>("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
 
     if (querier->clear_table_query_string("test_table") != "DROP TABLE IF EXISTS test_table;") {
         std::cerr << "test_clear_table_string failed" << std::endl;
@@ -125,7 +125,7 @@ bool test_clear_table_string() {
 
 // Test for create_table_string
 bool test_create_table_string() {
-    SQLQuerier *querier = new SQLQuerier("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
+    SQLQuerier<> *querier = new SQLQuerier<>("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
 
     std::string true_results [3] = {
         "CREATE TABLE IF NOT EXISTS test_table (stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint);",

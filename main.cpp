@@ -263,7 +263,8 @@ int main(int argc, char *argv[]) {
             vm["exclude-monitor"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>(),
             vm["origin-only"].as<bool>(),
-            full_path_asns);
+            full_path_asns,
+            vm["max-threads"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
