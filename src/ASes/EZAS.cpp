@@ -142,20 +142,12 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || policy == EZAS_TYPE_DIRECTORY_ONLY) {
             // Check for blacklisted paths seen by this AS
             //TODO This could use some improvement
-            for(auto &blacklisted_path : blacklist_paths) {
+            for(auto &blacklisted_path : community_detection->blacklist) {
                 if(std::includes(path_copy.begin(), path_copy.end(), blacklisted_path.begin(), blacklisted_path.end())) {
                     //std::cout << "LOC REJECT PATH at " << asn << std::endl;
                     return;
                 }
             }
-        }
-        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL) {
-
-
-            //Sort both the path and the blacklisted collection (sort this once when it is created in CommunityDetection)
-            //Be sure to remove the current AS's number from the blacklisted collection
-            //check if all elements in the blacklisted set are in this path (reject if this is the case)
-            //add the asn back into the blacklisted path (insertion on an *unordered_set* is ez) rather than make a copy of the blacklist
         }
 
         /*
