@@ -186,12 +186,9 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
           *  without exceeding the threshold. 
           */
         for (unsigned int pl = 0; pl < as_path->size() - 1; pl++) {
-            //if (round % static_cast<uint32_t>((pow(communityDetection->local_threshold, pl))) == 0) {
                 (*as_path)[as_path->size()-2-pl] = 65434 - (communityDetection->local_threshold * pl) - 
                      (((round-1) / static_cast<uint32_t>(pow(communityDetection->local_threshold, pl)) % communityDetection->local_threshold))
                 ;
-                //(*as_path)[as_path->size()-1-pl] = get_unused_asn();
-            //}
         }
         // debug
         for (auto a : *as_path) {
