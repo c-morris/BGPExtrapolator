@@ -166,8 +166,12 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         auto attacker_search = graph->ases->find(attacker_asn);
         if(attacker_search == graph->ases->end())
             return;
-        
         EZAS* attacker = attacker_search->second;
+
+        auto as_search = graph->ases->find(path_origin_asn);
+        if(as_search == graph->ases->end())
+            return;
+        EZAS* origin = as_search->second;
 
         //Don't bother with anything of this if the attacker can't show up to the party
         // if(attacker->providers->size() == 0 && attacker->peers->size() == 0)
@@ -184,12 +188,38 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
           *  With a fixed k in a k-hop origin hijack, the attacker wants to 
           *  maintain the largest collection of adjacent suspects as possible
           *  without exceeding the threshold. 
+          *          
+          *  Consider a fixed k with local threshold t, the matrix of attack
+          *  paths is:
+          *
+          *  [666, a_11, a_12,... a_1t, origin]
+          *  [666, a_21, a_22,... a_2t, origin]
+          *  ...
+          *  [666, a_k1, a_k2,... a_kt, origin]
           */
         for (unsigned int pl = 0; pl < as_path->size() - 1; pl++) {
-                (*as_path)[as_path->size()-2-pl] = 65434 - (communityDetection->local_threshold * pl) - 
-                     (((round-1) / static_cast<uint32_t>(pow(communityDetection->local_threshold, pl)) % communityDetection->local_threshold))
-                ;
+            (*as_path)[as_path->size()-2-pl] = 65434 - (communityDetection->local_threshold * pl) - 
+                 (((round-1) / static_cast<uint32_t>(pow(communityDetection->local_threshold, pl)) % communityDetection->local_threshold));
         }
+        // If transitive BGPsec is the policy, try to find a non-adopting neighbor
+        // of the origin (that way a valid signature can be used)
+        if (origin->policy == EZAS_TYPE_BGPSEC_TRANSITIVE || origin->policy == EZAS_TYPE_BGPSEC) {
+            std::set<uint32_t> neighbors;
+            neighbors.insert(attacker->providers->begin(), attacker->providers->end());
+            neighbors.insert(attacker->peers->begin(), attacker->peers->end());
+            neighbors.insert(attacker->customers->begin(), attacker->customers->end());
+            for (uint32_t nbr_asn : neighbors) {
+                auto nbr_search = graph->ases->find(nbr_asn);
+                if(nbr_search == graph->ases->end())
+                    continue;
+                EZAS* nbr = nbr_search->second;
+                if (nbr->policy == EZAS_TYPE_BGP) {
+                    as_path->rbegin()[1] = nbr_asn;
+                    break;
+                }
+            }
+        }
+
         // debug
         for (auto a : *as_path) {
             std::cout << a << ',';
@@ -198,7 +228,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
         attackAnnouncement.as_path = *as_path;
         attackAnnouncement.received_from_asn = HIJACKED;
-        attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
+        attacker->process_announcement(attackAnnouncement, random_tiebraking);
     }
 }
 

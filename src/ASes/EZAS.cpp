@@ -33,7 +33,13 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         //Assume that the attacker is causing an invalid MAC (this is what we are simulating)
         //If this AS is an adopter and there is an invalid MAC, then reject
         if(origin_as->policy == EZAS_TYPE_BGPSEC_TRANSITIVE && ann.from_attacker) {
-            return;
+            // if a non-adopting neighbor was found, the signature is valid
+            // path must be longer than 1 here so this is safe
+            auto second = ann.as_path.rbegin()[1];
+            // if within private ASN range, return, else neighbor was found
+            if (second < 65535 and second > 64511) {
+                return;
+            }
         } 
 
         // Regular BGPsec requires a path of un-broken adopters to the origin
