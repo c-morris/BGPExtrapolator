@@ -325,9 +325,17 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
 
 //SQLQuerier Tests
 BOOST_AUTO_TEST_CASE( SQLQuerier_test_parse_config ) {
-        BOOST_CHECK ( test_parse_config_buildup() );
-        BOOST_CHECK( test_parse_config() );
-        BOOST_CHECK ( test_parse_config_teardown() );
+        BOOST_CHECK ( test_querier_buildup() );
+        BOOST_CHECK ( test_parse_config() );
+        BOOST_CHECK ( test_querier_teardown() );
+}
+BOOST_AUTO_TEST_CASE( SQLQuerier_test_string_methods ) {
+        BOOST_CHECK ( test_querier_buildup() );
+        BOOST_CHECK ( test_select_prefix_string() );
+        BOOST_CHECK ( test_copy_to_db_string() );
+        BOOST_CHECK ( test_clear_table_string() );
+        BOOST_CHECK ( test_create_table_string() );
+        BOOST_CHECK ( test_querier_teardown() );
 }
 
 #endif // RUN_TESTS

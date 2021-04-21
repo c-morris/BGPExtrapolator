@@ -37,7 +37,8 @@ struct ROVppExtrapolator: public BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph,
                         std::string simulation_table,
                         std::string config_section,
                         int exclude_as_number,
-                        bool origin_only);
+                        bool origin_only,
+                        int max_threads);
 
     ROVppExtrapolator();
     ~ROVppExtrapolator();

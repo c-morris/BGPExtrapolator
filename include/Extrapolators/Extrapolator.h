@@ -43,7 +43,8 @@ public:
                     int exclude_as_number,
                     uint32_t mh_mode,
                     bool origin_only,
-                    std::vector<uint32_t> *full_path_asns);
+                    std::vector<uint32_t> *full_path_asns,
+                    int max_threads);
 
     Extrapolator();
     ~Extrapolator();
