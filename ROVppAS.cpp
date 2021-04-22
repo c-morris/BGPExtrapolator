@@ -193,6 +193,9 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
+        // Is our current ann safe and the new ann NOT safe?
+        } if (is_curr_ann_safe && !is_new_ann_safe) {
+            // Do nothing, because best announcement is in use 
         // If they're both equally safe, then pick the one with the shortest path (i.e. if new one has better path length)
         } else if (((is_curr_ann_safe && is_new_ann_safe) || (!is_curr_ann_safe && !is_new_ann_safe)) &&
                     ann.priority > search->second.priority) {
@@ -201,7 +204,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             search->second = ann;
             check_preventives(search->second);
         // TODO (review): If they're both equally safe, and path lengths are same, then pick deterministically randomly
-        } else {
+        } else if (((is_curr_ann_safe && is_new_ann_safe) || (!is_curr_ann_safe && !is_new_ann_safe)) &&
+                    ann.priority == search->second.priority) {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
             ran = false;
@@ -426,7 +430,6 @@ void ROVppAS::process_announcements(bool ran) {
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             process_announcement(ann, false);
                         } else {
-
                             process_announcement(best_alternative_ann, false);
                         }
                     }
