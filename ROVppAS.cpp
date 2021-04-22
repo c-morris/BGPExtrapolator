@@ -86,7 +86,7 @@ void ROVppAS::withdraw(Announcement &ann) {
     Announcement copy = ann;
     copy.withdraw = true;
     withdrawals->push_back(copy);
-    //std::cout << "At 89" << std::endl;
+    std::cout << "At 89" << std::endl;
     AS::graph_changed = true;  // This means we will need to do another propagation
 }
 
@@ -199,8 +199,11 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
+        // Is our current ann safe and the new ann NOT safe?
+        } if (is_curr_ann_safe && !is_new_ann_safe) {
+            // Do nothing, because best announcement is in use 
         // If they're both equally safe, then pick the one with the shortest path (i.e. if new one has better path length)
-        } else if ((is_curr_ann_safe && is_new_ann_safe) &&
+        } else if (((is_curr_ann_safe && is_new_ann_safe) || (!is_curr_ann_safe && !is_new_ann_safe)) &&
                     ann.priority > search->second.priority) {
             // Replace our curr not safe announcement with the new safe announcement
             std::cout << "At 195, " << "ASN: " << asn << ", Ann: " << "Prefix: " << ann.prefix.to_cidr() << ", RecFrom: "<< ann.received_from_asn << ", Priority: " << ann.priority << std::endl;
@@ -210,7 +213,8 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
             search->second = ann;
             check_preventives(search->second);
         // TODO (review): If they're both equally safe, and path lengths are same, then pick deterministically randomly
-        } else {
+        } else if (((is_curr_ann_safe && is_new_ann_safe) || (!is_curr_ann_safe && !is_new_ann_safe)) &&
+                    ann.priority == search->second.priority) {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
             ran = false;
@@ -345,7 +349,7 @@ void ROVppAS::process_announcements(bool ran) {
                         } else {
                             loc_rib->erase(it->prefix);    
                         }
-                        //std::cout << "At 326" << std::endl;
+                        std::cout << "At 326" << std::endl;
                         AS::graph_changed = true;  // This means we will need to do another propagation
                     }
                     // Process withdrawal in the ribs_in
@@ -393,7 +397,7 @@ void ROVppAS::process_announcements(bool ran) {
                 } else {
                     loc_rib->erase(ann.prefix);    
                 }
-                //std::cout << "At 373" << std::endl;
+                std::cout << "At 373" << std::endl;
                 AS::graph_changed = true;  // This means we will need to do another propagation
                 
             }
