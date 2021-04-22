@@ -178,21 +178,34 @@ void ROVppAS::process_announcement(Announcement &ann, bool ran) {
                 break;
             }
         }
+        bool is_new_ann_safe = true;
+        for (const auto &curr_bad_ann : *failed_rov) {
+            if (curr_bad_ann.prefix.contained_in_or_equal_to(ann.prefix) &&
+                curr_bad_ann.received_from_asn == ann.received_from_asn) {
+                is_new_ann_safe  = false;
+                break;
+            }
+        }
         // Check which annoucements are safe
         // Is our current ann NOT safe and the new ann safe?    
-        if (!is_curr_ann_safe) {
+        if (!is_curr_ann_safe && is_new_ann_safe) {
             // Replace our curr not safe announcement with the new safe announcement
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
+        // Is our current ann safe and the new ann NOT safe?
+        } if (is_curr_ann_safe && !is_new_ann_safe) {
+            // Do nothing, because best announcement is in use 
         // If they're both equally safe, then pick the one with the shortest path (i.e. if new one has better path length)
-        } else if (ann.priority > search->second.priority) {
+        } else if (((is_curr_ann_safe && is_new_ann_safe) || (!is_curr_ann_safe && !is_new_ann_safe)) &&
+                    ann.priority > search->second.priority) {
             // Replace our curr not safe announcement with the new safe announcement
             withdraw(search->second);
             search->second = ann;
             check_preventives(search->second);
-        // TODO (review): If they're bothe equally safe, and path lengths are same, then pick deterministically randomly
-        } else {
+        // TODO (review): If they're both equally safe, and path lengths are same, then pick deterministically randomly
+        } else if (((is_curr_ann_safe && is_new_ann_safe) || (!is_curr_ann_safe && !is_new_ann_safe)) &&
+                    ann.priority == search->second.priority) {
             // Random tiebraker
             //std::minstd_rand ran_bool(asn);
             ran = false;
