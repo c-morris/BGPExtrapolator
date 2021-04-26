@@ -145,6 +145,14 @@ bool ezbgpsec_test_get_unique_asns();
 bool ezbgpsec_test_get_degrees();
 bool ezbgpsec_test_gen_suspect_candidates();
 
+bool ezbgpsec_test_bgpsec_noncontiguous();
+bool ezbgpsec_test_bgpsec_contiguous();
+bool ezbgpsec_test_bgpsec_contiguous2();
+
+bool ezbgpsec_test_transitive_bgpsec_contiguous();
+bool ezbgpsec_test_transitive_bgpsec_contiguous2();
+bool ezbgpsec_test_transitive_bgpsec_contiguous3();
+
 bool ezbgpsec_test_cd_algorithm();
 
 //SQLQuerier

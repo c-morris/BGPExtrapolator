@@ -1,5 +1,6 @@
 #include "Tests/Tests.h"
 #include "Extrapolators/EZExtrapolator.h"
+#include "ASes/BaseAS.h"
 
 /** Test path seeding the graph with announcements from monitors. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
@@ -602,4 +603,402 @@ bool ezbgpsec_test_gen_suspect_candidates() {
     }
 
     return !error;
+}
+
+
+/** Test BGPsec invalid announcement rejection of non-contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2
+ *    |\
+ *    3 13796 
+ */
+bool ezbgpsec_test_bgpsec_noncontiguous() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 13796, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Announcement should be accepted
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2
+ *    |\
+ *    3 13796 
+ */
+bool ezbgpsec_test_bgpsec_contiguous() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 13796, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Origin announcement should be preferred
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1--13796
+ *    |
+ *    2
+ *    |
+ *    3
+ */
+bool ezbgpsec_test_bgpsec_contiguous2() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 1, AS_REL_PEER);
+    e.graph->add_relationship(1, 13796, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Hijack announcement should be preferred (testing security 2nd)
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test Transitive BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2
+ *    |\
+ *    3 13796
+ */
+bool ezbgpsec_test_transitive_bgpsec_contiguous() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 13796, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //auto path = e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path;
+    //for (auto p : path) {
+    //    std::cout << p << " ";
+    //}
+    //std::cout << std::endl;
+
+    // Origin AS preferred, attacker's signature is missing
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test Transitive BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1--13796
+ *    |
+ *    2
+ *    |
+ *    3
+ */
+bool ezbgpsec_test_transitive_bgpsec_contiguous2() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 1, AS_REL_PEER);
+    e.graph->add_relationship(1, 13796, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Attacker's signature is missing, but is preferred because of relationship
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test Transitive BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2
+ *    |\
+ *    | 4
+ *    |  \
+ *    3  13796
+ */
+bool ezbgpsec_test_transitive_bgpsec_contiguous3() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 4, AS_REL_PROVIDER);
+    e.graph->add_relationship(4, 13796, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Origin AS preferred over path length, attacker's signature is missing
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 4 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
 }

@@ -254,6 +254,18 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_vc ) {
         BOOST_CHECK( ezbgpsec_test_gen_suspect_candidates() );
 }
 
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_bgpsec ) {
+        BOOST_CHECK( ezbgpsec_test_bgpsec_noncontiguous() );
+        BOOST_CHECK( ezbgpsec_test_bgpsec_contiguous() );
+        BOOST_CHECK( ezbgpsec_test_bgpsec_contiguous2() );
+}
+
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_transitive_bgpsec ) {
+        BOOST_CHECK( ezbgpsec_test_transitive_bgpsec_contiguous() );
+        BOOST_CHECK( ezbgpsec_test_transitive_bgpsec_contiguous2() );
+        BOOST_CHECK( ezbgpsec_test_transitive_bgpsec_contiguous3() );
+}
+
 //SQLQuerier Tests
 BOOST_AUTO_TEST_CASE( SQLQuerier_test_parse_config ) {
         BOOST_CHECK ( test_parse_config_buildup() );
