@@ -208,8 +208,6 @@ bool test_process_announcements(){
     as.receive_announcements(vect);
     as.process_announcements(true);
 
-    std::cout << "* " << as.all_anns->find(ann1_prefix)->second.priority << std::endl;
-
     if (as.all_anns->find(ann1_prefix)->second.priority != (uint64_t) 1 << 24) {
         std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;

@@ -143,7 +143,7 @@ void ROVExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix
         bool broken_path = false;
 
         // It is 3 by default. It stays as 3 if it's the origin.
-        int received_from = 300;
+        int received_from = 3;
         // If this is not the origin AS
         if (i > 1) {
             // Get the previous ASes relationship to current AS
@@ -159,8 +159,9 @@ void ROVExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix
         }
 
         // This is how priority is calculated
-        uint32_t path_len_weighted = 100 - (i - 1);
-        uint32_t priority = received_from + path_len_weighted;
+        Priority priority;
+        priority.path_length = i - 1;
+        priority.relationship = received_from;
 
         // Check if already received this prefix
         if (announcement_search != as_on_path->all_anns->end()) {
