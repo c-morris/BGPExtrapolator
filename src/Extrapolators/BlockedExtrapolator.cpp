@@ -580,3 +580,4 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
 
 template class BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
 template class BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;
+template class BlockedExtrapolator<ROVSQLQuerier, ROVASGraph, ROVAnnouncement, ROVAS>;

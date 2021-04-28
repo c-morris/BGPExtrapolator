@@ -47,6 +47,7 @@
 #include "Announcements/Announcement.h"
 #include "Announcements/EZAnnouncement.h"
 #include "Announcements/ROVppAnnouncement.h"
+#include "Announcements/ROVAnnouncement.h"
 
 template <class AnnouncementType>
 class BaseAS {

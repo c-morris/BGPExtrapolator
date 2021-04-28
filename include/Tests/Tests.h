@@ -155,6 +155,22 @@ bool test_rovpp_prepending_priority_middle_existing_ann();
 bool test_rovpp_prepending_priority_beginning_existing_ann();
 bool test_rovpp_prepending_priority_beginning_existing_ann2();
 
+//ROV Reference
+bool test_rov_constructor();
+bool test_rov_is_attacker();
+bool test_rov_is_from_attacker();
+bool test_rov_give_ann_to_as_path();
+bool test_rov_give_ann_to_as_path_invalid();
+bool test_rov_send_all_announcements();
+bool test_rov_process_announcement();
+bool test_rov_prepending_priority_back();
+bool test_rov_prepending_priority_middle();
+bool test_rov_prepending_priority_beginning();
+bool test_rov_prepending_priority_back_existing_ann();
+bool test_rov_prepending_priority_middle_existing_ann();
+bool test_rov_prepending_priority_beginning_existing_ann();
+bool test_rov_prepending_priority_beginning_existing_ann2();
+
 //EZBGPsec
 bool ezbgpsec_test_path_propagation();
 

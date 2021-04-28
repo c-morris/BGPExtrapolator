@@ -286,3 +286,4 @@ std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType
 template class BaseExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
 template class BaseExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;
 template class BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph, ROVppAnnouncement, ROVppAS>;
+template class BaseExtrapolator<ROVSQLQuerier, ROVASGraph, ROVAnnouncement, ROVAS>;

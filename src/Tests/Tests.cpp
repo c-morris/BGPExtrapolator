@@ -300,8 +300,51 @@ BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann2 ) {
         BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann2() );
 }
 
-//EZBGPsec Tests
+//ROV Tests
+BOOST_AUTO_TEST_CASE( ROV_constructor ) {
+        BOOST_CHECK( test_rov_constructor() );
+}
+BOOST_AUTO_TEST_CASE( ROV_is_attacker ) {
+        BOOST_CHECK( test_rov_is_attacker() );
+}
+BOOST_AUTO_TEST_CASE( ROV_is_from_attacker ) {
+        BOOST_CHECK( test_rov_is_from_attacker() );
+}
+BOOST_AUTO_TEST_CASE( ROV_give_ann_to_as_path ) {
+        BOOST_CHECK( test_rov_give_ann_to_as_path() );
+}
+BOOST_AUTO_TEST_CASE( ROV_give_ann_to_as_path_invalid ) {
+        BOOST_CHECK( test_rov_give_ann_to_as_path_invalid() );
+}
+BOOST_AUTO_TEST_CASE( ROV_send_all_announcements ) {
+        BOOST_CHECK( test_rov_send_all_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROV_process_announcement ) {
+        BOOST_CHECK( test_rov_process_announcement() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_back ) {
+        BOOST_CHECK( test_rov_prepending_priority_back() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_middle ) {
+        BOOST_CHECK( test_rov_prepending_priority_middle() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning ) {
+        BOOST_CHECK( test_rov_prepending_priority_beginning() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_back_existing_ann ) {
+        BOOST_CHECK( test_rov_prepending_priority_back_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_middle_existing_ann ) {
+        BOOST_CHECK( test_rov_prepending_priority_middle_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning_existing_ann ) {
+        BOOST_CHECK( test_rov_prepending_priority_beginning_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning_existing_ann2 ) {
+        BOOST_CHECK( test_rov_prepending_priority_beginning_existing_ann2() );
+}
 
+//EZBGPsec Tests
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
         BOOST_CHECK( ezbgpsec_test_path_propagation() );
 }

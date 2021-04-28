@@ -61,6 +61,11 @@
 #include "Announcements/EZAnnouncement.h"
 #include "ASes/EZAS.h"
 
+#include "SQLQueriers/ROVSQLQuerier.h"
+#include "Graphs/ROVASGraph.h"
+#include "Announcements/ROVAnnouncement.h"
+#include "ASes/ROVAS.h"
+
 /** README. SERIOUSLY README
  * Trust me you need to read this.
  * 
