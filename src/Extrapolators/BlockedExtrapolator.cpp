@@ -276,7 +276,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         bool broken_path = false;
 
         // It is 3 by default. It stays as 3 if it's the origin.
-        int received_from = 300;
+        int received_from = 3;
         // If this is not the origin AS
         if (i > 1) {
             // Get the previous ASes relationship to current AS
@@ -292,8 +292,9 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::g
         }
 
         // This is how priority is calculated
-        uint32_t path_len_weighted = 100 - (i - 1);
-        uint32_t priority = received_from + path_len_weighted;
+        Priority priority;
+        priority.path_length = i - 1;
+        priority.relationship = received_from;
 
         // Check if already received this prefix
         if (announcement_search != as_on_path->all_anns->end()) {
@@ -443,9 +444,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
         for (auto &ann : *source_as->all_anns) {
             // Do not propagate any announcements from peers/providers
             // Priority is reduced by 1 per path length
-            // Base priority is 200 for customer to provider
+            // Base priority is 2 for customer to provider
             // Ignore announcements not from a customer
-            if (ann.second.priority < 200) {
+
+            if (ann.second.priority.relationship < 2) { 
                 continue;
             }
 
@@ -470,16 +472,9 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             // If no providers have the announcement, propagate to providers
             if (providers_with_ann == 0) {
                 // Set the priority of the announcement at destination 
-                uint32_t old_priority = ann.second.priority;
-                uint32_t path_len_weight = old_priority % 100;
-                if (path_len_weight == 0) {
-                    // For MRT ann at origin: old_priority = 400
-                    path_len_weight = 99;
-                } else {
-                    // Sub 1 for the current hop
-                    path_len_weight -= 1;
-                }
-                uint32_t priority = 200 + path_len_weight;
+                Priority priority;
+                priority.relationship = 2;
+                priority.path_length = ann.second.priority.path_length + 1;
                 
                 AnnouncementType temp = AnnouncementType(ann.second);
                 temp.priority = priority;
@@ -515,21 +510,13 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             // Base priority is 100 for peers to peers
 
             // Ignore announcements not from a customer
-            if (ann.second.priority < 200) {
+            if (ann.second.priority.relationship < 2) {
                 continue;
             }
 
-            // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
-            uint32_t path_len_weight = old_priority % 100;
-            if (path_len_weight == 0) {
-                // For MRT ann at origin: old_priority = 400
-                path_len_weight = 99;
-            } else {
-                // Sub 1 for the current hop
-                path_len_weight -= 1;
-            }
-            uint32_t priority = 100 + path_len_weight;
+            Priority priority;
+            priority.relationship = 1;
+            priority.path_length = ann.second.priority.path_length + 1;
             
             // anns_to_peers.push_back(AnnouncementType(ann.second.origin,
             //                                             ann.second.prefix.addr,
@@ -564,16 +551,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::s
             
             
             // Set the priority of the announcement at destination 
-            uint32_t old_priority = ann.second.priority;
-            uint32_t path_len_weight = old_priority % 100;
-            if (path_len_weight == 0) {
-                // For MRT ann at origin: old_priority = 400
-                path_len_weight = 99;
-            } else {
-                // Sub 1 for the current hop
-                path_len_weight -= 1;
-            }
-            uint32_t priority = path_len_weight;
+            Priority priority;
+            priority.path_length = ann.second.priority.path_length + 1;
 
             // anns_to_customers.push_back(AnnouncementType(ann.second.origin,
             //                                                 ann.second.prefix.addr,

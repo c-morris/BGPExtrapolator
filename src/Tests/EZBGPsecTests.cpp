@@ -25,7 +25,9 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->decide_ranks();
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 300, 5, 2, false, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(5, p.addr, p.netmask, pr, 5, 2, false, true);
 
     e.graph->ases->find(5)->second->process_announcement(attack_announcement);
 

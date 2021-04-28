@@ -24,9 +24,14 @@
 #ifndef BASE_AS_H
 #define BASE_AS_H
 
+// Define relationship macros
 #define AS_REL_PROVIDER 0
-#define AS_REL_PEER 100
-#define AS_REL_CUSTOMER 200
+#define AS_REL_PEER 1
+#define AS_REL_CUSTOMER 2
+// Keep old values for ROVpp
+#define AS_REL_PROVIDER_ROVPP 0
+#define AS_REL_PEER_ROVPP 100
+#define AS_REL_CUSTOMER_ROVPP 200
 
 #include <type_traits>
 #include <algorithm>  

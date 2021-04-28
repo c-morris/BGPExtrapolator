@@ -30,13 +30,12 @@ Announcement::Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask
     prefix.netmask = anetmask;
     origin = aorigin;
     received_from_asn = from_asn;
-    priority = 0;
     from_monitor = false;
     tstamp = timestamp;
 }
 
 Announcement::Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-    uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */) 
+    Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */) 
     : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
     
     priority = pr; 

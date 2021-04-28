@@ -72,7 +72,8 @@ ROVppAnnouncement::ROVppAnnouncement(const ROVppAnnouncement& ann) : Announcemen
     policy_index = ann.policy_index;     
     tiebreak_override = ann.tiebreak_override;
     sent_to_asn = ann.sent_to_asn;       
-    withdraw =  ann.withdraw;              
+    withdraw =  ann.withdraw;       
+    priority = ann.priority;       
     // this is the important part
     as_path = ann.as_path; 
 }

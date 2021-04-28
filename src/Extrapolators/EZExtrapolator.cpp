@@ -169,7 +169,11 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
     graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
 
-    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299 - num_between, path_origin_asn, timestamp, true, true);
+    Priority priority;
+    priority.relationship = 2;
+    priority.path_length = 1 + num_between;
+
+    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, priority, path_origin_asn, timestamp, true, true);
     attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
 }
 

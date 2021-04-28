@@ -6,7 +6,10 @@
  * 
  * Longer paths have lower priority
  * 
- * relationship: Provider = 0, Peer = 1, Customer = 2
+ * relationship: Provider = 0, Peer = 1, Customer = 2, and 3 when it's the origin
+ * 
+ * What used to be 400 priority is now (3 << 24) + (255 << 8). 3 comes from the relationship, 
+ * and 255 is the value when the path length is at its minimum (0)
 */
 
 struct Priority {
