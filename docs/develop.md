@@ -1,20 +1,22 @@
-Modifying the bgp-extrapolator
-==============================
+# Modifying the bgp-extrapolator
 
 This document describes how the internals of the extrapolator work if
 you want to make custom modifications to the source.
 
-::: {#classes-and-structs}
-Classes and Structs
--------------------
-:::
+<div id="classes-and-structs">
 
-::: {#extrapolator}
+## Classes and Structs
+
+</div>
+
+<div id="extrapolator">
+
 ### Extrapolator
-:::
+
+</div>
 
 Purpose: Handle the logic of the announcement propagation process. The
-extrapolator is intended to simulate propagation for every AS's set of
+extrapolator is intended to simulate propagation for every AS’s set of
 announcements based upon a seeded announcements from BGP Monitors. The
 Extrapolator class is a singleton.
 
@@ -58,9 +60,11 @@ The extrapolation process is as follows:
 10. Repeat steps 2-8 for desired iterations or until all prefixes have
     been used.
 
-::: {#prefix}
+<div id="prefix">
+
 ### Prefix
-:::
+
+</div>
 
 Purpose: A compact representation of the prefix advertised by an
 announcement.
@@ -69,9 +73,11 @@ How: IPv4 address and netmask are stored as unsigned 32 bit integers.
 
 (See Prefix.h)
 
-::: {#announcement}
+<div id="announcement">
+
 ### Announcement
-:::
+
+</div>
 
 Purpose: Represent a BGP announcement sent between ASes to advertise
 prefix-origin pairs.
@@ -82,9 +88,11 @@ best path selection process.
 
 (See Announcement.h)
 
-::: {#as}
+<div id="as">
+
 ### AS
-:::
+
+</div>
 
 Purpose: AS objects represent a node in the AS Graph.
 
@@ -95,9 +103,11 @@ In BGP terminology, this set of preferred announcements is the Loc-RIB.
 
 (See AS.h/cpp)
 
-::: {#asgraph}
+<div id="asgraph">
+
 ### ASGraph
-:::
+
+</div>
 
 Purpose: The ASGraph struct is responsible for creating and keeping
 track of all [ASes](#AS).
@@ -106,7 +116,7 @@ How: Using a [Querier](#Querier), AS relationship data is retrieved from
 a local database and is used to create a graph of the BGP network, with
 ASes as the vertices and their relationships as the edges. ASes are then
 grouped topographically. To do so each AS is given a rank that is its
-maximum distance to the "bottom" of the AS network.
+maximum distance to the “bottom” of the AS network.
 
 The global network of ASes has a tree-like shape, where the shape is
 wider towards the bottom (ASes with few to no customers) and slimmer
@@ -116,9 +126,11 @@ respectively.
 
 (See ASGraph.h/cpp)
 
-::: {#sqlquerier}
+<div id="sqlquerier">
+
 ### SQLQuerier
-:::
+
+</div>
 
 Purpose: The Querier struct serves as an interface between the program
 and the database.
