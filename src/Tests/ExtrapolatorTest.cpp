@@ -1860,7 +1860,7 @@ bool test_extrapolate_blocks_buildup() {
     try {
         std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
 
-        SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", -1, "bgp");
+        SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
 
         std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + announcements_table + " (\
         prefix cidr, as_path bigint[], origin bigint, time bigint); GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
@@ -1887,7 +1887,7 @@ bool test_extrapolate_blocks_teardown() {
         std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
         std::string results_table = TEST_RESULTS_TABLE;
 
-        SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", -1, "bgp");
+        SQLQuerier *querier = new SQLQuerier("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
 
         std::string sql = std::string("DROP TABLE IF EXISTS " + announcements_table + ", " + results_table + ";");
         querier->execute(sql, false);
@@ -1916,7 +1916,7 @@ bool test_extrapolate_blocks() {
     std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
     std::string results_table = TEST_RESULTS_TABLE;
 
-    Extrapolator e = Extrapolator(false, false, false, announcements_table, results_table, "unused", "unused", "bgp", 10000, -1, 0);
+    Extrapolator e = Extrapolator(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);

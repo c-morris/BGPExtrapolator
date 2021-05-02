@@ -132,10 +132,12 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     sem_wait(&worker_thread_count);
     int counter = thread_num;
     std::ofstream outfile;
+    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+    std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+    std::string inverse_file_name = "/dev/shm/bgp/inverse" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
 
     // Handle standard results
     if (store_results) {
-        std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
         outfile.open(file_name);
         for (auto &as : *graph->ases){
             if (counter++ % num_threads == 0) {
@@ -143,13 +145,10 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
             }
         }
         outfile.close();
-        querier_copy.copy_results_to_db(file_name);
-        std::remove(file_name.c_str());
     }
     
     // Handle inverse results
     if (store_invert_results) {
-        std::string inverse_file_name = "/dev/shm/bgp/inverse" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
         outfile.open(inverse_file_name);
         for (auto po : *graph->inverse_results){
             // The results are divided into num_threads CSVs. For example, with 
@@ -177,7 +176,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     
     // Handle depref results
     if (store_depref_results) {
-        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
         outfile.open(depref_name);
         for (auto &as : *graph->ases) {
             if (counter++ % num_threads == 0) {
@@ -197,16 +195,17 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     // Handle inverse results
     if (store_invert_results) {
         querier_copy.copy_inverse_results_to_db(file_name);
+        std::remove(inverse_file_name.c_str());
     
     // Handle standard results
-    } else {
-        querier_copy.copy_results_to_db(file_name);
     }
-    std::remove(file_name.c_str());
+    if (store_results) {
+        querier_copy.copy_results_to_db(file_name);
+        std::remove(file_name.c_str());
+    }
     
     // Handle depref results
     if (store_depref_results) {
-        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
         querier_copy.copy_depref_to_db(depref_name);
         std::remove(depref_name.c_str());
     }
