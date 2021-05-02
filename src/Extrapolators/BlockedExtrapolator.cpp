@@ -150,6 +150,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
                                                                                                     int &iteration, 
                                                                                                     bool subnet, 
                                                                                                     std::vector<Prefix<>*> *prefix_set) {
+    std::thread save_res_thread;
+    
     // For each unprocessed block of announcements 
     for (Prefix<>* prefix : *prefix_set) {
         BOOST_LOG_TRIVIAL(info) << "Selecting Announcements...";
@@ -225,13 +227,31 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::e
         BOOST_LOG_TRIVIAL(info) << "Propagating...";
         this->propagate_up();
         this->propagate_down();
-        this->save_results(iteration);
+
+        // Make sure we finish saving to the database before running save_results() on the next prefix
+        if (save_res_thread.joinable()) {
+            save_res_thread.join();
+        }
+
+        // Run save_results() in a separate thread
+        save_res_thread = std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results, this, iteration);
+
+        // Wait for all csvs to be saved before clearing the announcements
+        for (int i = 0; i < this->max_workers; i++) {
+            sem_wait(&this->csvs_written);
+        }
+
         this->graph->clear_announcements();
         iteration++;
         
         BOOST_LOG_TRIVIAL(info) << prefix->to_cidr() << " completed.";
         auto prefix_finish = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> q = prefix_finish - prefix_start;
+    }
+
+    // Finalize saving before exiting the function
+    if (save_res_thread.joinable()) {
+        save_res_thread.join();
     }
 }
 

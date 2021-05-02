@@ -199,6 +199,11 @@ BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements_multihomed_peer_mode1 
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements_multihomed_peer_mode2 ) {
         BOOST_CHECK( test_send_all_announcements_multihomed_peer_mode2() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_test_extrapolate_blocks ) {
+        BOOST_CHECK( test_extrapolate_blocks_buildup() );
+        BOOST_CHECK( test_extrapolate_blocks() );
+        BOOST_CHECK( test_extrapolate_blocks_teardown() );
+}
 
 // ROVpp
 BOOST_AUTO_TEST_CASE( Announcement_eqality_operator ) {

@@ -117,6 +117,9 @@ bool test_send_all_announcements_multihomed_standard1();
 bool test_send_all_announcements_multihomed_standard2();
 bool test_send_all_announcements_multihomed_peer_mode1();
 bool test_send_all_announcements_multihomed_peer_mode2();
+bool test_extrapolate_blocks_buildup();
+bool test_extrapolate_blocks_teardown();
+bool test_extrapolate_blocks();
 
 
 // Prototypes for ROVppTest.cpp
