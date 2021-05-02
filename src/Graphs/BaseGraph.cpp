@@ -458,3 +458,4 @@ template class BaseGraph<AS<>>;
 template class BaseGraph<AS<uint128_t>, uint128_t>;
 template class BaseGraph<EZAS>;
 template class BaseGraph<ROVppAS>;
+template class BaseGraph<ROVAS>;

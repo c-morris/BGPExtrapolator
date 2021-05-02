@@ -40,6 +40,7 @@
 #include "ASes/AS.h"
 #include "ASes/EZAS.h"
 #include "ASes/ROVppAS.h"
+#include "ASes/ROVAS.h"
 
 #include "SQLQueriers/SQLQuerier.h"
 #include "TableNames.h"

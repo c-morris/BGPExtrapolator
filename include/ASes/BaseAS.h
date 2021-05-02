@@ -42,6 +42,7 @@
 #include "Announcements/Announcement.h"
 #include "Announcements/EZAnnouncement.h"
 #include "Announcements/ROVppAnnouncement.h"
+#include "Announcements/ROVAnnouncement.h"
 
 template <class AnnouncementType, typename PrefixType = uint32_t>
 class BaseAS {

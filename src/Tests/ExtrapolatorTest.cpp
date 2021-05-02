@@ -21,6 +21,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
+#define TEST_RESULTS_TABLE "test_extrapolate_blocks_results"
+#define TEST_ANNOUNCEMENTS_TABLE "mrt_announcements_test"
+
 #include <iostream>
 #include <cstdint>
 #include <vector>
@@ -67,6 +70,28 @@ bool test_find_loop() {
         std::cerr << "Loop prepending correctness failed." << std::endl;
         return false;
     }
+    return true;
+}
+
+// Test parse_path function
+bool test_parse_path() {
+    Extrapolator<> e = Extrapolator<>();
+    std::vector<uint32_t> *as_path = e.parse_path("{63027,32899,12083,1299,14522}");
+    std::vector<uint32_t> true_as_path {63027,32899,12083,1299,14522};
+
+    if (as_path->size() != true_as_path.size()) {
+        std::cerr << "Parse path failed." << std::endl;
+        return false;
+    }
+
+    // Check that every AS in as_path is correct
+    for (unsigned int i = 0; i < as_path->size(); i++) {
+        if (as_path->at(i) != true_as_path.at(i)) {
+            std::cerr << "Parse path failed." << std::endl;
+            return false;
+        }
+    }
+    
     return true;
 }
 
@@ -1827,5 +1852,139 @@ bool test_prepending_priority_beginning_existing_ann2() {
         return false;
     }
     
+    return true;
+}
+
+// Create an announcements table and insert two announcements with different prefixes
+bool test_extrapolate_blocks_buildup() {
+    try {
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+
+        SQLQuerier<> *querier = new SQLQuerier<>("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + announcements_table + " (\
+        prefix cidr, as_path bigint[], origin bigint, time bigint); GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
+        querier->execute(sql, false);
+
+        sql = std::string("TRUNCATE " + announcements_table + ";");
+        querier->execute(sql, true);
+
+        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0), ('137.98.0.0/16', '{5}', 5, 0);");
+        querier->execute(sql, true);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks buildup failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+// Drop an announcements table created in the buildup function
+bool test_extrapolate_blocks_teardown() {
+    try {
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+        std::string results_table = TEST_RESULTS_TABLE;
+
+        SQLQuerier<> *querier = new SQLQuerier<>("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("DROP TABLE IF EXISTS " + announcements_table + ", " + results_table + ";");
+        querier->execute(sql, false);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks teardown failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test extrapolate blocks in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Extrapolate two announcements with different prefixes (from AS 1 and AS 5).
+ */
+bool test_extrapolate_blocks() {
+    std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+    std::string results_table = TEST_RESULTS_TABLE;
+
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>;
+    
+    Prefix<>* p1 = new Prefix<>("137.99.0.0", "255.255.0.0");
+    subnet_blocks->push_back(p1);
+
+    Prefix<>* p2 = new Prefix<>("137.98.0.0", "255.255.0.0");
+    subnet_blocks->push_back(p2);
+
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    
+    uint32_t announcement_count = 0; 
+    int iteration = 0;
+
+    e.extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
+
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time)
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 1 1 0 ",
+        "2 137.99.0.0/16 1 1 0 ",
+        "4 137.99.0.0/16 1 2 0 ",
+        "5 137.99.0.0/16 1 2 0 ",
+        "1 137.98.0.0/16 5 2 0 ",
+        "2 137.98.0.0/16 5 5 0 ",
+        "3 137.98.0.0/16 5 2 0 ",
+        "4 137.98.0.0/16 5 2 0 ",
+        "5 137.98.0.0/16 5 5 0 ",
+        "6 137.98.0.0/16 5 5 0 " 
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
+
     return true;
 }

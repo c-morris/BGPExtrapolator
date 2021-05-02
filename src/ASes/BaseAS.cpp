@@ -296,3 +296,4 @@ template class BaseAS<Announcement<>>;
 template class BaseAS<Announcement<uint128_t>, uint128_t>;
 template class BaseAS<EZAnnouncement>;
 template class BaseAS<ROVppAnnouncement>;
+template class BaseAS<ROVAnnouncement>;
