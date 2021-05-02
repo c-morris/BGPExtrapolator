@@ -33,6 +33,7 @@
 #include "Extrapolators/Extrapolator.h"
 #include "Extrapolators/ROVppExtrapolator.h"
 #include "Extrapolators/EZExtrapolator.h"
+#include "Extrapolators/ROVExtrapolator.h"
 #include "Tests/Tests.h"
 
 #include <boost/log/core.hpp>
@@ -65,6 +66,9 @@ int main(int argc, char *argv[]) {
         ("rovpp,v", 
          po::value<bool>()->default_value(false), 
          "flag for rovpp run")
+        ("rov", 
+         po::value<bool>()->default_value(false), 
+         "flag for rov run")
         ("ezbgpsec,z", 
          po::value<uint32_t>()->default_value(0), 
          "number of rounds for ezbgpsec run")
@@ -86,6 +90,9 @@ int main(int argc, char *argv[]) {
         ("iteration-size,s", 
          po::value<uint32_t>()->default_value(DEFAULT_ITERATION_SIZE), 
          "number of prefixes to be used in one iteration cycle")
+         ("max-threads,m", 
+         po::value<uint32_t>()->default_value(DEFAULT_MAX_THREADS), 
+         "limits number of threads to a specified amount, uses all threads by default")
         ("results-table,r",
          po::value<string>()->default_value(RESULTS_TABLE),
          "name of the results table")
@@ -187,11 +194,41 @@ int main(int argc, char *argv[]) {
                 ROVPP_SIMULATION_TABLE),
             vm["config-section"].as<string>(),
             vm["exclude-monitor"].as<int>(),
-            vm["origin-only"].as<bool>());
+            vm["origin-only"].as<bool>(),
+            vm["max-threads"].as<uint32_t>());
             
         // Run propagation
         bool prop_twice = vm["prop-twice"].as<bool>();
         extrap->perform_propagation(prop_twice);
+        // Clean up
+        delete extrap;
+    } else if (vm["rov"].as<bool>()) {
+        // Instantiate Extrapolator
+        ROVExtrapolator *extrap = new ROVExtrapolator(
+            vm["random"].as<bool>(),
+            vm["store-results"].as<bool>(),
+            (vm.count("policy-tables") ?
+                vm["policy-tables"].as<vector<string>>() : 
+                vector<string>()),
+            (vm.count("announcements-table") ? 
+                vm["announcements-table"].as<string>() : 
+                ROV_ANNOUNCEMENTS_TABLE),
+            (vm.count("results-table") ?
+                vm["results-table"].as<string>() :
+                SIMULATION_RESULTS_TABLE),
+            (vm.count("full-path-results-table") ?
+                vm["full-path-results-table"].as<string>() :
+                FULL_PATH_RESULTS_TABLE),
+            vm["config-section"].as<string>(),
+            vm["iteration-size"].as<uint32_t>(),
+            vm["exclude-monitor"].as<int>(),
+            vm["mh-propagation-mode"].as<uint32_t>(),
+            vm["origin-only"].as<bool>(),
+            full_path_asns,
+            vm["max-threads"].as<uint32_t>());
+            
+        // Run propagation
+        extrap->perform_propagation();
         // Clean up
         delete extrap;
     } else if(vm["ezbgpsec"].as<uint32_t>()) {
@@ -223,7 +260,8 @@ int main(int argc, char *argv[]) {
             vm["exclude-monitor"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>(),
             vm["origin-only"].as<bool>(),
-            full_path_asns);
+            full_path_asns,
+            vm["max-threads"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();
@@ -256,7 +294,8 @@ int main(int argc, char *argv[]) {
             vm["exclude-monitor"].as<int>(),
             vm["mh-propagation-mode"].as<uint32_t>(),
             vm["origin-only"].as<bool>(),
-            full_path_asns);
+            full_path_asns,
+            vm["max-threads"].as<uint32_t>());
             
         // Run propagation
         extrap->perform_propagation();

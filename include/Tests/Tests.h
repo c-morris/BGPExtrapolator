@@ -88,6 +88,7 @@ bool test_combine_components();
 // Prototypes for ExtrapolatorTest.cpp
 bool test_Extrapolator_constructor();
 bool test_parse_path();
+bool test_find_loop();
 bool test_propagate_up_no_multihomed();
 bool test_propagate_up();
 bool test_propagate_up_multihomed_standard();
@@ -156,12 +157,32 @@ bool test_rovpp_prepending_priority_middle_existing_ann();
 bool test_rovpp_prepending_priority_beginning_existing_ann();
 bool test_rovpp_prepending_priority_beginning_existing_ann2();
 
+//ROV Reference
+bool test_rov_constructor();
+bool test_rov_is_attacker();
+bool test_rov_is_from_attacker();
+bool test_rov_give_ann_to_as_path();
+bool test_rov_give_ann_to_as_path_invalid();
+bool test_rov_send_all_announcements();
+bool test_rov_process_announcement();
+bool test_rov_prepending_priority_back();
+bool test_rov_prepending_priority_middle();
+bool test_rov_prepending_priority_beginning();
+bool test_rov_prepending_priority_back_existing_ann();
+bool test_rov_prepending_priority_middle_existing_ann();
+bool test_rov_prepending_priority_beginning_existing_ann();
+bool test_rov_prepending_priority_beginning_existing_ann2();
+
 //EZBGPsec
 bool ezbgpsec_test_path_propagation();
 
 //SQLQuerier
-bool test_parse_config_buildup();
-bool test_parse_config_teardown();
+bool test_querier_buildup();
+bool test_querier_teardown();
 bool test_parse_config();
+bool test_copy_to_db_string();
+bool test_select_prefix_string();
+bool test_clear_table_string();
+bool test_create_table_string();
 
 #endif

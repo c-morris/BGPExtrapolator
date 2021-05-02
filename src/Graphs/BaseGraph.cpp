@@ -457,3 +457,4 @@ std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg) {
 template class BaseGraph<AS>;
 template class BaseGraph<EZAS>;
 template class BaseGraph<ROVppAS>;
+template class BaseGraph<ROVAS>;

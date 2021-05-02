@@ -295,3 +295,4 @@ std::ostream& BaseAS<AnnouncementType>::stream_depref(std::ostream &os) {
 template class BaseAS<Announcement>;
 template class BaseAS<EZAnnouncement>;
 template class BaseAS<ROVppAnnouncement>;
+template class BaseAS<ROVAnnouncement>;
