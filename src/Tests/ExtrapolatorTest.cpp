@@ -70,6 +70,28 @@ bool test_find_loop() {
     return true;
 }
 
+// Test parse_path function
+bool test_parse_path() {
+    Extrapolator e = Extrapolator();
+    std::vector<uint32_t> *as_path = e.parse_path("{63027,32899,12083,1299,14522}");
+    std::vector<uint32_t> true_as_path {63027,32899,12083,1299,14522};
+
+    if (as_path->size() != true_as_path.size()) {
+        std::cerr << "Parse path failed." << std::endl;
+        return false;
+    }
+
+    // Check that every AS in as_path is correct
+    for (unsigned int i = 0; i < as_path->size(); i++) {
+        if (as_path->at(i) != true_as_path.at(i)) {
+            std::cerr << "Parse path failed." << std::endl;
+            return false;
+        }
+    }
+    
+    return true;
+}
+
 /** Test seeding the graph with announcements from monitors. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 

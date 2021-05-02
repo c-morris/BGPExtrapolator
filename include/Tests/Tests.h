@@ -87,6 +87,7 @@ bool test_combine_components();
 
 // Prototypes for ExtrapolatorTest.cpp
 bool test_Extrapolator_constructor();
+bool test_parse_path();
 bool test_find_loop();
 bool test_propagate_up_no_multihomed();
 bool test_propagate_up();

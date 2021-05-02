@@ -52,23 +52,14 @@ std::vector<uint32_t>* BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementT
     path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '{'));
 
     // Fill as_path vector from parsing string
-    std::string delimiter = ",";
-    std::string::size_type pos = 0;
-    std::string token;
-    while ((pos = path_as_string.find(delimiter)) != std::string::npos) {
-        token = path_as_string.substr(0,pos);
+    std::stringstream str_stream(path_as_string);
+    std::string tokenN;
+    while(getline(str_stream, tokenN, ',')) {
         try {
-            as_path->push_back(std::stoul(token));
+            as_path->push_back(std::stoul(tokenN));
         } catch(...) {
-            BOOST_LOG_TRIVIAL(error) << "Parse path error, token was: " << token;
+            BOOST_LOG_TRIVIAL(error) << "Parse path error, token was: " << tokenN;
         }
-        path_as_string.erase(0,pos + delimiter.length());
-    }
-    // Handle last ASN after loop
-    try {
-        as_path->push_back(std::stoul(path_as_string));
-    } catch(...) {
-        BOOST_LOG_TRIVIAL(error) << "Parse path error, token was: " << path_as_string;
     }
     return as_path;
 }
