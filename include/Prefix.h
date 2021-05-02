@@ -132,7 +132,7 @@ public:
         // Default errors to 0.0.0.0
         if (error_f == true) {
             ipv4_ip_int = 0;
-            std::cerr << "Caught malformed IPv4 address: " << addr_str << std::endl;
+            BOOST_LOG_TRIVIAL(error) << "Caught malformed IPv4 address: " << addr_str;
         }
         return ipv4_ip_int;
     }
@@ -203,7 +203,7 @@ public:
         // Default errors to /0
         if (error_f == true) {
             ipv4_mask_int = 0;
-            std::cerr << "Caught malformed IPv4 subnet mask: " << mask_str << std::endl;
+            BOOST_LOG_TRIVIAL(error) << "Caught malformed IPv4 subnet mask: " << mask_str;
         }
         return ipv4_mask_int;
     }

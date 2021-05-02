@@ -26,17 +26,21 @@ protected:
 
 public:
     BlockedExtrapolator(bool random_tiebraking,
+                        bool store_results, 
                         bool store_invert_results, 
                         bool store_depref_results,
                         uint32_t iteration_size,
-                        uint32_t mh_mode) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_invert_results, store_depref_results) {
+                        uint32_t mh_mode,
+                        bool origin_only,
+                        std::vector<uint32_t> *full_path_asns,
+                        int max_threads) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_results, store_invert_results, store_depref_results, origin_only, full_path_asns, max_threads) {
         
         this->iteration_size = iteration_size;
         this->mh_mode = mh_mode;
     }
 
-    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE, DEFAULT_MH_MODE) { }
-    
+    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
+
     virtual ~BlockedExtrapolator();
 
     /** Performs all tasks necessary to propagate a set of announcements given:
