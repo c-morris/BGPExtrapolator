@@ -3,7 +3,7 @@
 
 #include "SQLQueriers/SQLQuerier.h"
 
-class ROVSQLQuerier : public SQLQuerier {
+class ROVSQLQuerier : public SQLQuerier<> {
 public:
     std::vector<std::string> policy_tables;
 

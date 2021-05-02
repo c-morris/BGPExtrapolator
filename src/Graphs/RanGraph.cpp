@@ -22,8 +22,8 @@
  ************************************************************************/
 #include "Graphs/RanGraph.h"
 
-ASGraph* ran_graph(int num_edges, int num_vertices) {
-    ASGraph* graph = new ASGraph(false, false);
+ASGraph<>* ran_graph(int num_edges, int num_vertices) {
+    ASGraph<>* graph = new ASGraph<>(false, false);
     //srand(time(NULL));
     //v = 11+rand()%10;
     //e = rand()%((v*(v-1))/2);
@@ -50,11 +50,11 @@ ASGraph* ran_graph(int num_edges, int num_vertices) {
 }
 
 
-bool cyclic_util(ASGraph* graph, int asn, std::map<uint32_t, bool>* visited, std::map<uint32_t, bool>* recStack) { 
+bool cyclic_util(ASGraph<>* graph, int asn, std::map<uint32_t, bool>* visited, std::map<uint32_t, bool>* recStack) { 
     if (visited->find(asn)->second == false) {
         visited->find(asn)->second = true;
         recStack->find(asn)->second = true;
-        AS* cur_AS = graph->ases->find(asn)->second;
+        AS<>* cur_AS = graph->ases->find(asn)->second;
         for (auto &provider_asn : *cur_AS->providers) {
             if (!visited->find(provider_asn)->second &&
                 cyclic_util(graph, provider_asn, visited, recStack)) {
@@ -69,7 +69,7 @@ bool cyclic_util(ASGraph* graph, int asn, std::map<uint32_t, bool>* visited, std
 }
 
 
-bool is_cyclic(ASGraph* graph) {
+bool is_cyclic(ASGraph<>* graph) {
     auto visited = new std::map<uint32_t, bool>;
     auto recStack = new std::map<uint32_t, bool>;
     

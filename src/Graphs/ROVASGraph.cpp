@@ -13,7 +13,7 @@ ROVAS* ROVASGraph::createNew(uint32_t asn) {
     return new ROVAS(asn, attackers, store_depref_results, inverse_results);
 }
 
-void ROVASGraph::process(SQLQuerier *querier) {
+void ROVASGraph::process(SQLQuerier<> *querier) {
     // remove_stubs isn't being called
     tarjan();
     combine_components();

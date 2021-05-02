@@ -37,7 +37,7 @@ ROVppAS* ROVppASGraph::createNew(uint32_t asn) {
     return new ROVppAS(asn, attackers);
 }
 
-void ROVppASGraph::process(SQLQuerier *querier) {
+void ROVppASGraph::process(SQLQuerier<> *querier) {
     // Main difference is remove_stubs isn't being called
     tarjan();
     combine_components();

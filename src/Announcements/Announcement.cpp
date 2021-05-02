@@ -23,7 +23,8 @@
 
 #include "Announcements/Announcement.h"
 
-Announcement::Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
+template <typename PrefixType>
+Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
     uint32_t from_asn, int64_t timestamp /* = 0 */) {
     
     prefix.addr = aprefix;
@@ -35,7 +36,8 @@ Announcement::Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask
     tstamp = timestamp;
 }
 
-Announcement::Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
+template <typename PrefixType>
+Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
     uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */) 
     : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
     
@@ -43,7 +45,8 @@ Announcement::Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask
     from_monitor = a_from_monitor;
 }
 
-Announcement::Announcement(const Announcement& ann) {
+template <typename PrefixType>
+Announcement<PrefixType>::Announcement(const Announcement<PrefixType>& ann) {
     prefix = ann.prefix;           
     origin = ann.origin;           
     priority = ann.priority;         
@@ -54,16 +57,19 @@ Announcement::Announcement(const Announcement& ann) {
 }
 
 //****************** FILE I/O ******************//
-
-std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
-    os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
-        ann.prefix.netmask << std::endl << "Origin:\t\t" << std::dec << ann.origin
+template <typename PrefixType>
+std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann) {
+    os << "Prefix:\t\t" << std::hex << ann.prefix.addr_to_string() << " & " << std::hex << 
+        ann.prefix.netmask_to_string() << std::endl << "Origin:\t\t" << std::dec << ann.origin
         << std::endl << "Priority:\t" << ann.priority << std::endl 
         << "Recv'd from:\t" << std::dec << ann.received_from_asn;
     return os;
 }
-
-std::ostream& Announcement::to_csv(std::ostream &os) {
+template <typename PrefixType>
+std::ostream& Announcement<PrefixType>::to_csv(std::ostream &os) {
     os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
     return os;
 }
+
+template class Announcement<>;
+template class Announcement<uint128_t>;

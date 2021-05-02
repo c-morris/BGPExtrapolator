@@ -29,8 +29,6 @@
 #define AS_REL_PEER 100
 #define AS_REL_CUSTOMER 200
 
-class SQLQuerier;
-
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -47,7 +45,7 @@ class SQLQuerier;
 #include "SQLQueriers/SQLQuerier.h"
 #include "TableNames.h"
 
-template <class ASType>
+template <class ASType, typename PrefixType = uint32_t>
 class BaseGraph {
 
 // static_assert(std::is_base_of<BaseAS, ASType>::value, "ASType must inherit from BaseAS");
@@ -60,7 +58,7 @@ public:
     std::map<uint32_t, uint32_t> *component_translation;// Translate AS to supernode AS
     std::map<uint32_t, uint32_t> *stubs_to_parents;
     std::vector<uint32_t> *non_stubs;
-    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
+    std::map<std::pair<Prefix<PrefixType>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
 
     bool store_depref_results;
 
@@ -73,7 +71,7 @@ public:
         non_stubs = new std::vector<uint32_t>;                      // All non-stubs in the graph
 
         if(store_inverse_results) 
-            inverse_results = new std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*>;
+            inverse_results = new std::map<std::pair<Prefix<PrefixType>, uint32_t>, std::set<uint32_t>*>;
         else 
             inverse_results = NULL;
         
@@ -112,7 +110,7 @@ public:
 
     /** Process with removing stubs (needs querier to save them).
     */
-    virtual void process(SQLQuerier *querier);
+    virtual void process(SQLQuerier<PrefixType> *querier);
 
     /** Generates an ASGraph from relationship data in an SQL database based upon:
      *      1) A populated peers table
@@ -120,31 +118,31 @@ public:
      * 
      * @param querier
      */
-    virtual void create_graph_from_db(SQLQuerier *querier);
+    virtual void create_graph_from_db(SQLQuerier<PrefixType> *querier);
 
     /** Remove the stub ASes from the graph.
      *
      * @param querier
      */
-    virtual void remove_stubs(SQLQuerier *querier);
+    virtual void remove_stubs(SQLQuerier<PrefixType> *querier);
 
     /** Saves the stub ASes to be removed to a table on the database.
      *
      * @param querier
      */
-    virtual void save_stubs_to_db(SQLQuerier *querier);
+    virtual void save_stubs_to_db(SQLQuerier<PrefixType> *querier);
 
     /** Saves the non_stub ASes to a table on the database.
      *
      * @param querier
      */
-    virtual void save_non_stubs_to_db(SQLQuerier *querier);
+    virtual void save_non_stubs_to_db(SQLQuerier<PrefixType> *querier);
 
     /** Generate a csv with all supernodes, then dump them to database.
      *
      * @param querier
      */
-    virtual void save_supernodes_to_db(SQLQuerier *querier);
+    virtual void save_supernodes_to_db(SQLQuerier<PrefixType> *querier);
 
     /** Decide and assign ranks to all the AS's in the graph. 
      *

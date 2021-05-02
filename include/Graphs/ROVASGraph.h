@@ -16,7 +16,7 @@ public:
      * 
      * @param querier
     */
-    void process(SQLQuerier *querier);
+    void process(SQLQuerier<> *querier);
 
     /** Generates an ROVASGraph from relationship data in an SQL database based upon:
      *      1) A populated peers table
