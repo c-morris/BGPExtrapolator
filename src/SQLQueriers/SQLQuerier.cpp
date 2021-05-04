@@ -515,5 +515,28 @@ void SQLQuerier<PrefixType>::create_results_index() {
     execute(sql, false);
 }
 
+/** Returns the max value of block_id in the announcements table
+ */
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_max_block_id() {
+    std::string sql = std::string("SELECT MAX(block_id) FROM " + announcements_table + ";");
+    return execute(sql, false);
+}
+
+/** Returns all rows (announcements) that have the corresponding block_id
+ */
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_prefix_block_id(int block_id) {
+    std::string sql = std::string("SELECT * FROM " + announcements_table + " WHERE block_id = " + std::to_string(block_id));
+
+    if (exclude_as_number > -1) {
+        sql += " and monitor_asn != " + std::to_string(exclude_as_number) + ";";
+    } else {
+        sql += ";";
+    }
+
+    return execute(sql, false);
+}
+
 template class SQLQuerier<>;
 template class SQLQuerier<uint128_t>;
