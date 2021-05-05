@@ -20,7 +20,8 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
                                 uint32_t mh_mode,
                                 bool origin_only,
                                 std::vector<uint32_t> *full_path_asns,
-                                int max_threads) : BlockedExtrapolator(random_tiebraking, store_results, store_invert_results, store_depref_results, iteration_size, mh_mode, origin_only, full_path_asns, max_threads) {
+                                int max_threads) : BlockedExtrapolator(random_tiebraking, store_results, store_invert_results, store_depref_results, 
+                                iteration_size, mh_mode, origin_only, full_path_asns, max_threads, false) {
     
     graph = new EZASGraph();
     querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, full_path_results_table, exclude_as_number, config_section);

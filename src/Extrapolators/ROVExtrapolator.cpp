@@ -13,7 +13,7 @@ ROVExtrapolator::ROVExtrapolator(bool random_tiebraking,
                                 bool origin_only,
                                 std::vector<uint32_t> *full_path_asns,
                                 int max_threads) : BlockedExtrapolator(random_tiebraking, store_results, false, false, 
-                                iteration_size, mh_mode, origin_only, full_path_asns, max_threads) {
+                                iteration_size, mh_mode, origin_only, full_path_asns, max_threads, false) {
     
     graph = new ROVASGraph(store_invert_results, store_depref_results);
     querier = new ROVSQLQuerier(policy_tables, announcement_table, results_table, full_path_results_table, exclude_as_number, config_section);

@@ -11,6 +11,8 @@ class BlockedExtrapolator : public BaseExtrapolator<SQLQuerierType, GraphType, A
 protected:
     uint32_t iteration_size;
     uint32_t mh_mode;
+    bool select_block_id;
+    uint32_t max_block_id;
 
     /**
      *  Overrwritable function that is first called in the preform_propagation function.
@@ -33,13 +35,15 @@ public:
                         uint32_t mh_mode,
                         bool origin_only,
                         std::vector<uint32_t> *full_path_asns,
-                        int max_threads) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_results, store_invert_results, store_depref_results, origin_only, full_path_asns, max_threads) {
+                        int max_threads,
+                        bool select_block_id) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_results, store_invert_results, store_depref_results, origin_only, full_path_asns, max_threads) {
         
         this->iteration_size = iteration_size;
         this->mh_mode = mh_mode;
+        this->select_block_id = select_block_id;
     }
 
-    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
+    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID) { }
 
     virtual ~BlockedExtrapolator();
 
@@ -49,6 +53,15 @@ public:
      *      3) A populated peers table
      */
     virtual void perform_propagation();
+
+    /** A function to extrapolate blocks using announcement's block ids 
+     * instead of the manually populated blocks from populate_blocks
+     * 
+     * Called by perform_propagation when select_block_id = true
+     *
+     * @param max_block_id The max value of block_id in the announcements table
+     */
+    virtual void extrapolate_by_block_id(uint32_t max_block_id);
 
     /** Recursive function to break the input mrt_announcements into manageable blocks.
      *

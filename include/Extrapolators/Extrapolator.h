@@ -44,7 +44,8 @@ public:
                     uint32_t mh_mode,
                     bool origin_only,
                     std::vector<uint32_t> *full_path_asns,
-                    int max_threads);
+                    int max_threads,
+                    bool select_block_id);
 
     Extrapolator();
     ~Extrapolator();

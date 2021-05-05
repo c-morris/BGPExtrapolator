@@ -89,7 +89,10 @@ int main(int argc, char *argv[]) {
         ("iteration-size,s", 
          po::value<uint32_t>()->default_value(DEFAULT_ITERATION_SIZE), 
          "number of prefixes to be used in one iteration cycle")
-         ("max-threads,m", 
+        ("select-block-id", 
+         po::value<bool>()->default_value(DEFAULT_SELECT_BLOCK_ID), 
+         "when true, prefixes will be split by their block ids instead of splitting manually into equally sized blocks")
+        ("max-threads,m", 
          po::value<uint32_t>()->default_value(DEFAULT_MAX_THREADS), 
          "limits number of threads to a specified amount, uses all threads by default")
         ("results-table,r",
@@ -297,7 +300,8 @@ int main(int argc, char *argv[]) {
             vm["mh-propagation-mode"].as<uint32_t>(),
             vm["origin-only"].as<bool>(),
             full_path_asns,
-            vm["max-threads"].as<uint32_t>());
+            vm["max-threads"].as<uint32_t>(),
+            vm["select-block-id"].as<bool>());
             
         // Run propagation
         extrap->perform_propagation();
@@ -330,7 +334,8 @@ int main(int argc, char *argv[]) {
             vm["mh-propagation-mode"].as<uint32_t>(),
             vm["origin-only"].as<bool>(),
             full_path_asns,
-            vm["max-threads"].as<uint32_t>());
+            vm["max-threads"].as<uint32_t>(),
+            vm["select-block-id"].as<bool>());
             
         // Run propagation
         extrap->perform_propagation();

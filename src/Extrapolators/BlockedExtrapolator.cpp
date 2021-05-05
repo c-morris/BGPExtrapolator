@@ -54,18 +54,25 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 
     BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
-    // Generate iteration blocks
-    std::vector<Prefix<PrefixType>*> *prefix_blocks = new std::vector<Prefix<PrefixType>*>; // Prefix blocks
-    std::vector<Prefix<PrefixType>*> *subnet_blocks = new std::vector<Prefix<PrefixType>*>; // Subnet blocks
-    Prefix<PrefixType> *cur_prefix = new Prefix<PrefixType>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
-    this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
-    delete cur_prefix;
+    if (!select_block_id) {
+        // Generate iteration blocks
+        std::vector<Prefix<PrefixType>*> *prefix_blocks = new std::vector<Prefix<PrefixType>*>; // Prefix blocks
+        std::vector<Prefix<PrefixType>*> *subnet_blocks = new std::vector<Prefix<PrefixType>*>; // Subnet blocks
+        Prefix<PrefixType> *cur_prefix = new Prefix<PrefixType>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
+        this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
+        delete cur_prefix;
+        
+        extrapolate(prefix_blocks, subnet_blocks);
+        // Cleanup
+        delete prefix_blocks;
+        delete subnet_blocks;
+    } else { // If blocks are selected by block_id from the announcement table
+        // Find the max block_id and save it
+        pqxx::result r = this->querier->select_max_block_id();
+        max_block_id = r[0][0].as<uint32_t>();
 
-    extrapolate(prefix_blocks, subnet_blocks);
-    
-    // Cleanup
-    delete prefix_blocks;
-    delete subnet_blocks;
+        extrapolate_by_block_id(max_block_id);
+    }
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
@@ -82,6 +89,114 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
     
     // For each unprocessed subnet block  
     this->extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
+
+    auto ext_finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> e = ext_finish - ext_start;
+    BOOST_LOG_TRIVIAL(info) << "Block elapsed time: " << e.count();
+    BOOST_LOG_TRIVIAL(info) << "Announcement count: " << announcement_count;
+}
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::extrapolate_by_block_id(uint32_t max_block_id) { 
+    BOOST_LOG_TRIVIAL(info) << "Beginning propagation...";
+    
+    // Seed MRT announcements and propagate
+    uint32_t announcement_count = 0; 
+    int iteration = 0;
+    auto ext_start = std::chrono::high_resolution_clock::now();
+
+    std::thread save_res_thread;
+
+    // Propagate each unprocessed block of announcements 
+    for (uint32_t i = 0; i <= max_block_id; i++) {
+        BOOST_LOG_TRIVIAL(info) << "Selecting Announcements...";
+        auto prefix_start = std::chrono::high_resolution_clock::now();
+
+        // Get a block of announcements
+        pqxx::result ann_block = this->querier->select_prefix_block_id(i);
+
+        // Check for empty block
+        auto bsize = ann_block.size();
+        if (bsize == 0)
+            break;
+        announcement_count += bsize;
+
+        BOOST_LOG_TRIVIAL(info) << "Seeding announcements...";
+
+        // For all announcements in this block
+        for (pqxx::result::size_type i = 0; i < bsize; i++) {
+            // Get row origin
+            uint32_t origin;
+            ann_block[i]["origin"].to(origin);
+            // Get row prefix
+            std::string ip = ann_block[i]["host"].c_str();
+            std::string mask = ann_block[i]["netmask"].c_str();
+            Prefix<PrefixType> cur_prefix(ip, mask);
+            // Get row AS path
+            std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
+            std::vector<uint32_t> *as_path = this->parse_path(path_as_string);
+            
+            // Check for loops in the path and drop announcement if they exist
+            bool loop = this->find_loop(as_path);
+            if (loop) {
+                continue;
+            }
+
+            // Get timestamp
+            int64_t timestamp = std::stol(ann_block[i]["time"].as<std::string>());
+
+            if(this->graph->inverse_results != NULL) {
+                // Assemble pair
+                auto prefix_origin = std::pair<Prefix<PrefixType>, uint32_t>(cur_prefix, origin);
+                
+                // Insert the inverse results for this prefix
+                if (this->graph->inverse_results->find(prefix_origin) == this->graph->inverse_results->end()) {
+                    // This is horrifying
+                    this->graph->inverse_results->insert(std::pair<std::pair<Prefix<PrefixType>, uint32_t>, 
+                                                            std::set<uint32_t>*>
+                                                            (prefix_origin, new std::set<uint32_t>()));
+                    
+                    // Put all non-stub ASNs in the set
+                    for (uint32_t asn : *this->graph->non_stubs) {
+                        this->graph->inverse_results->find(prefix_origin)->second->insert(asn);
+                    }
+                }
+            }
+
+            // Seed announcements along AS path
+            this->give_ann_to_as_path(as_path, cur_prefix, timestamp);
+            delete as_path;
+        }
+        // Propagate for this subnet
+        BOOST_LOG_TRIVIAL(info) << "Propagating...";
+        this->propagate_up();
+        this->propagate_down();
+
+        // Make sure we finish saving to the database before running save_results() on the next prefix
+        if (save_res_thread.joinable()) {
+            save_res_thread.join();
+        }
+
+        // Run save_results() in a separate thread
+        save_res_thread = std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results, this, iteration);
+
+        // Wait for all csvs to be saved before clearing the announcements
+        for (int i = 0; i < this->max_workers; i++) {
+            sem_wait(&this->csvs_written);
+        }
+
+        this->graph->clear_announcements();
+        iteration++;
+        
+        BOOST_LOG_TRIVIAL(info) << "block_id " << i << " completed.";
+        auto prefix_finish = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> q = prefix_finish - prefix_start;
+    }
+    
+    // Finalize saving before exiting the function
+    if (save_res_thread.joinable()) {
+        save_res_thread.join();
+    }
 
     auto ext_finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> e = ext_finish - ext_start;

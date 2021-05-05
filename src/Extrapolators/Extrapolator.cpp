@@ -39,7 +39,9 @@ Extrapolator<PrefixType>::Extrapolator(bool random_tiebraking,
                     uint32_t mh_mode,
                     bool origin_only,
                     std::vector<uint32_t> *full_path_asns,
-                    int max_threads) : BlockedExtrapolator<SQLQuerier<PrefixType>, ASGraph<PrefixType>, Announcement<PrefixType>, AS<PrefixType>, PrefixType>(random_tiebraking, store_results, store_invert_results, store_depref_results, iteration_size, mh_mode, origin_only, full_path_asns, max_threads) {
+                    int max_threads,
+                    bool select_block_id) : BlockedExtrapolator<SQLQuerier<PrefixType>, ASGraph<PrefixType>, Announcement<PrefixType>, AS<PrefixType>, PrefixType>
+                    (random_tiebraking, store_results, store_invert_results, store_depref_results, iteration_size, mh_mode, origin_only, full_path_asns, max_threads, select_block_id) {
 
     this->graph = new ASGraph<PrefixType>(store_invert_results, store_depref_results);
     this->querier = new SQLQuerier<PrefixType>(announcement_table, results_table, inverse_results_table, depref_results_table, full_path_results_table, exclude_as_number, config_section);
@@ -48,7 +50,7 @@ Extrapolator<PrefixType>::Extrapolator(bool random_tiebraking,
 template <typename PrefixType>
 Extrapolator<PrefixType>::Extrapolator() : Extrapolator<PrefixType>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID) { }
 
 template <typename PrefixType>
 Extrapolator<PrefixType>::~Extrapolator() { }

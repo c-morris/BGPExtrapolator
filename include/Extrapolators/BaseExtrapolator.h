@@ -33,6 +33,7 @@
 #define DEFAULT_IPV6_MODE false
 
 #define DEFAULT_MAX_THREADS 0
+#define DEFAULT_SELECT_BLOCK_ID false
 
 #include <vector>
 #include <bits/stdc++.h>
