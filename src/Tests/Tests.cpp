@@ -217,9 +217,14 @@ BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements_multihomed_peer_mode2 
         BOOST_CHECK( test_send_all_announcements_multihomed_peer_mode2() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_test_extrapolate_blocks ) {
-        BOOST_CHECK( test_extrapolate_blocks_buildup() );
+        BOOST_CHECK( test_extrapolation_buildup() );
         BOOST_CHECK( test_extrapolate_blocks() );
-        BOOST_CHECK( test_extrapolate_blocks_teardown() );
+        BOOST_CHECK( test_extrapolation_teardown() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_test_extrapolate_by_block_id ) {
+        BOOST_CHECK( test_extrapolation_buildup() );
+        BOOST_CHECK( test_extrapolate_by_block_id() );
+        BOOST_CHECK( test_extrapolation_teardown() );
 }
 
 // ROVpp

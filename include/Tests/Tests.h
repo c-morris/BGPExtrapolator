@@ -123,9 +123,10 @@ bool test_send_all_announcements_multihomed_standard1();
 bool test_send_all_announcements_multihomed_standard2();
 bool test_send_all_announcements_multihomed_peer_mode1();
 bool test_send_all_announcements_multihomed_peer_mode2();
-bool test_extrapolate_blocks_buildup();
-bool test_extrapolate_blocks_teardown();
+bool test_extrapolation_buildup();
+bool test_extrapolation_teardown();
 bool test_extrapolate_blocks();
+bool test_extrapolate_by_block_id();
 
 
 // Prototypes for ROVppTest.cpp

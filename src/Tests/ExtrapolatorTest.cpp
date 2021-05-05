@@ -192,7 +192,7 @@ bool test_give_ann_to_as_path() {
 bool test_give_ann_to_as_path_origin_only() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, true, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, true, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -253,7 +253,7 @@ bool test_give_ann_to_as_path_origin_only() {
 bool test_propagate_up_no_multihomed() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -373,7 +373,7 @@ bool test_propagate_up() {
 bool test_propagate_up_multihomed_standard() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
@@ -426,7 +426,7 @@ bool test_propagate_up_multihomed_standard() {
 bool test_propagate_up_multihomed_peer_mode() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
@@ -480,7 +480,7 @@ bool test_propagate_up_multihomed_peer_mode() {
 bool test_propagate_down_no_multihomed() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -535,7 +535,7 @@ bool test_propagate_down_no_multihomed() {
 bool test_propagate_down_no_multihomed2() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -700,7 +700,7 @@ bool test_propagate_down2() {
 bool test_propagate_down_multihomed_standard() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
@@ -986,7 +986,7 @@ bool test_send_all_announcements3() {
 bool test_send_all_announcements_no_multihomed() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1080,7 +1080,7 @@ bool test_send_all_announcements_no_multihomed() {
 bool test_send_all_announcements_multihomed_standard1() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1175,7 +1175,7 @@ bool test_send_all_announcements_multihomed_standard1() {
 bool test_send_all_announcements_multihomed_standard2() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1260,7 +1260,7 @@ bool test_send_all_announcements_multihomed_standard2() {
 bool test_send_all_announcements_multihomed_peer_mode1() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1354,7 +1354,7 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
 bool test_send_all_announcements_multihomed_peer_mode2() {
     Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
-                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1445,7 +1445,7 @@ bool test_save_results_parallel() {
     std::string results_table = "test_extrapolation_results";
 
     Extrapolator<> e = Extrapolator<>(false, true, false, false, "ignored", results_table, "unused", "unused", "unused", "bgp", 
-    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1529,7 +1529,7 @@ bool test_save_results_at_asn() {
     std::string full_path_results_table = "test_extrapolation_single_results";
 
     Extrapolator<> e = Extrapolator<>(false, false, false, true, "ignored", "unused", "unused", "unused", full_path_results_table, "bgp", 
-    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1912,21 +1912,24 @@ bool test_prepending_priority_beginning_existing_ann2() {
     return true;
 }
 
-// Create an announcements table and insert two announcements with different prefixes
-bool test_extrapolate_blocks_buildup() {
+// Create an announcements table and insert two announcements with different prefixes and different block_id values
+bool test_extrapolation_buildup() {
     try {
         std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
 
         SQLQuerier<> *querier = new SQLQuerier<>("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
 
         std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + announcements_table + " (\
-        prefix cidr, as_path bigint[], origin bigint, time bigint); GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
+        prefix cidr, as_path bigint[], origin bigint, time bigint, monitor_asn bigint, prefix_id bigint, origin_id bigint,\
+        prefix_origin_id bigint, block_id integer, roa_validity smallint, block_prefix_id integer, origin_hijack_asn bigint);\
+        GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
         querier->execute(sql, false);
 
         sql = std::string("TRUNCATE " + announcements_table + ";");
         querier->execute(sql, true);
 
-        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0), ('137.98.0.0/16', '{5}', 5, 0);");
+        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),\
+        ('137.98.0.0/16', '{5}', 5, 0, 0, 0, 0, 0, 1, 0, 0, 0);");
         querier->execute(sql, true);
 
         delete querier;
@@ -1939,7 +1942,7 @@ bool test_extrapolate_blocks_buildup() {
 }
 
 // Drop an announcements table created in the buildup function
-bool test_extrapolate_blocks_teardown() {
+bool test_extrapolation_teardown() {
     try {
         std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
         std::string results_table = TEST_RESULTS_TABLE;
@@ -1973,7 +1976,7 @@ bool test_extrapolate_blocks() {
     std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
     std::string results_table = TEST_RESULTS_TABLE;
 
-    Extrapolator<> e = Extrapolator<>(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0);
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0, false);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -2039,6 +2042,84 @@ bool test_extrapolate_blocks() {
             true_results.erase(it);
         } else {
             std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** Test extrapolate blocks by id in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Extrapolate two announcements with different prefixes (from AS 1 and AS 5).
+ */
+bool test_extrapolate_by_block_id() {
+    std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+    std::string results_table = TEST_RESULTS_TABLE;
+
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0, true);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    
+    // The test announcements table contains 2 anns, one with block_id = 0, and one with block_id = 1
+    e.extrapolate_by_block_id(1); 
+
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time)
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 1 1 0 ",
+        "2 137.99.0.0/16 1 1 0 ",
+        "4 137.99.0.0/16 1 2 0 ",
+        "5 137.99.0.0/16 1 2 0 ",
+        "1 137.98.0.0/16 5 2 0 ",
+        "2 137.98.0.0/16 5 5 0 ",
+        "3 137.98.0.0/16 5 2 0 ",
+        "4 137.98.0.0/16 5 2 0 ",
+        "5 137.98.0.0/16 5 5 0 ",
+        "6 137.98.0.0/16 5 5 0 " 
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Extrapolate by block id failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Extrapolate by block id failed. Results are incorrect" << std::endl;
             return false;
         }
     }
