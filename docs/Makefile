@@ -19,5 +19,15 @@ all: $(OUTPUTS)
 %$(OUT_FILES): $(SRC_DIR)%$(SOURCE_FILES)
 	$(PANDOC) $(PDFLAGS) -o $@ $<
 
+
+.PHONY: pdf clean cleanall
+
+pdf:
+	make -C $(SRC_DIR)
+
+cleanall: clean
+	make -C $(SRC_DIR) clean
+
 clean:
-	rm *.md || true
+	rm -f *.md || true
+

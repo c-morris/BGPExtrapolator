@@ -8,5 +8,7 @@
 *.bbl
 *.bcf
 *.blg
+*.toc
 *.synctex
 *.synctex.gz
+_minted*

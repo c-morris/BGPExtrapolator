@@ -1,6 +1,7 @@
 SRC_DIR := ./src/
 BIN_DIR := ./bin/
 HEADER_DIR := ./include/
+DOC_DIR := ./docs/
 
 SOURCE_FILES := cpp
 HEADER_FILES := h
@@ -46,8 +47,17 @@ binary: install
 binary-arch: install
 binary-indep: install
 
-.PHONY: clean distclean
+.PHONY: clean distclean docs pdf clenall
 clean:
 	rm -r -f $(BIN_DIR)* $(EXE_NAME) || true
 
 distclean: clean
+
+cleanall: clean
+	make -C $(DOC_DIR) cleanall
+
+docs:
+	make -C $(DOC_DIR)
+
+pdf:
+	make -C $(DOC_DIR) pdf
