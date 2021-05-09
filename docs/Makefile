@@ -11,10 +11,11 @@ OUT_FILES := md
 OUTPUTS := $(patsubst $(SRC_DIR)%.$(SOURCE_FILES), %.$(OUT_FILES), $(SOURCES))
 
 PANDOC := pandoc
-PDFLAGS := -t gfm 
+PDFLAGS := -t gfm
 
 
 all: $(OUTPUTS)
+	cp -r $(SRC_DIR)/media ./media
 
 %$(OUT_FILES): $(SRC_DIR)%$(SOURCE_FILES)
 	$(PANDOC) $(PDFLAGS) -o $@ $<
