@@ -47,7 +47,7 @@ binary: install
 binary-arch: install
 binary-indep: install
 
-.PHONY: clean distclean docs pdf clenall
+.PHONY: clean distclean docs pdf cleanall
 clean:
 	rm -r -f $(BIN_DIR)* $(EXE_NAME) || true
 
