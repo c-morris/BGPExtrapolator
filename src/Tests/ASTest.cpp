@@ -146,12 +146,12 @@ bool test_process_announcement(){
     Priority pr1;
     pr1.path_length = 1;
     pr1.relationship = 1;
-    Announcement<> a1 = Announcement(111, p.addr, p.netmask, pr1, 222, false);
+    Announcement<> a1 = Announcement<>(111, p.addr, p.netmask, pr1, 222, false);
 
     Priority pr2;
     pr2.path_length = 2;
     pr2.relationship = 2;
-    Announcement<> a2 = Announcement(111, p.addr, p.netmask, pr2, 223, false);
+    Announcement<> a2 = Announcement<>(111, p.addr, p.netmask, pr2, 223, false);
 
     as.process_announcement(a1, true);
     as.process_announcement(a2, true);
@@ -165,7 +165,7 @@ bool test_process_announcement(){
     Priority pr3;
     pr3.path_length = 1;
     pr3.relationship = 2;
-    Announcement<> a3 = Announcement(111, p.addr, p.netmask, pr3, 224, false);
+    Announcement<> a3 = Announcement<>(111, p.addr, p.netmask, pr3, 224, false);
 
     as.process_announcement(a3, true);
     if (as.all_anns->find(p)->second.received_from_asn != 224 ||

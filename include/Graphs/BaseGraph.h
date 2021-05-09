@@ -24,8 +24,6 @@
 #ifndef BASE_GRAPH_H
 #define BASE_GRAPH_H
 
-class SQLQuerier;
-
 #include <map>
 #include <unordered_map>
 #include <vector>
