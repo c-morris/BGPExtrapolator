@@ -6,7 +6,7 @@
 
 #include "Extrapolators/BaseExtrapolator.h"
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType = uint32_t>
 class BlockedExtrapolator : public BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>  {
 protected:
     uint32_t iteration_size;
@@ -22,7 +22,7 @@ protected:
      *  Overrwritable function that is called after populate_blocks in the preform_propagation function.
      *  Purely here for inheritance reasons.
      */
-    virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
+    virtual void extrapolate(std::vector<Prefix<PrefixType>*> *prefix_blocks, std::vector<Prefix<PrefixType>*> *subnet_blocks);
 
 public:
     BlockedExtrapolator(bool random_tiebraking,
@@ -55,16 +55,16 @@ public:
      * @param p The current subnet for checking announcement block size
      * @param prefix_vector The vector of prefixes of appropriate size
      */
-    virtual void populate_blocks(Prefix<>*, 
-                                    std::vector<Prefix<>*>*, 
-                                    std::vector<Prefix<>*>*);
+    virtual void populate_blocks(Prefix<PrefixType>*, 
+                                    std::vector<Prefix<PrefixType>*>*, 
+                                    std::vector<Prefix<PrefixType>*>*);
 
     /** Process a set of prefix or subnet blocks in iterations.
     */
     virtual void extrapolate_blocks(uint32_t &announcement_count, 
                                     int &iteration, 
                                     bool subnet, 
-                                    std::vector<Prefix<>*> *prefix_set);
+                                    std::vector<Prefix<PrefixType>*> *prefix_set);
 
     /** Seed announcement on all ASes on as_path. 
      *
@@ -76,7 +76,7 @@ public:
      * @param as_path Vector of ASNs for this announcement.
      * @param prefix The prefix this announcement is for.
      */
-    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
+    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp = 0);
 
     /** Send all announcements kept by an AS to its neighbors. 
      *

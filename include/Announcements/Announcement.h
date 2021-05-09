@@ -31,9 +31,14 @@
 #include "Prefix.h"
 #include "Priority.h"
 
+template <typename PrefixType = uint32_t> class Announcement;
+
+template <typename PrefixType = uint32_t> 
+std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann);
+template <typename PrefixType>
 class Announcement {
 public:
-    Prefix<> prefix;            // encoded with subnet mask
+    Prefix<PrefixType> prefix;            // encoded with subnet mask
     uint32_t origin;            // origin ASN
     Priority priority;          // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
@@ -44,7 +49,7 @@ public:
 
     /** Default constructor
      */
-    Announcement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
+    Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
         uint32_t from_asn, int64_t timestamp = 0);
     
     /** Priority constructor
@@ -54,7 +59,7 @@ public:
 
     /** Copy constructor
      */
-    Announcement(const Announcement& ann);
+    Announcement(const Announcement<PrefixType>& ann);
 
     //****************** FILE I/O ******************//
 
@@ -66,7 +71,7 @@ public:
      * @param ann Specifies the announcement from which data is pulled.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    friend std::ostream& operator<<(std::ostream &os, const Announcement& ann);
+    friend std::ostream& operator<<<> (std::ostream &os, const Announcement<PrefixType>& ann);
 
     /** Passes the announcement struct data to an output stream to csv generation.
      *
@@ -75,4 +80,5 @@ public:
      */ 
     virtual std::ostream& to_csv(std::ostream &os);
 };
+
 #endif

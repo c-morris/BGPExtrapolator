@@ -22,7 +22,7 @@ public:
     EZAS* createNew(uint32_t asn);
 
     void disconnectAttackerEdges();
-    void distributeAttackersVictims(SQLQuerier* querier);
-    void process(SQLQuerier* querier);
+    void distributeAttackersVictims(SQLQuerier<>* querier);
+    void process(SQLQuerier<>* querier);
 };
 #endif

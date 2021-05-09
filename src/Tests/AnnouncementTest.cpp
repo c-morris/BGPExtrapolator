@@ -35,7 +35,7 @@ bool test_announcement(){
     Priority p;
     p.relationship = 1;
 
-    Announcement ann = Announcement(111, 0x01010101, 0xffffff00, p, 222, false);
+    Announcement<> ann = Announcement(111, 0x01010101, 0xffffff00, p, 222, false);
     if (ann.origin != 111 || ann.prefix.addr != 0x01010101 || ann.prefix.netmask != 0xffffff00 || ann.received_from_asn != 222 || ann.priority != p || ann.from_monitor != false)
         return false;
     return true;

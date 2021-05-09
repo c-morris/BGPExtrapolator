@@ -26,7 +26,8 @@
 
 #include "Extrapolators/BlockedExtrapolator.h"
 
-class Extrapolator : public BlockedExtrapolator<SQLQuerier, ASGraph, Announcement, AS> {
+template <typename PrefixType = uint32_t>
+class Extrapolator : public BlockedExtrapolator<SQLQuerier<PrefixType>, ASGraph<PrefixType>, Announcement<PrefixType>, AS<PrefixType>, PrefixType> {
 public:
     Extrapolator(bool random_tiebraking,
                     bool store_results, 

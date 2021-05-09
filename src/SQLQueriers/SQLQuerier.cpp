@@ -23,7 +23,8 @@
 
 #include "SQLQueriers/SQLQuerier.h"
 
-SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE */,
+template <typename PrefixType>
+SQLQuerier<PrefixType>::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE */,
                         std::string results_table /* = RESULTS_TABLE */, 
                         std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                         std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
@@ -53,7 +54,8 @@ SQLQuerier::SQLQuerier(std::string announcements_table /* = ANNOUNCEMENTS_TABLE 
     }
 }
 
-SQLQuerier::~SQLQuerier() {
+template <typename PrefixType>
+SQLQuerier<PrefixType>::~SQLQuerier() {
     C->disconnect();
     delete C;
 }
@@ -61,7 +63,8 @@ SQLQuerier::~SQLQuerier() {
 
 /** Reads credentials/connection info from .conf file
  */
-void SQLQuerier::read_config() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::read_config() {
     using namespace std;
 
     BOOST_LOG_TRIVIAL(info) << "Config section: " << config_section;
@@ -116,7 +119,8 @@ void SQLQuerier::read_config() {
 
 /** Opens a connection to the SQL database.
  */
-void SQLQuerier::open_connection() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::open_connection() {
     std::ostringstream stream;
     stream << "dbname = " << db_name;
     stream << " user = " << user;
@@ -140,7 +144,8 @@ void SQLQuerier::open_connection() {
 
 /** Closes the connection to the SQL database.
  */
-void SQLQuerier::close_connection() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::close_connection() {
     C->disconnect();
 }
 
@@ -150,7 +155,8 @@ void SQLQuerier::close_connection() {
  *  @param sql
  *  @param insert
  */
-pqxx::result SQLQuerier::execute(std::string sql, bool insert) {
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::execute(std::string sql, bool insert) {
     pqxx::result R;
     if(insert){
         //TODO maybe make one work object once on construction
@@ -182,7 +188,8 @@ pqxx::result SQLQuerier::execute(std::string sql, bool insert) {
  *  @param column_names Comma separated list of column names to be copied,
  *                      surrounded by parentheses, Ex: (stub_asn,parent_asn)
  */
-std::string SQLQuerier::copy_to_db_query_string(std::string file_name, std::string table_name, std::string column_names) {
+template <typename PrefixType>
+std::string SQLQuerier<PrefixType>::copy_to_db_query_string(std::string file_name, std::string table_name, std::string column_names) {
     std::string sql = "COPY " + table_name + column_names + " FROM '" +
                       file_name + "' WITH (FORMAT csv)";
 
@@ -198,7 +205,8 @@ std::string SQLQuerier::copy_to_db_query_string(std::string file_name, std::stri
  *                   Ex: host(prefix), netmask(prefix), as_path, origin, time
  *                   Replaced by COUNT(*) if unspecified
  */
-std::string SQLQuerier::select_prefix_query_string(Prefix<>* p, bool subnet, std::string selection) {
+template <typename PrefixType>
+std::string SQLQuerier<PrefixType>::select_prefix_query_string(Prefix<PrefixType>* p, bool subnet, std::string selection) {
     std::string cidr = p->to_cidr();
     std::string sql = "SELECT " + selection + " FROM " + announcements_table;
     if (subnet) {
@@ -217,7 +225,8 @@ std::string SQLQuerier::select_prefix_query_string(Prefix<>* p, bool subnet, std
 }
 
 // Returns a string with a DROP TABLE query
-std::string SQLQuerier::clear_table_query_string(std::string table_name) {
+template <typename PrefixType>
+std::string SQLQuerier<PrefixType>::clear_table_query_string(std::string table_name) {
     return "DROP TABLE IF EXISTS " + table_name + ";";
 }
 
@@ -230,7 +239,8 @@ std::string SQLQuerier::clear_table_query_string(std::string table_name) {
  *  @param grant_all_user User to grant privileges to,
  *                        if left empty GRANT ALL won't be included in the query
  */
-std::string SQLQuerier::create_table_query_string(std::string table_name, std::string column_names, bool unlogged, std::string grant_all_user) {
+template <typename PrefixType>
+std::string SQLQuerier<PrefixType>::create_table_query_string(std::string table_name, std::string column_names, bool unlogged, std::string grant_all_user) {
     std::string unlogged_string = unlogged ? " UNLOGGED " : " ";
     std::string grant_all_string = (grant_all_user == "") ? "" : " GRANT ALL ON TABLE " + table_name + " TO " + grant_all_user + ";";
 
@@ -245,7 +255,8 @@ std::string SQLQuerier::create_table_query_string(std::string table_name, std::s
  *  @param table_name The name of the table to SELECT from
  *  @param limit The limit of the number of values to SELECT
  */
-pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit) {
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_from_table(std::string table_name, int limit) {
     std::string sql = "SELECT * FROM " + table_name;
     if (limit) {
         sql += " LIMIT " + std::to_string(limit);
@@ -258,7 +269,8 @@ pqxx::result SQLQuerier::select_from_table(std::string table_name, int limit) {
  *
  * @param p The prefix for which we SELECT
  */
-pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_prefix_count(Prefix<PrefixType>* p) {
     std::string sql = select_prefix_query_string(p);
     return execute(sql);
 }
@@ -268,7 +280,8 @@ pqxx::result SQLQuerier::select_prefix_count(Prefix<>* p) {
  *
  * @param p The prefix for which we SELECT
  */
-pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_prefix_ann(Prefix<PrefixType>* p) {
     std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time");
     return execute(sql);
 }
@@ -278,7 +291,8 @@ pqxx::result SQLQuerier::select_prefix_ann(Prefix<>* p) {
  *
  * @param p The prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_subnet_count(Prefix<PrefixType>* p) {
     std::string sql = select_prefix_query_string(p, true);
     return execute(sql);
 }
@@ -288,7 +302,8 @@ pqxx::result SQLQuerier::select_subnet_count(Prefix<>* p) {
  *
  * @param p The prefix defining the subnet
  */
-pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_subnet_ann(Prefix<PrefixType>* p) {
     std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time");
     return execute(sql);
 }
@@ -296,7 +311,8 @@ pqxx::result SQLQuerier::select_subnet_ann(Prefix<>* p) {
 
 /** Drops the stubs table
  */
-void SQLQuerier::clear_stubs_from_db() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::clear_stubs_from_db() {
     std::string sql = clear_table_query_string(STUBS_TABLE);
     execute(sql);
 }
@@ -304,7 +320,8 @@ void SQLQuerier::clear_stubs_from_db() {
 
 /** Drops the non stubs table
  */
-void SQLQuerier::clear_non_stubs_from_db() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::clear_non_stubs_from_db() {
     std::string sql = clear_table_query_string(NON_STUBS_TABLE);
     execute(sql);
 }
@@ -312,7 +329,8 @@ void SQLQuerier::clear_non_stubs_from_db() {
 
 /** Drops the supernodes table
  */
-void SQLQuerier::clear_supernodes_from_db() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::clear_supernodes_from_db() {
     std::string sql = clear_table_query_string(SUPERNODES_TABLE);
     execute(sql);
 }
@@ -320,7 +338,8 @@ void SQLQuerier::clear_supernodes_from_db() {
 
 /** Instantiates a new, empty stubs table in the database, if it doesn't exist.
  */
-void SQLQuerier::create_stubs_tbl() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_stubs_tbl() {
     std::string sql = create_table_query_string(STUBS_TABLE, "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)");
     BOOST_LOG_TRIVIAL(info) << "Creating stubs table...";
     execute(sql, false);
@@ -329,7 +348,8 @@ void SQLQuerier::create_stubs_tbl() {
 
 /** Instantiates a new, empty non_stubs table in the database, if it doesn't exist.
  */
-void SQLQuerier::create_non_stubs_tbl() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_non_stubs_tbl() {
     std::string sql = create_table_query_string(NON_STUBS_TABLE, "(non_stub_asn BIGSERIAL PRIMARY KEY)");
     BOOST_LOG_TRIVIAL(info) << "Creating non_stubs table...";
     execute(sql, false);
@@ -338,7 +358,8 @@ void SQLQuerier::create_non_stubs_tbl() {
 
 /**  Instantiates a new, empty supernodes table in the database, if it doesn't exist.
  */
-void SQLQuerier::create_supernodes_tbl() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_supernodes_tbl() {
     std::string sql = create_table_query_string(SUPERNODES_TABLE, "(supernode_asn BIGSERIAL PRIMARY KEY, supernode_lowest_asn bigint)");
     BOOST_LOG_TRIVIAL(info) << "Creating supernodes table...";
     execute(sql, false);
@@ -347,7 +368,8 @@ void SQLQuerier::create_supernodes_tbl() {
 
 /** Takes a .csv filename and bulk copies all elements to the stubs table.
  */
-void SQLQuerier::copy_stubs_to_db(std::string file_name) {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::copy_stubs_to_db(std::string file_name) {
     std::string sql = copy_to_db_query_string(file_name, STUBS_TABLE, "(stub_asn,parent_asn)");
     execute(sql);
 }
@@ -355,7 +377,8 @@ void SQLQuerier::copy_stubs_to_db(std::string file_name) {
 
 /** Takes a .csv filename and bulk copies all elements to the non-stubs table.
  */
-void SQLQuerier::copy_non_stubs_to_db(std::string file_name) {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::copy_non_stubs_to_db(std::string file_name) {
     std::string sql = copy_to_db_query_string(file_name, NON_STUBS_TABLE, "(non_stub_asn)");
     execute(sql);
 }
@@ -363,7 +386,8 @@ void SQLQuerier::copy_non_stubs_to_db(std::string file_name) {
 
 /** Takes a .csv filename and bulk copies all elements to the supernodes table.
  */
-void SQLQuerier::copy_supernodes_to_db(std::string file_name) {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::copy_supernodes_to_db(std::string file_name) {
     std::string sql = copy_to_db_query_string(file_name, SUPERNODES_TABLE, "(supernode_asn,supernode_lowest_asn)");
     execute(sql);
 }
@@ -371,7 +395,8 @@ void SQLQuerier::copy_supernodes_to_db(std::string file_name) {
 
 /** Drop the Querier's results table.
  */
-void SQLQuerier::clear_results_from_db() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::clear_results_from_db() {
     std::string sql = clear_table_query_string(results_table);
     execute(sql);
 }
@@ -379,7 +404,8 @@ void SQLQuerier::clear_results_from_db() {
 
 /** Drop the Querier's depref table.
  */
-void SQLQuerier::clear_depref_from_db() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::clear_depref_from_db() {
     std::string sql = clear_table_query_string(depref_table);
     execute(sql);
 }
@@ -387,22 +413,25 @@ void SQLQuerier::clear_depref_from_db() {
 
 /** Drop the Querier's inverse results table.
  */
-void SQLQuerier::clear_inverse_from_db() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::clear_inverse_from_db() {
     std::string sql = clear_table_query_string(inverse_results_table);
     execute(sql);
 }
 
 /** Drop the Querier's full path results table.
  */
-void SQLQuerier::clear_full_path_from_db() {
-    std::string sql = std::string("DROP TABLE IF EXISTS " + full_path_results_table + ";");
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::clear_full_path_from_db() {
+    std::string sql = clear_table_query_string(full_path_results_table);
     execute(sql);
 }
 
 /** Instantiates a new, empty results table in the database, dropping the old table.
  */
-void SQLQuerier::create_results_tbl() {
-    std::string sql = create_table_query_string(results_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_results_tbl() {
+    std::string sql = create_table_query_string(results_table, "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint)",
     true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating results table...";
     execute(sql, false);
@@ -412,17 +441,19 @@ void SQLQuerier::create_results_tbl() {
  *
  * In addition to all of the columns in the results table, this table includes the as_path.
  */
-void SQLQuerier::create_full_path_results_tbl() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_full_path_results_tbl() {
     std::string sql = create_table_query_string(full_path_results_table, 
-    "(asn bigint, prefix cidr, origin bigint, received_from_asn bigint, time bigint, as_path bigint[])", true, user);
+    "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint, as_path bigint[])", true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating full path results table...";
     execute(sql, false);
 }
 
 /** Instantiates a new, empty depref table in the database, dropping the old table.
  */
-void SQLQuerier::create_depref_tbl() {
-    std::string sql = create_table_query_string(depref_table, "(asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint)",
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_depref_tbl() {
+    std::string sql = create_table_query_string(depref_table, "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint)",
     true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating depref table...";
     execute(sql, false);
@@ -431,8 +462,9 @@ void SQLQuerier::create_depref_tbl() {
 
 /** Instantiates a new, empty inverse results table in the database, dropping the old table.
  */
-void SQLQuerier::create_inverse_results_tbl() {
-    std::string sql = create_table_query_string(inverse_results_table, "(asn bigint,prefix cidr, origin bigint)",
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_inverse_results_tbl() {
+    std::string sql = create_table_query_string(inverse_results_table, "(asn bigint, prefix inet, origin bigint)",
     true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating inverse results table...";
     execute(sql, false);
@@ -441,21 +473,24 @@ void SQLQuerier::create_inverse_results_tbl() {
 
 /** Takes a .csv filename and bulk copies all elements to the results table.
  */
-void SQLQuerier::copy_results_to_db(std::string file_name) {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::copy_results_to_db(std::string file_name) {
     std::string sql = copy_to_db_query_string(file_name, results_table, "(asn, prefix, origin, received_from_asn, time)");
     execute(sql);
 }
 
 /** Similar to copy_results_to_db, but for a single AS result which includes an AS_PATH column.
  */
-void SQLQuerier::copy_single_results_to_db(std::string file_name) {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::copy_single_results_to_db(std::string file_name) {
     std::string sql = copy_to_db_query_string(file_name, full_path_results_table, "(asn, prefix, origin, received_from_asn, time, as_path)");
     execute(sql);
 }
 
 /** Takes a .csv filename and bulk copies all elements to the depref table.
  */
-void SQLQuerier::copy_depref_to_db(std::string file_name) {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::copy_depref_to_db(std::string file_name) {
     std::string sql = copy_to_db_query_string(file_name, depref_table, "(asn, prefix, origin, received_from_asn, time)");
     execute(sql);
 }
@@ -463,7 +498,8 @@ void SQLQuerier::copy_depref_to_db(std::string file_name) {
 
 /** Takes a .csv filename and bulk copies all elements to the inverse results table.
  */
-void SQLQuerier::copy_inverse_results_to_db(std::string file_name) {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::copy_inverse_results_to_db(std::string file_name) {
     std::string sql = copy_to_db_query_string(file_name, inverse_results_table, "(asn, prefix, origin)");
     execute(sql);
 }
@@ -471,9 +507,13 @@ void SQLQuerier::copy_inverse_results_to_db(std::string file_name) {
 
 /** Generate an index on the results table.
  */
-void SQLQuerier::create_results_index() {
+template <typename PrefixType>
+void SQLQuerier<PrefixType>::create_results_index() {
     // Version of postgres must support this
     std::string sql = std::string("CREATE INDEX ON " + results_table + " USING GIST(prefix inet_ops, origin)");
     BOOST_LOG_TRIVIAL(info) << "Generating index on results...";
     execute(sql, false);
 }
+
+template class SQLQuerier<>;
+template class SQLQuerier<uint128_t>;

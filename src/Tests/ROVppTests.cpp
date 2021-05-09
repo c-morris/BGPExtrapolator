@@ -738,7 +738,7 @@ bool test_rovpp_decide_ranks(){
  */
 bool test_rovpp_remove_stubs(){
     ROVppASGraph graph = ROVppASGraph();
-    SQLQuerier *querier = new SQLQuerier("mrt_announcements", "test_results", "test_results", "test_results_d");
+    SQLQuerier<> *querier = new SQLQuerier<>("mrt_announcements", "test_results", "test_results", "test_results_d");
     graph.add_relationship(2, 1, AS_REL_PROVIDER);
     graph.add_relationship(1, 2, AS_REL_CUSTOMER);
     graph.add_relationship(3, 1, AS_REL_PROVIDER);
@@ -855,7 +855,7 @@ bool test_rovpp_receive_announcements(){
     as.receive_announcements(vect);
     if (as.ribs_in->size() != 2) { return false; }
     // order really doesn't matter here
-    for (Announcement a : *as.ribs_in) {
+    for (Announcement<> a : *as.ribs_in) {
         if (a.prefix != old_prefix && a.prefix != new_prefix) {
             return false;
         }

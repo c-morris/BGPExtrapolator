@@ -35,7 +35,7 @@ void EZASGraph::disconnectAttackerEdges() {
     attacker_edge_removal->clear();
 }
 
-void EZASGraph::distributeAttackersVictims(SQLQuerier* querier) {
+void EZASGraph::distributeAttackersVictims(SQLQuerier<>* querier) {
     origin_to_attacker_victim->clear();
     victim_to_prefixes->clear();
 
@@ -64,7 +64,7 @@ void EZASGraph::distributeAttackersVictims(SQLQuerier* querier) {
     }
 }
 
-void EZASGraph::process(SQLQuerier* querier) {
+void EZASGraph::process(SQLQuerier<>* querier) {
     //We definately want stubs/edge ASes
     distributeAttackersVictims(querier);
     tarjan();

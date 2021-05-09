@@ -49,11 +49,11 @@
 #include "Announcements/ROVppAnnouncement.h"
 #include "Announcements/ROVAnnouncement.h"
 
-template <class AnnouncementType>
+template <class AnnouncementType, typename PrefixType = uint32_t>
 class BaseAS {
 
 //Ensure that the Announcement class passed in through the template extends the Announcement class.
-static_assert(std::is_base_of<Announcement, AnnouncementType>::value, "AnnouncementType must inherit from Announcement");
+static_assert(std::is_base_of<Announcement<PrefixType>, AnnouncementType>::value, "AnnouncementType must inherit from Announcement");
 
 public:
     uint32_t asn;       // Autonomous System Number
@@ -62,14 +62,14 @@ public:
     // Defer processing of incoming announcements for efficiency
     std::vector<AnnouncementType> *incoming_announcements;
     // Maps of all announcements stored
-    std::map<Prefix<>, AnnouncementType> *all_anns;
-    std::map<Prefix<>, AnnouncementType> *depref_anns;
+    std::map<Prefix<PrefixType>, AnnouncementType> *all_anns;
+    std::map<Prefix<PrefixType>, AnnouncementType> *depref_anns;
     // Stores AS Relationships
     std::set<uint32_t> *providers; 
     std::set<uint32_t> *peers; 
     std::set<uint32_t> *customers; 
     // Pointer to inverted results map for efficiency
-    std::map<std::pair<Prefix<>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
+    std::map<std::pair<Prefix<PrefixType>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
     // If this AS represents multiple ASes, it's "members" are listed here (Supernodes)
     std::vector<uint32_t> *member_ases;
     // Assigned and used in Tarjan's algorithm
@@ -78,7 +78,7 @@ public:
     bool onStack;
     
     // Constructor. Must be in header file.... We like C++ class templates. We like C++ class templates....
-    BaseAS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) {
+    BaseAS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<PrefixType>, uint32_t>, std::set<uint32_t>*> *inverse_results) {
 
         // Set ASN
         this->asn = asn;
@@ -93,10 +93,10 @@ public:
         this->inverse_results = inverse_results;    // Inverted results map
         member_ases = new std::vector<uint32_t>();    // Supernode members
         incoming_announcements = new std::vector<AnnouncementType>();
-        all_anns = new std::map<Prefix<>, AnnouncementType>();
+        all_anns = new std::map<Prefix<PrefixType>, AnnouncementType>();
 
         if(store_depref_results)
-            depref_anns = new std::map<Prefix<>, AnnouncementType>();
+            depref_anns = new std::map<Prefix<PrefixType>, AnnouncementType>();
         else
             depref_anns = NULL;
 
@@ -142,8 +142,8 @@ public:
      * @param old The prefix/origin to be inserted
      * @param current The prefix/origin to be removed
      */
-    virtual void swap_inverse_result(std::pair<Prefix<>,uint32_t> old, 
-                                        std::pair<Prefix<>,uint32_t> current);
+    virtual void swap_inverse_result(std::pair<Prefix<PrefixType>, uint32_t> old, 
+                                        std::pair<Prefix<PrefixType>, uint32_t> current);
 
     /** Push the incoming propagated announcements to the incoming_announcements vector.
      *
@@ -183,7 +183,7 @@ public:
 
     /** Deletes the announcement of given prefix.
     */
-    virtual void delete_ann(Prefix<> &prefix);
+    virtual void delete_ann(Prefix<PrefixType> &prefix);
 
     //****************** FILE I/O ******************//
 

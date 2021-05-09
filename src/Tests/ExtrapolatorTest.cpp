@@ -21,6 +21,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
+#define TEST_RESULTS_TABLE "test_extrapolate_blocks_results"
+#define TEST_ANNOUNCEMENTS_TABLE "mrt_announcements_test"
+
 #include <iostream>
 #include <cstdint>
 #include <vector>
@@ -34,7 +37,7 @@
 /** It is worth having this test since the constructor is changed so often.
  */
 bool test_Extrapolator_constructor() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     if (e.graph == NULL) { return false; }
     return true;
 }
@@ -42,7 +45,7 @@ bool test_Extrapolator_constructor() {
 /** Test the loop detection in input MRT AS paths.
  */
 bool test_find_loop() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(1);
     as_path->push_back(2);
@@ -70,6 +73,28 @@ bool test_find_loop() {
     return true;
 }
 
+// Test parse_path function
+bool test_parse_path() {
+    Extrapolator<> e = Extrapolator<>();
+    std::vector<uint32_t> *as_path = e.parse_path("{63027,32899,12083,1299,14522}");
+    std::vector<uint32_t> true_as_path {63027,32899,12083,1299,14522};
+
+    if (as_path->size() != true_as_path.size()) {
+        std::cerr << "Parse path failed." << std::endl;
+        return false;
+    }
+
+    // Check that every AS in as_path is correct
+    for (unsigned int i = 0; i < as_path->size(); i++) {
+        if (as_path->at(i) != true_as_path.at(i)) {
+            std::cerr << "Parse path failed." << std::endl;
+            return false;
+        }
+    }
+    
+    return true;
+}
+
 /** Test seeding the graph with announcements from monitors. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
@@ -82,7 +107,7 @@ bool test_find_loop() {
  *  The test path vect is [3, 2, 5]. 
  */
 bool test_give_ann_to_as_path() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -165,7 +190,7 @@ bool test_give_ann_to_as_path() {
  *  When AS 5 is the origin, an announcement should only be seeded at 5
  */
 bool test_give_ann_to_as_path_origin_only() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, true, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -226,7 +251,7 @@ bool test_give_ann_to_as_path_origin_only() {
  *  Starting propagation at 5, only 4 and 7 should not see the announcement.
  */
 bool test_propagate_up_no_multihomed() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -245,7 +270,7 @@ bool test_propagate_up_no_multihomed() {
     e.graph->decide_ranks();
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
     
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -288,7 +313,7 @@ bool test_propagate_up_no_multihomed() {
  *  Starting propagation at 5, everyone but 4 and 7 should see the announcement.
  */
 bool test_propagate_up() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -305,7 +330,7 @@ bool test_propagate_up() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -348,7 +373,7 @@ bool test_propagate_up() {
  *  Starting propagation at 3, only 3 should see the announcement.
  */
 bool test_propagate_up_multihomed_standard() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -365,7 +390,7 @@ bool test_propagate_up_multihomed_standard() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -402,7 +427,7 @@ bool test_propagate_up_multihomed_standard() {
  *  Starting propagation at 3, 3 and 5 should see the announcement.
  */
 bool test_propagate_up_multihomed_peer_mode() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -419,7 +444,7 @@ bool test_propagate_up_multihomed_peer_mode() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -457,7 +482,7 @@ bool test_propagate_up_multihomed_peer_mode() {
  *  Starting propagation at 2, 4 and 5 should see the announcement.
  */
 bool test_propagate_down_no_multihomed() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -474,7 +499,7 @@ bool test_propagate_down_no_multihomed() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -513,7 +538,7 @@ bool test_propagate_down_no_multihomed() {
  *  Starting propagation at 1, everyone but 3 and 6 should see the announcement.
  */
 bool test_propagate_down_no_multihomed2() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -530,7 +555,7 @@ bool test_propagate_down_no_multihomed2() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -572,7 +597,7 @@ bool test_propagate_down_no_multihomed2() {
  *  Starting propagation at 2, 4 and 5 should see the announcement.
  */
 bool test_propagate_down() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -587,7 +612,7 @@ bool test_propagate_down() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -626,7 +651,7 @@ bool test_propagate_down() {
  *  Starting propagation at 1, everyone but 3 and 6 should see the announcement.
  */
 bool test_propagate_down2() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -641,7 +666,7 @@ bool test_propagate_down2() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -681,7 +706,7 @@ bool test_propagate_down2() {
  *  Starting propagation at 1, everyone but 5 should see the announcement.
  */
 bool test_propagate_down_multihomed_standard() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -698,7 +723,7 @@ bool test_propagate_down_multihomed_standard() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -738,7 +763,7 @@ bool test_propagate_down_multihomed_standard() {
  *  Sending announcements from 4, everyone but 1 should see the announcement.
  */
 bool test_send_all_announcements() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
@@ -812,7 +837,7 @@ bool test_send_all_announcements() {
  *  Sending announcements from 4 with existing announcements at 2 and 3 (same prefix as 4 and origin asn = 4), no one should see the announcement.
  */
 bool test_send_all_announcements2() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
@@ -893,7 +918,7 @@ bool test_send_all_announcements2() {
  *  Sending announcements from 4 with existing announcements at 2 (same prefix as 4 and origin asn = 4), no one should see the announcement.
  */
 bool test_send_all_announcements3() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
@@ -968,7 +993,7 @@ bool test_send_all_announcements3() {
  *  Starting propagation at 2, only 6 and 7 should not see the announcement.
  */
 bool test_send_all_announcements_no_multihomed() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -1062,7 +1087,7 @@ bool test_send_all_announcements_no_multihomed() {
  *  Starting propagation at 2, only 6 and 7 should not see the announcement.
  */
 bool test_send_all_announcements_multihomed_standard1() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -1157,7 +1182,7 @@ bool test_send_all_announcements_multihomed_standard1() {
  *  Starting propagation at 5, only 5 should see the announcement.
  */
 bool test_send_all_announcements_multihomed_standard2() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -1242,7 +1267,7 @@ bool test_send_all_announcements_multihomed_standard2() {
  *  Starting propagation at 5, only 6 and 7 should not see the announcement.
  */
 bool test_send_all_announcements_multihomed_peer_mode1() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -1336,7 +1361,7 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
  *  Starting propagation at 5, only 5 and 6 should see the announcement.
  */
 bool test_send_all_announcements_multihomed_peer_mode2() {
-    Extrapolator e = Extrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
                                             ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
                                             DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
@@ -1423,13 +1448,13 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
  *   /|   
  *  4 5--6 
  *
- *  Starting propagation at 1, everyone should see the announcement.
- *
- *  This test is currently requires manual verification that the results in the database are correct.
+ *  Starting propagation at 1, everyone but 3 and 6 should see the announcement.
  */
 bool test_save_results_parallel() {
-    Extrapolator e = Extrapolator(false, true, false, false, "ignored", "test_extrapolation_results", "unused", "unused", "unused", "bgp", 10000, -1, 0, 
-    DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+    std::string results_table = "test_extrapolation_results";
+
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, "ignored", results_table, "unused", "unused", "unused", "bgp", 
+    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1444,7 +1469,7 @@ bool test_save_results_parallel() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -1456,7 +1481,42 @@ bool test_save_results_parallel() {
     e.querier->create_results_tbl();
     e.save_results(0);
 
-    // This test requires manual verification of correctness.
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time)
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 13796 22742 0 ",
+        "2 137.99.0.0/16 13796 1 0 ",
+        "4 137.99.0.0/16 13796 2 0 ",
+        "5 137.99.0.0/16 13796 2 0 "
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // Remove results from db
+    e.querier->clear_results_from_db();
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Save results failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Save results failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
 
     return true;
 }
@@ -1476,8 +1536,10 @@ bool test_save_results_parallel() {
  *  This test is currently requires manual verification that the results in the database are correct.
  */
 bool test_save_results_at_asn() {
-    Extrapolator e = Extrapolator(false, false, false, true, "ignored", "unused", "unused", "unused", "test_extrapolation_single_results", "bgp", 10000, -1, 0, 
-    DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
+    std::string full_path_results_table = "test_extrapolation_single_results";
+
+    Extrapolator<> e = Extrapolator<>(false, false, false, true, "ignored", "unused", "unused", "unused", full_path_results_table, "bgp", 
+    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1492,7 +1554,7 @@ bool test_save_results_at_asn() {
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p.addr, p.netmask, 22742);
     ann.from_monitor = true;
     ann.priority.relationship = 2;
     ann.priority.path_length = 10;
@@ -1504,7 +1566,27 @@ bool test_save_results_at_asn() {
     e.querier->create_full_path_results_tbl();
     e.save_results_at_asn(5);
 
-    // This test requires manual verification of correctness.
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(full_path_results_table);
+
+    // Remove full path results from db
+    e.querier->clear_full_path_from_db();
+
+    // If the number of rows is more than 1, we already know that something is not right
+    if (r.size() != 1) {
+        std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert result to a string separated by spaces
+    std::string result = "";
+    for (auto const &field: r[0]) { 
+        result = result + field.c_str() + " ";
+    }
+    if (result != "5 137.99.0.0/16 13796 2 0 {5,2,1,22742} ") {
+        std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+        return false;
+    }
 
     return true;
 }
@@ -1521,7 +1603,7 @@ bool test_save_results_at_asn() {
  *  Test prepending on path vector [3, 3, 2, 5]. This shouldn't change the priority since prepending is in the back of the path. 
  */
 bool test_prepending_priority_back() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1564,7 +1646,7 @@ bool test_prepending_priority_back() {
  *  Test prepending on path vector [3, 2, 2, 5]. This should reduce the priority at 3. 
  */
 bool test_prepending_priority_middle() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1607,7 +1689,7 @@ bool test_prepending_priority_middle() {
  *  Test prepending on path vector [3, 2, 5, 5]. This should reduce the priority at 3 and 5. 
  */
 bool test_prepending_priority_beginning() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1650,7 +1732,7 @@ bool test_prepending_priority_beginning() {
  *  Test prepending on path vector [3, 3, 2, 5] with an existing announcement at those ASes. This shouldn't change the priority since prepending is in the back of the path.  
  */
 bool test_prepending_priority_back_existing_ann() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1699,7 +1781,7 @@ bool test_prepending_priority_back_existing_ann() {
  *  Test prepending on path vector [3, 2, 2, 5] with an existing announcement at those ASes. This shouldn't change the priority since the existing announcement has higher priority.  
  */
 bool test_prepending_priority_middle_existing_ann() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1748,7 +1830,7 @@ bool test_prepending_priority_middle_existing_ann() {
  *  Test prepending on path vector [3, 2, 5, 5] with an existing announcement at those ASes. This shouldn't change the priority since the existing announcement has higher priority.  
  */
 bool test_prepending_priority_beginning_existing_ann() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1797,7 +1879,7 @@ bool test_prepending_priority_beginning_existing_ann() {
  *  Test prepending on path vector [3, 2, 5, 5] with an existing announcement at those ASes. This should change the priority since the existing announcement has lower priority.  
  */
 bool test_prepending_priority_beginning_existing_ann2() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -1838,5 +1920,139 @@ bool test_prepending_priority_beginning_existing_ann2() {
         return false;
     }
     
+    return true;
+}
+
+// Create an announcements table and insert two announcements with different prefixes
+bool test_extrapolate_blocks_buildup() {
+    try {
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+
+        SQLQuerier<> *querier = new SQLQuerier<>("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + announcements_table + " (\
+        prefix cidr, as_path bigint[], origin bigint, time bigint); GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
+        querier->execute(sql, false);
+
+        sql = std::string("TRUNCATE " + announcements_table + ";");
+        querier->execute(sql, true);
+
+        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0), ('137.98.0.0/16', '{5}', 5, 0);");
+        querier->execute(sql, true);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks buildup failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+// Drop an announcements table created in the buildup function
+bool test_extrapolate_blocks_teardown() {
+    try {
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+        std::string results_table = TEST_RESULTS_TABLE;
+
+        SQLQuerier<> *querier = new SQLQuerier<>("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("DROP TABLE IF EXISTS " + announcements_table + ", " + results_table + ";");
+        querier->execute(sql, false);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks teardown failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test extrapolate blocks in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Extrapolate two announcements with different prefixes (from AS 1 and AS 5).
+ */
+bool test_extrapolate_blocks() {
+    std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+    std::string results_table = TEST_RESULTS_TABLE;
+
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>;
+    
+    Prefix<>* p1 = new Prefix<>("137.99.0.0", "255.255.0.0");
+    subnet_blocks->push_back(p1);
+
+    Prefix<>* p2 = new Prefix<>("137.98.0.0", "255.255.0.0");
+    subnet_blocks->push_back(p2);
+
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    
+    uint32_t announcement_count = 0; 
+    int iteration = 0;
+
+    e.extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
+
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time)
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 1 1 0 ",
+        "2 137.99.0.0/16 1 1 0 ",
+        "4 137.99.0.0/16 1 2 0 ",
+        "5 137.99.0.0/16 1 2 0 ",
+        "1 137.98.0.0/16 5 2 0 ",
+        "2 137.98.0.0/16 5 5 0 ",
+        "3 137.98.0.0/16 5 2 0 ",
+        "4 137.98.0.0/16 5 2 0 ",
+        "5 137.98.0.0/16 5 5 0 ",
+        "6 137.98.0.0/16 5 5 0 " 
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
+
     return true;
 }

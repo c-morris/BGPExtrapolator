@@ -3,7 +3,7 @@
 
 #include "Announcements/Announcement.h"
 
-class ROVAnnouncement : public Announcement {
+class ROVAnnouncement : public Announcement<> {
 public:
     /** Default constructor
      */
