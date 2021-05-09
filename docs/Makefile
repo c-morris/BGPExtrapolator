@@ -20,4 +20,4 @@ all: $(OUTPUTS)
 	$(PANDOC) $(PDFLAGS) -o $@ $<
 
 clean:
-	rm *.md
+	rm *.md || true
