@@ -146,37 +146,12 @@ Must use \< 80 GB RAM, 800 GB disk.
 **Priority**
 
 The priority attribute is used internally to track the relationship and
-path length of an announcement. The information is encoded into an
-integer, where the first two decimal digits are used for the path length
-and the third decimal is used for the relationship.
-
-Examples:
-
-| **Priority** | **Explanation**                                                        |
-| -----------: | :--------------------------------------------------------------------- |
-|          300 | The highest priority value, a prefix originated at this AS.            |
-|          299 | Announcement received from a customer (path length of one).            |
-|          298 | Announcement received from a customer’s customer (path length of two). |
-|          198 | Announcement received from a peer (path length of two).                |
-|           97 | Announcement received from a provider (path length of three).          |
-
-<span style="color: purple"> **Proposed redesign** The priority
-attribute is a struct with four 8-bit fields carrying information
-relevant to the best-path selection process. This struct can be casted
-to an unsigned 32 bit integer to efficiently compare the priority of two
-different announcements. Reserved fields can be used to add other
-elements to the decision process, for example, security attributes like
-ROA validity. </span>
-
-``` C++
-struct Priority {
-  // Little-endian assumed
-  uint8_t reserved1;
-  uint8_t path_length; // Lower precedence
-  uint8_t reserved2;
-  uint8_t relationship; // Highest precedence
-};
-```
+path length of an announcement. It is implemented as a struct with eight
+8-bit fields carrying information relevant to the best-path selection
+process. This struct can be casted to an unsigned 64 bit integer to
+efficiently compare the priority of two different announcements.
+Reserved fields can be used to add other elements to the decision
+process, for example, security attributes like ROA validity.
 
 **Results Schema**
 

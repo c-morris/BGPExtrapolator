@@ -15,7 +15,7 @@ PDFLAGS := -t gfm
 
 
 all: $(OUTPUTS)
-	cp -r $(SRC_DIR)/media ./media
+	cp -r $(SRC_DIR)/media ./
 
 %$(OUT_FILES): $(SRC_DIR)%$(SOURCE_FILES)
 	$(PANDOC) $(PDFLAGS) -o $@ $<
