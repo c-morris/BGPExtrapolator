@@ -45,6 +45,7 @@ public:
     int64_t tstamp;             // timestamp from mrt file
     // TODO replace with proper templating
     uint32_t policy_index;      // stores the policy index the ann applies
+    uint32_t prefix_id;
 
     /** Default constructor
      */
@@ -54,7 +55,7 @@ public:
     /** Priority constructor
      */
     Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
-        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false);
+        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, uint32_t prefix_id = 0);
 
     /** Copy constructor
      */

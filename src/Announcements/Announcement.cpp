@@ -34,15 +34,17 @@ Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, Pre
     priority = 0;
     from_monitor = false;
     tstamp = timestamp;
+    prefix_id = 0;
 }
 
 template <typename PrefixType>
 Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
-    uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */) 
+    uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */, uint32_t prefix_id /* = 0 */) 
     : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
     
     priority = pr; 
     from_monitor = a_from_monitor;
+    this->prefix_id = prefix_id;
 }
 
 template <typename PrefixType>
@@ -53,7 +55,8 @@ Announcement<PrefixType>::Announcement(const Announcement<PrefixType>& ann) {
     received_from_asn = ann.received_from_asn;
     from_monitor = ann.from_monitor; 
     tstamp = ann.tstamp;            
-    policy_index = ann.policy_index;     
+    policy_index = ann.policy_index;  
+    prefix_id = ann.prefix_id;   
 }
 
 //****************** FILE I/O ******************//
@@ -67,7 +70,7 @@ std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann) 
 }
 template <typename PrefixType>
 std::ostream& Announcement<PrefixType>::to_csv(std::ostream &os) {
-    os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << '\n';
+    os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << prefix_id << '\n';
     return os;
 }
 

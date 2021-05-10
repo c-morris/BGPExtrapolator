@@ -282,7 +282,7 @@ pqxx::result SQLQuerier<PrefixType>::select_prefix_count(Prefix<PrefixType>* p) 
  */
 template <typename PrefixType>
 pqxx::result SQLQuerier<PrefixType>::select_prefix_ann(Prefix<PrefixType>* p) {
-    std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time");
+    std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id");
     return execute(sql);
 }
 
@@ -304,7 +304,7 @@ pqxx::result SQLQuerier<PrefixType>::select_subnet_count(Prefix<PrefixType>* p) 
  */
 template <typename PrefixType>
 pqxx::result SQLQuerier<PrefixType>::select_subnet_ann(Prefix<PrefixType>* p) {
-    std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time");
+    std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id");
     return execute(sql);
 }
 
@@ -431,7 +431,7 @@ void SQLQuerier<PrefixType>::clear_full_path_from_db() {
  */
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::create_results_tbl() {
-    std::string sql = create_table_query_string(results_table, "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint)",
+    std::string sql = create_table_query_string(results_table, "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint, prefix_id bigint)",
     true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating results table...";
     execute(sql, false);
@@ -444,7 +444,7 @@ void SQLQuerier<PrefixType>::create_results_tbl() {
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::create_full_path_results_tbl() {
     std::string sql = create_table_query_string(full_path_results_table, 
-    "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint, as_path bigint[])", true, user);
+    "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint, prefix_id bigint, as_path bigint[])", true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating full path results table...";
     execute(sql, false);
 }
@@ -475,7 +475,7 @@ void SQLQuerier<PrefixType>::create_inverse_results_tbl() {
  */
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::copy_results_to_db(std::string file_name) {
-    std::string sql = copy_to_db_query_string(file_name, results_table, "(asn, prefix, origin, received_from_asn, time)");
+    std::string sql = copy_to_db_query_string(file_name, results_table, "(asn, prefix, origin, received_from_asn, time, prefix_id)");
     execute(sql);
 }
 
@@ -483,7 +483,7 @@ void SQLQuerier<PrefixType>::copy_results_to_db(std::string file_name) {
  */
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::copy_single_results_to_db(std::string file_name) {
-    std::string sql = copy_to_db_query_string(file_name, full_path_results_table, "(asn, prefix, origin, received_from_asn, time, as_path)");
+    std::string sql = copy_to_db_query_string(file_name, full_path_results_table, "(asn, prefix, origin, received_from_asn, time, prefix_id, as_path)");
     execute(sql);
 }
 

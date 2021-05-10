@@ -1472,12 +1472,12 @@ bool test_save_results_parallel() {
     e.save_results(0);
 
     // Vector that contains correct extrapolation results
-    // Format: (asn prefix origin received_from_asn time)
+    // Format: (asn prefix origin received_from_asn time prefix_id )
     std::vector<std::string> true_results {
-        "1 137.99.0.0/16 13796 22742 0 ",
-        "2 137.99.0.0/16 13796 1 0 ",
-        "4 137.99.0.0/16 13796 2 0 ",
-        "5 137.99.0.0/16 13796 2 0 "
+        "1 137.99.0.0/16 13796 22742 0 0 ",
+        "2 137.99.0.0/16 13796 1 0 0 ",
+        "4 137.99.0.0/16 13796 2 0 0 ",
+        "5 137.99.0.0/16 13796 2 0 0 "
     };
 
     // Get extrapolation results
@@ -1572,7 +1572,7 @@ bool test_save_results_at_asn() {
     for (auto const &field: r[0]) { 
         result = result + field.c_str() + " ";
     }
-    if (result != "5 137.99.0.0/16 13796 2 0 {5,2,1,22742} ") {
+    if (result != "5 137.99.0.0/16 13796 2 0 0 {5,2,1,22742} ") {
         std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
         return false;
     }
@@ -1929,7 +1929,7 @@ bool test_extrapolation_buildup() {
         querier->execute(sql, true);
 
         sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),\
-        ('137.98.0.0/16', '{5}', 5, 0, 0, 0, 0, 0, 1, 0, 0, 0);");
+        ('137.98.0.0/16', '{5}', 5, 0, 0, 1, 0, 0, 1, 0, 0, 0);");
         querier->execute(sql, true);
 
         delete querier;
@@ -2007,18 +2007,18 @@ bool test_extrapolate_blocks() {
     e.extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
 
     // Vector that contains correct extrapolation results
-    // Format: (asn prefix origin received_from_asn time)
+    // Format: (asn prefix origin received_from_asn time prefix_id )
     std::vector<std::string> true_results {
-        "1 137.99.0.0/16 1 1 0 ",
-        "2 137.99.0.0/16 1 1 0 ",
-        "4 137.99.0.0/16 1 2 0 ",
-        "5 137.99.0.0/16 1 2 0 ",
-        "1 137.98.0.0/16 5 2 0 ",
-        "2 137.98.0.0/16 5 5 0 ",
-        "3 137.98.0.0/16 5 2 0 ",
-        "4 137.98.0.0/16 5 2 0 ",
-        "5 137.98.0.0/16 5 5 0 ",
-        "6 137.98.0.0/16 5 5 0 " 
+        "1 137.99.0.0/16 1 1 0 0 ",
+        "2 137.99.0.0/16 1 1 0 0 ",
+        "4 137.99.0.0/16 1 2 0 0 ",
+        "5 137.99.0.0/16 1 2 0 0 ",
+        "1 137.98.0.0/16 5 2 0 1 ",
+        "2 137.98.0.0/16 5 5 0 1 ",
+        "3 137.98.0.0/16 5 2 0 1 ",
+        "4 137.98.0.0/16 5 2 0 1 ",
+        "5 137.98.0.0/16 5 5 0 1 ",
+        "6 137.98.0.0/16 5 5 0 1 " 
     };
 
     // Get extrapolation results
@@ -2085,18 +2085,18 @@ bool test_extrapolate_by_block_id() {
     e.extrapolate_by_block_id(1); 
 
     // Vector that contains correct extrapolation results
-    // Format: (asn prefix origin received_from_asn time)
+    // Format: (asn prefix origin received_from_asn time prefix_id)
     std::vector<std::string> true_results {
-        "1 137.99.0.0/16 1 1 0 ",
-        "2 137.99.0.0/16 1 1 0 ",
-        "4 137.99.0.0/16 1 2 0 ",
-        "5 137.99.0.0/16 1 2 0 ",
-        "1 137.98.0.0/16 5 2 0 ",
-        "2 137.98.0.0/16 5 5 0 ",
-        "3 137.98.0.0/16 5 2 0 ",
-        "4 137.98.0.0/16 5 2 0 ",
-        "5 137.98.0.0/16 5 5 0 ",
-        "6 137.98.0.0/16 5 5 0 " 
+        "1 137.99.0.0/16 1 1 0 0 ",
+        "2 137.99.0.0/16 1 1 0 0 ",
+        "4 137.99.0.0/16 1 2 0 0 ",
+        "5 137.99.0.0/16 1 2 0 0 ",
+        "1 137.98.0.0/16 5 2 0 1 ",
+        "2 137.98.0.0/16 5 5 0 1 ",
+        "3 137.98.0.0/16 5 2 0 1 ",
+        "4 137.98.0.0/16 5 2 0 1 ",
+        "5 137.98.0.0/16 5 5 0 1 ",
+        "6 137.98.0.0/16 5 5 0 1 " 
     };
 
     // Get extrapolation results

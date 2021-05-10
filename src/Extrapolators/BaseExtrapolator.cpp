@@ -261,7 +261,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     outfile.open(file_name);
     for (auto &ann : *as.all_anns) {
         AnnouncementType &a = ann.second;
-        outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ",\"" << this->stream_as_path(a, asn) << "\"\n";
+        outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ',' << a.prefix_id << ",\"" << this->stream_as_path(a, asn) << "\"\n";
     }
     outfile.close();
     this->querier->copy_single_results_to_db(file_name);

@@ -117,8 +117,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 
         // Check for empty block
         auto bsize = ann_block.size();
-        if (bsize == 0)
-            break;
+        if (bsize == 0) {
+            BOOST_LOG_TRIVIAL(info) << "No announcements with this block id...";
+            continue;
+        }
         announcement_count += bsize;
 
         BOOST_LOG_TRIVIAL(info) << "Seeding announcements...";
@@ -163,8 +165,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             }
 
+            uint32_t prefix_id = std::stol(ann_block[i]["prefix_id"].as<std::string>());
+
             // Seed announcements along AS path
-            this->give_ann_to_as_path(as_path, cur_prefix, timestamp);
+            this->give_ann_to_as_path(as_path, cur_prefix, timestamp, prefix_id);
             delete as_path;
         }
         // Propagate for this subnet
@@ -361,8 +365,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             }
 
+            uint32_t prefix_id = std::stol(ann_block[i]["prefix_id"].as<std::string>());
+
             // Seed announcements along AS path
-            this->give_ann_to_as_path(as_path, cur_prefix, timestamp);
+            this->give_ann_to_as_path(as_path, cur_prefix, timestamp, prefix_id);
             delete as_path;
         }
         // Propagate for this subnet
@@ -398,7 +404,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp) {
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp, uint32_t prefix_id) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -533,7 +539,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                                                     priority,
                                                     received_from_asn,
                                                     timestamp,
-                                                    true);
+                                                    true,
+                                                    prefix_id);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann, this->random_tiebraking);
             if (this->graph->inverse_results != NULL) {
