@@ -71,7 +71,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         pqxx::result r = this->querier->select_max_block_id();
         max_block_id = r[0][0].as<uint32_t>();
 
-        extrapolate_by_block_id(max_block_id);
+        this->extrapolate_by_block_id(max_block_id);
     }
 }
 
