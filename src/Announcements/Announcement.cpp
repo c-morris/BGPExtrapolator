@@ -31,7 +31,6 @@ Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, Pre
     prefix.netmask = anetmask;
     origin = aorigin;
     received_from_asn = from_asn;
-    priority = 0;
     from_monitor = false;
     tstamp = timestamp;
     prefix_id = 0;
@@ -39,7 +38,7 @@ Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, Pre
 
 template <typename PrefixType>
 Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
-    uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */, uint32_t prefix_id /* = 0 */) 
+    Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */, uint32_t prefix_id /* = 0 */) 
     : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
     
     priority = pr; 

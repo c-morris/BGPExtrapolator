@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "Prefix.h"
+#include "Priority.h"
 
 template <typename PrefixType = uint32_t> class Announcement;
 
@@ -39,7 +40,7 @@ class Announcement {
 public:
     Prefix<PrefixType> prefix;            // encoded with subnet mask
     uint32_t origin;            // origin ASN
-    uint32_t priority;          // priority assigned based upon path
+    Priority priority;          // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
     bool from_monitor = false;  // flag for seeded ann
     int64_t tstamp;             // timestamp from mrt file
@@ -55,7 +56,7 @@ public:
     /** Priority constructor
      */
     Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
-        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, uint32_t prefix_id = 0);
+        Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, uint32_t prefix_id = 0);
 
     /** Copy constructor
      */

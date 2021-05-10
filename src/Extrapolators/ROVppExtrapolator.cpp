@@ -183,11 +183,11 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         if (i > 1) {
             // Get the previous ASes relationship to current AS
             if (as_on_path->providers->find(*(it - 1)) != as_on_path->providers->end()) {
-                received_from = AS_REL_PROVIDER;
+                received_from = AS_REL_PROVIDER_ROVPP;
             } else if (as_on_path->peers->find(*(it - 1)) != as_on_path->peers->end()) {
-                received_from = AS_REL_PEER;
+                received_from = AS_REL_PEER_ROVPP;
             } else if (as_on_path->customers->find(*(it - 1)) != as_on_path->customers->end()) {
-                received_from = AS_REL_CUSTOMER;
+                received_from = AS_REL_CUSTOMER_ROVPP;
             } else {
                 broken_path = true;
             }
