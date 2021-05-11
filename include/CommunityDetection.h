@@ -110,6 +110,10 @@ public:
      */
     std::set<uint32_t> get_unique_asns(std::vector<std::vector<uint32_t>> edges);
 
+    void gen_suspect_candidates_helper_subset(std::map<uint32_t, std::set<uint32_t>> &ind_map, std::vector<std::pair<uint32_t, uint32_t>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, std::vector<uint32_t> &building_sum, int startIndex, int endIndex);
+
+    void gen_suspect_candidates_helper(std::vector<std::vector<uint32_t>> &results, std::vector<uint32_t> &current, std::map<uint32_t, std::set<uint32_t>> &ind_map, std::map<uint32_t, uint32_t> &degrees, std::vector<std::pair<uint32_t, uint32_t>> &distinguishable_subsets, uint32_t distinguishable_index);
+
     std::vector<std::vector<uint32_t>> gen_suspect_candidates(
         std::map<uint32_t, std::set<uint32_t>> &ind_map,
         std::map<uint32_t, uint32_t> &degrees);
@@ -118,6 +122,7 @@ public:
 
     // Deprecated
     void local_threshold_approx_filtering_deprecated();
+
     /**
      * An attacking announcement that an adopting EZBGPsec AS accepted. In theory, this announcement has an invalid MAC for the origin.
      * This will extract the hyper edge(s) from the announcement path (if any are visible).

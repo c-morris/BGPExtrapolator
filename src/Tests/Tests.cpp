@@ -252,6 +252,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_vc ) {
         BOOST_CHECK( ezbgpsec_test_get_unique_asns() );
         BOOST_CHECK( ezbgpsec_test_get_degrees() );
         BOOST_CHECK( ezbgpsec_test_gen_suspect_candidates() );
+        BOOST_CHECK( ezbgpsec_test_gen_suspect_candidates_tiebrake() );
 }
 
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_bgpsec ) {

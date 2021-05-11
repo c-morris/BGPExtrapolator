@@ -605,6 +605,58 @@ bool ezbgpsec_test_gen_suspect_candidates() {
     return !error;
 }
 
+bool ezbgpsec_test_gen_suspect_candidates_tiebrake() {
+    std::vector<uint32_t> edge1 = {30, 20, 3, 666, 2, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 3, 666, 2, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 5, 666, 4, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 5, 666, 4, 1};
+    std::vector<uint32_t> edge5 = {30, 24, 7, 666, 6, 1};
+    std::vector<uint32_t> edge6 = {30, 25, 7, 666, 6, 1};
+    CommunityDetection cd(NULL, 1);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+    cd.add_hyper_edge(edge5);
+    cd.add_hyper_edge(edge6);
+
+    auto test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
+    auto test_s = cd.get_unique_asns(cd.hyper_edges);
+    auto test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
+
+    std::vector<std::vector<uint32_t>> test_suspect_candidates = cd.gen_suspect_candidates(test_ind_map, test_degrees);
+
+    std::vector<std::vector<uint32_t>> true_suspect_candidates = {{1, 30, 666}, { 1, 30, 666, 2, 3 }, { 1, 30, 666, 2, 3, 4, 5 }, { 1, 30, 666, 2, 3, 4, 5, 6, 7 }, { 1, 30, 666, 2, 3, 6, 7 }, { 1, 30, 666, 4, 5 }, { 1, 30, 666, 4, 5, 6, 7 }, { 1, 30, 666, 6, 7 }};
+
+    bool error = false;
+    for(auto &suspect : true_suspect_candidates) {
+        if(std::find(test_suspect_candidates.begin(), test_suspect_candidates.end(), suspect) == test_suspect_candidates.end()) {
+            error = true;
+
+            std::cerr << "The candidate suspect (in tiebrake test): { ";
+            for(auto asn : suspect)
+                std::cerr << asn << " ";
+            std::cerr << "} is not in the suspect list" << std::endl;
+        }
+    }
+
+    if(test_suspect_candidates.size() != true_suspect_candidates.size()) {
+        error = true;
+
+        std::cerr << "The elements of the candidates (in tiebrake test) are not correct. Candidates are currently: ";
+
+        std::cerr << "{ ";
+        for(auto &suspect : test_suspect_candidates) {
+            std::cerr << "{ ";
+                for(auto asn : suspect)
+                    std::cerr << asn << " ";
+            std::cerr << "} ";
+        }
+        std::cerr << "} " << std::endl;;
+    }
+
+    return !error;
+}
 
 /** Test BGPsec invalid announcement rejection of non-contiguous path. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider

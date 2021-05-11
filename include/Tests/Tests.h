@@ -144,6 +144,7 @@ bool ezbgpsec_test_gen_ind_asn();
 bool ezbgpsec_test_get_unique_asns();
 bool ezbgpsec_test_get_degrees();
 bool ezbgpsec_test_gen_suspect_candidates();
+bool ezbgpsec_test_gen_suspect_candidates_tiebrake();
 
 bool ezbgpsec_test_bgpsec_noncontiguous();
 bool ezbgpsec_test_bgpsec_contiguous();

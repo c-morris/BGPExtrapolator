@@ -143,6 +143,58 @@ std::set<uint32_t> CommunityDetection::get_unique_asns(std::vector<std::vector<u
     return unique_asns;
 }
 
+void CommunityDetection::gen_suspect_candidates_helper_subset(std::map<uint32_t, std::set<uint32_t>> &ind_map, std::vector<std::pair<uint32_t, uint32_t>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, std::vector<uint32_t> &building_sum, int startIndex, int endIndex) {
+    if(startIndex == endIndex)
+        return;
+
+    //Choose to include or exclude the current set
+    for(auto asn : ind_map.at(distinguishable_subsets.at(startIndex).first))
+        building_sum.push_back(asn);
+    
+    //Add this new subset to the total accumalation of subsets
+    if(building_sum.size() != 0)
+        results.push_back(building_sum);
+    gen_suspect_candidates_helper_subset(ind_map, distinguishable_subsets, results, building_sum, startIndex + 1, endIndex);
+
+    //Do not add building sum after this since this is what building sum originally was, which was already added in the previous recursive call
+    for(auto asn : ind_map.at(distinguishable_subsets.at(startIndex).first))
+        building_sum.pop_back();
+    gen_suspect_candidates_helper_subset(ind_map, distinguishable_subsets, results, building_sum, startIndex + 1, endIndex);
+}
+
+void CommunityDetection::gen_suspect_candidates_helper(std::vector<std::vector<uint32_t>> &results, std::vector<uint32_t> &current, 
+                                                        std::map<uint32_t, std::set<uint32_t>> &ind_map, std::map<uint32_t, uint32_t> &degrees, 
+                                                        std::vector<std::pair<uint32_t, uint32_t>> &distinguishable_subsets, uint32_t distinguishable_index) {
+
+    if(distinguishable_index >= distinguishable_subsets.size() - 1)
+        return;
+
+    uint32_t degree = distinguishable_subsets.at(distinguishable_index).second;
+    if(degree <= local_threshold)
+        return;
+
+    uint32_t end_same_degree_index = distinguishable_index + 1;
+    for(; end_same_degree_index < distinguishable_subsets.size(); end_same_degree_index++)
+        if(distinguishable_subsets.at(end_same_degree_index).second != degree)
+            break;
+    
+    std::vector<std::vector<uint32_t>> subsets_to_append;
+    std::vector<uint32_t> building_sum;
+
+    gen_suspect_candidates_helper_subset(ind_map, distinguishable_subsets, subsets_to_append, building_sum, distinguishable_index, end_same_degree_index);
+
+    for(auto &subset : subsets_to_append) {
+        std::vector<uint32_t> current_copy = current;
+
+        for(auto asn : subset)
+            current_copy.push_back(asn);
+        
+        results.push_back(current_copy);
+
+        gen_suspect_candidates_helper(results, current_copy, ind_map, degrees, distinguishable_subsets, end_same_degree_index);
+    }
+}
+
 // generate all possible cover candidates of size sz with given indistinguishability map
 std::vector<std::vector<uint32_t>> CommunityDetection::gen_suspect_candidates( 
         std::map<uint32_t, std::set<uint32_t>> &ind_map,
@@ -167,18 +219,8 @@ std::vector<std::vector<uint32_t>> CommunityDetection::gen_suspect_candidates(
         }
     }
 
-    // This greedy approach only works with one attacker
-    // Start with the node with the highest degree plus all nodes it is indistinguishable from
-    std::vector<uint32_t> tmp;
-    for (auto d : distinguishable_subsets) {
-        if(degrees[d.first] <= local_threshold)
-            break;
-
-        for (auto asn : ind_map[d.first])
-            tmp.push_back(asn);
-        
-        retval.push_back(tmp);
-    }
+    std::vector<uint32_t> running_sum;
+    gen_suspect_candidates_helper(retval, running_sum, ind_map, degrees, distinguishable_subsets, 0);
 
     return retval;
 }
