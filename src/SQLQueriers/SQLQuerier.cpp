@@ -526,9 +526,10 @@ pqxx::result SQLQuerier<PrefixType>::select_max_block_id() {
 /** Returns all rows (announcements) that have the corresponding block_id
  */
 template <typename PrefixType>
-pqxx::result SQLQuerier<PrefixType>::select_prefix_block_id(int block_id) {
+pqxx::result SQLQuerier<PrefixType>::select_prefix_block_id(int block_id, int family) {
     std::string sql = std::string("SELECT host(prefix), netmask(prefix), as_path, origin, time, prefix_id FROM "
-     + announcements_table + " WHERE block_id = " + std::to_string(block_id));
+     + announcements_table + " WHERE block_id = " + std::to_string(block_id)
+     + " AND family(prefix) = " + std::to_string(family));
 
     if (exclude_as_number > -1) {
         sql += " and monitor_asn != " + std::to_string(exclude_as_number) + ";";

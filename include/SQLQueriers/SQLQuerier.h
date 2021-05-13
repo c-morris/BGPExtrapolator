@@ -122,6 +122,6 @@ public:
     void create_results_index();
 
     pqxx::result select_max_block_id();
-    pqxx::result select_prefix_block_id(int block_id);
+    pqxx::result select_prefix_block_id(int block_id, int family);
 };
 #endif

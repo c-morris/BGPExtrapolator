@@ -52,9 +52,9 @@ template <class SQLQuerierType, class GraphType, class AnnouncementType, class A
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::perform_propagation() {
     init();
 
-    BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     if (!select_block_id) {
+        BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
         // Generate iteration blocks
         std::vector<Prefix<PrefixType>*> *prefix_blocks = new std::vector<Prefix<PrefixType>*>; // Prefix blocks
         std::vector<Prefix<PrefixType>*> *subnet_blocks = new std::vector<Prefix<PrefixType>*>; // Subnet blocks
@@ -67,6 +67,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         delete prefix_blocks;
         delete subnet_blocks;
     } else { // If blocks are selected by block_id from the announcement table
+        BOOST_LOG_TRIVIAL(info) << "Extrapolating blocks...";
         // Find the max block_id and save it
         pqxx::result r = this->querier->select_max_block_id();
         max_block_id = r[0][0].as<uint32_t>();
@@ -113,7 +114,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         auto prefix_start = std::chrono::high_resolution_clock::now();
 
         // Get a block of announcements
-        pqxx::result ann_block = this->querier->select_prefix_block_id(i);
+        int address_family = (sizeof(PrefixType) == 4 ? 4 : 6);
+        pqxx::result ann_block = this->querier->select_prefix_block_id(i, address_family);
 
         // Check for empty block
         auto bsize = ann_block.size();
