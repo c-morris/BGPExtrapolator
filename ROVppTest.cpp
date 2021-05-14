@@ -1570,10 +1570,10 @@ bool test_process_announcement2() {
     // are in conflict with a4 and a5 respectively. So the safest one left is a3. When that announcement is sent to process_announcement function it 
     // see that this proposed alternative is not better in terms of relationship to the currently used announcemnt a1. So it will keep using a1.
     if (as.loc_rib->find(p1)->second == a1) {
-        std::cerr << "Prefer relationship over safety" << "\n";
-        return false;
+        return true;
     }
-    return true; 
+    std::cerr << "Should prefer relationship over safety" << "\n";
+    return false; 
 }
 
 
