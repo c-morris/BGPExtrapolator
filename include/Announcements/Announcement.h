@@ -46,26 +46,23 @@ public:
     int64_t tstamp;             // timestamp from mrt file
     // TODO replace with proper templating
     uint32_t policy_index;      // stores the policy index the ann applies
-    uint32_t prefix_id;
 
     /**
      * "Uninitilized" constructor. This is the object that goes into the PrefixAnnouncementMap data structure. 
      * If the announcement is in this state, then it doesn't really have any meaning. It is just a placeholer in memory
      * See the notes in PrefixAnnouncementMap.h for why this is done
      */
-    Announcement() : prefix(0, 0, 0, 0) {
-        tstamp = -1;
-    }
+    Announcement();
 
     /** Default constructor
      */
-    Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
+    Announcement(uint32_t aorigin, Prefix<PrefixType> prefix,
         uint32_t from_asn, int64_t timestamp = 0);
     
     /** Priority constructor
      */
-    Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
-        Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, uint32_t prefix_id = 0);
+    Announcement(uint32_t aorigin, Prefix<PrefixType> prefix,
+        Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false);
 
     /** Copy constructor
      */

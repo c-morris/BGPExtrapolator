@@ -20,8 +20,8 @@ bool test_rov_is_from_attacker() {
     ROVASGraph graph = ROVASGraph();
     graph.add_relationship(1, 2, AS_REL_PROVIDER);
     graph.add_relationship(2, 1, AS_REL_CUSTOMER);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    ROVAnnouncement ann = ROVAnnouncement(13796, p.addr, p.netmask, 22742);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    ROVAnnouncement ann = ROVAnnouncement(13796, p, 22742);
 
     // No attackers
     if (graph.ases->find(1)->second->is_from_attacker(ann) == true) {
@@ -59,7 +59,7 @@ bool test_rov_is_attacker() {
  * @return true if successful.
  */
 bool test_rov_process_announcement(){
-    ROVAnnouncement ann = ROVAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
+    ROVAnnouncement ann = ROVAnnouncement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     ROVASGraph graph = ROVASGraph();
     ROVAS as = *graph.createNew(1);
     // this function should make a copy of the announcement
@@ -70,8 +70,8 @@ bool test_rov_process_announcement(){
     ann.prefix.netmask = 0xFFFFFF00;
     Prefix<> new_prefix = ann.prefix;
     as.process_announcement(ann);
-    if (new_prefix != as.all_anns->find(ann.prefix)->second.prefix ||
-        old_prefix != as.all_anns->find(old_prefix)->second.prefix) {
+    if (new_prefix != as.all_anns->find(ann.prefix)->prefix ||
+        old_prefix != as.all_anns->find(old_prefix)->prefix) {
         return false;
     }
 
@@ -140,22 +140,22 @@ bool test_rov_give_ann_to_as_path() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2);
 
     // Test that monitor annoucements were received
-    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
+    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->from_monitor &&
+         e.graph->ases->find(3)->second->all_anns->find(p)->from_monitor &&
+         e.graph->ases->find(5)->second->all_anns->find(p)->from_monitor)) {
         std::cerr << "Monitor flag failed." << std::endl;
         delete as_path;
         return false;
     }
 
     // Test announcement priority calculation
-    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) 253 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) 254 << 8) ||
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8)) {
+    if (e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) 253 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) 254 << 8) ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8)) {
         std::cerr << "Priority calculation failed." << std::endl;
         delete as_path;
         return false;
@@ -181,15 +181,15 @@ bool test_rov_give_ann_to_as_path() {
     as_path_b->push_back(4);
     e.give_ann_to_as_path(as_path_b, p, 1);
 
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.tstamp != 1) {
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->tstamp != 1) {
         delete as_path;
         delete as_path_b;
         return false;
     }
     
     // Test prepending calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) 253 << 8)) {
-        std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second.priority << std::endl;
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) 253 << 8)) {
+        std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->priority << std::endl;
         delete as_path;
         delete as_path_b;
         return false;
@@ -234,7 +234,7 @@ bool test_rov_give_ann_to_as_path_invalid() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 2);
 
     // Test that only path received the announcement
@@ -250,14 +250,14 @@ bool test_rov_give_ann_to_as_path_invalid() {
     }
 
     // Test that monitor annoucements were received
-    if (!e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor) {
+    if (!e.graph->ases->find(5)->second->all_anns->find(p)->from_monitor) {
         std::cerr << "Monitor flag failed." << std::endl;
         delete as_path;
         return false;
     }
 
     // Test announcement priority calculation
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8)) {
         std::cerr << "Priority calculation failed." << std::endl;
         delete as_path;
         return false;
@@ -298,7 +298,7 @@ bool test_rov_send_all_announcements() {
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(2);
     as_path->push_back(4);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 0);
     delete as_path;
 
@@ -349,11 +349,11 @@ bool test_rov_send_all_announcements() {
     e.graph->ases->find(5)->second->process_announcements(true);
 
     // Check priority calculation
-    if (e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 2) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8) ||
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) (255 - 2) << 8)) {
+    if (e.graph->ases->find(4)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 2) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8) ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 2) << 8)) {
         std::cerr << "Send all announcements priority calculation failed." << std::endl;
         return false;
     }
@@ -391,12 +391,12 @@ bool test_rov_prepending_priority_back() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
         std::cerr << "rov_prepending_priority_back failed." << std::endl;
         delete as_path;
         return false;
@@ -435,12 +435,12 @@ bool test_rov_prepending_priority_middle() {
     as_path->push_back(2);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 3) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 3) << 8)) {
         std::cerr << "rov_prepending_priority_middle failed." << std::endl;
         delete as_path;
         return false;
@@ -479,12 +479,12 @@ bool test_rov_prepending_priority_beginning() {
     as_path->push_back(2);
     as_path->push_back(5);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 2) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 3) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 2) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 3) << 8)) {
         std::cerr << "rov_prepending_priority_end failed." << std::endl;
         delete as_path;
         return false;
@@ -522,7 +522,7 @@ bool test_rov_prepending_priority_back_existing_ann() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
     std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
@@ -532,9 +532,9 @@ bool test_rov_prepending_priority_back_existing_ann() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
         std::cerr << "rov_prepending_priority_back_existing_ann failed." << std::endl;
         delete as_path;
         delete as_path_b;
@@ -574,7 +574,7 @@ bool test_rov_prepending_priority_middle_existing_ann() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
     
     std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
@@ -584,9 +584,9 @@ bool test_rov_prepending_priority_middle_existing_ann() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
         std::cerr << "rov_prepending_priority_middle_existing_ann failed." << std::endl;
         delete as_path;
         delete as_path_b;
@@ -626,7 +626,7 @@ bool test_rov_prepending_priority_beginning_existing_ann() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
     std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
@@ -636,9 +636,9 @@ bool test_rov_prepending_priority_beginning_existing_ann() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
         std::cerr << "rov_prepending_priority_beginning_existing_ann failed." << std::endl;
         delete as_path;
         delete as_path_b;
@@ -679,12 +679,12 @@ bool test_rov_prepending_priority_beginning_existing_ann2() {
     as_path->push_back(2);
     as_path->push_back(5);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 2) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 3) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 2) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 3) << 8)) {
         std::cerr << "rov_prepending_priority_beginning_existing_ann2 failed." << std::endl;
         delete as_path;
         return false;
@@ -696,9 +696,9 @@ bool test_rov_prepending_priority_beginning_existing_ann2() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 24) + ((uint64_t) 255 << 8) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 24) + ((uint64_t) (255 - 2) << 8)) {
         std::cerr << "rov_prepending_priority_beginning_existing_ann2 failed." << std::endl;
         delete as_path;
         delete as_path_b;

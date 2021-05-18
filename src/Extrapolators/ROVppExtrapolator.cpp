@@ -215,7 +215,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
 
             // Skip announcement if there exists one with a higher priority
             ROVppAS *current_as = this->graph->ases->find(as_path->at(currPos))->second;
-            if (current_as->all_anns->find(prefix)->second.priority > priority) {
+            if (current_as->all_anns->find(prefix)->priority > priority) {
                 continue;
             }
 

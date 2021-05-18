@@ -63,8 +63,8 @@ public:
     // Defer processing of incoming announcements for efficiency
     std::vector<AnnouncementType> *incoming_announcements;
     // Maps of all announcements stored
-    PrefixAnnouncementMap<AnnouncementType> *all_anns;
-    PrefixAnnouncementMap<AnnouncementType> *depref_anns;
+    PrefixAnnouncementMap<AnnouncementType, PrefixType> *all_anns;
+    PrefixAnnouncementMap<AnnouncementType, PrefixType> *depref_anns;
 
     // Stores AS Relationships
     std::set<uint32_t> *providers; 
@@ -80,7 +80,7 @@ public:
     bool onStack;
     
     // Constructor. Must be in header file.... We like C++ class templates. We like C++ class templates....
-    BaseAS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<PrefixType>, uint32_t>, std::set<uint32_t>*> *inverse_results) {
+    BaseAS(uint32_t asn, uint32_t max_block_prefix_id, bool store_depref_results, std::map<std::pair<Prefix<PrefixType>, uint32_t>, std::set<uint32_t>*> *inverse_results) {
 
         // Set ASN
         this->asn = asn;
@@ -96,10 +96,10 @@ public:
         member_ases = new std::vector<uint32_t>();    // Supernode members
         incoming_announcements = new std::vector<AnnouncementType>();
 
-        all_anns = new PrefixAnnouncementMap<AnnouncementType>(20);
+        all_anns = new PrefixAnnouncementMap<AnnouncementType, PrefixType>(max_block_prefix_id);
 
         if(store_depref_results)
-            depref_anns = new PrefixAnnouncementMap<AnnouncementType>(20);
+            depref_anns = new PrefixAnnouncementMap<AnnouncementType, PrefixType>(max_block_prefix_id);
         else
             depref_anns = NULL;
 
@@ -108,8 +108,8 @@ public:
         onStack = false;
     }
 
-    BaseAS(uint32_t asn, bool store_depref_results) : BaseAS(asn, store_depref_results, NULL) { }
-    BaseAS(uint32_t asn) : BaseAS(asn, false, NULL) { }
+    BaseAS(uint32_t asn, uint32_t max_block_prefix_id, bool store_depref_results) : BaseAS(asn, max_block_prefix_id, store_depref_results, NULL) { }
+    BaseAS(uint32_t asn, uint32_t max_block_prefix_id) : BaseAS(asn, max_block_prefix_id, false, NULL) { }
     BaseAS() : BaseAS(0, false, NULL) { }
 
     virtual ~BaseAS();

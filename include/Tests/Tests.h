@@ -197,5 +197,6 @@ bool test_copy_to_db_string();
 bool test_select_prefix_string();
 bool test_clear_table_string();
 bool test_create_table_string();
+bool test_select_max_query_string();
 
 #endif

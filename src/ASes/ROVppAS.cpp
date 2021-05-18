@@ -25,7 +25,7 @@
 
 bool ROVppAS::graph_changed = false;
 
-ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn, false)  {
+ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn, 20, false)  {
     // Save reference to attackers
     // attackers = rovpp_attackers;
     // bad_neighbors = new std::set<uint32_t>();

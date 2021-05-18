@@ -7,8 +7,9 @@
 #include "Announcements/Announcement.h"
 #include "Announcements/EZAnnouncement.h"
 #include "Announcements/ROVppAnnouncement.h"
+#include "Announcements/ROVAnnouncement.h"
 
-template <class AnnouncementType>
+template <class AnnouncementType, typename PrefixType = uint32_t>
 class PrefixAnnouncementMap {
 private:
     size_t filled_size;//Number of announcements that are filled in the announcements vector
@@ -17,10 +18,10 @@ private:
 public:
     class Iterator {
     public:
-        const PrefixAnnouncementMap<AnnouncementType> *parent;
+        const PrefixAnnouncementMap<AnnouncementType, PrefixType> *parent;
         size_t index;
 
-        Iterator(const PrefixAnnouncementMap<AnnouncementType> *parent, size_t index) : parent(parent), index(index) {
+        Iterator(const PrefixAnnouncementMap<AnnouncementType, PrefixType> *parent, size_t index) : parent(parent), index(index) {
             if(index < parent->announcements.size() && parent->announcements.at(index).tstamp == -1)
                 this->index = parent->announcements.size();
         }
@@ -63,9 +64,9 @@ public:
      * Returns an iterator to the element at the given prefix. If the announcement at this prefix is "not initilized"
      *  then this will return the end iterator.
      */
-    virtual Iterator find(const Prefix<> &prefix);
+    virtual Iterator find(const Prefix<PrefixType> &prefix);
 
-    virtual void insert(const Prefix<> &prefix, const AnnouncementType &ann);
+    virtual void insert(const Prefix<PrefixType> &prefix, const AnnouncementType &ann);
     virtual void insert(const Iterator &other_iterator);
 
     virtual Iterator begin() const;
@@ -84,7 +85,7 @@ public:
      * 
      *  As of writing this, this means setting the timestamp to -1, which cannot happen
      */
-    virtual void erase(Prefix<> &prefix);
+    virtual void erase(Prefix<PrefixType> &prefix);
 
     /**
      *  Resets the announcement at the prefix in the announcement given announcement, into an "uninitialized" state.
@@ -93,7 +94,7 @@ public:
      * 
      *  As of writing this, this means setting the timestamp to -1, which cannot happen
      */
-    virtual void erase(Announcement &announcement);
+    virtual void erase(AnnouncementType &announcement);
 
     /**
      * Determines whether or not the given announcement is a placeholder announcement or is a populated announcement
@@ -107,7 +108,7 @@ public:
      * The idea is that we make the upfront allocation of announcments into memory, then modify the state of each announcement
      * This function will tell you if the announcement, at the given prefix, is just a placeholder or is a real announcement with meaningful data
      */
-    virtual bool filled(const Prefix<> &prefix);
+    virtual bool filled(const Prefix<PrefixType> &prefix);
 
     /**
      *  This will give back the number of announcements that are populated in the data structure.

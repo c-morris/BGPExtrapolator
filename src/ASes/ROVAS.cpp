@@ -1,7 +1,7 @@
 #include "ASes/ROVAS.h"
 
 ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) 
-: BaseAS<ROVAnnouncement>(asn, store_depref_results, inverse_results) { 
+: BaseAS<ROVAnnouncement>(asn, 20, store_depref_results, inverse_results) { 
     // Save reference to attackers
     attackers = rov_attackers;
     // ROV adoption is false by default

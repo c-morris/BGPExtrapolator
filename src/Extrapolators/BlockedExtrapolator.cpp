@@ -44,6 +44,11 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
     this->querier->clear_supernodes_from_db();
     this->querier->create_supernodes_tbl();
     
+    // Calculate max block_prefix_id before creating any ASes
+    BOOST_LOG_TRIVIAL(info) << "Calculating max block_prefix_id";
+    pqxx::result r = this->querier->select_max_block_prefix_id();
+    this->graph->max_block_prefix_id = r[0][0].as<uint32_t>() + 1;    
+
     // Generate the graph and populate the stubs & supernode tables
     this->graph->create_graph_from_db(this->querier);
 }
@@ -109,7 +114,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 
     // Propagate each unprocessed block of announcements 
     for (uint32_t i = 0; i <= max_block_id; i++) {
-        BOOST_LOG_TRIVIAL(info) << "Selecting Announcements...";
+        //BOOST_LOG_TRIVIAL(info) << "Selecting Announcements...";
         auto prefix_start = std::chrono::high_resolution_clock::now();
 
         // Get a block of announcements
@@ -118,7 +123,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         // Check for empty block
         auto bsize = ann_block.size();
         if (bsize == 0) {
-            BOOST_LOG_TRIVIAL(info) << "No announcements with this block id...";
+            //BOOST_LOG_TRIVIAL(info) << "No announcements with this block id...";
             continue;
         }
         announcement_count += bsize;
@@ -133,7 +138,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             // Get row prefix
             std::string ip = ann_block[i]["host"].c_str();
             std::string mask = ann_block[i]["netmask"].c_str();
-            Prefix<PrefixType> cur_prefix(ip, mask);
+            
+            uint32_t prefix_id;
+            uint32_t prefix_block_id;
+
+            ann_block[i]["prefix_id"].to(prefix_id);
+            ann_block[i]["block_prefix_id"].to(prefix_block_id);
+
+            Prefix<PrefixType> cur_prefix(ip, mask, prefix_id, prefix_block_id);
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = this->parse_path(path_as_string);
@@ -165,10 +177,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             }
 
-            uint32_t prefix_id = std::stol(ann_block[i]["prefix_id"].as<std::string>());
-
             // Seed announcements along AS path
-            this->give_ann_to_as_path(as_path, cur_prefix, timestamp, prefix_id);
+            this->give_ann_to_as_path(as_path, cur_prefix, timestamp);
             delete as_path;
         }
         // Propagate for this subnet
@@ -372,10 +382,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             }
 
-            uint32_t prefix_id = std::stol(ann_block[i]["prefix_id"].as<std::string>());
-
             // Seed announcements along AS path
-            this->give_ann_to_as_path(as_path, cur_prefix, timestamp, prefix_id);
+            this->give_ann_to_as_path(as_path, cur_prefix, timestamp);
             delete as_path;
         }
         // Propagate for this subnet
@@ -411,7 +419,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
-void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp, uint32_t prefix_id) {
+void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp) {
     // Handle empty as_path
     if (as_path->empty()) { 
         return;
@@ -494,10 +502,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 
                 // Skip announcement if there exists one with a higher priority
                 ASType *current_as = this->graph->ases->find(as_path->at(currPos))->second;
-                if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                if (current_as->all_anns->find(prefix)->priority > priority) {
                     continue;
                 // If the new announcement has a higher priority, change keep_first to false to make sure we save it
-                } else if (current_as->all_anns->find(prefix)->second.priority < priority) {
+                } else if (current_as->all_anns->find(prefix)->priority < priority) {
                     keep_first = false;
                 }
 
@@ -545,8 +553,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                                                     priority,
                                                     received_from_asn,
                                                     timestamp,
-                                                    true,
-                                                    prefix_id);
+                                                    true);
             // Send the announcement to the current AS
             as_on_path->process_announcement(ann, this->random_tiebraking);
             if (this->graph->inverse_results != NULL) {
@@ -637,8 +644,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                     // Check if all providers have the announcement
                     for (uint32_t provider_asn : *source_as->providers) {
                         auto *recving_as = this->graph->ases->find(provider_asn)->second;
-                        auto search = recving_as->all_anns->find(ann.second.prefix);
-                        if (search != recving_as->all_anns->end() && search->second.origin == ann.second.origin) {
+                        auto search = recving_as->all_anns->find(ann.prefix);
+                        if (search != recving_as->all_anns->end() && search->origin == ann.origin) {
                             providers_with_ann++;
                             break; // Break because at least one provider received the announcement from this AS
                         }
@@ -651,7 +658,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 // Set the priority of the announcement at destination 
                 Priority priority;
                 priority.relationship = 2;
-                priority.path_length = ann.second.priority.path_length + 1;
+                priority.path_length = ann.priority.path_length + 1;
                 
                 AnnouncementType temp = AnnouncementType(ann);
                 temp.priority = priority;

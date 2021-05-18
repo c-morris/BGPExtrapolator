@@ -1,10 +1,10 @@
 #include "PrefixAnnouncementMap.h"
 
 bool prefixAnnouncementMap_test_insert() {
-    PrefixAnnouncementMap<Announcement> map(10);
+    PrefixAnnouncementMap<Announcement<>> map(10);
 
     Prefix<> p(0x89630000, 0xFFFF0000, 0, 0);
-    Announcement ann(13796, p, 22742);
+    Announcement<> ann(13796, p, 22742);
 
     if(map.find(p) != map.end()) {
         std::cerr << "Equality of not-filled announcement and the end iterator is not working!" << std::endl;

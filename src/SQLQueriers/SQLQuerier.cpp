@@ -250,6 +250,17 @@ std::string SQLQuerier<PrefixType>::create_table_query_string(std::string table_
     return sql;
 }
 
+/** Returns a string with SQL MAX query
+ *
+ *  @param table_name Name of the table
+ *  @param column_name Name of the column where max is calculated
+ */
+template <typename PrefixType>
+std::string SQLQuerier<PrefixType>::select_max_query_string(std::string table_name, std::string column_name) {
+    std::string sql = std::string("SELECT MAX(" + column_name + ") FROM " + table_name + ";");
+    return sql;
+}
+
 /** Generic SELECT query for returning the entire relationship tables.
  *
  *  @param table_name The name of the table to SELECT from
@@ -519,7 +530,15 @@ void SQLQuerier<PrefixType>::create_results_index() {
  */
 template <typename PrefixType>
 pqxx::result SQLQuerier<PrefixType>::select_max_block_id() {
-    std::string sql = std::string("SELECT MAX(block_id) FROM " + announcements_table + ";");
+    std::string sql = select_max_query_string(announcements_table, "block_id");
+    return execute(sql, false);
+}
+
+/** Returns the max value of block_prefix_id in the announcements table
+ */
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_max_block_prefix_id() {
+    std::string sql = select_max_query_string(announcements_table, "block_prefix_id");
     return execute(sql, false);
 }
 
@@ -527,7 +546,7 @@ pqxx::result SQLQuerier<PrefixType>::select_max_block_id() {
  */
 template <typename PrefixType>
 pqxx::result SQLQuerier<PrefixType>::select_prefix_block_id(int block_id) {
-    std::string sql = std::string("SELECT host(prefix), netmask(prefix), as_path, origin, time, prefix_id FROM "
+    std::string sql = std::string("SELECT host(prefix), netmask(prefix), as_path, origin, time, prefix_id, block_prefix_id FROM "
      + announcements_table + " WHERE block_id = " + std::to_string(block_id));
 
     if (exclude_as_number > -1) {

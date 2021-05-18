@@ -19,7 +19,7 @@ public:
     
     /** Priority constructor
      */
-    EZAnnouncement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
+    EZAnnouncement(uint32_t aorigin, Prefix<> prefix,
         Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, bool from_attacker = false);
 
     /** Copy constructor

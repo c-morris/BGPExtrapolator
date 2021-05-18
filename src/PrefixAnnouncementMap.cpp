@@ -1,8 +1,8 @@
 #include "PrefixAnnouncementMap.h"
 
 /******************** Iterator ********************/
-template <class AnnouncementType>
-typename PrefixAnnouncementMap<AnnouncementType>::Iterator& PrefixAnnouncementMap<AnnouncementType>::Iterator::operator++() {
+template <class AnnouncementType, typename PrefixType>
+typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator& PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator::operator++() {
     index++;
     while(index < parent->announcements.size()) {
         if(parent->announcements.at(index).tstamp != -1) {
@@ -15,36 +15,36 @@ typename PrefixAnnouncementMap<AnnouncementType>::Iterator& PrefixAnnouncementMa
     return *this;
 }
 
-template <class AnnouncementType>
-typename PrefixAnnouncementMap<AnnouncementType>::Iterator PrefixAnnouncementMap<AnnouncementType>::Iterator::operator++(int) {
+template <class AnnouncementType, typename PrefixType>
+typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator::operator++(int) {
     Iterator tmp(*this); 
     operator++(); 
     return tmp;
 }
 
-template <class AnnouncementType>
-bool PrefixAnnouncementMap<AnnouncementType>::Iterator::operator==(const PrefixAnnouncementMap<AnnouncementType>::Iterator& other) const { return index == other.index; }
+template <class AnnouncementType, typename PrefixType>
+bool PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator::operator==(const PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator& other) const { return index == other.index; }
 
-template <class AnnouncementType>
-bool PrefixAnnouncementMap<AnnouncementType>::Iterator::operator!=(const PrefixAnnouncementMap<AnnouncementType>::Iterator& other) const { return index != other.index; }
+template <class AnnouncementType, typename PrefixType>
+bool PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator::operator!=(const PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator& other) const { return index != other.index; }
 
-template <class AnnouncementType>
-const AnnouncementType& PrefixAnnouncementMap<AnnouncementType>::Iterator::operator*() { return parent->announcements.at(index); }
+template <class AnnouncementType, typename PrefixType>
+const AnnouncementType& PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator::operator*() { return parent->announcements.at(index); }
 
-template <class AnnouncementType>
-const AnnouncementType* PrefixAnnouncementMap<AnnouncementType>::Iterator::operator->() { return &parent->announcements.at(index); }
+template <class AnnouncementType, typename PrefixType>
+const AnnouncementType* PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator::operator->() { return &parent->announcements.at(index); }
 
 /******************** PrefixAnnouncementMap ********************/
-template <class AnnouncementType>
-PrefixAnnouncementMap<AnnouncementType>::~PrefixAnnouncementMap() { }
+template <class AnnouncementType, typename PrefixType>
+PrefixAnnouncementMap<AnnouncementType, PrefixType>::~PrefixAnnouncementMap() { }
 
-template <class AnnouncementType>
-typename PrefixAnnouncementMap<AnnouncementType>::Iterator PrefixAnnouncementMap<AnnouncementType>::find(const Prefix<> &prefix) {
+template <class AnnouncementType, typename PrefixType>
+typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator PrefixAnnouncementMap<AnnouncementType, PrefixType>::find(const Prefix<PrefixType> &prefix) {
     return Iterator(this, prefix.block_id);
 }
 
-template <class AnnouncementType>
-void PrefixAnnouncementMap<AnnouncementType>::insert(const Prefix<> &prefix, const AnnouncementType &ann) {
+template <class AnnouncementType, typename PrefixType>
+void PrefixAnnouncementMap<AnnouncementType, PrefixType>::insert(const Prefix<PrefixType> &prefix, const AnnouncementType &ann) {
     if(prefix.block_id != ann.prefix.block_id) {
         std::cerr << "This announcement cannot be inserted into this iterator since the index in the prefix is different from the index of the prefix in the announcement!" << std::endl;
         return;
@@ -64,8 +64,8 @@ void PrefixAnnouncementMap<AnnouncementType>::insert(const Prefix<> &prefix, con
     announcements.at(prefix.block_id) = ann;
 }
 
-template <class AnnouncementType>
-void PrefixAnnouncementMap<AnnouncementType>::insert(const Iterator &other_iterator) {
+template <class AnnouncementType, typename PrefixType>
+void PrefixAnnouncementMap<AnnouncementType, PrefixType>::insert(const Iterator &other_iterator) {
     if(other_iterator.index >= announcements.size()) {
         std::cerr << "The element of the other iterator cannot be inserted into this map since its index is out of bounds of this map!" << std::endl;
         return;
@@ -75,26 +75,26 @@ void PrefixAnnouncementMap<AnnouncementType>::insert(const Iterator &other_itera
     insert(other_announcement.prefix, other_announcement);
 }
 
-template <class AnnouncementType>
-typename PrefixAnnouncementMap<AnnouncementType>::Iterator PrefixAnnouncementMap<AnnouncementType>::begin() const {
+template <class AnnouncementType, typename PrefixType>
+typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator PrefixAnnouncementMap<AnnouncementType, PrefixType>::begin() const {
     return Iterator(this, 0);
 }
 
-template <class AnnouncementType>
-typename PrefixAnnouncementMap<AnnouncementType>::Iterator PrefixAnnouncementMap<AnnouncementType>::end() const {
+template <class AnnouncementType, typename PrefixType>
+typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator PrefixAnnouncementMap<AnnouncementType, PrefixType>::end() const {
     return Iterator(this, announcements.size());
 }
 
-template <class AnnouncementType>
-void PrefixAnnouncementMap<AnnouncementType>::clear() {
+template <class AnnouncementType, typename PrefixType>
+void PrefixAnnouncementMap<AnnouncementType, PrefixType>::clear() {
     for(auto iterator = announcements.begin(); iterator != announcements.end(); ++iterator)
         iterator->tstamp = -1;
 
     filled_size = 0;
 }
 
-template <class AnnouncementType>
-void PrefixAnnouncementMap<AnnouncementType>::erase(Prefix<> &prefix) {
+template <class AnnouncementType, typename PrefixType>
+void PrefixAnnouncementMap<AnnouncementType, PrefixType>::erase(Prefix<PrefixType> &prefix) {
     AnnouncementType& ann = announcements.at(prefix.block_id);
 
     if(ann.tstamp != -1) {
@@ -103,36 +103,38 @@ void PrefixAnnouncementMap<AnnouncementType>::erase(Prefix<> &prefix) {
     }
 }
 
-template <class AnnouncementType>
-void PrefixAnnouncementMap<AnnouncementType>::erase(Announcement &announcement) {
+template <class AnnouncementType, typename PrefixType>
+void PrefixAnnouncementMap<AnnouncementType, PrefixType>::erase(AnnouncementType &announcement) {
     erase(announcement.prefix);
 }
 
-template <class AnnouncementType>
-bool PrefixAnnouncementMap<AnnouncementType>::filled(const AnnouncementType &announcement) {
+template <class AnnouncementType, typename PrefixType>
+bool PrefixAnnouncementMap<AnnouncementType, PrefixType>::filled(const AnnouncementType &announcement) {
     return !(announcement.tstamp == -1);
 }
 
-template <class AnnouncementType>
-bool PrefixAnnouncementMap<AnnouncementType>::filled(const Prefix<> &prefix) {
+template <class AnnouncementType, typename PrefixType>
+bool PrefixAnnouncementMap<AnnouncementType, PrefixType>::filled(const Prefix<PrefixType> &prefix) {
     return !(announcements.at(prefix.block_id).tstamp == -1);
 }
 
-template <class AnnouncementType>
-size_t PrefixAnnouncementMap<AnnouncementType>::size() {
+template <class AnnouncementType, typename PrefixType>
+size_t PrefixAnnouncementMap<AnnouncementType, PrefixType>::size() {
     return filled_size;
 }
 
-template <class AnnouncementType>
-size_t PrefixAnnouncementMap<AnnouncementType>::capacity() {
+template <class AnnouncementType, typename PrefixType>
+size_t PrefixAnnouncementMap<AnnouncementType, PrefixType>::capacity() {
     return announcements.capacity();
 }
 
-template <class AnnouncementType>
-bool PrefixAnnouncementMap<AnnouncementType>::empty() {
+template <class AnnouncementType, typename PrefixType>
+bool PrefixAnnouncementMap<AnnouncementType, PrefixType>::empty() {
     return filled_size == 0;
 }
 
-template class PrefixAnnouncementMap<Announcement>;
+template class PrefixAnnouncementMap<Announcement<>>;
+template class PrefixAnnouncementMap<Announcement<uint128_t>, uint128_t>;
+template class PrefixAnnouncementMap<ROVAnnouncement>;
 template class PrefixAnnouncementMap<ROVppAnnouncement>;
 template class PrefixAnnouncementMap<EZAnnouncement>;

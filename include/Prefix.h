@@ -44,7 +44,16 @@ public:
     
     /** Default constructor
      */
-    //Prefix() {}
+    Prefix() {}
+
+    /** Basic integer input constructor
+     */
+    Prefix(Integer addr_in, Integer mask_in) {
+        addr = addr_in;
+        netmask = mask_in;
+        id = 0;
+        block_id = 0;
+    }
 
     /** Integer input constructor
      */
@@ -55,7 +64,7 @@ public:
         this->block_id = block_id;
     }
 
-    Prefix(const Prefix &p2) {
+    Prefix(const Prefix<Integer> &p2) {
         this->addr = p2.addr;
         this->netmask = p2.netmask;
         this->id = p2.id;
