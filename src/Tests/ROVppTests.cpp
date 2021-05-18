@@ -312,17 +312,17 @@ bool test_rovpp_give_ann_to_as_path() {
     // e.give_ann_to_as_path(as_path, p, 2, 0);
 
     // // Test that monitor annoucements were received
-    // if(!(e.graph->ases->find(2)->second->loc_rib->find(p)->second.from_monitor &&
-    //      e.graph->ases->find(3)->second->loc_rib->find(p)->second.from_monitor &&
-    //      e.graph->ases->find(5)->second->loc_rib->find(p)->second.from_monitor)) {
+    // if(!(e.graph->ases->find(2)->second->loc_rib->find(p)->from_monitor &&
+    //      e.graph->ases->find(3)->second->loc_rib->find(p)->from_monitor &&
+    //      e.graph->ases->find(5)->second->loc_rib->find(p)->from_monitor)) {
     //     std::cerr << "Monitor flag failed." << std::endl;
     //     return false;
     // }
     
     // // Test announcement priority calculation
-    // if (e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 198 &&
-    //     e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299 &&
-    //     e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 400) {
+    // if (e.graph->ases->find(3)->second->loc_rib->find(p)->priority != 198 &&
+    //     e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 299 &&
+    //     e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 400) {
     //     std::cerr << "Priority calculation failed." << std::endl;
     //     return false;
     // }
@@ -348,19 +348,80 @@ bool test_rovpp_give_ann_to_as_path() {
     // e.give_ann_to_as_path(as_path_b, p, 1, 0);
 
     // // This value is supposed to be uniform random in the ROV++, so this is an invalid test here
-    // //if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
+    // //if (e.graph->ases->find(2)->second->loc_rib->find(p)->tstamp != 1) {
     // //    return false;
     // //}
     
     // // Test prepending calculation
-    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 298) {
+    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 299) {
     //     std::cerr << "Priority calculation in loc_rib failed" << std::endl;
-    //     std::cerr << e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority << std::endl;
+    //     std::cerr << e.graph->ases->find(2)->second->loc_rib->find(p)->priority << std::endl;
     //     return false;
     // }
 
     // delete as_path;
     // delete as_path_b;
+    // return true;
+}
+
+/** Test seeding the graph with announcements from monitors with origin only option enabled. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  The test path vect is [3, 2, 5]. 
+ *  When AS 5 is the origin, an announcement should only be seeded at 5
+ */
+bool test_rovpp_give_ann_to_as_path_origin_only() {
+    // ROVppExtrapolator e = ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, 
+    // ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1, true, DEFAULT_MAX_THREADS);
+    // e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    // e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    // e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    // e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    // e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    // e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    // e.graph->add_relationship(2, 3, AS_REL_PEER);
+    // e.graph->add_relationship(3, 2, AS_REL_PEER);
+    // e.graph->add_relationship(5, 6, AS_REL_PEER);
+    // e.graph->add_relationship(6, 5, AS_REL_PEER);
+    // e.graph->decide_ranks();
+
+    // std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    // as_path->push_back(3);
+    // as_path->push_back(2);
+    // as_path->push_back(5);
+    // Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    // e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    // // Test that monitor annoucements were received
+    // if(!e.graph->ases->find(5)->second->loc_rib->find(p)->from_monitor) {
+    //     std::cerr << "Monitor flag failed." << std::endl;
+    //     return false;
+    // }
+    
+    // // Test announcement priority calculation
+    // if (e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 400) {
+    //     std::cerr << "Priority calculation failed." << std::endl;
+    //     return false;
+    // }
+
+    // // Test that only path received the announcement
+    // if (!(e.graph->ases->find(1)->second->loc_rib->size() == 0 &&
+    //     e.graph->ases->find(2)->second->loc_rib->size() == 0 &&
+    //     e.graph->ases->find(3)->second->loc_rib->size() == 0 &&
+    //     e.graph->ases->find(4)->second->loc_rib->size() == 0 &&
+    //     e.graph->ases->find(5)->second->loc_rib->size() == 1 &&
+    //     e.graph->ases->find(6)->second->loc_rib->size() == 0)) {
+    //     std::cerr << "MRT overseeding check failed." << std::endl;
+    //     return false;
+    // }
+
+    // delete as_path;
     // return true;
 }
 
@@ -412,11 +473,11 @@ bool test_rovpp_propagate_up() {
     // }
     
     // // Check propagation priority calculation
-    // if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 290 &&
-    //     e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 289 &&
-    //     e.graph->ases->find(6)->second->loc_rib->find(p)->second.priority != 189 &&
-    //     e.graph->ases->find(1)->second->loc_rib->find(p)->second.priority != 288 &&
-    //     e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 188) {
+    // if (e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 290 &&
+    //     e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 289 &&
+    //     e.graph->ases->find(6)->second->loc_rib->find(p)->priority != 189 &&
+    //     e.graph->ases->find(1)->second->loc_rib->find(p)->priority != 288 &&
+    //     e.graph->ases->find(3)->second->loc_rib->find(p)->priority != 188) {
     //     std::cerr << "Propagted priority calculation failed." << std::endl;
     //     return false;
     // }
@@ -466,9 +527,9 @@ bool test_rovpp_propagate_down() {
     //     return false;
     // }
     
-    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 290 &&
-    //     e.graph->ases->find(4)->second->loc_rib->find(p)->second.priority != 89 &&
-    //     e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
+    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 290 &&
+    //     e.graph->ases->find(4)->second->loc_rib->find(p)->priority != 89 &&
+    //     e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 89) {
     //     std::cerr << "Propagted priority calculation failed." << std::endl;
     //     return false;
     // }
@@ -543,10 +604,10 @@ bool test_rovpp_send_all_announcements() {
     // }
     
     // // Check priority calculation
-    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299 &&
-    //     e.graph->ases->find(1)->second->loc_rib->find(p)->second.priority != 289 &&
-    //     e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 189 &&
-    //     e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
+    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 299 &&
+    //     e.graph->ases->find(1)->second->loc_rib->find(p)->priority != 289 &&
+    //     e.graph->ases->find(3)->second->loc_rib->find(p)->priority != 189 &&
+    //     e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 89) {
     //     std::cerr << "Send all announcement priority calculation failed." << std::endl;
     //     return false;
     // }
@@ -853,7 +914,7 @@ bool test_rovpp_process_announcement(){
     // ROVppAnnouncement a2 = ROVppAnnouncement(111, p.addr, p.netmask, 298, 223, 0, x);
     // as.process_announcement(a1);
     // as.process_announcement(a2);
-    // if (as.loc_rib->find(p)->second.received_from_asn != 223) {
+    // if (as.loc_rib->find(p)->received_from_asn != 223) {
     //     std::cerr << "Failed best path inference priority check." << std::endl;
     //     return false;
     // }    
@@ -861,7 +922,7 @@ bool test_rovpp_process_announcement(){
     // // Check new best announcement
     // ROVppAnnouncement a3 = ROVppAnnouncement(111, p.addr, p.netmask, 299, 224, 0, x);
     // as.process_announcement(a3);
-    // if (as.loc_rib->find(p)->second.received_from_asn != 224) {
+    // if (as.loc_rib->find(p)->received_from_asn != 224) {
     //     std::cerr << "Failed best path priority correction check." << std::endl;
     //     return false;
     // } 
@@ -1157,19 +1218,19 @@ bool test_rovpp_tiebreak_override() {
     // e.propagate_down();
 
     // // confirm 5 has 1's announcement
-    // if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->second.origin == 1)) {
+    // if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->origin == 1)) {
     //     std::cerr << "Tiebreak override failed step 1\n";
     //     return false;
     // }
 
     // // set override. normally this AS would lose the tiebreak
-    // e.graph->ases->find(2)->second->loc_rib->find(p)->second.origin = 3;
-    // e.graph->ases->find(2)->second->loc_rib->find(p)->second.received_from_asn = 3;
-    // e.graph->ases->find(2)->second->loc_rib->find(p)->second.tiebreak_override = 3;
+    // e.graph->ases->find(2)->second->loc_rib->find(p)->origin = 3;
+    // e.graph->ases->find(2)->second->loc_rib->find(p)->received_from_asn = 3;
+    // e.graph->ases->find(2)->second->loc_rib->find(p)->tiebreak_override = 3;
     // e.propagate_down();
 
     // // confirm 5 has 3's announcement
-    // if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->second.origin != 3)) {
+    // if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->origin != 3)) {
     //     std::cerr << "Tiebreak override failed step 2\n";
     //     return false;
     // }
@@ -1351,9 +1412,9 @@ bool test_rovpp_full_path() {
     // e.propagate_down();
 
     // // Check if seeded path is present
-    // if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path.size() != 1) {
+    // if (e.graph->ases->find(5)->second->loc_rib->find(p)->as_path.size() != 1) {
     //     std::cerr << "Failed seeding full AS path." << '\n';
-    //     for (auto const& i: e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path) {
+    //     for (auto const& i: e.graph->ases->find(5)->second->loc_rib->find(p)->as_path) {
     //         std::cerr << i;
     //     }
     //     std::cerr << '\n';
@@ -1369,19 +1430,19 @@ bool test_rovpp_full_path() {
     // std::vector<uint32_t> path_6{ 5 };
     // std::vector<uint32_t> path_7{ 5, 2, 3 };
 
-    // if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path.size() != 2 || 
-    //     e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
-    //     e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
-    //     e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
-    //     e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
-    //     e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path.size() != 3) {
+    // if (e.graph->ases->find(1)->second->loc_rib->find(p)->as_path.size() != 2 || 
+    //     e.graph->ases->find(2)->second->loc_rib->find(p)->as_path.size() != 1 ||
+    //     e.graph->ases->find(3)->second->loc_rib->find(p)->as_path.size() != 2 ||
+    //     e.graph->ases->find(4)->second->loc_rib->find(p)->as_path.size() != 2 ||
+    //     e.graph->ases->find(6)->second->loc_rib->find(p)->as_path.size() != 1 ||
+    //     e.graph->ases->find(7)->second->loc_rib->find(p)->as_path.size() != 3) {
     //     std::cerr << "Failed propagating full AS path." << '\n';
     //     return false;
     // }
     
-    // if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path != path_1) { 
+    // if (e.graph->ases->find(1)->second->loc_rib->find(p)->as_path != path_1) { 
     //     std::cerr << "Failed propagating full AS path." << '\n';
-    //     for (auto const& i: e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path) {
+    //     for (auto const& i: e.graph->ases->find(1)->second->loc_rib->find(p)->as_path) {
     //         std::cerr << i;
     //     }
     //     std::cerr << '\n';
@@ -1391,9 +1452,9 @@ bool test_rovpp_full_path() {
     //     std::cerr << '\n';
     //     return false;
     // }
-    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path != path_2) { 
+    // if (e.graph->ases->find(2)->second->loc_rib->find(p)->as_path != path_2) { 
     //     std::cerr << "Failed propagating full AS path." << '\n';
-    //     for (auto const& i: e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path) {
+    //     for (auto const& i: e.graph->ases->find(2)->second->loc_rib->find(p)->as_path) {
     //         std::cerr << i;
     //     }
     //     std::cerr << '\n';
@@ -1403,9 +1464,9 @@ bool test_rovpp_full_path() {
     //     std::cerr << '\n';
     //     return false;
     // }
-    // if (e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path != path_3) { 
+    // if (e.graph->ases->find(3)->second->loc_rib->find(p)->as_path != path_3) { 
     //     std::cerr << "Failed propagating full AS path." << '\n';
-    //     for (auto const& i: e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path) {
+    //     for (auto const& i: e.graph->ases->find(3)->second->loc_rib->find(p)->as_path) {
     //         std::cerr << i;
     //     }
     //     std::cerr << '\n';
@@ -1415,9 +1476,9 @@ bool test_rovpp_full_path() {
     //     std::cerr << '\n';
     //     return false;
     // }
-    // if (e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path != path_4) { 
+    // if (e.graph->ases->find(4)->second->loc_rib->find(p)->as_path != path_4) { 
     //     std::cerr << "Failed propagating full AS path." << '\n';
-    //     for (auto const& i: e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path) {
+    //     for (auto const& i: e.graph->ases->find(4)->second->loc_rib->find(p)->as_path) {
     //         std::cerr << i;
     //     }
     //     std::cerr << '\n';
@@ -1427,9 +1488,9 @@ bool test_rovpp_full_path() {
     //     std::cerr << '\n';
     //     return false;
     // }
-    // if (e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path != path_6) { 
+    // if (e.graph->ases->find(6)->second->loc_rib->find(p)->as_path != path_6) { 
     //     std::cerr << "Failed propagating full AS path." << '\n';
-    //     for (auto const& i: e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path) {
+    //     for (auto const& i: e.graph->ases->find(6)->second->loc_rib->find(p)->as_path) {
     //         std::cerr << i;
     //     }
     //     std::cerr << '\n';
@@ -1439,9 +1500,9 @@ bool test_rovpp_full_path() {
     //     std::cerr << '\n';
     //     return false;
     // }
-    // if (e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path != path_7) { 
+    // if (e.graph->ases->find(7)->second->loc_rib->find(p)->as_path != path_7) { 
     //     std::cerr << "Failed propagating full AS path." << '\n';
-    //     for (auto const& i: e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path) {
+    //     for (auto const& i: e.graph->ases->find(7)->second->loc_rib->find(p)->as_path) {
     //         std::cerr << i;
     //     }
     //     std::cerr << '\n';
@@ -1463,4 +1524,336 @@ bool test_tiny_hash() {
     // std::cout << (int) ROVppAS(4).tiny_hash(4) << std::endl;
     // std::cout << (int) ROVppAS(5).tiny_hash(5) << std::endl;
     // return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 3, 2, 5]. This shouldn't change the priority since prepending is in the back of the path. 
+ */
+bool test_rovpp_prepending_priority_back() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
+        std::cerr << "rovpp_prepending_priority_back failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 2, 5]. This should reduce the priority at 3. 
+ */
+bool test_rovpp_prepending_priority_middle() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 197) {
+        std::cerr << "rovpp_prepending_priority_middle failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 5, 5]. This should reduce the priority at 3 and 5. 
+ */
+bool test_rovpp_prepending_priority_beginning() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 197) {
+        std::cerr << "rovpp_prepending_priority_end failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 3, 2, 5] with an existing announcement at those ASes. This shouldn't change the priority since prepending is in the back of the path.  
+ */
+bool test_rovpp_prepending_priority_back_existing_ann() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
+        std::cerr << "rovpp_prepending_priority_back_existing_ann failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 2, 5] with an existing announcement at those ASes. This shouldn't change the priority since the existing announcement has higher priority.  
+ */
+bool test_rovpp_prepending_priority_middle_existing_ann() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+    
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
+        std::cerr << "rovpp_prepending_priority_middle_existing_ann failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 5, 5] with an existing announcement at those ASes. This shouldn't change the priority since the existing announcement has higher priority.  
+ */
+bool test_rovpp_prepending_priority_beginning_existing_ann() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
+        std::cerr << "rovpp_prepending_priority_beginning_existing_ann failed." << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 5, 5] with an existing announcement at those ASes. This should change the priority since the existing announcement has lower priority.  
+ */
+bool test_rovpp_prepending_priority_beginning_existing_ann2() {
+    ROVppExtrapolator e = ROVppExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 197) {
+        std::cerr << "rovpp_prepending_priority_beginning_existing_ann2 failed." << std::endl;
+        return false;
+    }
+
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2, 0);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
+        std::cerr << "rovpp_prepending_priority_beginning_existing_ann2 failed." << std::endl;
+        return false;
+    }
+    
+    return true;
 }

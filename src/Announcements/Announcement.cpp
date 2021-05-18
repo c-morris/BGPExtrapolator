@@ -23,9 +23,12 @@
 
 #include "Announcements/Announcement.h"
 
-Announcement::Announcement(uint32_t aorigin, Prefix<> prefix,
-    uint32_t from_asn, int64_t timestamp /* = 0 */) : prefix(prefix) {
+template <typename PrefixType>
+Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
+    uint32_t from_asn, int64_t timestamp /* = 0 */) {
     
+    prefix.addr = aprefix;
+    prefix.netmask = anetmask;
     origin = aorigin;
     received_from_asn = from_asn;
     priority = 0;
@@ -33,34 +36,40 @@ Announcement::Announcement(uint32_t aorigin, Prefix<> prefix,
     tstamp = timestamp;
 }
 
-Announcement::Announcement(uint32_t aorigin, Prefix<> prefix,
-    uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */) 
-    : Announcement(aorigin, prefix, from_asn, timestamp) {
+template <typename PrefixType>
+Announcement<PrefixType>::Announcement(uint32_t aorigin, PrefixType aprefix, PrefixType anetmask,
+    Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor /* = false */) 
+    : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
     
     priority = pr; 
     from_monitor = a_from_monitor;
 }
 
-Announcement::Announcement(const Announcement& ann) : prefix(ann.prefix) {
-    origin = ann.origin;
-    priority = ann.priority;
+template <typename PrefixType>
+Announcement<PrefixType>::Announcement(const Announcement<PrefixType>& ann) {
+    prefix = ann.prefix;           
+    origin = ann.origin;           
+    priority = ann.priority;         
     received_from_asn = ann.received_from_asn;
     from_monitor = ann.from_monitor; 
     tstamp = ann.tstamp;            
-    policy_index = ann.policy_index;     
+    policy_index = ann.policy_index;  
 }
 
 //****************** FILE I/O ******************//
-
-std::ostream& operator<<(std::ostream &os, const Announcement& ann) {
-    os << "Prefix:\t\t" << std::hex << ann.prefix.addr << " & " << std::hex << 
-        ann.prefix.netmask << std::endl << "Prefix_ID:\t\t" << ann.prefix.id << std::endl << "Origin:\t\t" << std::dec << ann.origin
-        << std::endl << "Priority:\t" << ann.priority << std::endl 
+template <typename PrefixType>
+std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann) {
+    os << "Prefix:\t\t" << std::hex << ann.prefix.addr_to_string() << " & " << std::hex << 
+        ann.prefix.netmask_to_string() << std::endl << "Prefix_ID:\t\t" << ann.prefix.id << std::endl
+        << "Origin:\t\t" << std::dec << ann.origin << std::endl << "Priority:\t" << ann.priority << std::endl 
         << "Recv'd from:\t" << std::dec << ann.received_from_asn;
     return os;
 }
-
-std::ostream& Announcement::to_csv(std::ostream &os) const {
-    os << prefix.to_cidr() << ',' << prefix.id << "," << origin << ',' << received_from_asn << ',' << tstamp << '\n';
+template <typename PrefixType>
+std::ostream& Announcement<PrefixType>::to_csv(std::ostream &os) {
+    os << prefix.to_cidr() << ',' << prefix.id << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << prefix_id << '\n';
     return os;
 }
+
+template class Announcement<>;
+template class Announcement<uint128_t>;

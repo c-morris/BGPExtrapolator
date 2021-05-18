@@ -3,7 +3,7 @@
 
 #include "Announcements/Announcement.h"
 
-class EZAnnouncement : public Announcement {
+class EZAnnouncement : public Announcement<> {
 public:
     std::vector<uint32_t> as_path;
     bool from_attacker;
@@ -19,8 +19,8 @@ public:
     
     /** Priority constructor
      */
-    EZAnnouncement(uint32_t aorigin, Prefix<> prefix,
-        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, bool from_attacker = false);
+    EZAnnouncement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
+        Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, bool from_attacker = false);
 
     /** Copy constructor
      */

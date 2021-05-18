@@ -4,19 +4,27 @@
 //Attacker is checked for this, the origin needs to as well
 
 EZExtrapolator::EZExtrapolator(bool random_tiebraking,
+                                bool store_results, 
                                 bool store_invert_results, 
                                 bool store_depref_results, 
                                 std::string announcement_table,
                                 std::string results_table, 
                                 std::string inverse_results_table, 
                                 std::string depref_results_table, 
+                                std::string full_path_results_table, 
                                 std::string config_section,
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
-                                uint32_t num_between) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size) {
+                                uint32_t num_between,
+                                int exclude_as_number,
+                                uint32_t mh_mode,
+                                bool origin_only,
+                                std::vector<uint32_t> *full_path_asns,
+                                int max_threads) : BlockedExtrapolator(random_tiebraking, store_results, store_invert_results, store_depref_results, 
+                                iteration_size, mh_mode, origin_only, full_path_asns, max_threads, false) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, config_section);
+    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, full_path_results_table, exclude_as_number, config_section);
     
     this->successful_attacks = 0;
     this->successful_connections = 0;
@@ -27,9 +35,9 @@ EZExtrapolator::EZExtrapolator(bool random_tiebraking,
 }
 
 EZExtrapolator::EZExtrapolator() 
-    : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER) { }
+    : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, 
+                        0, DEFAULT_NUM_ASES_BETWEEN_ATTACKER, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
 
 EZExtrapolator::~EZExtrapolator() { }
 
@@ -44,7 +52,7 @@ void EZExtrapolator::init() {
 void EZExtrapolator::perform_propagation() {
     // init();
 
-    // std::cout << "Generating subnet blocks..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     // // Generate iteration blocks
     // std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
@@ -53,67 +61,67 @@ void EZExtrapolator::perform_propagation() {
     // this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     // delete cur_prefix;
     
-    // std::ofstream ezStatistics("EZStatistics.csv");
-    // ezStatistics << "Round,Successful Attacks,Successful Connections,Disconnections,Total Attacks,Probability Successful Attack" << std::endl;
+    std::ofstream ezStatistics("EZStatistics.csv");
+    ezStatistics << "Round,Successful Attacks,Successful Connections,Disconnections,Total Attacks,Probability Successful Attack" << std::endl;
 
-    // uint32_t round = 0;
+    uint32_t round = 0;
 
-    // //Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
-    // //Runs until no more attacks (guaranteed to terminate since the edge to the neighebor is removed after an attack)
-    // do {
-    //     round++;
+    //Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
+    //Runs until no more attacks (guaranteed to terminate since the edge to the neighebor is removed after an attack)
+    do {
+        round++;
 
-    //     successful_attacks = 0;
-    //     successful_connections = 0;
-    //     disconnections = 0;
+        successful_attacks = 0;
+        successful_connections = 0;
+        disconnections = 0;
 
-    //     std::cout << "Round #" << round << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Round #" << round;
 
-    //     extrapolate(prefix_blocks, subnet_blocks);
+        extrapolate(prefix_blocks, subnet_blocks);
 
-    //     if(successful_attacks > 0) {
-    //         ezStatistics << round << "," << successful_attacks << "," << successful_connections << "," << disconnections << "," << graph->origin_to_attacker_victim->size() << "," << ((double) successful_attacks / (double) graph->origin_to_attacker_victim->size()) << std::endl;
+        if(successful_attacks > 0) {
+            ezStatistics << round << "," << successful_attacks << "," << successful_connections << "," << disconnections << "," << graph->origin_to_attacker_victim->size() << "," << ((double) successful_attacks / (double) graph->origin_to_attacker_victim->size()) << std::endl;
 
-    //         //Disconnect attacker from provider
-    //         //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
-    //         if(num_between == 0)
-    //             graph->disconnectAttackerEdges();
-    //         graph->clear_announcements();
+            //Disconnect attacker from provider
+            //Reset memory for the graph so it can calculate ranks, components, etc... accordingly
+            if(num_between == 0)
+                graph->disconnectAttackerEdges();
+            graph->clear_announcements();
 
-    //         for(auto element : *graph->ases) {
-    //             element.second->rank = -1;
-    //             element.second->index = -1;
-    //             element.second->onStack = false;
-    //             element.second->lowlink = 0;
-    //             element.second->visited = false;
-    //             element.second->member_ases->clear();
+            for(auto element : *graph->ases) {
+                element.second->rank = -1;
+                element.second->index = -1;
+                element.second->onStack = false;
+                element.second->lowlink = 0;
+                element.second->visited = false;
+                element.second->member_ases->clear();
 
-    //             if(element.second->inverse_results != NULL) {
-    //                 for(auto i : *element.second->inverse_results)
-    //                     delete i.second;
+                if(element.second->inverse_results != NULL) {
+                    for(auto i : *element.second->inverse_results)
+                        delete i.second;
 
-    //                 element.second->inverse_results->clear();
-    //             }
-    //         }
+                    element.second->inverse_results->clear();
+                }
+            }
 
-    //         for(auto element : *graph->ases_by_rank)
-    //             delete element;
-    //         graph->ases_by_rank->clear();
+            for(auto element : *graph->ases_by_rank)
+                delete element;
+            graph->ases_by_rank->clear();
 
-    //         for(auto element : *graph->components)
-    //             delete element;
-    //         graph->components->clear();
+            for(auto element : *graph->components)
+                delete element;
+            graph->components->clear();
 
-    //         graph->component_translation->clear();
-    //         graph->stubs_to_parents->clear();
-    //         graph->non_stubs->clear();
+            graph->component_translation->clear();
+            graph->stubs_to_parents->clear();
+            graph->non_stubs->clear();
 
-    //         //Re calculate the components with these new relationships
-    //         graph->process(querier);
-    //     } else {
-    //         std::cout << "Round #" << round << ": No more attacks" << std::endl;
-    //     }
-    // } while(successful_attacks > 0 && round <= num_rounds - 1);
+            //Re calculate the components with these new relationships
+            graph->process(querier);
+        } else {
+            BOOST_LOG_TRIVIAL(info) << "Round #" << round << ": No more attacks";
+        }
+    } while(successful_attacks > 0 && round <= num_rounds - 1);
     
     // // Cleanup
     // delete prefix_blocks;
@@ -162,8 +170,12 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
     // graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
 
-    // EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299 - num_between, path_origin_asn, timestamp, true, true);
-    // attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
+    Priority priority;
+    priority.relationship = 2;
+    priority.path_length = 1 + num_between;
+
+    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, priority, path_origin_asn, timestamp, true, true);
+    attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
 }
 
 uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn) {
@@ -213,5 +225,5 @@ void EZExtrapolator::calculate_successful_attacks() {
 
 void EZExtrapolator::save_results(int iteration) {
     // BaseExtrapolator::save_results(iteration);
-    // calculate_successful_attacks();
+    calculate_successful_attacks();
 }

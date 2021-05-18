@@ -28,6 +28,7 @@
 #define IPV6 6
 
 #define DEFAULT_QUERIER_CONFIG_SECTION "bgp"
+#define DEFAULT_QUERIER_CONFIG_PATH "/etc/bgp/bgp.conf"
 
 #include <pqxx/pqxx>
 #include <iostream>
@@ -42,11 +43,13 @@
 #include <boost/program_options.hpp>
 namespace program_options = boost::program_options;
 
+template <typename PrefixType = uint32_t>
 class SQLQuerier {
 public:
     std::string results_table;
     std::string depref_table;
     std::string inverse_results_table;
+    std::string full_path_results_table;
     std::string announcements_table;
     std::string user;
     std::string pass;
@@ -55,14 +58,17 @@ public:
     std::string port;
     std::string config_section;
     std::string config_path;
+    int exclude_as_number;
     pqxx::connection *C;
 
     SQLQuerier(std::string announcements_table = ANNOUNCEMENTS_TABLE,
                 std::string results_table = RESULTS_TABLE, 
                 std::string inverse_results_table = INVERSE_RESULTS_TABLE, 
                 std::string depref_results_table = DEPREF_RESULTS_TABLE,
+                std::string full_path_results_table = FULL_PATH_RESULTS_TABLE,
+                int exclude_as_number = -1,
                 std::string config_section = DEFAULT_QUERIER_CONFIG_SECTION,
-                std::string config_path = "/etc/bgp/bgp.conf",
+                std::string config_path = DEFAULT_QUERIER_CONFIG_PATH,
                 bool create_connection = true);
     virtual ~SQLQuerier();
     
@@ -72,12 +78,17 @@ public:
     void close_connection();
     pqxx::result execute(std::string sql, bool insert = false);
     
+    std::string copy_to_db_query_string(std::string file_name, std::string table_name, std::string column_names);
+    std::string select_prefix_query_string(Prefix<PrefixType>* p, bool subnet = false, std::string selection = "COUNT(*)");
+    std::string clear_table_query_string(std::string table_name);
+    std::string create_table_query_string(std::string table_name, std::string column_names, bool unlogged = false, std::string grant_all_user = "");
+
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);
-    pqxx::result select_prefix_count(Prefix<>*);
-    virtual pqxx::result select_prefix_ann(Prefix<>*);
-    pqxx::result select_subnet_count(Prefix<>*);
-    virtual pqxx::result select_subnet_ann(Prefix<>*);
+    pqxx::result select_prefix_count(Prefix<PrefixType>*);
+    virtual pqxx::result select_prefix_ann(Prefix<PrefixType>*);
+    pqxx::result select_subnet_count(Prefix<PrefixType>*);
+    virtual pqxx::result select_subnet_ann(Prefix<PrefixType>*);
     
     // Preprocessing Tables
     void clear_stubs_from_db();
@@ -96,15 +107,21 @@ public:
     void clear_results_from_db();
     void clear_depref_from_db();
     void clear_inverse_from_db();
+    void clear_full_path_from_db();
 
     virtual void create_results_tbl();
+    virtual void create_full_path_results_tbl();
     void create_depref_tbl();
     void create_inverse_results_tbl();
  
     virtual void copy_results_to_db(std::string file_name);
+    virtual void copy_single_results_to_db(std::string file_name);
     void copy_depref_to_db(std::string file_name);
     void copy_inverse_results_to_db(std::string file_name);
     
     void create_results_index();
+
+    pqxx::result select_max_block_id();
+    pqxx::result select_prefix_block_id(int block_id);
 };
 #endif
