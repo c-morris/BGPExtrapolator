@@ -32,13 +32,12 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
     }
 
     if(policy == EZAS_TYPE_BGPSEC_TRANSITIVE || policy == EZAS_TYPE_BGPSEC) {
-        bool signature_missing = false;
         auto origin_search = community_detection->extrapolator->graph->ases->find(ann.as_path.at(ann.as_path.size() - 1));
 
         if(origin_search == community_detection->extrapolator->graph->ases->end()) {
             // This indicates invalid input tables
-            std::cerr << "ORIGIN IN EZAS PATH DOES NOT EXIST!!!" << std::endl;
-            return;
+            BOOST_LOG_TRIVIAL(error) << "ORIGIN IN EZAS PATH DOES NOT EXIST!!!";
+            exit(10);
         }
 
         EZAS *origin_as = origin_search->second;
@@ -54,7 +53,6 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             neighbors.insert(origin_as->customers->begin(), origin_as->customers->end());
             if (neighbors.find(second) == neighbors.end()) {
                 // Not a real neighbor, signature not present
-                //signature_missing = true;
                 ann.priority.reserved2 = 0;
             } else {
                 // Attacker was able to find a non-adopting neighbor, signature present
@@ -81,7 +79,6 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             // Use reserved2 field to indicate missing/present signatures
             // Security second (between path length and relationship)
             ann.priority.reserved2 = static_cast<uint8_t>(contiguous);
-            //signature_missing = true;
             if (contiguous && ann.from_attacker) {
                 ann.priority.reserved5 = 0; // invalid
             }

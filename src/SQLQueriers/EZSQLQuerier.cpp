@@ -23,7 +23,7 @@ pqxx::result EZSQLQuerier::select_policy_assignments(std::string const& policy_t
 void EZSQLQuerier::create_round_results_tbl(int i) {
     std::stringstream sql;
     sql << "CREATE UNLOGGED TABLE IF NOT EXISTS " << EZBGPSEC_ROUND_TABLE_BASE_NAME <<
-    i << " (asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint);" <<
+    i << " (asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint, prefix_id bigint);" <<
     "GRANT ALL ON TABLE " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << " TO bgp_user;";
 
     BOOST_LOG_TRIVIAL(info) << "Creating round " << i << " results table...";

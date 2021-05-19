@@ -67,8 +67,8 @@ int main(int argc, char *argv[]) {
          "flag for rovpp run")
         ("rov", 
          po::value<bool>()->default_value(false), 
-        ("rounds,z", 
          "flag for rov run")
+        ("rounds,z", 
          po::value<uint32_t>()->default_value(0), 
          "number of rounds for ezbgpsec run")
         ("random,b", 
@@ -266,8 +266,8 @@ int main(int argc, char *argv[]) {
             (vm.count("full-path-results-table") ?
                 vm["full-path-results-table"].as<string>() :
                 FULL_PATH_RESULTS_TABLE),
-            vm["config-section"].as<string>(),
             pt,
+            vm["config-section"].as<string>(),
             vm["iteration-size"].as<uint32_t>(),
             vm["rounds"].as<uint32_t>(),
             (vm.count("local-thresh") ?
