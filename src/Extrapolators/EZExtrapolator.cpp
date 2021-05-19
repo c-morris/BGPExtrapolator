@@ -124,9 +124,6 @@ void EZExtrapolator::perform_propagation() {
     }
    
     // Cleanup
-    for (Prefix<> *p : *prefix_blocks) { delete p; }
-    for (Prefix<> *p : *subnet_blocks) { delete p; }
-
     delete prefix_blocks;
     delete subnet_blocks;
 }
@@ -139,7 +136,7 @@ void EZExtrapolator::perform_propagation() {
  * In addition, seeded announcement such as these don't need path propagation since they should not (very unlikely) have an attacker in the path...
  * Attackers are the only announcements that we need paths from, thus we don't need to build up the path as we seed the path
  */
-void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp /* = 0 */) {
+void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp /* = 0 */, uint32_t prefix_id) {
     //BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
     
     uint32_t path_origin_asn = as_path->at(as_path->size() - 1);
@@ -158,7 +155,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
         Priority pr;
         pr.relationship = 3;
-        EZAnnouncement announcement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, pr, path_origin_asn, timestamp, true, false);
+        EZAnnouncement announcement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, pr, NOTHIJACKED, timestamp, true, false);
         // Remove first element of as_path so the as doesn't see itself on the path (and reject the announcement because of that)
         as_path->erase(as_path->begin());
         announcement.as_path = *as_path;
@@ -191,7 +188,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         priority.relationship = 2;
         priority.path_length = 1 + as_path->size();
 
-        EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, priority, path_origin_asn, timestamp, true, true);
+        EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, priority, HIJACKED, timestamp, true, true);
 
         // Remove first element of as_path so the attacker doesn't see itself on the path (and reject the announcement because of that)
         as_path->erase(as_path->begin());
@@ -226,9 +223,11 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
                 if(nbr_search == graph->ases->end())
                     continue;
                 EZAS* nbr = nbr_search->second;
-                if (nbr->policy == EZAS_TYPE_BGP) {
-                    as_path->rbegin()[1] = nbr_asn;
-                    break;
+                if (nbr->policy != EZAS_TYPE_BGP and nbr->policy != EZAS_TYPE_BGPSEC_TRANSITIVE) {
+                    if (as_path->size() > 2) {
+                        as_path->rbegin()[1] = nbr_asn;
+                        break;
+                    }
                 }
             }
         }
