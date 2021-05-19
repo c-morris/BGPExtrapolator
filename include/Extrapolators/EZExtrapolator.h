@@ -62,19 +62,24 @@ public:
     uint32_t next_unused_asn; // Unused ASNs to populate attacker announcements
 
     EZExtrapolator(bool random_tiebraking,
+                    bool store_results, 
                     bool store_invert_results, 
                     bool store_depref_results, 
                     std::string announcement_table,
                     std::string results_table, 
                     std::string inverse_results_table, 
                     std::string depref_results_table, 
-                    std::string config_section,
+                    std::string full_path_results_table, 
                     std::vector<std::string> *policy_tables, 
+                    std::string config_section,
                     uint32_t iteration_size,
                     uint32_t num_rounds,
                     uint32_t community_detection_threshold,
                     int exclude_as_number,
-                    uint32_t mh_mode);
+                    uint32_t mh_mode,
+                    bool origin_only,
+                    std::vector<uint32_t> *full_path_asns,
+                    int max_threads);
     
     EZExtrapolator(uint32_t community_detection_threshold);
 

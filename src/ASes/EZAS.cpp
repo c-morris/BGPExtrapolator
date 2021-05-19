@@ -20,6 +20,11 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
 
     ann.as_path.insert(ann.as_path.begin(), asn);
 
+
+    // Reset reserved2 and 5 from any previous modifications
+    ann.priority.reserved2 = 0; // default security info missing
+    ann.priority.reserved5 = 1; // default valid
+
     // If origin is only AS on path, accept
     if (ann.origin == asn) {
         BaseAS::process_announcement(ann, ran);
@@ -49,9 +54,11 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             neighbors.insert(origin_as->customers->begin(), origin_as->customers->end());
             if (neighbors.find(second) == neighbors.end()) {
                 // Not a real neighbor, signature not present
-                signature_missing = true;
-            //} else {
+                //signature_missing = true;
+                ann.priority.reserved2 = 0;
+            } else {
                 // Attacker was able to find a non-adopting neighbor, signature present
+                ann.priority.reserved2 = 1;
             }
         } 
 
@@ -71,82 +78,82 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                     }
                 }
             }
-            if (!contiguous) {
-                // Process announcement normally
-                //BaseAS::process_announcement(ann, ran);
-                //return;
-                signature_missing = true;
-            } else if (contiguous && ann.from_attacker) {
-                signature_missing = true;
+            // Use reserved2 field to indicate missing/present signatures
+            // Security second (between path length and relationship)
+            ann.priority.reserved2 = static_cast<uint8_t>(contiguous);
+            //signature_missing = true;
+            if (contiguous && ann.from_attacker) {
+                ann.priority.reserved5 = 0; // invalid
             }
         }
 
         //Now, the announcement has no *visible* invalid relationship
 
-        //Accept if there is nothing to compete
-        auto ann_search = all_anns->find(ann.prefix);
-        if(ann_search == all_anns->end()) {
-            all_anns->insert(std::make_pair(ann.prefix, ann));
-            return;
-        }
+//        //Accept if there is nothing to compete
+//        auto ann_search = all_anns->find(ann.prefix);
+//        if(ann_search == all_anns->end()) {
+//            all_anns->insert(std::make_pair(ann.prefix, ann));
+//            return;
+//        }
 
-        EZAnnouncement &accepted_announcement = ann_search->second;
-        bool accepted_signature_missing = false;
-
-        // BGPsec now needs to check security second with the existing announcement
-        if(origin_as->policy == EZAS_TYPE_BGPSEC) {
-            bool contiguous = true;
-            for (uint32_t i : accepted_announcement.as_path) {
-                auto search = community_detection->extrapolator->graph->ases->find(i);
-                // assume that an AS that does not exist is not an adopter
-                if(search == community_detection->extrapolator->graph->ases->end()) {
-                    contiguous = false;
-                    break;
-                } else {
-                    if(search->second->policy != EZAS_TYPE_BGPSEC) {
-                        contiguous = false;
-                        break;
-                    }
-                }
-            }
-            accepted_signature_missing = !contiguous;
-        }
-
-        // Transitive BGPsec does something similar
-        if(origin_as->policy == EZAS_TYPE_BGPSEC_TRANSITIVE) {
-            // path must be longer than 1 here so this is safe
-            auto accepted_second = accepted_announcement.as_path.rbegin()[1];
-            // If neighbor is not a real neighbor, reject
-            std::set<uint32_t> accepted_neighbors;
-            accepted_neighbors.insert(origin_as->providers->begin(), origin_as->providers->end());
-            accepted_neighbors.insert(origin_as->peers->begin(), origin_as->peers->end());
-            accepted_neighbors.insert(origin_as->customers->begin(), origin_as->customers->end());
-            if (accepted_neighbors.find(accepted_second) == accepted_neighbors.end()) {
-                // Not a real neighbor, signature not present
-                accepted_signature_missing = true;
-            }
-        } 
+//        EZAnnouncement &accepted_announcement = ann_search->second;
+//        bool accepted_signature_missing = false;
+//
+//        // BGPsec now needs to check security second with the existing announcement
+//        if(origin_as->policy == EZAS_TYPE_BGPSEC) {
+//            bool contiguous = true;
+//            for (uint32_t i : accepted_announcement.as_path) {
+//                auto search = community_detection->extrapolator->graph->ases->find(i);
+//                // assume that an AS that does not exist is not an adopter
+//                if(search == community_detection->extrapolator->graph->ases->end()) {
+//                    contiguous = false;
+//                    break;
+//                } else {
+//                    if(search->second->policy != EZAS_TYPE_BGPSEC) {
+//                        contiguous = false;
+//                        break;
+//                    }
+//                }
+//            }
+//            accepted_signature_missing = !contiguous;
+//        }
+//
+//        // Transitive BGPsec does something similar
+//        if(origin_as->policy == EZAS_TYPE_BGPSEC_TRANSITIVE) {
+//            // path must be longer than 1 here so this is safe
+//            auto accepted_second = accepted_announcement.as_path.rbegin()[1];
+//            // If neighbor is not a real neighbor, reject
+//            std::set<uint32_t> accepted_neighbors;
+//            accepted_neighbors.insert(origin_as->providers->begin(), origin_as->providers->end());
+//            accepted_neighbors.insert(origin_as->peers->begin(), origin_as->peers->end());
+//            accepted_neighbors.insert(origin_as->customers->begin(), origin_as->customers->end());
+//            if (accepted_neighbors.find(accepted_second) == accepted_neighbors.end()) {
+//                // Not a real neighbor, signature not present
+//                accepted_signature_missing = true;
+//            }
+//        } 
 
         // Now for both BGPsec variants, do security second
-        if (accepted_announcement.priority / 100 < ann.priority / 100) {
-            // Relationship first
-            BaseAS::process_announcement(ann, ran);
-            return;
-        }
-        if (accepted_announcement.priority / 100 == ann.priority / 100) {
-            // If relation equal but security better on new ann
-            if (!signature_missing && accepted_signature_missing) {
-                ann_search->second = ann;
-                return;
-            }
-            // If relation equal but security is worse, reject
-            if (signature_missing && !accepted_signature_missing) {
-                return;
-            }
-            // Else let process_announcement sort them out
-            BaseAS::process_announcement(ann, ran);
-            return;
-        }
+        BaseAS::process_announcement(ann, ran);
+        //if (accepted_announcement.priority / 100 < ann.priority / 100) {
+        //    // Relationship first
+        //    BaseAS::process_announcement(ann, ran);
+        //    return;
+        //}
+        //if (accepted_announcement.priority / 100 == ann.priority / 100) {
+        //    // If relation equal but security better on new ann
+        //    if (!signature_missing && accepted_signature_missing) {
+        //        ann_search->second = ann;
+        //        return;
+        //    }
+        //    // If relation equal but security is worse, reject
+        //    if (signature_missing && !accepted_signature_missing) {
+        //        return;
+        //    }
+        //    // Else let process_announcement sort them out
+        //    BaseAS::process_announcement(ann, ran);
+        //    return;
+        //}
 
         // TODO add this back---it's necessary but also inconsequential for the current simulations
         //// Transitive BGPsec now must decide based on which has more signatures (more adopters on the path)

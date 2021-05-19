@@ -1,6 +1,6 @@
 #include "SQLQueriers/EZSQLQuerier.h" 
 
-EZSQLQuerier::EZSQLQuerier(std::string a, std::string r, std::string i, std::string d, std::vector<std::string> *pt, int n, std::string s) : SQLQuerier(a, r, i, d, n, s) {
+EZSQLQuerier::EZSQLQuerier(std::string a, std::string r, std::string i, std::string d, std::string f, std::vector<std::string> *pt, int n, std::string s) : SQLQuerier<>(a, r, i, d, f, n, s) {
    if (pt != NULL)
        this->policy_tables = *pt;
 }
@@ -36,5 +36,4 @@ void EZSQLQuerier::clear_round_results_from_db(int i) {
     sql << "DROP TABLE IF EXISTS " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << ";";
     execute(sql.str());
 }
-
 

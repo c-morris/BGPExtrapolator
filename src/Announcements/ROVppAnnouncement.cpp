@@ -27,7 +27,7 @@ ROVppAnnouncement::ROVppAnnouncement(uint32_t aorigin,
                  uint32_t aprefix, 
                  uint32_t anetmask,
                  uint32_t from_asn, 
-                 int64_t timestamp /* = 0 */) : Announcement(aorigin, aprefix, anetmask, from_asn, timestamp) {
+                 int64_t timestamp /* = 0 */) : Announcement<>(aorigin, aprefix, anetmask, from_asn, timestamp) {
     policy_index = 0;
     alt = 0;
     tiebreak_override = 0;
@@ -67,12 +67,13 @@ ROVppAnnouncement::ROVppAnnouncement(uint32_t aorigin,
 
 /** Copy constructor
  */
-ROVppAnnouncement::ROVppAnnouncement(const ROVppAnnouncement& ann) : Announcement(ann) {
+ROVppAnnouncement::ROVppAnnouncement(const ROVppAnnouncement& ann) : Announcement<>(ann) {
     alt = ann.alt;              
     policy_index = ann.policy_index;     
     tiebreak_override = ann.tiebreak_override;
     sent_to_asn = ann.sent_to_asn;       
-    withdraw =  ann.withdraw;              
+    withdraw =  ann.withdraw;       
+    priority = ann.priority;       
     // this is the important part
     as_path = ann.as_path; 
 }

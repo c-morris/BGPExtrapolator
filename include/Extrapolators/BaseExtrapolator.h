@@ -25,8 +25,15 @@
 #define BASE_EXTRAPOLATOR_H
 
 #define DEFAULT_RANDOM_TIEBRAKING true
-#define DEFAULT_STORE_INVERT_RESULTS true
+#define DEFAULT_STORE_RESULTS true
+#define DEFAULT_STORE_INVERT_RESULTS false
 #define DEFAULT_STORE_DEPREF_RESULTS false
+
+#define DEFAULT_ORIGIN_ONLY false
+#define DEFAULT_IPV6_MODE false
+
+#define DEFAULT_MAX_THREADS 0
+#define DEFAULT_SELECT_BLOCK_ID false
 
 #include <vector>
 #include <bits/stdc++.h>
@@ -38,6 +45,8 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <semaphore.h>
+#include <cstdint>
+#include <vector>
 
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
@@ -53,6 +62,11 @@
 #include "Graphs/EZASGraph.h"
 #include "Announcements/EZAnnouncement.h"
 #include "ASes/EZAS.h"
+
+#include "SQLQueriers/ROVSQLQuerier.h"
+#include "Graphs/ROVASGraph.h"
+#include "Announcements/ROVAnnouncement.h"
+#include "ASes/ROVAS.h"
 
 /** README. SERIOUSLY README
  * Trust me you need to read this.
@@ -113,23 +127,48 @@ public:
     SQLQuerierType *querier;
 
     bool random_tiebraking;    // If randomness is enabled
+    bool store_results; // If results are enabled
     bool store_invert_results; // If inverted results are enabled
     bool store_depref_results; // If depref results are enabled
+    std::vector<uint32_t> *full_path_asns; // Limit output to these ASNs
     sem_t worker_thread_count; // Worker thread semaphore
     int max_workers;           // Max number of worker threads that can run concurrently
+    sem_t csvs_written;        // Semaphore to delay saving to the database
+    bool origin_only;          // Only seed at the origin AS
 
     BaseExtrapolator(bool random_tiebraking,
+                        bool store_results, 
                         bool store_invert_results, 
-                        bool store_depref_results) {
+                        bool store_depref_results,
+                        bool origin_only,
+                        std::vector<uint32_t> *full_path_asns,
+                        int max_threads) {
 
         this->random_tiebraking = random_tiebraking;       // True to enable random tiebreaks
+        this->store_results = store_results; // True to store regular results
         this->store_invert_results = store_invert_results; // True to store the results inverted
         this->store_depref_results = store_depref_results; // True to store the second best ann for depref
+        this->origin_only = origin_only;                   // True to only seed at the origin AS
+        this->full_path_asns = full_path_asns;
 
-        // Init worker thread semaphore to one minus the number of CPU cores available
+        // Get the number of CPU cores available
         int cpus = std::thread::hardware_concurrency();
-        max_workers = cpus > 1 ? cpus - 1 : 1;
+        if (max_threads <= 0 || max_threads >= cpus)
+        {
+            // If a user doesn't provide a number of max threads (or if it's invalid),
+            // max_workers is one minus the number of CPU cores available
+            max_workers = cpus > 1 ? cpus - 1 : 1;
+        } else {
+            // Set max_workers to max_threads
+            // if max_threads is less than total number of threads and if it's more than 0
+            max_workers = max_threads;
+        }
+
+        // Init worker thread semaphore
         sem_init(&worker_thread_count, 0, max_workers);
+
+        // Init csv semaphore to 0. That way the next iteration starts only after all csvs were written
+        sem_init(&csvs_written, 0, 0);
         
         // The child will initialize these properly right after this constructor returns
         // That way they can give the variable a proper type
@@ -145,7 +184,7 @@ public:
      *  - store_invert_results = true
      *  - store_depref_results = false
      */
-    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS) { }
+    BaseExtrapolator() : BaseExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
 
     virtual ~BaseExtrapolator();
 
@@ -198,6 +237,23 @@ public:
      * @param iteration The current iteration of the propagation
      */
     virtual void save_results_thread(int iteration, int thread_num, int num_threads);
+
+    /** Save results only at a particular AS
+     *
+     * These results will also contain the full AS_PATH computed by tracing back
+     * the announcements to their origin. These results are not inverted.
+     *
+     * @param asn AS to save results for
+     */
+    virtual void save_results_at_asn(uint32_t asn);
+
+    /** Return the AS_PATH of an Announcement.
+     *
+     * @param ann Announcement to determine the path of
+     * @param asn AS number of the AS to start at
+     * @return The AS_PATH as a string, formatted as a postgres array literal
+     */
+    virtual std::string stream_as_path(AnnouncementType ann, uint32_t asn);
 
 };
 #endif

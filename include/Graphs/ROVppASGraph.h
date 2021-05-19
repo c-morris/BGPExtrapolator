@@ -46,7 +46,7 @@ public:
 
     /** Process the graph without removing stubs (needs querier to save them).
     */
-    void process(SQLQuerier *querier);
+    void process(SQLQuerier<> *querier);
 
     /** Generates an ASGraph from relationship data in an SQL database based upon:
      *      1) A populated peers table

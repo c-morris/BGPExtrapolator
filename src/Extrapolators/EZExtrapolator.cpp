@@ -6,39 +6,47 @@
 //Attacker is checked for this, the origin needs to as well
 
 EZExtrapolator::EZExtrapolator(bool random_tiebraking,
+                                bool store_results, 
                                 bool store_invert_results, 
                                 bool store_depref_results, 
                                 std::string announcement_table,
                                 std::string results_table, 
                                 std::string inverse_results_table, 
                                 std::string depref_results_table, 
-                                std::string config_section,
+                                std::string full_path_results_table, 
                                 std::vector<std::string> *policy_tables, 
+                                std::string config_section,
                                 uint32_t iteration_size,
                                 uint32_t num_rounds,
                                 uint32_t community_detection_local_threshold,
                                 int exclude_as_number,
-                                uint32_t mh_mode) : BlockedExtrapolator(random_tiebraking, store_invert_results, store_depref_results, iteration_size, mh_mode) {
+                                uint32_t mh_mode,
+                                bool origin_only,
+                                std::vector<uint32_t> *full_path_asns,
+                                int max_threads) : BlockedExtrapolator(random_tiebraking, store_results, store_invert_results, store_depref_results, 
+                                iteration_size, mh_mode, origin_only, full_path_asns, max_threads, false) {
     
     graph = new EZASGraph();
-    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, policy_tables, exclude_as_number, config_section);
     communityDetection = new CommunityDetection(this, community_detection_local_threshold);
+    querier = new EZSQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, full_path_results_table, policy_tables, exclude_as_number, config_section);
     
     this->num_rounds = num_rounds;
     this->round = 1;
     this->next_unused_asn = 65434;
 }
 
-EZExtrapolator::EZExtrapolator(uint32_t community_detection_local_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
-                        0, community_detection_local_threshold, -1, DEFAULT_MH_MODE) {
+EZExtrapolator::EZExtrapolator(uint32_t community_detection_local_threshold) : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
+                        DEFAULT_POLICY_TABLES, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, 
+                        0, community_detection_local_threshold, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) {
 
 }
 
 EZExtrapolator::EZExtrapolator() 
-    : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
-                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_POLICY_TABLES, DEFAULT_ITERATION_SIZE, 
-                        0, DEFAULT_COMMUNITY_DETECTION_LOCAL_THRESHOLD, -1, DEFAULT_MH_MODE) { }
+    : EZExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS,
+                        ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
+                        DEFAULT_POLICY_TABLES, DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, 
+                        0, DEFAULT_COMMUNITY_DETECTION_LOCAL_THRESHOLD, -1, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS) { }
 
 EZExtrapolator::~EZExtrapolator() {
     delete communityDetection;
@@ -148,7 +156,9 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         
         EZAS* as = as_search->second;
 
-        EZAnnouncement announcement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 299, path_origin_asn, timestamp, true, false);
+        Priority pr;
+        pr.relationship = 3;
+        EZAnnouncement announcement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, pr, path_origin_asn, timestamp, true, false);
         // Remove first element of as_path so the as doesn't see itself on the path (and reject the announcement because of that)
         as_path->erase(as_path->begin());
         announcement.as_path = *as_path;
@@ -177,8 +187,12 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         //     return;
 
         //graph->victim_to_prefixes->insert(std::make_pair(victim2_asn, prefix));
+        Priority priority;
+        priority.relationship = 2;
+        priority.path_length = 1 + as_path->size();
 
-        EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, 300 - as_path->size(), path_origin_asn, timestamp, true, true);
+        EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, priority, path_origin_asn, timestamp, true, true);
+
         // Remove first element of as_path so the attacker doesn't see itself on the path (and reject the announcement because of that)
         as_path->erase(as_path->begin());
 
@@ -227,7 +241,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
         attackAnnouncement.as_path = *as_path;
         attackAnnouncement.received_from_asn = HIJACKED;
-        attacker->process_announcement(attackAnnouncement, random_tiebraking);
+        attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
     }
 }
 

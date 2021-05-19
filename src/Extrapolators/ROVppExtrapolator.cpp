@@ -29,20 +29,25 @@
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string announcement_table,
                                         std::string results_table,
+                                        std::string full_path_results_table,
                                         std::string tracked_ases_table,
                                         std::string simulation_table,
                                         std::string config_section,
-                                        int exclude_as_number)
-    : BaseExtrapolator(false, false, false) {
+                                        int exclude_as_number,
+                                        bool origin_only,
+                                        int max_threads)
+    // ROVppExtrapolator always saves regular results
+    : BaseExtrapolator(false, true, false, false, origin_only, NULL, max_threads) {
         
     this->graph = new ROVppASGraph();
 
     // fix rovpp extrapolation results table name, the default arg doesn't work right here
     results_table = !results_table.compare(RESULTS_TABLE) ? ROVPP_RESULTS_TABLE : results_table;
-    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, tracked_ases_table, simulation_table, exclude_as_number, config_section);
+    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, full_path_results_table, tracked_ases_table, simulation_table, exclude_as_number, config_section);
 }
 
-ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1) { }
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1, DEFAULT_ORIGIN_ONLY, DEFAULT_MAX_THREADS) { }
+
 ROVppExtrapolator::~ROVppExtrapolator() { }
 
 void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
@@ -152,6 +157,11 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
   
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
+        // Only seed at origin AS if origin only mode is enabled
+        if (this->origin_only == true && it != as_path->rbegin()) {
+            return;
+        }
+
         // Increments path length, including prepending
         i++;
         // If ASN not in graph, continue
@@ -173,11 +183,11 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         if (i > 1) {
             // Get the previous ASes relationship to current AS
             if (as_on_path->providers->find(*(it - 1)) != as_on_path->providers->end()) {
-                received_from = AS_REL_PROVIDER;
+                received_from = AS_REL_PROVIDER_ROVPP;
             } else if (as_on_path->peers->find(*(it - 1)) != as_on_path->peers->end()) {
-                received_from = AS_REL_PEER;
+                received_from = AS_REL_PEER_ROVPP;
             } else if (as_on_path->customers->find(*(it - 1)) != as_on_path->customers->end()) {
-                received_from = AS_REL_CUSTOMER;
+                received_from = AS_REL_CUSTOMER_ROVPP;
             } else {
                 broken_path = true;
             }
@@ -599,7 +609,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a, int d) {
     if (d > 100) { BOOST_LOG_TRIVIAL(error) << "Maximum depth exceeded during traceback."; return true; }
     auto ann_pair = cur_as.loc_rib->find(p);
-    const Announcement &ann = ann_pair->second;
+    const Announcement<> &ann = ann_pair->second;
     // i wonder if a cabinet holding a subwoofer counts as a bass case
     // Ba dum tss, nice
     if (ann.received_from_asn == a) { return true; }

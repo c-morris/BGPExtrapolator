@@ -5,7 +5,7 @@
 
 #include "SQLQueriers/SQLQuerier.h"
 
-class EZSQLQuerier : public SQLQuerier {
+class EZSQLQuerier : public SQLQuerier<> {
 public:
     std::vector<std::string> policy_tables;
 
@@ -13,6 +13,7 @@ public:
                     std::string r=RESULTS_TABLE,
                     std::string i=INVERSE_RESULTS_TABLE,
                     std::string d=DEPREF_RESULTS_TABLE,
+                    std::string f=FULL_PATH_RESULTS_TABLE,
                     std::vector<std::string> *pt=NULL,
                     int n=-1,
                     std::string s=DEFAULT_QUERIER_CONFIG_SECTION);

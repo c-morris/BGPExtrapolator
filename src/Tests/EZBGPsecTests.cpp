@@ -33,7 +33,9 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 300, 5, 2, false, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(5, p.addr, p.netmask, pr, 5, 2, false, true);
 
     e.graph->ases->find(5)->second->process_announcement(attack_announcement);
 
@@ -125,7 +127,9 @@ bool ezbgpsec_test_gather_reports() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
 
     //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
-    EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(3, p.addr, p.netmask, pr, 3, 2, false, true);
     //The supposed path thus far
     attack_announcement.as_path.push_back(3);
 
@@ -169,7 +173,7 @@ bool ezbgpsec_test_gather_reports() {
 
     Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
 
-    EZAnnouncement attack_announcement2(3, p2.addr, p2.netmask, 299, 3, 2, false, true);
+    EZAnnouncement attack_announcement2(3, p2.addr, p2.netmask, pr, 3, 2, false, true);
     attack_announcement2.as_path.push_back(3);//Make the origin on the path
 
     e.graph->ases->find(1)->second->process_announcement(attack_announcement2);
@@ -687,7 +691,9 @@ bool ezbgpsec_test_bgpsec_noncontiguous() {
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -746,10 +752,12 @@ bool ezbgpsec_test_bgpsec_contiguous() {
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -811,10 +819,12 @@ bool ezbgpsec_test_bgpsec_contiguous2() {
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -877,10 +887,12 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous() {
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -948,10 +960,12 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous2() {
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -1018,10 +1032,12 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous3() {
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
 
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, 299, 13796, 1, true, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, 299, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
