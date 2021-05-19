@@ -114,6 +114,9 @@ BOOST_AUTO_TEST_CASE( Extrapolator_constructor ) {
 BOOST_AUTO_TEST_CASE( Extrapolator_give_ann_to_as_path ) {
         BOOST_CHECK( test_give_ann_to_as_path() );
 }
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up_no_multihomed ) {
+        BOOST_CHECK( test_propagate_up_no_multihomed() );
+}
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up ) {
         BOOST_CHECK( test_propagate_up() );
 }
@@ -122,6 +125,12 @@ BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up_multihomed_standard ) {
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_up_multihomed_peer_mode ) {
         BOOST_CHECK( test_propagate_up_multihomed_peer_mode() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down_no_multihomed ) {
+        BOOST_CHECK( test_propagate_down_no_multihomed() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down_no_multihomed2 ) {
+        BOOST_CHECK( test_propagate_down_no_multihomed2() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_propagate_down ) {
         BOOST_CHECK( test_propagate_down() );
@@ -137,6 +146,36 @@ BOOST_AUTO_TEST_CASE( Extrapolator_save_results_parallel ) {
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements ) {
         BOOST_CHECK( test_send_all_announcements() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_back ) {
+        BOOST_CHECK( test_prepending_priority_back() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_middle ) {
+        BOOST_CHECK( test_prepending_priority_middle() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_beginning ) {
+        BOOST_CHECK( test_prepending_priority_beginning() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_back_existing_ann ) {
+        BOOST_CHECK( test_prepending_priority_back_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_middle_existing_ann ) {
+        BOOST_CHECK( test_prepending_priority_middle_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_beginning_existing_ann ) {
+        BOOST_CHECK( test_prepending_priority_beginning_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_prepending_priority_beginning_existing_ann2 ) {
+        BOOST_CHECK( test_prepending_priority_beginning_existing_ann2() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements2 ) {
+        BOOST_CHECK( test_send_all_announcements2() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements3 ) {
+        BOOST_CHECK( test_send_all_announcements3() );
+}
+BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements_no_multihomed ) {
+        BOOST_CHECK( test_send_all_announcements_no_multihomed() );
 }
 BOOST_AUTO_TEST_CASE( Extrapolator_send_all_announcements_multihomed_standard1 ) {
         BOOST_CHECK( test_send_all_announcements_multihomed_standard1() );
@@ -231,6 +270,27 @@ BOOST_AUTO_TEST_CASE( ROVpp_test_tiny_hash ) {
 }
 BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
         BOOST_CHECK( test_rovpp_full_path() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_back() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_middle() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_back_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_middle_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann2 ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann2() );
 }
 
 //EZBGPsec Tests

@@ -90,7 +90,7 @@ void EZExtrapolator::gather_community_detection_reports() {
 void EZExtrapolator::perform_propagation() {
     this->init();
 
-    std::cout << "Generating subnet blocks..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
@@ -101,12 +101,11 @@ void EZExtrapolator::perform_propagation() {
     
     // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
     for(round = 1; round <= num_rounds; round++) {
-        std::cout << "Round #" << round << std::endl;
+        BOOST_LOG_TRIVIAL(info) << "Round #" << round;
         for (auto &as : *this->graph->ases) {
             as.second->community_detection = communityDetection;
         }
         this->extrapolate(prefix_blocks, subnet_blocks);
-
         communityDetection->process_reports(graph);
 
         graph->clear_announcements();
@@ -115,7 +114,7 @@ void EZExtrapolator::perform_propagation() {
         //Re-calculate the components with these new relationships
         graph->process(querier);
     }
-    
+   
     // Cleanup
     for (Prefix<> *p : *prefix_blocks) { delete p; }
     for (Prefix<> *p : *subnet_blocks) { delete p; }

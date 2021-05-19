@@ -27,8 +27,6 @@
 #include <thread>
 #include <semaphore.h>
 
-#include "Logger.h"
-
 #include "ASes/AS.h"
 #include "Graphs/ASGraph.h"
 #include "Announcements/Announcement.h"
@@ -50,9 +48,9 @@
 
 void intro() {
     // This needs to be finished
-    std::cout << "***** Routing Extrapolator v0.3 *****" << std::endl;
-    std::cout << "This is free software: you are free to change and redistribute it." << std::endl;
-    std::cout << "There is NO WARRANTY, to the extent permitted by law." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "***** Routing Extrapolator v0.3 *****";
+    BOOST_LOG_TRIVIAL(info) << "This is free software: you are free to change and redistribute it.";
+    BOOST_LOG_TRIVIAL(info) << "There is NO WARRANTY, to the extent permitted by law.";
 }
 
 int main(int argc, char *argv[]) {
@@ -123,7 +121,7 @@ int main(int argc, char *argv[]) {
          "exclude all announcements from a particular ASN")
         ("mh-propagation-mode", 
          po::value<uint32_t>()->default_value(DEFAULT_MH_MODE),
-         "enables multi-home propagation mode, 1 - no propagation from mh, 2 - propagation from mh to peers");
+         "multi-home propagation mode, 0 - off, 1 - propagate from mh to providers in some cases (automatic), 2 - no propagation from mh, 3 - propagation from mh to peers");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc,argv, desc), vm);

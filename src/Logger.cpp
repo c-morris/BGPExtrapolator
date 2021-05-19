@@ -16,7 +16,7 @@ void Logger::init_logger(bool std_out, std::string folder, unsigned int severity
     }
 
     if(std_out)
-        boost::log::add_console_log(std::cout, boost::log::keywords::format = log_format);
+        boost::log::add_console_log(std::cout, boost::log::keywords::format = log_format, boost::log::keywords::auto_flush = true);
 
     if(folder != "") {
         boost::log::add_file_log (

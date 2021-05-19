@@ -200,7 +200,7 @@ void BaseGraph<ASType>::save_stubs_to_db(SQLQuerier *querier) {
         closedir(dir);
 
     std::ofstream outfile;
-    std::cout << "Saving Stubs..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Stubs...";
     std::string file_name = "/dev/shm/bgp/stubs.csv";
     outfile.open(file_name);
 
@@ -221,7 +221,7 @@ void BaseGraph<ASType>::save_non_stubs_to_db(SQLQuerier *querier) {
         closedir(dir);
 
     std::ofstream outfile;
-    std::cout << "Saving Non-Stubs..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Non-Stubs...";
     std::string file_name = "/dev/shm/bgp/non-stubs.csv";
     outfile.open(file_name);
 
@@ -242,7 +242,7 @@ void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
         closedir(dir);
 
     std::ofstream outfile;
-    std::cout << "Saving Supernodes..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Supernodes...";
     std::string file_name = "/dev/shm/bgp/supernodes.csv";
     outfile.open(file_name); 
     
@@ -460,7 +460,7 @@ void BaseGraph<ASType>::combine_components() {
 template <class ASType>
 void BaseGraph<ASType>::printDebug() {
     for (auto const& as : *ases)
-        std::cout << as.first << ':' << as.second->asn << std::endl;
+        BOOST_LOG_TRIVIAL(debug) << as.first << ':' << as.second->asn;
     return; 
 }
 
