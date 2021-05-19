@@ -26,7 +26,7 @@ void EZSQLQuerier::create_round_results_tbl(int i) {
     i << " (asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint);" <<
     "GRANT ALL ON TABLE " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << " TO bgp_user;";
 
-    std::cout << "Creating round results table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating round " << i << " results table...";
     execute(sql.str(), false);
 }
 
