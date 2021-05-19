@@ -21,9 +21,10 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
     ann.as_path.insert(ann.as_path.begin(), asn);
 
 
-    // Reset reserved3 and 5 from any previous modifications
-    ann.priority.reserved3 = 0; // default security info missing
+    // Reset reserved3, 4 and 5 from any previous modifications
+    ann.priority.reserved4 = 0; // default security info missing
     ann.priority.reserved5 = 1; // default valid
+    ann.priority.reserved3 = 1; // default short path
 
     // If origin is only AS on path, accept
     if (ann.origin == asn) {
@@ -31,6 +32,19 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         return;
     }
 
+    // Now deprefer long paths for all policies except BGP
+    if (community_detection != NULL) {
+        if (policy != EZAS_TYPE_BGP) {
+            // TODO fix this, need to actually check if received prefix before
+            if (community_detection->extrapolator->round > 1) {
+                if (ann.as_path.size() > 5) {
+                    ann.priority.reserved3 = 0;
+                } else {
+                    ann.priority.reserved3 = 1;
+                }
+            }
+        }
+    }
     if(policy == EZAS_TYPE_BGPSEC_TRANSITIVE || policy == EZAS_TYPE_BGPSEC) {
         auto origin_search = community_detection->extrapolator->graph->ases->find(ann.as_path.at(ann.as_path.size() - 1));
 
@@ -53,10 +67,10 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             neighbors.insert(origin_as->customers->begin(), origin_as->customers->end());
             if (neighbors.find(second) == neighbors.end()) {
                 // Not a real neighbor, signature not present
-                ann.priority.reserved3 = 0;
+                ann.priority.reserved4 = 0;
             } else {
                 // Attacker was able to find a non-adopting neighbor, signature present
-                ann.priority.reserved3 = 1;
+                ann.priority.reserved4 = 1;
             }
         } 
 
@@ -76,9 +90,9 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                     }
                 }
             }
-            // Use reserved3 field to indicate missing/present signatures
+            // Use reserved4 field to indicate missing/present signatures
             // Security second (between path length and relationship)
-            ann.priority.reserved3 = static_cast<uint8_t>(contiguous);
+            ann.priority.reserved4 = static_cast<uint8_t>(contiguous);
             if (contiguous && ann.from_attacker) {
                 ann.priority.reserved5 = 0; // invalid
             }
@@ -133,7 +147,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                     return;
                 }
             }
-        }
+        } 
 
         /*
          *  This path does not contain anything that is blacklisted
