@@ -89,71 +89,8 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
 
         //Now, the announcement has no *visible* invalid relationship
 
-//        //Accept if there is nothing to compete
-//        auto ann_search = all_anns->find(ann.prefix);
-//        if(ann_search == all_anns->end()) {
-//            all_anns->insert(std::make_pair(ann.prefix, ann));
-//            return;
-//        }
-
-//        EZAnnouncement &accepted_announcement = ann_search->second;
-//        bool accepted_signature_missing = false;
-//
-//        // BGPsec now needs to check security second with the existing announcement
-//        if(origin_as->policy == EZAS_TYPE_BGPSEC) {
-//            bool contiguous = true;
-//            for (uint32_t i : accepted_announcement.as_path) {
-//                auto search = community_detection->extrapolator->graph->ases->find(i);
-//                // assume that an AS that does not exist is not an adopter
-//                if(search == community_detection->extrapolator->graph->ases->end()) {
-//                    contiguous = false;
-//                    break;
-//                } else {
-//                    if(search->second->policy != EZAS_TYPE_BGPSEC) {
-//                        contiguous = false;
-//                        break;
-//                    }
-//                }
-//            }
-//            accepted_signature_missing = !contiguous;
-//        }
-//
-//        // Transitive BGPsec does something similar
-//        if(origin_as->policy == EZAS_TYPE_BGPSEC_TRANSITIVE) {
-//            // path must be longer than 1 here so this is safe
-//            auto accepted_second = accepted_announcement.as_path.rbegin()[1];
-//            // If neighbor is not a real neighbor, reject
-//            std::set<uint32_t> accepted_neighbors;
-//            accepted_neighbors.insert(origin_as->providers->begin(), origin_as->providers->end());
-//            accepted_neighbors.insert(origin_as->peers->begin(), origin_as->peers->end());
-//            accepted_neighbors.insert(origin_as->customers->begin(), origin_as->customers->end());
-//            if (accepted_neighbors.find(accepted_second) == accepted_neighbors.end()) {
-//                // Not a real neighbor, signature not present
-//                accepted_signature_missing = true;
-//            }
-//        } 
-
         // Now for both BGPsec variants, do security second
         BaseAS::process_announcement(ann, ran);
-        //if (accepted_announcement.priority / 100 < ann.priority / 100) {
-        //    // Relationship first
-        //    BaseAS::process_announcement(ann, ran);
-        //    return;
-        //}
-        //if (accepted_announcement.priority / 100 == ann.priority / 100) {
-        //    // If relation equal but security better on new ann
-        //    if (!signature_missing && accepted_signature_missing) {
-        //        ann_search->second = ann;
-        //        return;
-        //    }
-        //    // If relation equal but security is worse, reject
-        //    if (signature_missing && !accepted_signature_missing) {
-        //        return;
-        //    }
-        //    // Else let process_announcement sort them out
-        //    BaseAS::process_announcement(ann, ran);
-        //    return;
-        //}
 
         // TODO add this back---it's necessary but also inconsequential for the current simulations
         //// Transitive BGPsec now must decide based on which has more signatures (more adopters on the path)
@@ -187,11 +124,6 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         //    }
         //}
 
-        ////If security is the same, then compare based on priority
-        //if(ann.priority > accepted_announcement.priority) {
-        //    ann_search->second = ann;
-        //}
-        //return;
     } else if (community_detection != NULL) {
         auto path_copy = ann.as_path;
         std::sort(path_copy.begin(), path_copy.end());
