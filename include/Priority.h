@@ -15,11 +15,11 @@
 struct Priority {
     // Little-endian assumed
     uint8_t reserved1;
-    uint8_t path_length; // Lower precedence
     uint8_t reserved2;
-    uint8_t relationship; // Highest precedence
+    uint8_t path_length; // Lower precedence
     uint8_t reserved3;
     uint8_t reserved4;
+    uint8_t relationship; // Highest precedence
     uint8_t reserved5;
     uint8_t reserved6;
 
@@ -33,11 +33,11 @@ struct Priority {
     operator uint64_t() const {
         uint64_t p = 0;
         p |= (uint64_t) reserved1;
-        p |= (uint64_t) (255 - path_length) << 8;
-        p |= (uint64_t) reserved2 << 16;
-        p |= (uint64_t) relationship << 24;
-        p |= (uint64_t) reserved3 << 32;
-        p |= (uint64_t) reserved4 << 40;
+        p |= (uint64_t) reserved2 << 8;
+        p |= (uint64_t) (255 - path_length) << 16;
+        p |= (uint64_t) reserved3 << 24;
+        p |= (uint64_t) reserved4 << 32;
+        p |= (uint64_t) relationship << 40;
         p |= (uint64_t) reserved5 << 48;
         p |= (uint64_t) reserved6 << 56;
         return p;

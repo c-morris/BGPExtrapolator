@@ -210,7 +210,7 @@ bool test_process_announcements(){
     as.receive_announcements(vect);
     as.process_announcements(true);
 
-    if (as.all_anns->find(ann1_prefix)->second.priority != (uint64_t) 1 << 24) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != (uint64_t) 1 << 40) {
         std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;
     }
@@ -223,7 +223,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 10) << 8)) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16)) {
         std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
     }
@@ -234,7 +234,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 10) << 8)) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16)) {
         std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
     }
@@ -246,7 +246,7 @@ bool test_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann1_prefix)->second.priority != ((uint64_t) 2 << 24) + ((uint64_t) (255 - 1) << 8)) {
+    if (as.all_anns->find(ann1_prefix)->second.priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16)) {
         std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
     }
@@ -259,7 +259,7 @@ bool test_process_announcements(){
     vect.push_back(ann2);
     as.receive_announcements(vect);
     as.process_announcements(true);
-    if (as.all_anns->find(ann2_prefix)->second.priority != (uint64_t) 2 << 24) {
+    if (as.all_anns->find(ann2_prefix)->second.priority != (uint64_t) 2 << 40) {
         std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
     }

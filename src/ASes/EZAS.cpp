@@ -21,8 +21,8 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
     ann.as_path.insert(ann.as_path.begin(), asn);
 
 
-    // Reset reserved2 and 5 from any previous modifications
-    ann.priority.reserved2 = 0; // default security info missing
+    // Reset reserved3 and 5 from any previous modifications
+    ann.priority.reserved3 = 0; // default security info missing
     ann.priority.reserved5 = 1; // default valid
 
     // If origin is only AS on path, accept
@@ -53,10 +53,10 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             neighbors.insert(origin_as->customers->begin(), origin_as->customers->end());
             if (neighbors.find(second) == neighbors.end()) {
                 // Not a real neighbor, signature not present
-                ann.priority.reserved2 = 0;
+                ann.priority.reserved3 = 0;
             } else {
                 // Attacker was able to find a non-adopting neighbor, signature present
-                ann.priority.reserved2 = 1;
+                ann.priority.reserved3 = 1;
             }
         } 
 
@@ -76,9 +76,9 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
                     }
                 }
             }
-            // Use reserved2 field to indicate missing/present signatures
+            // Use reserved3 field to indicate missing/present signatures
             // Security second (between path length and relationship)
-            ann.priority.reserved2 = static_cast<uint8_t>(contiguous);
+            ann.priority.reserved3 = static_cast<uint8_t>(contiguous);
             if (contiguous && ann.from_attacker) {
                 ann.priority.reserved5 = 0; // invalid
             }
