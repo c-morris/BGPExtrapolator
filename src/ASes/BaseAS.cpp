@@ -283,7 +283,7 @@ std::ostream& operator<<(std::ostream &os, const BaseAS<U>& as) {
 
 template <class AnnouncementType, typename PrefixType>
 std::ostream& BaseAS<AnnouncementType, PrefixType>::stream_announcements(std::ostream &os) {
-    for (auto &ann : *all_anns) {
+    for (auto const &ann : *all_anns) {
         os << asn << ',';
         ann.to_csv(os);
     }
