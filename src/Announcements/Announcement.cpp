@@ -32,7 +32,6 @@ template <typename PrefixType>
 Announcement<PrefixType>::Announcement(uint32_t aorigin, Prefix<PrefixType> prefix,
     uint32_t from_asn, int64_t timestamp /* = 0 */) : prefix(prefix) {
     
-    //prefix = prefix;
     origin = aorigin;
     received_from_asn = from_asn;
     from_monitor = false;
