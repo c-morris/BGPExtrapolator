@@ -49,7 +49,7 @@ bool test_rov_is_from_attacker() {
 bool test_rov_is_attacker() {
     std::set<uint32_t> attackers;
     attackers.insert(1);
-    ROVAS as = ROVAS(1, &attackers);
+    ROVAS as = ROVAS(1, 1, &attackers);
 
     return as.is_attacker();
 }
@@ -65,13 +65,32 @@ bool test_rov_process_announcement(){
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
     as.process_announcement(ann);
+
     Prefix<> old_prefix = ann.prefix;
     ann.prefix.addr = 0x321C9F00;
     ann.prefix.netmask = 0xFFFFFF00;
+    ann.prefix.id = 1;
+    ann.prefix.block_id = 1;
+    
     Prefix<> new_prefix = ann.prefix;
+    
     as.process_announcement(ann);
-    if (new_prefix != as.all_anns->find(ann.prefix)->prefix ||
-        old_prefix != as.all_anns->find(old_prefix)->prefix) {
+    
+    auto ann_search = as.all_anns->find(ann.prefix);
+    if(ann_search == as.all_anns->end()) {
+        std::cerr << "Announcement for new prefix is not present!" << std::endl;
+        return false;
+    }
+
+    auto old_ann_search = as.all_anns->find(old_prefix);
+    if(old_ann_search == as.all_anns->end()) {
+        std::cerr << "Announcement for old prefix is not present!" << std::endl;
+        return false;
+    }
+
+    if (new_prefix != (*ann_search).prefix ||
+        old_prefix != (*old_ann_search).prefix) {
+        std::cerr << "Announcement's prefixes are incorrect" << std::endl;
         return false;
     }
 

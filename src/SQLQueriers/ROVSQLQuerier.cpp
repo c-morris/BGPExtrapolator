@@ -18,11 +18,11 @@ pqxx::result ROVSQLQuerier::select_AS_flags(std::string const& policy_table){
 }
 
 pqxx::result ROVSQLQuerier::select_prefix_ann(Prefix<>* p) {
-    std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time, roa_validity");
+    std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id, block_prefix_id, roa_validity");
     return execute(sql);
 }
 
 pqxx::result ROVSQLQuerier::select_subnet_ann(Prefix<>* p) {
-    std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time, roa_validity");
+    std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id, block_prefix_id, roa_validity");
     return execute(sql);
 }
