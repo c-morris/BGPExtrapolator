@@ -102,8 +102,6 @@ void BaseGraph<ASType, PrefixType>::process(SQLQuerier<PrefixType> *querier) {
 
 template <class ASType, typename PrefixType>
 void BaseGraph<ASType, PrefixType>::create_graph_from_db(SQLQuerier<PrefixType> *querier) {
-    BOOST_LOG_TRIVIAL(debug) << "Creating the graph, max id = " << max_block_prefix_id;
-
     // Assemble Peers
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){

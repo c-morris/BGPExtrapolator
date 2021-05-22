@@ -46,15 +46,6 @@ public:
      */
     Prefix() {}
 
-    /** Basic integer input constructor
-     */
-    Prefix(Integer addr_in, Integer mask_in) {
-        addr = addr_in;
-        netmask = mask_in;
-        id = 0;
-        block_id = 0;
-    }
-
     /** Integer input constructor
      */
     Prefix(Integer addr_in, Integer mask_in, uint32_t id, uint32_t block_id) {

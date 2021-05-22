@@ -234,14 +234,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
     if (r[0][0].as<uint32_t>() < this->iteration_size) {
         // Add to subnet block vector
         if (r[0][0].as<uint32_t>() > 0) {
-            Prefix<PrefixType>* p_copy = new Prefix<PrefixType>(p->addr, p->netmask, p->id, p->block_id);
+            Prefix<PrefixType>* p_copy = new Prefix<PrefixType>(p->addr, p->netmask, 0, 0);
             bloc_vector->push_back(p_copy);
         }
     } else {
         // Store the prefix if there are announcements for it specifically
         pqxx::result r2 = this->querier->select_prefix_count(p);
         if (r2[0][0].as<uint32_t>() > 0) {
-            Prefix<PrefixType>* p_copy = new Prefix<PrefixType>(p->addr, p->netmask, p->id, p->block_id);
+            Prefix<PrefixType>* p_copy = new Prefix<PrefixType>(p->addr, p->netmask, 0, 0);
             prefix_vector->push_back(p_copy);
         }
 
@@ -257,7 +257,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             } else {
                 new_mask = (p->netmask >> 1) | p->netmask;
             }
-            p1 = new Prefix<PrefixType>(p->addr, new_mask, p->id, p->block_id);
+            p1 = new Prefix<PrefixType>(p->addr, new_mask, 0, 0);
 
             // Second half: increase the prefix length by 1 and flip previous length bit
             int8_t sz = 0;
@@ -268,7 +268,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             }
             new_addr |= 1UL << (32 - sz - 1);
-            p2 = new Prefix<PrefixType>(new_addr, new_mask, p->id, p->block_id);
+            p2 = new Prefix<PrefixType>(new_addr, new_mask, 0, 0);
         } else {
             // Split prefix
             // First half: increase the prefix length by 1
@@ -278,7 +278,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             } else {
                 new_mask = (p->netmask >> 1) | p->netmask;
             }
-            p1 = new Prefix<PrefixType>(p->addr, new_mask, p->id, p->block_id);
+            p1 = new Prefix<PrefixType>(p->addr, new_mask, 0, 0);
 
             // Second half: increase the prefix length by 1 and flip previous length bit
             int32_t sz = 0;
@@ -289,7 +289,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             }
             new_addr |= (uint128_t) 1 << (128 - sz - 1);;
-            p2 = new Prefix<PrefixType>(new_addr, new_mask, p->id, p->block_id);
+            p2 = new Prefix<PrefixType>(new_addr, new_mask, 0, 0);
         }
 
         // Recursive call on each new prefix subnet

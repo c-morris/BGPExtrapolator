@@ -110,7 +110,7 @@ public:
 
     BaseAS(uint32_t asn, uint32_t max_block_prefix_id, bool store_depref_results) : BaseAS(asn, max_block_prefix_id, store_depref_results, NULL) { }
     BaseAS(uint32_t asn, uint32_t max_block_prefix_id) : BaseAS(asn, max_block_prefix_id, false, NULL) { }
-    BaseAS() : BaseAS(0, false, NULL) { }
+    BaseAS() : BaseAS(0, 20, false, NULL) { }
 
     virtual ~BaseAS();
     
