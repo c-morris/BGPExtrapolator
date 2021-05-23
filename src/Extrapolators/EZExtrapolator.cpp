@@ -50,12 +50,10 @@ void EZExtrapolator::init() {
 }
 
 void EZExtrapolator::perform_propagation() {
-    // init();
+    init();
 
     BOOST_LOG_TRIVIAL(info) << "Generating subnet blocks...";
     
-    // *** id is 0 here
-
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>; // Subnet blocks
@@ -125,11 +123,11 @@ void EZExtrapolator::perform_propagation() {
         }
     } while(successful_attacks > 0 && round <= num_rounds - 1);
     
-    // // Cleanup
-    // delete prefix_blocks;
-    // delete subnet_blocks;
+    // Cleanup
+    delete prefix_blocks;
+    delete subnet_blocks;
 
-    // ezStatistics.close();
+    ezStatistics.close();
 }
 
 /*
