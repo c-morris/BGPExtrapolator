@@ -534,6 +534,14 @@ pqxx::result SQLQuerier<PrefixType>::select_max_block_id() {
     return execute(sql, false);
 }
 
+/** Returns the max value of prefix_id in the announcements table
+ */
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_max_prefix_id() {
+    std::string sql = select_max_query_string(announcements_table, "prefix_id");
+    return execute(sql, false);
+}
+
 /** Returns the max value of block_prefix_id in the announcements table
  */
 template <typename PrefixType>

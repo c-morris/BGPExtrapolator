@@ -59,12 +59,8 @@ void ROVExtrapolator::extrapolate_blocks(uint32_t &announcement_count, int &iter
             std::string mask = ann_block[i]["netmask"].c_str();
 
             uint32_t prefix_id;
-            uint32_t prefix_block_id;
-
             ann_block[i]["prefix_id"].to(prefix_id);
-            ann_block[i]["block_prefix_id"].to(prefix_block_id);
-
-            Prefix<> cur_prefix(ip, mask, prefix_id, prefix_block_id);
+            Prefix<> cur_prefix(ip, mask, prefix_id);
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = this->parse_path(path_as_string);

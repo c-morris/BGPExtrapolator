@@ -45,9 +45,16 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
     this->querier->create_supernodes_tbl();
     
     // Calculate max block_prefix_id before creating any ASes
-    BOOST_LOG_TRIVIAL(info) << "Calculating max block_prefix_id";
-    pqxx::result r = this->querier->select_max_block_prefix_id();
-    this->graph->max_block_prefix_id = r[0][0].as<uint32_t>() + 1;    
+    pqxx::result r;
+    if (select_block_id) {
+        BOOST_LOG_TRIVIAL(info) << "Calculating max block_prefix_id";
+        r = this->querier->select_max_block_prefix_id();
+    } else {
+        // If creating blocks manually, use prefix_id instead
+        BOOST_LOG_TRIVIAL(info) << "Calculating max prefix_id";
+        r = this->querier->select_max_prefix_id();
+    }
+    this->graph->max_block_prefix_id = r[0][0].as<uint32_t>() + 1;  
 
     // Generate the graph and populate the stubs & supernode tables
     this->graph->create_graph_from_db(this->querier);
@@ -340,12 +347,9 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             std::string mask = ann_block[i]["netmask"].c_str();
 
             uint32_t prefix_id;
-            uint32_t prefix_block_id;
-
             ann_block[i]["prefix_id"].to(prefix_id);
-            ann_block[i]["block_prefix_id"].to(prefix_block_id);
+            Prefix<PrefixType> cur_prefix(ip, mask, prefix_id);
 
-            Prefix<PrefixType> cur_prefix(ip, mask, prefix_id, prefix_block_id);
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = this->parse_path(path_as_string);
