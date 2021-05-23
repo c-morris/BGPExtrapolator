@@ -6,7 +6,7 @@
 
 class EZAS : public BaseAS<EZAnnouncement> {
 public:
-    EZAS(uint32_t asn);
+    EZAS(uint32_t asn, uint32_t max_block_prefix_id);
     EZAS();
 
     ~EZAS();

@@ -59,7 +59,7 @@ void EZExtrapolator::perform_propagation() {
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>; // Subnet blocks
-    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0", 0); // Start at 0.0.0.0/0
+    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0", 0, 0); // Start at 0.0.0.0/0
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
     
@@ -181,48 +181,48 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 }
 
 uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn) {
-    // uint32_t from_asn = as->all_anns->find(prefix)->second.received_from_asn;
+    uint32_t from_asn = as->all_anns->find(prefix)->received_from_asn;
 
-    // if(from_asn == attacker_asn)
-    //     return as->asn;
+    if(from_asn == attacker_asn)
+        return as->asn;
 
-    // return getPathNeighborOfAttacker(graph->ases->find(from_asn)->second, prefix, attacker_asn);
+    return getPathNeighborOfAttacker(graph->ases->find(from_asn)->second, prefix, attacker_asn);
 }
 
 void EZExtrapolator::calculate_successful_attacks() {
     //For every victim, prefix pair
-    // for(auto& it : *graph->victim_to_prefixes) {
-    //     uint32_t victim_asn = it.first;
-    //     auto victim_search = graph->ases->find(victim_asn);
+    for(auto& it : *graph->victim_to_prefixes) {
+        uint32_t victim_asn = it.first;
+        auto victim_search = graph->ases->find(victim_asn);
 
-    //     if(victim_search == graph->ases->end())
-    //         continue;
+        if(victim_search == graph->ases->end())
+            continue;
 
-    //     EZAS* victim = victim_search->second;
+        EZAS* victim = victim_search->second;
 
-    //     auto announcement_search = victim->all_anns->find(it.second);
+        auto announcement_search = victim->all_anns->find(it.second);
 
-    //     //If there is no announcement for the prefix, move on
-    //     if(announcement_search == victim->all_anns->end()) { //the prefix never reached the victim
-    //         disconnections++;
-    //         continue;
-    //     }
+        //If there is no announcement for the prefix, move on
+        if(announcement_search == victim->all_anns->end()) { //the prefix never reached the victim
+            disconnections++;
+            continue;
+        }
 
-    //     //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
-    //     if(announcement_search->second.from_attacker) {
-    //         if(this->num_between == 0) {
-    //             uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->second.origin)->second.first;
-    //             uint32_t neighbor_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
-    //             graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, neighbor_asn));
-    //         }
+        //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
+        if(announcement_search->from_attacker) {
+            if(this->num_between == 0) {
+                uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->origin)->second.first;
+                uint32_t neighbor_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
+                graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, neighbor_asn));
+            }
 
-    //         successful_attacks++;
-    //     } else {
-    //         successful_connections++;
-    //     }
-    // }
+            successful_attacks++;
+        } else {
+            successful_connections++;
+        }
+    }
 
-    // graph->victim_to_prefixes->clear();
+    graph->victim_to_prefixes->clear();
 }
 
 void EZExtrapolator::save_results(int iteration) {
