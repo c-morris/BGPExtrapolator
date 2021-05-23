@@ -77,7 +77,7 @@ void PrefixAnnouncementMap<AnnouncementType, PrefixType>::insert(const Iterator 
 
 template <class AnnouncementType, typename PrefixType>
 typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator PrefixAnnouncementMap<AnnouncementType, PrefixType>::begin() const {
-    int index = 0;
+    size_t index = 0;
     while (index < announcements.size() && announcements.at(index).tstamp == -1) {
             index++;
     }
