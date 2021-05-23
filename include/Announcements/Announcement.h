@@ -29,12 +29,18 @@
 #include <vector>
 
 #include "Prefix.h"
+#include "Priority.h"
 
+template <typename PrefixType = uint32_t> class Announcement;
+
+template <typename PrefixType = uint32_t> 
+std::ostream& operator<<(std::ostream &os, const Announcement<PrefixType>& ann);
+template <typename PrefixType>
 class Announcement {
 public:
-    Prefix<> prefix;            // encoded with subnet mask
+    Prefix<PrefixType> prefix;            // encoded with subnet mask
     uint32_t origin;            // origin ASN
-    uint32_t priority;          // priority assigned based upon path
+    Priority priority;          // priority assigned based upon path
     uint32_t received_from_asn; // ASN that sent the ann
     bool from_monitor = false;  // flag for seeded ann
     int64_t tstamp;             // timestamp from mrt file
@@ -46,23 +52,21 @@ public:
      * If the announcement is in this state, then it doesn't really have any meaning. It is just a placeholer in memory
      * See the notes in PrefixAnnouncementMap.h for why this is done
      */
-    Announcement() : prefix(0, 0, 0, 0) {
-        tstamp = -1;
-    }
+    Announcement();
 
     /** Default constructor
      */
-    Announcement(uint32_t aorigin, Prefix<> prefix,
+    Announcement(uint32_t aorigin, Prefix<PrefixType> prefix,
         uint32_t from_asn, int64_t timestamp = 0);
     
     /** Priority constructor
      */
-    Announcement(uint32_t aorigin, Prefix<> prefix,
-        uint32_t pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false);
+    Announcement(uint32_t aorigin, Prefix<PrefixType> prefix,
+        Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false);
 
     /** Copy constructor
      */
-    Announcement(const Announcement& ann);
+    Announcement(const Announcement<PrefixType>& ann);
 
     //****************** FILE I/O ******************//
 
@@ -74,7 +78,7 @@ public:
      * @param ann Specifies the announcement from which data is pulled.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    friend std::ostream& operator<<(std::ostream &os, const Announcement& ann);
+    friend std::ostream& operator<<<> (std::ostream &os, const Announcement<PrefixType>& ann);
 
     /** Passes the announcement struct data to an output stream to csv generation.
      *
@@ -83,4 +87,5 @@ public:
      */ 
     virtual std::ostream& to_csv(std::ostream &os) const;
 };
+
 #endif

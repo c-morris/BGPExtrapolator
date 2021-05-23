@@ -53,11 +53,17 @@
 
 // Prototypes for PrefixTest.cpp
 bool test_prefix();
+bool test_prefix_ipv6();
 bool test_string_to_cidr();
+bool test_string_to_cidr_ipv6();
 bool test_prefix_lt_operator();
+bool test_prefix_lt_operator_ipv6();
 bool test_prefix_gt_operator();
+bool test_prefix_gt_operator_ipv6();
 bool test_prefix_eq_operator();
+bool test_prefix_eq_operator_ipv6();
 bool test_prefix_contained_in_or_equal_to_operator();
+bool test_prefix_contained_in_or_equal_to_operator_ipv6();
 
 // Prototypes for AnnouncementTest.cpp
 bool test_announcement();
@@ -87,12 +93,41 @@ bool test_combine_components();
 
 // Prototypes for ExtrapolatorTest.cpp
 bool test_Extrapolator_constructor();
+bool test_parse_path();
+bool test_find_loop();
+bool test_propagate_up_no_multihomed();
 bool test_propagate_up();
+bool test_propagate_up_multihomed_standard();
+bool test_propagate_up_multihomed_peer_mode();
+bool test_propagate_down_no_multihomed();
+bool test_propagate_down_no_multihomed2();
 bool test_propagate_down();
 bool test_propagate_down2();
+bool test_propagate_down_multihomed_standard();
 bool test_save_results_parallel();
+bool test_save_results_at_asn();
 bool test_give_ann_to_as_path();
+bool test_give_ann_to_as_path_origin_only();
 bool test_send_all_announcements();
+bool test_prepending_priority_back();
+bool test_prepending_priority_middle();
+bool test_prepending_priority_beginning();
+bool test_prepending_priority_back_existing_ann();
+bool test_prepending_priority_middle_existing_ann();
+bool test_prepending_priority_beginning_existing_ann();
+bool test_prepending_priority_beginning_existing_ann2();
+bool test_send_all_announcements2();
+bool test_send_all_announcements3();
+bool test_send_all_announcements_no_multihomed();
+bool test_send_all_announcements_multihomed_standard1();
+bool test_send_all_announcements_multihomed_standard2();
+bool test_send_all_announcements_multihomed_peer_mode1();
+bool test_send_all_announcements_multihomed_peer_mode2();
+bool test_extrapolation_buildup();
+bool test_extrapolation_teardown();
+bool test_extrapolate_blocks();
+bool test_extrapolate_by_block_id();
+
 
 // Prototypes for ROVppTest.cpp
 bool test_rovpp_ann_eq_operator();
@@ -100,6 +135,7 @@ bool test_ROVppExtrapolator_constructor();
 bool test_rovpp_propagate_up();
 bool test_rovpp_propagate_down();
 bool test_rovpp_give_ann_to_as_path();
+bool test_rovpp_give_ann_to_as_path_origin_only();
 bool test_rovpp_send_all_announcements();
 bool test_rovpp_add_relationship();
 bool test_rovpp_translate_asn();
@@ -123,6 +159,29 @@ bool test_rovpp_tiebreak_override();
 bool test_withdrawal();
 bool test_tiny_hash();
 bool test_rovpp_full_path();
+bool test_rovpp_prepending_priority_back();
+bool test_rovpp_prepending_priority_middle();
+bool test_rovpp_prepending_priority_beginning();
+bool test_rovpp_prepending_priority_back_existing_ann();
+bool test_rovpp_prepending_priority_middle_existing_ann();
+bool test_rovpp_prepending_priority_beginning_existing_ann();
+bool test_rovpp_prepending_priority_beginning_existing_ann2();
+
+//ROV Reference
+bool test_rov_constructor();
+bool test_rov_is_attacker();
+bool test_rov_is_from_attacker();
+bool test_rov_give_ann_to_as_path();
+bool test_rov_give_ann_to_as_path_invalid();
+bool test_rov_send_all_announcements();
+bool test_rov_process_announcement();
+bool test_rov_prepending_priority_back();
+bool test_rov_prepending_priority_middle();
+bool test_rov_prepending_priority_beginning();
+bool test_rov_prepending_priority_back_existing_ann();
+bool test_rov_prepending_priority_middle_existing_ann();
+bool test_rov_prepending_priority_beginning_existing_ann();
+bool test_rov_prepending_priority_beginning_existing_ann2();
 
 //PrefixAnnouncementMap
 bool prefixAnnouncementMap_test_insert();
@@ -131,8 +190,13 @@ bool prefixAnnouncementMap_test_insert();
 bool ezbgpsec_test_path_propagation();
 
 //SQLQuerier
-bool test_parse_config_buildup();
-bool test_parse_config_teardown();
+bool test_querier_buildup();
+bool test_querier_teardown();
 bool test_parse_config();
+bool test_copy_to_db_string();
+bool test_select_prefix_string();
+bool test_clear_table_string();
+bool test_create_table_string();
+bool test_select_max_query_string();
 
 #endif
