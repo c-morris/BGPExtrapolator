@@ -190,6 +190,9 @@ public:
         if (error_f == true) {
             ipv4_ip_int = 0;
             BOOST_LOG_TRIVIAL(error) << "Caught malformed IPv4 address: " << addr_str;
+#ifndef RUN_TESTS
+            exit(4);
+#endif
         }
         return ipv4_ip_int;
     }
@@ -292,6 +295,9 @@ public:
         if (error_f == true) {
             ipv6_ip_int = 0;
             BOOST_LOG_TRIVIAL(error) << "Caught malformed IPv6 address: " << addr_str;
+#ifndef RUN_TESTS
+            exit(6);
+#endif
         }
         return ipv6_ip_int;
     }
