@@ -93,9 +93,12 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
             std::vector<uint32_t>* parsed_path = parse_path(c["as_path"].as<string>());
 
             uint32_t prefix_id;
-            c["prefix_id"].to(prefix_id);
+            uint32_t prefix_block_id;
 
-            Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>(), prefix_id);
+            c["prefix_id"].to(prefix_id);
+            c["block_prefix_id"].to(prefix_block_id);
+
+            Prefix<> the_prefix = Prefix<>(c["prefix_host"].as<string>(), c["prefix_netmask"].as<string>(), prefix_id, prefix_block_id);
             int64_t timestamp = 1;  // Bogus value just to satisfy function arguments (not actually being used)
             
             bool is_hijack = false; //table_name == querier->attack_table;
