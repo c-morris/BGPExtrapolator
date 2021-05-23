@@ -1,4 +1,5 @@
 #include "Extrapolators/BlockedExtrapolator.h"
+static int g_broken_path = 0;
 
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
@@ -476,7 +477,13 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             } else if (as_on_path->customers->find(*(it - 1)) != as_on_path->customers->end()) {
                 received_from = AS_REL_CUSTOMER;
             } else {
-                broken_path = true;
+                // If this is a stub AS that was removed from the graph, the path is not broken
+                auto search = this->graph->stubs_to_parents->find(*(it - 1));
+                if (search != this->graph->stubs_to_parents->end() || search->second != *it) {
+                    broken_path = true;
+                } else {
+                    received_from = AS_REL_CUSTOMER;
+                }
             }
         }
 
@@ -571,15 +578,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             }
         } else {
-            // Report the broken path
-            //std::cerr << "Broken path for " << *(it - 1) << ", " << *it << std::endl;
-            
-            static int g_broken_path = 0;
-
-            // Log the part of path where break takes place
-            // Logger::getInstance().log("Broken_Paths") << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
-
+            // Count the broken path
             g_broken_path++;
+            // Log the part of path where break takes place
+            BOOST_LOG_TRIVIAL(warning) << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
         }
     }
 }

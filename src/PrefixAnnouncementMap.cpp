@@ -46,8 +46,8 @@ typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator PrefixAnn
 template <class AnnouncementType, typename PrefixType>
 void PrefixAnnouncementMap<AnnouncementType, PrefixType>::insert(const Prefix<PrefixType> &prefix, const AnnouncementType &ann) {
     if(prefix.block_id != ann.prefix.block_id) {
-        std::cerr << "This announcement cannot be inserted into this iterator since the index in the prefix is different from the index of the prefix in the announcement!" << std::endl;
-        return;
+        BOOST_LOG_TRIVIAL(error) << "This announcement cannot be inserted into this iterator since the index in the prefix is different from the index of the prefix in the announcement!";
+        exit(20);
     }
 
     // if(announcements.at(prefix.block_id).tstamp == -1)
@@ -67,8 +67,8 @@ void PrefixAnnouncementMap<AnnouncementType, PrefixType>::insert(const Prefix<Pr
 template <class AnnouncementType, typename PrefixType>
 void PrefixAnnouncementMap<AnnouncementType, PrefixType>::insert(const Iterator &other_iterator) {
     if(other_iterator.index >= announcements.size()) {
-        std::cerr << "The element of the other iterator cannot be inserted into this map since its index is out of bounds of this map!" << std::endl;
-        return;
+        BOOST_LOG_TRIVIAL(error) << "The element of the other iterator cannot be inserted into this map since its index is out of bounds of this map!";
+        exit(21);
     }
 
     const AnnouncementType &other_announcement = other_iterator.parent->announcements.at(other_iterator.index);
