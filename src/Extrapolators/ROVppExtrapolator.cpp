@@ -70,6 +70,11 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     querier->create_supernodes_tbl();
     querier->create_rovpp_blacklist_tbl();
     
+    // Calculate max block_prefix_id before creating any ASes
+    BOOST_LOG_TRIVIAL(info) << "Calculating max block_prefix_id";
+    pqxx::result r = this->querier->select_max_block_prefix_id();
+    this->graph->max_block_prefix_id = r[0][0].as<uint32_t>() + 1;    
+
     // Generate the graph and populate the stubs & supernode tables
     graph->create_graph_from_db(querier);
     
@@ -281,11 +286,12 @@ void ROVppExtrapolator::process_withdrawal(uint32_t asn, ROVppAnnouncement ann, 
     
     // If neighbors announcement came from previous AS (relevant withdrawal)
     if (neighbor_ann != neighbor->loc_rib->end() && 
-        neighbor_ann->second.received_from_asn == asn) {
+        neighbor_ann->received_from_asn == asn) {
         // Add withdrawal to this neighbor
         neighbor->withdraw(ann);
         // Apply withdrawal by deleting ann
-        neighbor->loc_rib->erase(neighbor_ann);
+        ROVppAnnouncement neighbor_ann_erase = *neighbor_ann;
+        neighbor->loc_rib->erase(neighbor_ann_erase);
         // Recursively process at this neighbor
         process_withdrawals(neighbor);
     }
@@ -476,33 +482,33 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
     for (auto &ann : *source_as->loc_rib) {
         // ROV++ 0.1 do not forward blackhole announcements
         if (source_as != NULL && 
-            ann.second.origin == 64512 && 
+            ann.origin == 64512 && 
             source_as->policy_vector.size() > 0 &&
             source_as->policy_vector.at(0) == ROVPPAS_TYPE_ROVPP) {
             continue;
         }
 
         // Full path generation
-        auto cur_path = ann.second.as_path;
+        auto cur_path = ann.as_path;
         // Handles appending after origin
         if (cur_path.size() == 0 || cur_path.back() != asn) {
             cur_path.push_back(asn);
         }
 
         // Copy announcement
-        ROVppAnnouncement copy = ann.second;
+        ROVppAnnouncement copy = ann;
         copy.received_from_asn = asn;
         copy.from_monitor = false;
         copy.as_path = cur_path;
 
         // Do not propagate any announcements from peers/providers
-        if (to_providers && ann.second.priority >= 200) {
+        if (to_providers && ann.priority >= 200) {
             // Set the priority of the announcement at destination 
             // Base priority is 200 for customer to provider
-            copy.priority = get_priority(ann.second, i);
+            copy.priority = get_priority(ann, i);
             // If AS adopts 0.2bis or 0.3
             if (filtered) {
-                if (!is_filtered(source_as, ann.second)) {
+                if (!is_filtered(source_as, ann)) {
                     anns_to_providers.push_back(copy);
                 }
             } else {
@@ -510,12 +516,12 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             }
         }
         // Do not propagate any announcements from peers/providers
-        if (to_peers && ann.second.priority >= 200) {
+        if (to_peers && ann.priority >= 200) {
             // Base priority is 100 for peers to peers
-            copy.priority = get_priority(ann.second, i);
+            copy.priority = get_priority(ann, i);
             // If AS adopts 0.2bis or 0.3
             if (filtered) {
-                if (!is_filtered(source_as, ann.second)) {
+                if (!is_filtered(source_as, ann)) {
                     anns_to_peers.push_back(copy);
                 }
             } else {
@@ -525,7 +531,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         // Propagate all announcements to customers
         if (to_customers) {
             // Base priority is 0 for provider to customers
-            copy.priority = get_priority(ann.second, i);
+            copy.priority = get_priority(ann, i);
             anns_to_customers.push_back(copy);
         }
     }
@@ -611,7 +617,7 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a, int d) {
     if (d > 100) { BOOST_LOG_TRIVIAL(error) << "Maximum depth exceeded during traceback."; return true; }
     auto ann_pair = cur_as.loc_rib->find(p);
-    const Announcement<> &ann = ann_pair->second;
+    const Announcement<> &ann = *ann_pair;
     // i wonder if a cabinet holding a subwoofer counts as a bass case
     // Ba dum tss, nice
     if (ann.received_from_asn == a) { return true; }

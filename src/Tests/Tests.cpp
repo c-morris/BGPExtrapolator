@@ -227,160 +227,160 @@ BOOST_AUTO_TEST_CASE( Extrapolator_test_extrapolate_by_block_id ) {
         BOOST_CHECK( test_extrapolation_teardown() );
 }
 
-// // ROVpp
-// BOOST_AUTO_TEST_CASE( Announcement_eqality_operator ) {
-//         BOOST_CHECK( test_rovpp_ann_eq_operator() );
-// }
+// ROVpp
+BOOST_AUTO_TEST_CASE( Announcement_eqality_operator ) {
+        BOOST_CHECK( test_rovpp_ann_eq_operator() );
+}
 
-// BOOST_AUTO_TEST_CASE( ROVppExtrapolator_constructor ) {
-//         BOOST_CHECK( test_ROVppExtrapolator_constructor() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path ) {
-//         BOOST_CHECK( test_rovpp_give_ann_to_as_path() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path_origin_only ) {
-//         BOOST_CHECK( test_rovpp_give_ann_to_as_path_origin_only() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_up ) {
-//         BOOST_CHECK( test_rovpp_propagate_up() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_down ) {
-//         BOOST_CHECK( test_rovpp_propagate_down() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppExtrapolator_send_all_announcements ) {
-//         BOOST_CHECK( test_rovpp_send_all_announcements() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppASGraph_add_relationship ) {
-//         BOOST_CHECK( test_rovpp_add_relationship() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppASGraph_translate_asn ) {
-//         BOOST_CHECK( test_rovpp_translate_asn() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppASGraph_decide_ranks ) {
-//         BOOST_CHECK( test_rovpp_decide_ranks() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_get_random ) {
-//         BOOST_CHECK( test_rovpp_get_random() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_pass_rov ) {
-//         BOOST_CHECK( test_rovpp_pass_rov() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_add_neighbor ) {
-//         BOOST_CHECK( test_rovpp_add_neighbor() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_remove_neighbor ) {
-//         BOOST_CHECK( test_rovpp_remove_neighbor() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_receive_announcements ) {
-//         BOOST_CHECK( test_rovpp_receive_announcements() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_ROV_receive_announcements ) {
-//         BOOST_CHECK( test_rovpp_rov_receive_announcements() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_process_announcement ) {
-//         BOOST_CHECK( test_rovpp_process_announcement() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_process_announcements ) {
-//         BOOST_CHECK( test_rovpp_process_announcements() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_already_received ) {
-//         BOOST_CHECK( test_rovpp_already_received() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAS_clear_announcements ) {
-//         BOOST_CHECK( test_rovpp_clear_announcements() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVppAnnouncement_constructor ) {
-//         BOOST_CHECK( test_rovpp_announcement() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route ) {
-//         BOOST_CHECK( test_best_alternative_route() );
-// }
-// // Uncomment this when the test is fixed. 
-// //BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route_chosen ) {
-// //        BOOST_CHECK( test_best_alternative_route_chosen() );
-// //}
-// BOOST_AUTO_TEST_CASE( ROVpp_tiebreak_override ) {
-//         BOOST_CHECK( test_rovpp_tiebreak_override() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_test_withdrawal ) {
-//         BOOST_CHECK( test_withdrawal() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_test_tiny_hash ) {
-//         BOOST_CHECK( test_tiny_hash() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
-//         BOOST_CHECK( test_rovpp_full_path() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back ) {
-//         BOOST_CHECK( test_rovpp_prepending_priority_back() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle ) {
-//         BOOST_CHECK( test_rovpp_prepending_priority_middle() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning ) {
-//         BOOST_CHECK( test_rovpp_prepending_priority_beginning() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back_existing_ann ) {
-//         BOOST_CHECK( test_rovpp_prepending_priority_back_existing_ann() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle_existing_ann ) {
-//         BOOST_CHECK( test_rovpp_prepending_priority_middle_existing_ann() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann ) {
-//         BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann() );
-// }
-// BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann2 ) {
-//         BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann2() );
-// }
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_constructor ) {
+        BOOST_CHECK( test_ROVppExtrapolator_constructor() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path ) {
+        BOOST_CHECK( test_rovpp_give_ann_to_as_path() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_give_ann_to_as_path_origin_only ) {
+        BOOST_CHECK( test_rovpp_give_ann_to_as_path_origin_only() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_up ) {
+        BOOST_CHECK( test_rovpp_propagate_up() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_propagate_down ) {
+        BOOST_CHECK( test_rovpp_propagate_down() );
+}
+BOOST_AUTO_TEST_CASE( ROVppExtrapolator_send_all_announcements ) {
+        BOOST_CHECK( test_rovpp_send_all_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppASGraph_add_relationship ) {
+        BOOST_CHECK( test_rovpp_add_relationship() );
+}
+BOOST_AUTO_TEST_CASE( ROVppASGraph_translate_asn ) {
+        BOOST_CHECK( test_rovpp_translate_asn() );
+}
+BOOST_AUTO_TEST_CASE( ROVppASGraph_decide_ranks ) {
+        BOOST_CHECK( test_rovpp_decide_ranks() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_get_random ) {
+        BOOST_CHECK( test_rovpp_get_random() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_pass_rov ) {
+        BOOST_CHECK( test_rovpp_pass_rov() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_add_neighbor ) {
+        BOOST_CHECK( test_rovpp_add_neighbor() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_remove_neighbor ) {
+        BOOST_CHECK( test_rovpp_remove_neighbor() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_receive_announcements ) {
+        BOOST_CHECK( test_rovpp_receive_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_ROV_receive_announcements ) {
+        BOOST_CHECK( test_rovpp_rov_receive_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_process_announcement ) {
+        BOOST_CHECK( test_rovpp_process_announcement() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_process_announcements ) {
+        BOOST_CHECK( test_rovpp_process_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_already_received ) {
+        BOOST_CHECK( test_rovpp_already_received() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAS_clear_announcements ) {
+        BOOST_CHECK( test_rovpp_clear_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROVppAnnouncement_constructor ) {
+        BOOST_CHECK( test_rovpp_announcement() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route ) {
+        BOOST_CHECK( test_best_alternative_route() );
+}
+// Uncomment this when the test is fixed. 
+//BOOST_AUTO_TEST_CASE( ROVpp_best_alternative_route_chosen ) {
+//        BOOST_CHECK( test_best_alternative_route_chosen() );
+//}
+BOOST_AUTO_TEST_CASE( ROVpp_tiebreak_override ) {
+        BOOST_CHECK( test_rovpp_tiebreak_override() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_test_withdrawal ) {
+        BOOST_CHECK( test_withdrawal() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_test_tiny_hash ) {
+        BOOST_CHECK( test_tiny_hash() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_test_full_path ) {
+        BOOST_CHECK( test_rovpp_full_path() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_back() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_middle() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_back_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_back_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_middle_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_middle_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROVpp_prepending_priority_beginning_existing_ann2 ) {
+        BOOST_CHECK( test_rovpp_prepending_priority_beginning_existing_ann2() );
+}
 
-// //ROV Tests
-// BOOST_AUTO_TEST_CASE( ROV_constructor ) {
-//         BOOST_CHECK( test_rov_constructor() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_is_attacker ) {
-//         BOOST_CHECK( test_rov_is_attacker() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_is_from_attacker ) {
-//         BOOST_CHECK( test_rov_is_from_attacker() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_give_ann_to_as_path ) {
-//         BOOST_CHECK( test_rov_give_ann_to_as_path() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_give_ann_to_as_path_invalid ) {
-//         BOOST_CHECK( test_rov_give_ann_to_as_path_invalid() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_send_all_announcements ) {
-//         BOOST_CHECK( test_rov_send_all_announcements() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_process_announcement ) {
-//         BOOST_CHECK( test_rov_process_announcement() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_prepending_priority_back ) {
-//         BOOST_CHECK( test_rov_prepending_priority_back() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_prepending_priority_middle ) {
-//         BOOST_CHECK( test_rov_prepending_priority_middle() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning ) {
-//         BOOST_CHECK( test_rov_prepending_priority_beginning() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_prepending_priority_back_existing_ann ) {
-//         BOOST_CHECK( test_rov_prepending_priority_back_existing_ann() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_prepending_priority_middle_existing_ann ) {
-//         BOOST_CHECK( test_rov_prepending_priority_middle_existing_ann() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning_existing_ann ) {
-//         BOOST_CHECK( test_rov_prepending_priority_beginning_existing_ann() );
-// }
-// BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning_existing_ann2 ) {
-//         BOOST_CHECK( test_rov_prepending_priority_beginning_existing_ann2() );
-// }
+//ROV Tests
+BOOST_AUTO_TEST_CASE( ROV_constructor ) {
+        BOOST_CHECK( test_rov_constructor() );
+}
+BOOST_AUTO_TEST_CASE( ROV_is_attacker ) {
+        BOOST_CHECK( test_rov_is_attacker() );
+}
+BOOST_AUTO_TEST_CASE( ROV_is_from_attacker ) {
+        BOOST_CHECK( test_rov_is_from_attacker() );
+}
+BOOST_AUTO_TEST_CASE( ROV_give_ann_to_as_path ) {
+        BOOST_CHECK( test_rov_give_ann_to_as_path() );
+}
+BOOST_AUTO_TEST_CASE( ROV_give_ann_to_as_path_invalid ) {
+        BOOST_CHECK( test_rov_give_ann_to_as_path_invalid() );
+}
+BOOST_AUTO_TEST_CASE( ROV_send_all_announcements ) {
+        BOOST_CHECK( test_rov_send_all_announcements() );
+}
+BOOST_AUTO_TEST_CASE( ROV_process_announcement ) {
+        BOOST_CHECK( test_rov_process_announcement() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_back ) {
+        BOOST_CHECK( test_rov_prepending_priority_back() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_middle ) {
+        BOOST_CHECK( test_rov_prepending_priority_middle() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning ) {
+        BOOST_CHECK( test_rov_prepending_priority_beginning() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_back_existing_ann ) {
+        BOOST_CHECK( test_rov_prepending_priority_back_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_middle_existing_ann ) {
+        BOOST_CHECK( test_rov_prepending_priority_middle_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning_existing_ann ) {
+        BOOST_CHECK( test_rov_prepending_priority_beginning_existing_ann() );
+}
+BOOST_AUTO_TEST_CASE( ROV_prepending_priority_beginning_existing_ann2 ) {
+        BOOST_CHECK( test_rov_prepending_priority_beginning_existing_ann2() );
+}
 
-// //EZBGPsec Tests
-// BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
-//         BOOST_CHECK( ezbgpsec_test_path_propagation() );
-// }
+//EZBGPsec Tests
+BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
+        BOOST_CHECK( ezbgpsec_test_path_propagation() );
+}
 
 //PrefixAnnouncementMap Tests
 BOOST_AUTO_TEST_CASE( PrefixAnnouncementMap_test_insert ) {
