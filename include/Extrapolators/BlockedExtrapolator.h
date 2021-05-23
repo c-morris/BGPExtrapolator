@@ -89,7 +89,7 @@ public:
      * @param as_path Vector of ASNs for this announcement.
      * @param prefix The prefix this announcement is for.
      */
-    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp = 0, uint32_t prefix_id = 0);
+    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp = 0);
 
     /** Send all announcements kept by an AS to its neighbors. 
      *

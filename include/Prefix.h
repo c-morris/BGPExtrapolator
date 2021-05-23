@@ -20,7 +20,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
-
 #ifndef PREFIX_H
 #define PREFIX_H
 
@@ -39,31 +38,57 @@ class Prefix {
 public:
     Integer addr;
     Integer netmask;
+
+    uint32_t id;
+    uint32_t block_id;
     
     /** Default constructor
      */
     Prefix() {}
 
-    /** Integer input constructor
+    /** Integer input constructor for non iterative extrapolators (block_prefix_id = prefix_id)
+     * 
+     * @param addr_str The IP address as an int (32 or 128 bit).
+     * @param mask_str The subnet mask/length as an int (32 or 128 bit).
+     * @param id The prefix_id of the prefix from the database
      */
-    Prefix(Integer addr_in, Integer mask_in) {
+    Prefix(Integer addr_in, Integer mask_in, uint32_t id) {
         addr = addr_in;
         netmask = mask_in;
+        this->id = id;
+        this->block_id = id;
     }
 
-    Prefix(const Prefix &p2) {
+    /** Integer input constructor
+     * 
+     * @param addr_str The IP address as an int (32 or 128 bit).
+     * @param mask_str The subnet mask/length as an int (32 or 128 bit).
+     * @param id The prefix_id of the prefix from the database
+     * @param block_id The prefix_block_id of the prefix from the database. 
+     */
+    Prefix(Integer addr_in, Integer mask_in, uint32_t id, uint32_t block_id) {
+        addr = addr_in;
+        netmask = mask_in;
+        this->id = id;
+        this->block_id = block_id;
+    }
+
+    Prefix(const Prefix<Integer> &p2) {
         this->addr = p2.addr;
         this->netmask = p2.netmask;
+        this->id = p2.id;
+        this->block_id = p2.block_id;
     }
         
-    /** Priority constructor
+    /** Priority constructor for non iterative extrapolators (block_prefix_id = prefix_id)
      *
      * Takes a ipv4 address as input and converts it into two integers
      *
      * @param addr_str The IP address as a string.
      * @param mask_str The subnet mask/length as a string.
+     * @param id The prefix_id of the prefix from the database
      */ 
-    Prefix(std::string addr_str, std::string mask_str) {
+    Prefix(std::string addr_str, std::string mask_str, uint32_t id) {
         if (std::is_same<Integer, uint128_t>::value) {
             // IPv6 Address Parsing
             addr = ipv6_to_int(addr_str);  
@@ -73,6 +98,31 @@ public:
             addr = ipv4_to_int(addr_str);  
             netmask = ipv4_to_int(mask_str);  
         }
+        this->id = id;
+        this->block_id = id;
+    }
+
+    /** Priority constructor
+     *
+     * Takes a ipv4 address as input and converts it into two integers
+     *
+     * @param addr_str The IP address as a string.
+     * @param mask_str The subnet mask/length as a string.
+     * @param id The prefix_id of the prefix from the database
+     * @param block_id The prefix_block_id of the prefix from the database. 
+     */ 
+    Prefix(std::string addr_str, std::string mask_str, uint32_t id, uint32_t block_id) {
+        if (std::is_same<Integer, uint128_t>::value) {
+            // IPv6 Address Parsing
+            addr = ipv6_to_int(addr_str);  
+            netmask = ipv6_to_int(mask_str);  
+        } else {
+            // IPv4 Address Parsing
+            addr = ipv4_to_int(addr_str);  
+            netmask = ipv4_to_int(mask_str);  
+        }
+        this->id = id;
+        this->block_id = block_id;
     }
     
     /** Converts an IPv4 address or netmask as a string into a integer.
@@ -88,7 +138,7 @@ public:
         std::string token;              // Buffer subseciton of addr
         std::string delimiter = ".";    // String dilimiter
         bool error_f = false;           // Error flag, drops malformed input
-       
+
         // Create a copy of address string
         std::string s = addr_str;
         if (s.empty()) {

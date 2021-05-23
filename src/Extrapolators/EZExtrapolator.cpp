@@ -57,7 +57,7 @@ void EZExtrapolator::perform_propagation() {
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>; // Subnet blocks
-    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
+    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0", 0, 0); // Start at 0.0.0.0/0
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
     
@@ -174,12 +174,12 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
     priority.relationship = 2;
     priority.path_length = 1 + num_between;
 
-    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix.addr, prefix.netmask, priority, path_origin_asn, timestamp, true, true);
+    EZAnnouncement attackAnnouncement = EZAnnouncement(path_origin_asn, prefix, priority, path_origin_asn, timestamp, true, true);
     attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
 }
 
 uint32_t EZExtrapolator::getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn) {
-    uint32_t from_asn = as->all_anns->find(prefix)->second.received_from_asn;
+    uint32_t from_asn = as->all_anns->find(prefix)->received_from_asn;
 
     if(from_asn == attacker_asn)
         return as->asn;
@@ -207,9 +207,9 @@ void EZExtrapolator::calculate_successful_attacks() {
         }
 
         //check if from attacker, then write down the edge between the attacker and neighbor on the path (through traceback)
-        if(announcement_search->second.from_attacker) {
+        if(announcement_search->from_attacker) {
             if(this->num_between == 0) {
-                uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->second.origin)->second.first;
+                uint32_t attacker_asn = graph->origin_to_attacker_victim->find(announcement_search->origin)->second.first;
                 uint32_t neighbor_asn = getPathNeighborOfAttacker(victim, it.second, attacker_asn);
                 graph->attacker_edge_removal->push_back(std::make_pair(attacker_asn, neighbor_asn));
             }

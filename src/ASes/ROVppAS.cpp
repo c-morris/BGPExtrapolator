@@ -25,7 +25,7 @@
 
 bool ROVppAS::graph_changed = false;
 
-ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn, false)  {
+ROVppAS::ROVppAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn, 20, false)  {
     // Save reference to attackers
     attackers = rovpp_attackers;
     bad_neighbors = new std::set<uint32_t>();
@@ -39,8 +39,8 @@ ROVppAS::ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers) : BaseAS(asn
     withdrawals = new std::vector<ROVppAnnouncement>();
 }
 
-ROVppAS::ROVppAS(uint32_t asn) : ROVppAS(asn, NULL) { }
-ROVppAS::ROVppAS() : ROVppAS(0, NULL) { }
+ROVppAS::ROVppAS(uint32_t asn, uint32_t max_block_prefix_id) : ROVppAS(asn, max_block_prefix_id, NULL) { }
+ROVppAS::ROVppAS() : ROVppAS(0, 20, NULL) { }
 
 ROVppAS::~ROVppAS() { 
     delete bad_neighbors;
@@ -95,7 +95,7 @@ void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran) {
     
     // No rovannouncement found for incoming rovannouncement prefix
     if (search == loc_rib->end()) {
-        loc_rib->insert(std::pair<Prefix<>, ROVppAnnouncement>(ann.prefix, ann));
+        loc_rib->insert(ann.prefix, ann);
         // Inverse results need to be computed also with announcements from monitors
         if (inverse_results != NULL) {
             auto set = inverse_results->find(
@@ -105,87 +105,56 @@ void ROVppAS::process_announcement(ROVppAnnouncement &ann, bool ran) {
             }
         }
     // Tiebraker for equal priority between old and new ann (but not if they're the same ann)
-    } else if (ann.priority == search->second.priority && ann != search->second) {
+    } else if (ann.priority == search->priority && ann != *search) {
         // Random tiebraker
         //std::minstd_rand ran_bool(asn);
         ran = false;
-        bool value = (ran ? get_random() : tiny_hash(ann.received_from_asn) < tiny_hash(search->second.received_from_asn) );
+        bool value = (ran ? get_random() : tiny_hash(ann.received_from_asn) < tiny_hash(search->received_from_asn) );
         // TODO This sets first come, first kept
         // value = false;
         if (value) {
             if(inverse_results != NULL) {
                 // Update inverse results
                 swap_inverse_result(
-                    std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                    std::pair<Prefix<>, uint32_t>(search->prefix, search->origin),
                     std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
             }
 
-            if(depref_anns != NULL) {
-                auto search_depref = depref_anns->find(ann.prefix);
-                // Use the new rovannouncement and record it won the tiebreak
-                if (search_depref == depref_anns->end()) {
-                    // Insert depref ann
-                    depref_anns->insert(std::pair<Prefix<>, ROVppAnnouncement>(search->second.prefix, 
-                                                                                search->second));
-                } else {
-                    search_depref->second = search->second;
-                }
-            }
+            // Use the new rovannouncement
+            if(depref_anns != NULL) 
+                depref_anns->insert(search);
 
-            withdraw(search->second);
-            search->second = ann;
-            check_preventives(search->second);
-        } else if(depref_anns != NULL) {
-            auto search_depref = depref_anns->find(ann.prefix);
-            // Use the old rovannouncement
-            if (search_depref == depref_anns->end()) {
-                depref_anns->insert(std::pair<Prefix<>, ROVppAnnouncement>(ann.prefix, 
-                                                                            ann));
-            } else {
-                // Replace second best with the old priority rovannouncement
-                search_depref->second = ann;
-            }
-        }
+            ROVppAnnouncement to_withdraw = *search;
+            withdraw(to_withdraw);
+            loc_rib->insert(ann.prefix, ann);
+            check_preventives(ann);
+        } else if(depref_anns != NULL)
+            depref_anns->insert(ann.prefix, ann);
+
     // Otherwise check new announcements priority for best path selection
-    } else if (ann.priority > search->second.priority) {
+    } else if (ann.priority > search->priority) {
         if(inverse_results != NULL) {
             // Update inverse results
             swap_inverse_result(
-                std::pair<Prefix<>, uint32_t>(search->second.prefix, search->second.origin),
+                std::pair<Prefix<>, uint32_t>(search->prefix, search->origin),
                 std::pair<Prefix<>, uint32_t>(ann.prefix, ann.origin));
         }
 
-        if(depref_anns != NULL) {
-            auto search_depref = depref_anns->find(ann.prefix);
-            if (search_depref == depref_anns->end()) {
-                // Insert new second best rovannouncement
-                depref_anns->insert(std::pair<Prefix<>, ROVppAnnouncement>(search->second.prefix, 
-                                                                            search->second));
-            } else {
-                // Replace second best with the old priority rovannouncement
-                search_depref->second = search->second;
-            }
-        }
+        if(depref_anns != NULL)
+            depref_anns->insert(search);
 
         // Replace the old rovannouncement with the higher priority
-        withdraw(search->second);
-        search->second = ann;
-        check_preventives(search->second);
+        ROVppAnnouncement to_withdraw = *search;
+        withdraw(to_withdraw);
+        loc_rib->insert(ann.prefix, ann);
+        check_preventives(ann);
     // Old rovannouncement was better
-    } else if(depref_anns != NULL) {
-        auto search_depref = depref_anns->find(ann.prefix);
-        if (search_depref == depref_anns->end()) {
-            // Insert new second best annoucement
-            depref_anns->insert(std::pair<Prefix<>, ROVppAnnouncement>(ann.prefix, ann));
-        } else if (ann.priority > search_depref->second.priority) {
-            // Replace the old depref rovannouncement with the higher priority
-            search_depref->second = search->second;
-        }
-    }
+    } else if(depref_anns != NULL)
+        all_anns->insert(ann.prefix, ann);
 }
 
 void ROVppAS::process_announcements(bool ran) {
-    // Filter ribs_in for loops, checking path for self
+    //Filter ribs_in for loops, checking path for self
     for (auto it = ribs_in->begin(); it != ribs_in->end();) {
         bool deleted = false;
         for (uint32_t a : it->as_path) {
@@ -225,12 +194,14 @@ void ROVppAS::process_announcements(bool ran) {
                 if (should_cancel) {
                     auto search = loc_rib->find(it->prefix);
                     // Process withdrawal if it applies to loc_rib
-                    if (search != loc_rib->end() && search->second == *it) {
-                        withdraw(search->second);
+                    if (search != loc_rib->end() && *search == *it) {
+                        ROVppAnnouncement to_withdraw = *search;
+                        withdraw(to_withdraw);
                         // Put the best alternative rovannouncement into the loc_rib
-                        ROVppAnnouncement best_alternative_ann = best_alternative_route(search->second); 
-                        if (search->second != best_alternative_ann) {
-                            search->second = best_alternative_ann;
+                        ROVppAnnouncement best_alternative_ann = *search;
+                        best_alternative_ann = best_alternative_route(best_alternative_ann);
+                        if (*search != best_alternative_ann) {
+                            loc_rib->insert(best_alternative_ann.prefix, best_alternative_ann);
                         } else {
                             loc_rib->erase(it->prefix);    
                         }
@@ -270,12 +241,14 @@ void ROVppAS::process_announcements(bool ran) {
         // Withdrawals should be processed already above
         // Process withdrawals, regardless of policy
         if (ann.withdraw) {
-            if (search != loc_rib->end() && search->second == ann) {
-                withdraw(search->second);
+            if (search != loc_rib->end() && *search == ann) {
+                ROVppAnnouncement to_withdraw = *search;
+                withdraw(to_withdraw);
                 // Put the best alternative rovannouncement into the loc_rib
-                ROVppAnnouncement best_alternative_ann = best_alternative_route(search->second); 
-                if (search->second != best_alternative_ann) {
-                    search->second = best_alternative_ann;
+                ROVppAnnouncement best_alternative_ann = *search;
+                best_alternative_ann = best_alternative_route(best_alternative_ann); 
+                if (*search != best_alternative_ann) {
+                    loc_rib->insert(best_alternative_ann.prefix, best_alternative_ann);
                 } else {
                     loc_rib->erase(ann.prefix);    
                 }
@@ -285,14 +258,14 @@ void ROVppAS::process_announcements(bool ran) {
             continue;
         }
         // If loc_rib rovannouncement isn't a seeded rovannouncement
-        if (search == loc_rib->end() || !search->second.from_monitor) {
+        if (search == loc_rib->end() || !search->from_monitor) {
             // Regardless of policy, if the rovannouncement originates from this AS
             // *or is a subprefix of its own prefix*
             // drop it
             if (ann.origin == asn && attackers->find(asn) == attackers->end()) { continue; }
             for (auto rib_ann : *loc_rib) {
-                if (ann.prefix.contained_in_or_equal_to(rib_ann.second.prefix) &&
-                    rib_ann.second.origin == asn &&
+                if (ann.prefix.contained_in_or_equal_to(rib_ann.prefix) &&
+                    rib_ann.origin == asn &&
                     attackers->find(asn) == attackers->end()) {
                     ann.received_from_asn=64514;
                 }
@@ -520,7 +493,7 @@ ROVppAnnouncement ROVppAS::best_alternative_route(ROVppAnnouncement &ann) {
 }
 
 void ROVppAS::check_preventives(ROVppAnnouncement ann) {
-    // ROV++ V0.3
+    //ROV++ V0.3
     if (policy_vector.size() > 0 && policy_vector.at(0) == ROVPPAS_TYPE_ROVPPBP) {
         // note this only works for /24...
         if (ann.prefix.netmask == 0xffffff00) {
@@ -531,8 +504,9 @@ void ROVppAS::check_preventives(ROVppAnnouncement ann) {
         // find the preventive ann if it exists
         auto search = loc_rib->find(ann.prefix);
         if (search != loc_rib->end()) {
-            ROVppAnnouncement best_alternative_ann = best_alternative_route(search->second); 
-            if (ann.received_from_asn == search->second.received_from_asn) {
+            ROVppAnnouncement best_alternative_ann = *search;
+            best_alternative_ann = best_alternative_route(best_alternative_ann); 
+            if (ann.received_from_asn == search->received_from_asn) {
                 // Remove and attempt to replace the preventive ann
                 withdrawals->push_back(ann);
                 loc_rib->erase(ann.prefix);    

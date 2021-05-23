@@ -157,6 +157,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
                 for (uint32_t asn : *po.second) {
                     outfile << asn << ','
                             << po.first.first.to_cidr() << ','
+                            << po.first.first.id << ','
                             << po.first.second << '\n';
                 }
             }
@@ -260,8 +261,8 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     std::string file_name = "/dev/shm/bgp/as" + std::to_string(asn) + ".csv";
     outfile.open(file_name);
     for (auto &ann : *as.all_anns) {
-        AnnouncementType &a = ann.second;
-        outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ',' << a.prefix_id << ",\"" << this->stream_as_path(a, asn) << "\"\n";
+        const AnnouncementType &a = ann;
+        outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ',' << a.prefix.id << ",\"" << this->stream_as_path(a, asn) << "\"\n";
     }
     outfile.close();
     this->querier->copy_single_results_to_db(file_name);
@@ -284,7 +285,7 @@ std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType
             break;
         }
         as_path_vect.push_back(ann.received_from_asn);
-        ann = graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix)->second;
+        ann = *graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix);
     }
     // Stringify
     as_path << '{' << asn << ',';

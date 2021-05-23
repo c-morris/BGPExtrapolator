@@ -56,6 +56,8 @@ public:
     std::map<std::pair<Prefix<PrefixType>, uint32_t>,std::set<uint32_t>*> *inverse_results; 
 
     bool store_depref_results;
+    // Represents the largest prefix_id in a block
+    uint32_t max_block_prefix_id;
 
     BaseGraph(bool store_inverse_results, bool store_depref_results) {
         ases = new std::unordered_map<uint32_t, ASType*>;               // Map of all ASes
@@ -71,6 +73,10 @@ public:
             inverse_results = NULL;
         
         this->store_depref_results = store_depref_results;
+
+        // Set it to an arbitrary value to avoid changing extrapolator tests
+        // The variable is changed in BlockedExtrapolator::perform_propagation
+        max_block_prefix_id = 20;
     }
 
     virtual ~BaseGraph();

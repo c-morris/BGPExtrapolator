@@ -24,55 +24,55 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, pr, 5, 2, false, true);
+    EZAnnouncement attack_announcement(5, p, pr, 5, 2, false, true);
 
     e.graph->ases->find(5)->second->process_announcement(attack_announcement);
 
     e.propagate_up();
     e.propagate_down();
 
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(2)->second->all_anns->find(p)->second.as_path.at(0) != 2 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.as_path.at(1) != 5) {
+    if(e.graph->ases->find(2)->second->all_anns->find(p)->as_path.at(0) != 2 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->as_path.at(1) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #2 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(0) != 3 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(0) != 3 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #3 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(0) != 4 ||
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(0) != 4 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #4 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(5)->second->all_anns->find(p)->second.as_path.at(0) != 5) {
+    if(e.graph->ases->find(5)->second->all_anns->find(p)->as_path.at(0) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #5 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(6)->second->all_anns->find(p)->second.as_path.at(0) != 6 ||
-        e.graph->ases->find(6)->second->all_anns->find(p)->second.as_path.at(1) != 5) {
+    if(e.graph->ases->find(6)->second->all_anns->find(p)->as_path.at(0) != 6 ||
+        e.graph->ases->find(6)->second->all_anns->find(p)->as_path.at(1) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #2 full path incorrect!" << std::endl;
         return false;

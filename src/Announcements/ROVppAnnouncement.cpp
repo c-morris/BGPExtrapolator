@@ -23,11 +23,12 @@
 
 #include "Announcements/ROVppAnnouncement.h"
 
+ROVppAnnouncement::ROVppAnnouncement() : Announcement() { }
+
 ROVppAnnouncement::ROVppAnnouncement(uint32_t aorigin, 
-                 uint32_t aprefix, 
-                 uint32_t anetmask,
+                 Prefix<> prefix,
                  uint32_t from_asn, 
-                 int64_t timestamp /* = 0 */) : Announcement<>(aorigin, aprefix, anetmask, from_asn, timestamp) {
+                 int64_t timestamp /* = 0 */) : Announcement<>(aorigin, prefix, from_asn, timestamp) {
     policy_index = 0;
     alt = 0;
     tiebreak_override = 0;
@@ -38,14 +39,13 @@ ROVppAnnouncement::ROVppAnnouncement(uint32_t aorigin,
 /** Priority constructor
  */
 ROVppAnnouncement::ROVppAnnouncement(uint32_t aorigin, 
-                uint32_t aprefix, 
-                uint32_t anetmask,
-                uint32_t pr, 
-                uint32_t from_asn, 
-                int64_t timestamp, 
-                const std::vector<uint32_t> &path,
-                bool a_from_monitor /* = false */) 
-    : ROVppAnnouncement(aorigin, aprefix, anetmask, from_asn, timestamp) {
+                                        Prefix<> prefix,
+                                        uint32_t pr, 
+                                        uint32_t from_asn, 
+                                        int64_t timestamp, 
+                                        const std::vector<uint32_t> &path,
+                                        bool a_from_monitor /* = false */) 
+    : ROVppAnnouncement(aorigin, prefix, from_asn, timestamp) {
     
     priority = pr; 
     from_monitor = a_from_monitor;
@@ -53,14 +53,13 @@ ROVppAnnouncement::ROVppAnnouncement(uint32_t aorigin,
 }
 
 ROVppAnnouncement::ROVppAnnouncement(uint32_t aorigin, 
-                 uint32_t aprefix, 
-                 uint32_t anetmask,
-                 uint32_t pr, 
-                 uint32_t from_asn, 
-                 int64_t timestamp, 
-                 uint32_t policy, 
-                 const std::vector<uint32_t> &path,
-                 bool a_from_monitor /* = false */) : ROVppAnnouncement(aorigin, aprefix, anetmask, pr, from_asn, timestamp, path, a_from_monitor) {
+                                        Prefix<> prefix,
+                                        uint32_t pr, 
+                                        uint32_t from_asn, 
+                                        int64_t timestamp, 
+                                        uint32_t policy, 
+                                        const std::vector<uint32_t> &path,
+                                        bool a_from_monitor /* = false */) : ROVppAnnouncement(aorigin, prefix, pr, from_asn, timestamp, path, a_from_monitor) {
     
     policy_index = policy;
 }
@@ -134,7 +133,7 @@ std::ostream& operator<<(std::ostream &os, const ROVppAnnouncement& ann) {
  * @param &os Specifies the output stream.
  * @return The output stream parameter for reuse/recursion.
  */ 
-std::ostream& ROVppAnnouncement::to_csv(std::ostream &os) {
+std::ostream& ROVppAnnouncement::to_csv(std::ostream &os) const {
     os << prefix.to_cidr() << ',' << origin << ',' << received_from_asn << ',' << tstamp << ',' << alt << '\n';
     return os;
 }

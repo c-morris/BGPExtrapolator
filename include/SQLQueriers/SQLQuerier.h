@@ -82,6 +82,7 @@ public:
     std::string select_prefix_query_string(Prefix<PrefixType>* p, bool subnet = false, std::string selection = "COUNT(*)");
     std::string clear_table_query_string(std::string table_name);
     std::string create_table_query_string(std::string table_name, std::string column_names, bool unlogged = false, std::string grant_all_user = "");
+    std::string select_max_query_string(std::string table_name, std::string column_name);
 
     // Select from DB
     pqxx::result select_from_table(std::string table_name, int limit = 0);
@@ -122,6 +123,8 @@ public:
     void create_results_index();
 
     pqxx::result select_max_block_id();
+    pqxx::result select_max_prefix_id();
+    pqxx::result select_max_block_prefix_id();
     pqxx::result select_prefix_block_id(int block_id, int family);
 };
 #endif

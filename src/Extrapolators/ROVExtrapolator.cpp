@@ -57,7 +57,10 @@ void ROVExtrapolator::extrapolate_blocks(uint32_t &announcement_count, int &iter
             // Get row prefix
             std::string ip = ann_block[i]["host"].c_str();
             std::string mask = ann_block[i]["netmask"].c_str();
-            Prefix<> cur_prefix(ip, mask);
+
+            uint32_t prefix_id;
+            ann_block[i]["prefix_id"].to(prefix_id);
+            Prefix<> cur_prefix(ip, mask, prefix_id);
             // Get row AS path
             std::string path_as_string(ann_block[i]["as_path"].as<std::string>());
             std::vector<uint32_t> *as_path = this->parse_path(path_as_string);
@@ -165,7 +168,7 @@ void ROVExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix
 
         // Check if already received this prefix
         if (announcement_search != as_on_path->all_anns->end()) {
-            ROVAnnouncement& second_announcement = announcement_search->second;
+            const ROVAnnouncement& second_announcement = *announcement_search;
 
             // If the current timestamp is newer (worse)
             if (timestamp > second_announcement.tstamp) {
@@ -187,10 +190,10 @@ void ROVExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix
 
                 // Skip announcement if there exists one with a higher priority
                 ROVAS *current_as = this->graph->ases->find(as_path->at(currPos))->second;
-                if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                if (current_as->all_anns->find(prefix)->priority > priority) {
                     continue;
                 // If the new announcement has a higher priority, change keep_first to false to make sure we save it
-                } else if (current_as->all_anns->find(prefix)->second.priority < priority) {
+                } else if (current_as->all_anns->find(prefix)->priority < priority) {
                     keep_first = false;
                 }
 
@@ -234,8 +237,7 @@ void ROVExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix
         // No break in path so send the announcement
         if (!broken_path) {
             ROVAnnouncement ann = ROVAnnouncement(*as_path->rbegin(),
-                                                    prefix.addr,
-                                                    prefix.netmask,
+                                                    prefix,
                                                     priority,
                                                     received_from_asn,
                                                     timestamp,
