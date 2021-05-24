@@ -460,8 +460,6 @@ void ROVppAS::process_announcements(bool ran) {
                         passed_rov->insert(ann);
                         process_announcement(ann, false);
                     } else {
-                        // If it is from a customer, silently drop it
-                        if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
                             // Mark as blackholed and accept this announcement
