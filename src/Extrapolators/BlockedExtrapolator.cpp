@@ -673,14 +673,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 temp.from_monitor = false;
                 temp.received_from_asn = asn;
 
-                // Push announcement with new priority to ann vector
-                // anns_to_providers.push_back(AnnouncementType(ann.second.origin,
-                //                                          ann.second.prefix.addr,
-                //                                          ann.second.prefix.netmask,
-                //                                          priority,
-                //                                          asn,
-                //                                          ann.second.tstamp));
-
                 anns_to_providers.push_back(temp);
             }
         }
@@ -713,13 +705,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             priority.relationship = 1;
             priority.path_length = ann.priority.path_length + 1;
             
-            // anns_to_peers.push_back(AnnouncementType(ann.second.origin,
-            //                                             ann.second.prefix.addr,
-            //                                             ann.second.prefix.netmask,
-            //                                             priority,
-            //                                             asn,
-            //                                             ann.second.tstamp));
-
             AnnouncementType temp = AnnouncementType(ann);
             temp.priority = priority;
             temp.from_monitor = false;
@@ -750,13 +735,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             // Set the priority of the announcement at destination 
             Priority priority;
             priority.path_length = ann.priority.path_length + 1;
-
-            // anns_to_customers.push_back(AnnouncementType(ann.second.origin,
-            //                                                 ann.second.prefix.addr,
-            //                                                 ann.second.prefix.netmask,
-            //                                                 priority,
-            //                                                 asn,
-            //                                                 ann.second.tstamp));
 
             //Use the copy constructor so that the inherited copy constructor will be called as well
             AnnouncementType temp = AnnouncementType(ann);
