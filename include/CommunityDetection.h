@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "Announcements/EZAnnouncement.h"
 #include "Graphs/EZASGraph.h"
@@ -26,6 +27,14 @@ public:
     EZExtrapolator *extrapolator;
 
     std::set<std::vector<uint32_t>> blacklist;
+
+    // either maintain a sorted structure like a map, or do a single sort at the end
+    // Single sort at the end was chosen to avoid the constant resorting as the nodes are added
+
+    // These shared pointers make it so the degree can be updated in, likely, O(1) time with the hash map
+    // Then std::sort is used on the values of the shared pointer in the vector which was updated with the hashmap
+    std::unordered_map<uint32_t, std::shared_ptr<uint32_t>> asn_to_degree;
+    std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> sorted_asn_degree;
 
     std::vector<std::vector<uint32_t>> hyper_edges;
 
@@ -90,33 +99,33 @@ public:
      *
      * @return the map described above 
      */
-    std::map<uint32_t, std::set<uint32_t>> gen_ind_asn(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges);
+    std::map<uint32_t, std::set<uint32_t>> gen_ind_asn();
 
-    void generate_cover_candidates_helper(std::set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, std::vector<std::unordered_set<uint32_t>> &result, std::set<uint32_t>::iterator it, uint32_t subset_length);
+    bool is_suspect_helper(std::unordered_set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, 
+                                std::unordered_set<uint32_t>::iterator it, uint32_t subset_length);
 
-    std::vector<std::unordered_set<uint32_t>> generate_cover_candidates(std::set<uint32_t> &nodes);
+    bool is_suspect(std::vector<uint32_t> &nodes);
 
     /**
      * Generate a map of ASNs to its degree in this set of edges.
      *
      * @return the map described above 
      */
-    std::map<uint32_t, uint32_t> get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges);
+    // std::map<uint32_t, uint32_t> get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges);
 
     /**
      * Generate the universal set of ASNs that exist in a vector of edges.
      *
      * @return the set of unique ASNs that exist in a list of edges
      */
-    std::set<uint32_t> get_unique_asns(std::vector<std::vector<uint32_t>> edges);
+    // std::set<uint32_t> get_unique_asns(std::vector<std::vector<uint32_t>> edges);
 
-    void gen_suspect_candidates_helper_subset(std::map<uint32_t, std::set<uint32_t>> &ind_map, std::vector<std::pair<uint32_t, uint32_t>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, std::vector<uint32_t> &building_sum, int startIndex, int endIndex);
+    void gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::map<uint32_t, std::set<uint32_t>> &ind_map, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex);
 
-    void gen_suspect_candidates_helper(std::vector<std::vector<uint32_t>> &results, std::vector<uint32_t> &current, std::map<uint32_t, std::set<uint32_t>> &ind_map, std::map<uint32_t, uint32_t> &degrees, std::vector<std::pair<uint32_t, uint32_t>> &distinguishable_subsets, uint32_t distinguishable_index);
+    void iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::map<uint32_t, std::set<uint32_t>> &ind_map, 
+                                                            std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, uint32_t distinguishable_index);
 
-    std::vector<std::vector<uint32_t>> gen_suspect_candidates(
-        std::map<uint32_t, std::set<uint32_t>> &ind_map,
-        std::map<uint32_t, uint32_t> &degrees);
+    void iterate_suspect_candidates_and_blacklist(std::map<uint32_t, std::set<uint32_t>> &ind_map);
 
     void local_threshold_approx_filtering();
 
