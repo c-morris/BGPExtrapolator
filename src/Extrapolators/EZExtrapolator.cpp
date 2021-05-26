@@ -69,7 +69,7 @@ void EZExtrapolator::init() {
         std::string ip = returned_pairs[i]["host"].c_str();
         std::string mask = returned_pairs[i]["netmask"].c_str();
         unsigned int id = atoi(returned_pairs[i]["prefix_id"].c_str());
-        unsigned int blk_id = atoi(returned_pairs[i]["prefix_block_id"].c_str());
+        unsigned int blk_id = atoi(returned_pairs[i]["block_prefix_id"].c_str());
         Prefix<> tmp_prefix(ip, mask, id, blk_id);
         attacker_prefix_pairs.insert(std::pair<Prefix<>,uint32_t>(tmp_prefix, origin));
     }
