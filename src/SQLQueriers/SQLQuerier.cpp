@@ -250,6 +250,17 @@ std::string SQLQuerier<PrefixType>::create_table_query_string(std::string table_
     return sql;
 }
 
+/** Returns a string with SQL MAX query
+ *
+ *  @param table_name Name of the table
+ *  @param column_name Name of the column where max is calculated
+ */
+template <typename PrefixType>
+std::string SQLQuerier<PrefixType>::select_max_query_string(std::string table_name, std::string column_name) {
+    std::string sql = std::string("SELECT MAX(" + column_name + ") FROM " + table_name + ";");
+    return sql;
+}
+
 /** Generic SELECT query for returning the entire relationship tables.
  *
  *  @param table_name The name of the table to SELECT from
@@ -282,7 +293,7 @@ pqxx::result SQLQuerier<PrefixType>::select_prefix_count(Prefix<PrefixType>* p) 
  */
 template <typename PrefixType>
 pqxx::result SQLQuerier<PrefixType>::select_prefix_ann(Prefix<PrefixType>* p) {
-    std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id");
+    std::string sql = select_prefix_query_string(p, false, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id, block_prefix_id");
     return execute(sql);
 }
 
@@ -304,7 +315,7 @@ pqxx::result SQLQuerier<PrefixType>::select_subnet_count(Prefix<PrefixType>* p) 
  */
 template <typename PrefixType>
 pqxx::result SQLQuerier<PrefixType>::select_subnet_ann(Prefix<PrefixType>* p) {
-    std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id");
+    std::string sql = select_prefix_query_string(p, true, "host(prefix), netmask(prefix), as_path, origin, time, prefix_id, block_prefix_id");
     return execute(sql);
 }
 
@@ -453,7 +464,7 @@ void SQLQuerier<PrefixType>::create_full_path_results_tbl() {
  */
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::create_depref_tbl() {
-    std::string sql = create_table_query_string(depref_table, "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint)",
+    std::string sql = create_table_query_string(depref_table, "(asn bigint, prefix inet, origin bigint, received_from_asn bigint, time bigint, prefix_id bigint)",
     true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating depref table...";
     execute(sql, false);
@@ -464,7 +475,7 @@ void SQLQuerier<PrefixType>::create_depref_tbl() {
  */
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::create_inverse_results_tbl() {
-    std::string sql = create_table_query_string(inverse_results_table, "(asn bigint, prefix inet, origin bigint)",
+    std::string sql = create_table_query_string(inverse_results_table, "(asn bigint, prefix inet, origin bigint, prefix_id bigint)",
     true, user);
     BOOST_LOG_TRIVIAL(info) << "Creating inverse results table...";
     execute(sql, false);
@@ -491,7 +502,7 @@ void SQLQuerier<PrefixType>::copy_single_results_to_db(std::string file_name) {
  */
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::copy_depref_to_db(std::string file_name) {
-    std::string sql = copy_to_db_query_string(file_name, depref_table, "(asn, prefix, origin, received_from_asn, time)");
+    std::string sql = copy_to_db_query_string(file_name, depref_table, "(asn, prefix, origin, received_from_asn, time, prefix_id)");
     execute(sql);
 }
 
@@ -500,7 +511,7 @@ void SQLQuerier<PrefixType>::copy_depref_to_db(std::string file_name) {
  */
 template <typename PrefixType>
 void SQLQuerier<PrefixType>::copy_inverse_results_to_db(std::string file_name) {
-    std::string sql = copy_to_db_query_string(file_name, inverse_results_table, "(asn, prefix, origin)");
+    std::string sql = copy_to_db_query_string(file_name, inverse_results_table, "(asn, prefix, origin, prefix_id)");
     execute(sql);
 }
 
@@ -519,16 +530,33 @@ void SQLQuerier<PrefixType>::create_results_index() {
  */
 template <typename PrefixType>
 pqxx::result SQLQuerier<PrefixType>::select_max_block_id() {
-    std::string sql = std::string("SELECT MAX(block_id) FROM " + announcements_table + ";");
+    std::string sql = select_max_query_string(announcements_table, "block_id");
+    return execute(sql, false);
+}
+
+/** Returns the max value of prefix_id in the announcements table
+ */
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_max_prefix_id() {
+    std::string sql = select_max_query_string(announcements_table, "prefix_id");
+    return execute(sql, false);
+}
+
+/** Returns the max value of block_prefix_id in the announcements table
+ */
+template <typename PrefixType>
+pqxx::result SQLQuerier<PrefixType>::select_max_block_prefix_id() {
+    std::string sql = select_max_query_string(announcements_table, "block_prefix_id");
     return execute(sql, false);
 }
 
 /** Returns all rows (announcements) that have the corresponding block_id
  */
 template <typename PrefixType>
-pqxx::result SQLQuerier<PrefixType>::select_prefix_block_id(int block_id) {
-    std::string sql = std::string("SELECT host(prefix), netmask(prefix), as_path, origin, time, prefix_id FROM "
-     + announcements_table + " WHERE block_id = " + std::to_string(block_id));
+pqxx::result SQLQuerier<PrefixType>::select_prefix_block_id(int block_id, int family) {
+    std::string sql = std::string("SELECT host(prefix), netmask(prefix), as_path, origin, time, prefix_id, block_prefix_id FROM "
+     + announcements_table + " WHERE block_id = " + std::to_string(block_id)
+     + " AND family(prefix) = " + std::to_string(family));
 
     if (exclude_as_number > -1) {
         sql += " and monitor_asn != " + std::to_string(exclude_as_number) + ";";

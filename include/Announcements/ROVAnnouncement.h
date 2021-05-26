@@ -5,15 +5,19 @@
 
 class ROVAnnouncement : public Announcement<> {
 public:
+    /** "Uninitialized" constructor
+     */
+    ROVAnnouncement();
+
     /** Default constructor
      */
-    ROVAnnouncement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
+    ROVAnnouncement(uint32_t aorigin, Prefix<> prefix,
         uint32_t from_asn, int64_t timestamp = 0);
     
     /** Priority constructor
      */
-    ROVAnnouncement(uint32_t aorigin, uint32_t aprefix, uint32_t anetmask,
-        Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false, uint32_t prefix_id = 0);
+    ROVAnnouncement(uint32_t aorigin, Prefix<> prefix,
+        Priority pr, uint32_t from_asn, int64_t timestamp, bool a_from_monitor = false);
 
     /** Copy constructor
      */

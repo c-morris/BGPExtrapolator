@@ -35,7 +35,7 @@ ASGraph<PrefixType>::~ASGraph() {
 
 template <typename PrefixType>
 AS<PrefixType>* ASGraph<PrefixType>::createNew(uint32_t asn) {
-    return new AS<PrefixType>(asn, this->store_depref_results, this->inverse_results);
+    return new AS<PrefixType>(asn, this->max_block_prefix_id, this->store_depref_results, this->inverse_results);
 }
 
 template class ASGraph<>;

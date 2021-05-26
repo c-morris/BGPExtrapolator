@@ -79,7 +79,7 @@ bool test_copy_to_db_string() {
 // Test for select_prefix_string function
 bool test_select_prefix_string() {
     SQLQuerier<> *querier = new SQLQuerier<>("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
-    Prefix<> *p = new Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> *p = new Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
 
     std::string true_results [4] = {
         "SELECT COUNT(*) FROM announcement_table WHERE prefix = '137.99.0.0/16';",
@@ -148,6 +148,37 @@ bool test_create_table_string() {
     sql = querier->create_table_query_string("test_table", "(stub_asn BIGSERIAL PRIMARY KEY,parent_asn bigint)", true, "test_user");
     if (sql != true_results[2]) {
         std::cerr << "test_create_table_string failed" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+// Test for select_max_query_string
+bool test_select_max_query_string() {
+    SQLQuerier<> *querier = new SQLQuerier<>("announcement_table", "results_table", "inverse_results_table", "depref_results_table", "full_path_results_table", -1, "test", "bgp-test.conf", false);
+
+    std::string true_results [3] = {
+        "SELECT MAX(block_id) FROM mrt_w_metadata;",
+        "SELECT MAX(block_prefix_id) FROM mrt_w_metadata;",
+        "SELECT MAX(block_prefix_id) FROM mrt_w_metadata_small;"
+    };
+
+    std::string sql = querier->select_max_query_string("mrt_w_metadata", "block_id");
+    if (sql != true_results[0]) {
+        std::cerr << "test_select_max_query_string failed" << std::endl;
+        return false;
+    }
+
+    sql = querier->select_max_query_string("mrt_w_metadata", "block_prefix_id");
+    if (sql != true_results[1]) {
+        std::cerr << "test_select_max_query_string failed" << std::endl;
+        return false;
+    }
+
+    sql = querier->select_max_query_string("mrt_w_metadata_small", "block_prefix_id");
+    if (sql != true_results[2]) {
+        std::cerr << "test_select_max_query_string failed" << std::endl;
         return false;
     }
 

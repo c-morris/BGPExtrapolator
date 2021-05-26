@@ -10,7 +10,7 @@ ROVASGraph::~ROVASGraph() {
 }
 
 ROVAS* ROVASGraph::createNew(uint32_t asn) {
-    return new ROVAS(asn, attackers, store_depref_results, inverse_results);
+    return new ROVAS(asn, this->max_block_prefix_id, attackers, store_depref_results, inverse_results);
 }
 
 void ROVASGraph::process(SQLQuerier<> *querier) {

@@ -194,12 +194,12 @@ ROVppASGraph figure_2_graph(uint32_t policy_type) {
  */
 bool test_rovpp_ann_eq_operator(){
     std::vector<uint32_t> x;
-    ROVppAnnouncement a = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 0, x, false);
-    ROVppAnnouncement b = ROVppAnnouncement(112, 0x01010101, 0xffffff00, 262, 222, 0, x, false);
-    ROVppAnnouncement c = ROVppAnnouncement(111, 0x01010102, 0xffffff00, 262, 222, 0, x, false);
-    ROVppAnnouncement d = ROVppAnnouncement(111, 0x01010101, 0xfffffff0, 262, 222, 0, x, false);
-    ROVppAnnouncement e = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 261, 222, 0, x, false);
-    ROVppAnnouncement f = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 221, 0, x, false);
+    ROVppAnnouncement a = ROVppAnnouncement(111, Prefix<>(0x01010101, 0xffffff00, 0, 0), 262, 222, 0, x, false);
+    ROVppAnnouncement b = ROVppAnnouncement(112, Prefix<>(0x01010101, 0xffffff00, 0, 0), 262, 222, 0, x, false);
+    ROVppAnnouncement c = ROVppAnnouncement(111, Prefix<>(0x01010102, 0xffffff00, 1, 1), 262, 222, 0, x, false);
+    ROVppAnnouncement d = ROVppAnnouncement(111, Prefix<>(0x01010101, 0xfffffff0, 2, 2), 262, 222, 0, x, false);
+    ROVppAnnouncement e = ROVppAnnouncement(111, Prefix<>(0x01010101, 0xffffff00, 0, 0), 261, 222, 0, x, false);
+    ROVppAnnouncement f = ROVppAnnouncement(111, Prefix<>(0x01010101, 0xffffff00, 0, 0), 262, 221, 0, x, false);
     return !((!(a == a)) ||
         (a == b) ||
         (a == c) ||
@@ -257,8 +257,8 @@ bool test_rovpp_pass_rov() {
     ROVppASGraph graph = ROVppASGraph();
     graph.add_relationship(1, 2, AS_REL_PROVIDER);
     graph.add_relationship(2, 1, AS_REL_CUSTOMER);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    ROVppAnnouncement ann = ROVppAnnouncement(13796, p.addr, p.netmask, 22742);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    ROVppAnnouncement ann = ROVppAnnouncement(13796, p, 22742);
 
     // no attackers should pass all announcements
     if (graph.ases->find(1)->second->pass_rov(ann) != true) {
@@ -308,21 +308,21 @@ bool test_rovpp_give_ann_to_as_path() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
     // Test that monitor annoucements were received
-    if(!(e.graph->ases->find(2)->second->loc_rib->find(p)->second.from_monitor &&
-         e.graph->ases->find(3)->second->loc_rib->find(p)->second.from_monitor &&
-         e.graph->ases->find(5)->second->loc_rib->find(p)->second.from_monitor)) {
+    if(!(e.graph->ases->find(2)->second->loc_rib->find(p)->from_monitor &&
+         e.graph->ases->find(3)->second->loc_rib->find(p)->from_monitor &&
+         e.graph->ases->find(5)->second->loc_rib->find(p)->from_monitor)) {
         std::cerr << "Monitor flag failed." << std::endl;
         return false;
     }
     
     // Test announcement priority calculation
-    if (e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 198 &&
-        e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299 &&
-        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 400) {
+    if (e.graph->ases->find(3)->second->loc_rib->find(p)->priority != 198 &&
+        e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 299 &&
+        e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 400) {
         std::cerr << "Priority calculation failed." << std::endl;
         return false;
     }
@@ -348,14 +348,14 @@ bool test_rovpp_give_ann_to_as_path() {
     e.give_ann_to_as_path(as_path_b, p, 1, 0);
 
     // This value is supposed to be uniform random in the ROV++, so this is an invalid test here
-    //if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.tstamp != 1) {
+    //if (e.graph->ases->find(2)->second->loc_rib->find(p)->tstamp != 1) {
     //    return false;
     //}
     
     // Test prepending calculation
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299) {
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 299) {
         std::cerr << "Priority calculation in loc_rib failed" << std::endl;
-        std::cerr << e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority << std::endl;
+        std::cerr << e.graph->ases->find(2)->second->loc_rib->find(p)->priority << std::endl;
         return false;
     }
 
@@ -395,17 +395,17 @@ bool test_rovpp_give_ann_to_as_path_origin_only() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
     // Test that monitor annoucements were received
-    if(!e.graph->ases->find(5)->second->loc_rib->find(p)->second.from_monitor) {
+    if(!e.graph->ases->find(5)->second->loc_rib->find(p)->from_monitor) {
         std::cerr << "Monitor flag failed." << std::endl;
         return false;
     }
     
     // Test announcement priority calculation
-    if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 400) {
+    if (e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 400) {
         std::cerr << "Priority calculation failed." << std::endl;
         return false;
     }
@@ -452,9 +452,9 @@ bool test_rovpp_propagate_up() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
     e.graph->decide_ranks();
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     
-    ROVppAnnouncement ann = ROVppAnnouncement(13796, p.addr, p.netmask, 22742);
+    ROVppAnnouncement ann = ROVppAnnouncement(13796, p, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(5)->second->process_announcement(ann);
@@ -473,11 +473,11 @@ bool test_rovpp_propagate_up() {
     }
     
     // Check propagation priority calculation
-    if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 290 &&
-        e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 289 &&
-        e.graph->ases->find(6)->second->loc_rib->find(p)->second.priority != 189 &&
-        e.graph->ases->find(1)->second->loc_rib->find(p)->second.priority != 288 &&
-        e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 188) {
+    if (e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 290 &&
+        e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 289 &&
+        e.graph->ases->find(6)->second->loc_rib->find(p)->priority != 189 &&
+        e.graph->ases->find(1)->second->loc_rib->find(p)->priority != 288 &&
+        e.graph->ases->find(3)->second->loc_rib->find(p)->priority != 188) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
@@ -510,8 +510,8 @@ bool test_rovpp_propagate_down() {
 
     e.graph->decide_ranks();
     
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    ROVppAnnouncement ann = ROVppAnnouncement(13796, p.addr, p.netmask, 22742);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    ROVppAnnouncement ann = ROVppAnnouncement(13796, p, 22742);
     ann.from_monitor = true;
     ann.priority = 290;
     e.graph->ases->find(2)->second->process_announcement(ann);
@@ -527,9 +527,9 @@ bool test_rovpp_propagate_down() {
         return false;
     }
     
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 290 &&
-        e.graph->ases->find(4)->second->loc_rib->find(p)->second.priority != 89 &&
-        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 290 &&
+        e.graph->ases->find(4)->second->loc_rib->find(p)->priority != 89 &&
+        e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 89) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
@@ -567,7 +567,7 @@ bool test_rovpp_send_all_announcements() {
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(2);
     as_path->push_back(4);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 0, 0);
     delete as_path;
 
@@ -604,10 +604,10 @@ bool test_rovpp_send_all_announcements() {
     }
     
     // Check priority calculation
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.priority != 299 &&
-        e.graph->ases->find(1)->second->loc_rib->find(p)->second.priority != 289 &&
-        e.graph->ases->find(3)->second->loc_rib->find(p)->second.priority != 189 &&
-        e.graph->ases->find(5)->second->loc_rib->find(p)->second.priority != 89) {
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->priority != 299 &&
+        e.graph->ases->find(1)->second->loc_rib->find(p)->priority != 289 &&
+        e.graph->ases->find(3)->second->loc_rib->find(p)->priority != 189 &&
+        e.graph->ases->find(5)->second->loc_rib->find(p)->priority != 89) {
         std::cerr << "Send all announcement priority calculation failed." << std::endl;
         return false;
     }
@@ -777,8 +777,8 @@ bool test_rovpp_remove_stubs(){
 bool test_rovpp_get_random(){
     // Check randomness
     ROVppASGraph *as_graph = new ROVppASGraph();
-    ROVppAS *as_a = new ROVppAS(832, as_graph->attackers);
-    ROVppAS *as_b = new ROVppAS(832, as_graph->attackers);
+    ROVppAS *as_a = new ROVppAS(832, 10, as_graph->attackers);
+    ROVppAS *as_b = new ROVppAS(832, 10, as_graph->attackers);
     bool ran_a_1 = as_a->get_random();
     bool ran_a_2 = as_a->get_random();
     bool ran_a_3 = as_a->get_random();
@@ -802,7 +802,7 @@ bool test_rovpp_get_random(){
  * @return True if successful, otherwise false
  */
 bool test_rovpp_add_neighbor(){
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     as.add_neighbor(1, AS_REL_PROVIDER);
     as.add_neighbor(2, AS_REL_PEER);
     as.add_neighbor(3, AS_REL_CUSTOMER);
@@ -820,7 +820,7 @@ bool test_rovpp_add_neighbor(){
  * @return True if successful, otherwise false
  */
 bool test_rovpp_remove_neighbor(){
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     as.add_neighbor(1, AS_REL_PROVIDER);
     as.add_neighbor(2, AS_REL_PEER);
     as.add_neighbor(3, AS_REL_CUSTOMER);
@@ -841,17 +841,21 @@ bool test_rovpp_remove_neighbor(){
  * @return true if successful.
  */
 bool test_rovpp_receive_announcements(){
-    ROVppAnnouncement ann = ROVppAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
+    ROVppAnnouncement ann = ROVppAnnouncement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     std::vector<ROVppAnnouncement> vect = std::vector<ROVppAnnouncement>();
     vect.push_back(ann);
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
     Prefix<> old_prefix = ann.prefix;
+    
     ann.prefix.addr = 0x321C9F00;
     ann.prefix.netmask = 0xFFFFFF00;
+    ann.prefix.id = 1;
+    ann.prefix.block_id = 1;
     Prefix<> new_prefix = ann.prefix;
+    
     vect.push_back(ann);
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     as.receive_announcements(vect);
     if (as.ribs_in->size() != 2) { return false; }
     // order really doesn't matter here
@@ -868,14 +872,18 @@ bool test_rovpp_receive_announcements(){
  * @return true if successful.
  */
 bool test_rovpp_rov_receive_announcements(){
-    ROVppAnnouncement ann = ROVppAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
+    ROVppAnnouncement ann = ROVppAnnouncement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     std::vector<ROVppAnnouncement> vect = std::vector<ROVppAnnouncement>();
     vect.push_back(ann);
+
     ann.prefix.addr = 0x321C9F00;
     ann.prefix.netmask = 0xFFFFFF00;
+    ann.prefix.id = 1;
+    ann.prefix.block_id = 1;
     ann.origin = 666;
     vect.push_back(ann);
-    ROVppAS as = ROVppAS(1);
+    
+    ROVppAS as = ROVppAS(1, 10);
     // add the attacker and set the policy to ROV
     as.attackers = new std::set<uint32_t>();
     as.attackers->insert(666);
@@ -892,37 +900,41 @@ bool test_rovpp_rov_receive_announcements(){
  * @return true if successful.
  */
 bool test_rovpp_process_announcement(){
-    ROVppAnnouncement ann = ROVppAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
+    ROVppAnnouncement ann = ROVppAnnouncement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     // this function should make a copy of the announcement
     // if it does not, it is incorrect
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     as.process_announcement(ann);
     Prefix<> old_prefix = ann.prefix;
+
     ann.prefix.addr = 0x321C9F00;
     ann.prefix.netmask = 0xFFFFFF00;
+    ann.prefix.id = 1;
+    ann.prefix.block_id = 1;
     Prefix<> new_prefix = ann.prefix;
+    
     as.process_announcement(ann);
-    if (new_prefix != as.loc_rib->find(ann.prefix)->second.prefix ||
-        old_prefix != as.loc_rib->find(old_prefix)->second.prefix) {
+    if (new_prefix != as.loc_rib->find(ann.prefix)->prefix ||
+        old_prefix != as.loc_rib->find(old_prefix)->prefix) {
         return false;
     }
 
     // Check priority
-    Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0");
+    Prefix<> p = Prefix<>("1.1.1.0", "255.255.255.0", 2, 2);
     std::vector<uint32_t> x;
-    ROVppAnnouncement a1 = ROVppAnnouncement(111, p.addr, p.netmask, 199, 222, 0, x);
-    ROVppAnnouncement a2 = ROVppAnnouncement(111, p.addr, p.netmask, 298, 223, 0, x);
+    ROVppAnnouncement a1 = ROVppAnnouncement(111, p, 199, 222, 0, x);
+    ROVppAnnouncement a2 = ROVppAnnouncement(111, p, 298, 223, 0, x);
     as.process_announcement(a1);
     as.process_announcement(a2);
-    if (as.loc_rib->find(p)->second.received_from_asn != 223) {
+    if (as.loc_rib->find(p)->received_from_asn != 223) {
         std::cerr << "Failed best path inference priority check." << std::endl;
         return false;
     }    
 
     // Check new best announcement
-    ROVppAnnouncement a3 = ROVppAnnouncement(111, p.addr, p.netmask, 299, 224, 0, x);
+    ROVppAnnouncement a3 = ROVppAnnouncement(111, p, 299, 224, 0, x);
     as.process_announcement(a3);
-    if (as.loc_rib->find(p)->second.received_from_asn != 224) {
+    if (as.loc_rib->find(p)->received_from_asn != 224) {
         std::cerr << "Failed best path priority correction check." << std::endl;
         return false;
     } 
@@ -940,11 +952,11 @@ bool test_rovpp_process_announcement(){
  * Item three requires the from_monitor attribute to work. 
  */
 bool test_rovpp_process_announcements(){
-    ROVppAnnouncement ann1 = ROVppAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
+    ROVppAnnouncement ann1 = ROVppAnnouncement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     Prefix<> ann1_prefix = ann1.prefix;
-    ROVppAnnouncement ann2 = ROVppAnnouncement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
+    ROVppAnnouncement ann2 = ROVppAnnouncement(13796, Prefix<>(0x321C9F00, 0xFFFFFF00, 1, 1), 22742);
     Prefix<> ann2_prefix = ann2.prefix;
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     // build a vector of announcements
     std::vector<ROVppAnnouncement> vect = std::vector<ROVppAnnouncement>();
     ann1.priority = 100;
@@ -956,7 +968,7 @@ bool test_rovpp_process_announcements(){
     // does it work if loc_rib is empty?
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.loc_rib->find(ann1_prefix)->second.priority != 100) {
+    if (as.loc_rib->find(ann1_prefix)->priority != 100) {
         std::cerr << "Failed to add an announcement to an empty map" << std::endl;
         return false;
     }
@@ -967,7 +979,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.loc_rib->find(ann1_prefix)->second.priority != 290) {
+    if (as.loc_rib->find(ann1_prefix)->priority != 290) {
         std::cerr << "Higher priority announcements should overwrite lower priority ones." << std::endl;
         return false;
     }
@@ -978,7 +990,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.loc_rib->find(ann1_prefix)->second.priority != 290) {
+    if (as.loc_rib->find(ann1_prefix)->priority != 290) {
         std::cerr << "Lower priority announcements should not overwrite higher priority ones." << std::endl;
         return false;
     }
@@ -989,7 +1001,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann1);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.loc_rib->find(ann1_prefix)->second.priority != 299) {
+    if (as.loc_rib->find(ann1_prefix)->priority != 299) {
         std::cerr << "How did you manage to fail here?" << std::endl;
         return false;
     }
@@ -1000,7 +1012,7 @@ bool test_rovpp_process_announcements(){
     vect.push_back(ann2);
     as.receive_announcements(vect);
     as.process_announcements();
-    if (as.loc_rib->find(ann2_prefix)->second.priority != 200) {
+    if (as.loc_rib->find(ann2_prefix)->priority != 200) {
         std::cerr << "Announcements from_monitor should not be overwritten." << std::endl;
         return false;
     }
@@ -1012,9 +1024,9 @@ bool test_rovpp_process_announcements(){
  * @return true if successful.
  */
 bool test_rovpp_clear_announcements(){
-    ROVppAnnouncement ann = ROVppAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
+    ROVppAnnouncement ann = ROVppAnnouncement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
     // AS must hve a non-zero ASN in order to accept this announcement
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     as.process_announcement(ann);
     if (as.loc_rib->size() != 1) {
         std::cerr << "AS did not process announcement" << std::endl;
@@ -1033,9 +1045,9 @@ bool test_rovpp_clear_announcements(){
  * @return true if successful.
  */
 bool test_rovpp_already_received(){
-    ROVppAnnouncement ann1 = ROVppAnnouncement(13796, 0x89630000, 0xFFFF0000, 22742);
-    ROVppAnnouncement ann2 = ROVppAnnouncement(13796, 0x321C9F00, 0xFFFFFF00, 22742);
-    ROVppAS as = ROVppAS(1);
+    ROVppAnnouncement ann1 = ROVppAnnouncement(13796, Prefix<>(0x89630000, 0xFFFF0000, 0, 0), 22742);
+    ROVppAnnouncement ann2 = ROVppAnnouncement(13796, Prefix<>(0x321C9F00, 0xFFFFFF00, 1, 1), 22742);
+    ROVppAS as = ROVppAS(1, 10);
     as.process_announcement(ann1);
     if (as.already_received(ann1) && !as.already_received(ann2)) {
         return true;
@@ -1049,10 +1061,12 @@ bool test_rovpp_already_received(){
  */
 bool test_rovpp_announcement(){
     std::vector<uint32_t> x;
-    ROVppAnnouncement ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 0, 222, 100, 1, x);
+    ROVppAnnouncement ann = ROVppAnnouncement(111, Prefix<>(0x01010101, 0xffffff00, 1, 1), 0, 222, 100, 1, x);
     if (ann.origin != 111 
         || ann.prefix.addr != 0x01010101 
         || ann.prefix.netmask != 0xffffff00 
+        || ann.prefix.id != 1
+        || ann.prefix.block_id != 1
         || ann.received_from_asn != 222 
         || ann.priority != 0 
         || ann.from_monitor != false 
@@ -1061,10 +1075,12 @@ bool test_rovpp_announcement(){
         return false;
     }
     
-    ann = ROVppAnnouncement(111, 0x01010101, 0xffffff00, 262, 222, 100, 1, x, true);
+    ann = ROVppAnnouncement(111, Prefix<>(0x01010101, 0xffffff00, 0, 0), 262, 222, 100, 1, x, true);
     if (ann.origin != 111 
         || ann.prefix.addr != 0x01010101 
         || ann.prefix.netmask != 0xffffff00 
+        || ann.prefix.id != 0
+        || ann.prefix.block_id != 0
         || ann.received_from_asn != 222 
         || ann.priority != 262 
         || ann.from_monitor != true 
@@ -1084,7 +1100,7 @@ bool test_rovpp_announcement(){
  */
 bool test_best_alternative_route_chosen() {
     // Initialize AS
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     as.attackers = new std::set<uint32_t>();
     
     uint32_t attacker_asn = 666;
@@ -1096,24 +1112,24 @@ bool test_best_alternative_route_chosen() {
     as.add_policy(ROVPPAS_TYPE_ROVPP);  // ROVpp0.1
     
     // Announcements from victim
-    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0");
+    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0", 0, 0);
     // The difference between the following three is the received_from_asn
     // Notice the priorities
     // The Announcements will be handled in this order
     std::vector<uint32_t> x;
-    ROVppAnnouncement a1 = ROVppAnnouncement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, x);  // If done incorrectly it will end up with this one
+    ROVppAnnouncement a1 = ROVppAnnouncement(victim_asn, p1, 222, 11, 0, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    ROVppAnnouncement a2 = ROVppAnnouncement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, x);  // or this one
+    ROVppAnnouncement a2 = ROVppAnnouncement(victim_asn, p1, 222, 22, 0, x);  // or this one
     a2.priority = 292;
-    ROVppAnnouncement a3 = ROVppAnnouncement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, x);  // It should end up with this one if done correctly
+    ROVppAnnouncement a3 = ROVppAnnouncement(victim_asn, p1, 332, 33, 0, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
-    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
+    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0", 1, 1);
     // The difference between the following is the received_from_asn
-    ROVppAnnouncement a4 = ROVppAnnouncement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    ROVppAnnouncement a4 = ROVppAnnouncement(attacker_asn, p2, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    ROVppAnnouncement a5 = ROVppAnnouncement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    ROVppAnnouncement a5 = ROVppAnnouncement(attacker_asn, p2, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
@@ -1124,7 +1140,7 @@ bool test_best_alternative_route_chosen() {
     as.process_announcements();
     
     // See if it ended up with the correct one
-    ROVppAnnouncement selected_ann = as.loc_rib->find(p1)->second;
+    ROVppAnnouncement selected_ann = *as.loc_rib->find(p1);
     // Note, this test is currently broken, correct behavior is choosing a1
     return selected_ann == a1;
 }
@@ -1137,7 +1153,7 @@ bool test_best_alternative_route_chosen() {
  */
 bool test_best_alternative_route() {
     // Initialize AS
-    ROVppAS as = ROVppAS(1);
+    ROVppAS as = ROVppAS(1, 10);
     as.attackers = new std::set<uint32_t>();
     
     uint32_t attacker_asn = 666;
@@ -1149,24 +1165,24 @@ bool test_best_alternative_route() {
     as.add_policy(ROVPPAS_TYPE_ROVPP);  // ROVpp0.1
     
     // Announcements from victim
-    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0");
+    Prefix<> p1 = Prefix<>("1.2.0.0", "255.255.0.0", 0, 0);
     // The difference between the following three is the received_from_asn
     // Notice the priorities
     // The Announcements will be handled in this order
     std::vector<uint32_t> x;
-    ROVppAnnouncement a1 = ROVppAnnouncement(victim_asn, p1.addr, p1.netmask, 222, 11, 0, x);  // If done incorrectly it will end up with this one
+    ROVppAnnouncement a1 = ROVppAnnouncement(victim_asn, p1, 222, 11, 0, x);  // If done incorrectly it will end up with this one
     a1.priority = 293;
-    ROVppAnnouncement a2 = ROVppAnnouncement(victim_asn, p1.addr, p1.netmask, 222, 22, 0, x);  // or this one
+    ROVppAnnouncement a2 = ROVppAnnouncement(victim_asn, p1, 222, 22, 0, x);  // or this one
     a2.priority = 292;
-    ROVppAnnouncement a3 = ROVppAnnouncement(victim_asn, p1.addr, p1.netmask, 332, 33, 0, x);  // It should end up with this one if done correctly
+    ROVppAnnouncement a3 = ROVppAnnouncement(victim_asn, p1, 332, 33, 0, x);  // It should end up with this one if done correctly
     a3.priority = 291;
     
     // Subprefix Hijack
-    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0");
+    Prefix<> p2 = Prefix<>("1.2.3.0", "255.255.0.0", 1, 1);
     // The difference between the following is the received_from_asn
-    ROVppAnnouncement a4 = ROVppAnnouncement(attacker_asn, p2.addr, p2.netmask, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
+    ROVppAnnouncement a4 = ROVppAnnouncement(attacker_asn, p2, 222, 11, 0, x);  // Should cause best_alternative_route to be called and end up with a2 in RIB
     a4.priority = 294;
-    ROVppAnnouncement a5 = ROVppAnnouncement(attacker_asn, p2.addr, p2.netmask, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
+    ROVppAnnouncement a5 = ROVppAnnouncement(attacker_asn, p2, 222, 22, 0, x);  // This cause it to go back a1 again, even though we just saw it conflicts with the previous annoucement (i.e. a4)
     a5.priority = 295;
     
     // Notice the victim's ann come first, then the attackers
@@ -1210,7 +1226,7 @@ bool test_rovpp_tiebreak_override() {
     as_path1->push_back(1);
     std::vector<uint32_t> *as_path2 = new std::vector<uint32_t>();
     as_path2->push_back(3);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path1, p, 2, 0);
     e.give_ann_to_as_path(as_path2, p, 2, 0);
 
@@ -1218,19 +1234,25 @@ bool test_rovpp_tiebreak_override() {
     e.propagate_down();
 
     // confirm 5 has 1's announcement
-    if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->second.origin == 1)) {
+    if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->origin == 1)) {
         std::cerr << "Tiebreak override failed step 1\n";
         return false;
     }
 
     // set override. normally this AS would lose the tiebreak
-    e.graph->ases->find(2)->second->loc_rib->find(p)->second.origin = 3;
-    e.graph->ases->find(2)->second->loc_rib->find(p)->second.received_from_asn = 3;
-    e.graph->ases->find(2)->second->loc_rib->find(p)->second.tiebreak_override = 3;
+    ROVppAnnouncement ann = *e.graph->ases->find(2)->second->loc_rib->find(p);
+    ann.origin = 3;
+    ann.received_from_asn = 3;
+    ann.tiebreak_override = 3;
+    e.graph->ases->find(2)->second->loc_rib->insert(ann.prefix, ann);
+
+    // e.graph->ases->find(2)->second->loc_rib->find(p)->origin = 3;
+    // e.graph->ases->find(2)->second->loc_rib->find(p)->received_from_asn = 3;
+    // e.graph->ases->find(2)->second->loc_rib->find(p)->tiebreak_override = 3;
     e.propagate_down();
 
     // confirm 5 has 3's announcement
-    if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->second.origin != 3)) {
+    if(!(e.graph->ases->find(5)->second->loc_rib->find(p)->origin != 3)) {
         std::cerr << "Tiebreak override failed step 2\n";
         return false;
     }
@@ -1264,7 +1286,7 @@ bool test_withdrawal() {
     
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
    // e.graph->ases->find(5)->second->process_announcement(ann);
     e.give_ann_to_as_path(as_path, p, 2, 0);
     e.propagate_up();
@@ -1282,8 +1304,8 @@ bool test_withdrawal() {
     }
     
     // Make withdrawal
-    ROVppAnnouncement copy = e.graph->ases->find(5)->second->loc_rib->find(p)->second;
-    e.graph->ases->find(5)->second->loc_rib->erase(e.graph->ases->find(5)->second->loc_rib->find(p));
+    ROVppAnnouncement copy = *e.graph->ases->find(5)->second->loc_rib->find(p);
+    e.graph->ases->find(5)->second->loc_rib->erase(copy);
     copy.withdraw = true;
     e.graph->ases->find(5)->second->withdrawals->push_back(copy);
     //e.graph->ases->find(5)->second->process_announcement(ann);
@@ -1403,7 +1425,7 @@ bool test_rovpp_full_path() {
 
 
     e.graph->decide_ranks();
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(5);
     
@@ -1412,9 +1434,9 @@ bool test_rovpp_full_path() {
     e.propagate_down();
 
     // Check if seeded path is present
-    if (e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path.size() != 1) {
+    if (e.graph->ases->find(5)->second->loc_rib->find(p)->as_path.size() != 1) {
         std::cerr << "Failed seeding full AS path." << '\n';
-        for (auto const& i: e.graph->ases->find(5)->second->loc_rib->find(p)->second.as_path) {
+        for (auto const& i: e.graph->ases->find(5)->second->loc_rib->find(p)->as_path) {
             std::cerr << i;
         }
         std::cerr << '\n';
@@ -1430,19 +1452,19 @@ bool test_rovpp_full_path() {
     std::vector<uint32_t> path_6{ 5 };
     std::vector<uint32_t> path_7{ 5, 2, 3 };
 
-    if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path.size() != 2 || 
-        e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
-        e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
-        e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path.size() != 2 ||
-        e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path.size() != 1 ||
-        e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path.size() != 3) {
+    if (e.graph->ases->find(1)->second->loc_rib->find(p)->as_path.size() != 2 || 
+        e.graph->ases->find(2)->second->loc_rib->find(p)->as_path.size() != 1 ||
+        e.graph->ases->find(3)->second->loc_rib->find(p)->as_path.size() != 2 ||
+        e.graph->ases->find(4)->second->loc_rib->find(p)->as_path.size() != 2 ||
+        e.graph->ases->find(6)->second->loc_rib->find(p)->as_path.size() != 1 ||
+        e.graph->ases->find(7)->second->loc_rib->find(p)->as_path.size() != 3) {
         std::cerr << "Failed propagating full AS path." << '\n';
         return false;
     }
     
-    if (e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path != path_1) { 
+    if (e.graph->ases->find(1)->second->loc_rib->find(p)->as_path != path_1) { 
         std::cerr << "Failed propagating full AS path." << '\n';
-        for (auto const& i: e.graph->ases->find(1)->second->loc_rib->find(p)->second.as_path) {
+        for (auto const& i: e.graph->ases->find(1)->second->loc_rib->find(p)->as_path) {
             std::cerr << i;
         }
         std::cerr << '\n';
@@ -1452,9 +1474,9 @@ bool test_rovpp_full_path() {
         std::cerr << '\n';
         return false;
     }
-    if (e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path != path_2) { 
+    if (e.graph->ases->find(2)->second->loc_rib->find(p)->as_path != path_2) { 
         std::cerr << "Failed propagating full AS path." << '\n';
-        for (auto const& i: e.graph->ases->find(2)->second->loc_rib->find(p)->second.as_path) {
+        for (auto const& i: e.graph->ases->find(2)->second->loc_rib->find(p)->as_path) {
             std::cerr << i;
         }
         std::cerr << '\n';
@@ -1464,9 +1486,9 @@ bool test_rovpp_full_path() {
         std::cerr << '\n';
         return false;
     }
-    if (e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path != path_3) { 
+    if (e.graph->ases->find(3)->second->loc_rib->find(p)->as_path != path_3) { 
         std::cerr << "Failed propagating full AS path." << '\n';
-        for (auto const& i: e.graph->ases->find(3)->second->loc_rib->find(p)->second.as_path) {
+        for (auto const& i: e.graph->ases->find(3)->second->loc_rib->find(p)->as_path) {
             std::cerr << i;
         }
         std::cerr << '\n';
@@ -1476,9 +1498,9 @@ bool test_rovpp_full_path() {
         std::cerr << '\n';
         return false;
     }
-    if (e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path != path_4) { 
+    if (e.graph->ases->find(4)->second->loc_rib->find(p)->as_path != path_4) { 
         std::cerr << "Failed propagating full AS path." << '\n';
-        for (auto const& i: e.graph->ases->find(4)->second->loc_rib->find(p)->second.as_path) {
+        for (auto const& i: e.graph->ases->find(4)->second->loc_rib->find(p)->as_path) {
             std::cerr << i;
         }
         std::cerr << '\n';
@@ -1488,9 +1510,9 @@ bool test_rovpp_full_path() {
         std::cerr << '\n';
         return false;
     }
-    if (e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path != path_6) { 
+    if (e.graph->ases->find(6)->second->loc_rib->find(p)->as_path != path_6) { 
         std::cerr << "Failed propagating full AS path." << '\n';
-        for (auto const& i: e.graph->ases->find(6)->second->loc_rib->find(p)->second.as_path) {
+        for (auto const& i: e.graph->ases->find(6)->second->loc_rib->find(p)->as_path) {
             std::cerr << i;
         }
         std::cerr << '\n';
@@ -1500,9 +1522,9 @@ bool test_rovpp_full_path() {
         std::cerr << '\n';
         return false;
     }
-    if (e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path != path_7) { 
+    if (e.graph->ases->find(7)->second->loc_rib->find(p)->as_path != path_7) { 
         std::cerr << "Failed propagating full AS path." << '\n';
-        for (auto const& i: e.graph->ases->find(7)->second->loc_rib->find(p)->second.as_path) {
+        for (auto const& i: e.graph->ases->find(7)->second->loc_rib->find(p)->as_path) {
             std::cerr << i;
         }
         std::cerr << '\n';
@@ -1518,11 +1540,11 @@ bool test_rovpp_full_path() {
 
 
 bool test_tiny_hash() {
-    std::cout << (int) ROVppAS(1).tiny_hash(1) << std::endl;
-    std::cout << (int) ROVppAS(2).tiny_hash(2) << std::endl;
-    std::cout << (int) ROVppAS(3).tiny_hash(3) << std::endl;
-    std::cout << (int) ROVppAS(4).tiny_hash(4) << std::endl;
-    std::cout << (int) ROVppAS(5).tiny_hash(5) << std::endl;
+    std::cout << (int) ROVppAS(1, 10).tiny_hash(1) << std::endl;
+    std::cout << (int) ROVppAS(2, 10).tiny_hash(2) << std::endl;
+    std::cout << (int) ROVppAS(3, 10).tiny_hash(3) << std::endl;
+    std::cout << (int) ROVppAS(4, 10).tiny_hash(4) << std::endl;
+    std::cout << (int) ROVppAS(5, 10).tiny_hash(5) << std::endl;
     return true;
 }
 
@@ -1556,12 +1578,12 @@ bool test_rovpp_prepending_priority_back() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
         std::cerr << "rovpp_prepending_priority_back failed." << std::endl;
         return false;
     }
@@ -1599,12 +1621,12 @@ bool test_rovpp_prepending_priority_middle() {
     as_path->push_back(2);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 197) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 197) {
         std::cerr << "rovpp_prepending_priority_middle failed." << std::endl;
         return false;
     }
@@ -1642,12 +1664,12 @@ bool test_rovpp_prepending_priority_beginning() {
     as_path->push_back(2);
     as_path->push_back(5);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 298 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 197) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 197) {
         std::cerr << "rovpp_prepending_priority_end failed." << std::endl;
         return false;
     }
@@ -1684,7 +1706,7 @@ bool test_rovpp_prepending_priority_back_existing_ann() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
     std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
@@ -1694,9 +1716,9 @@ bool test_rovpp_prepending_priority_back_existing_ann() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
         std::cerr << "rovpp_prepending_priority_back_existing_ann failed." << std::endl;
         return false;
     }
@@ -1733,7 +1755,7 @@ bool test_rovpp_prepending_priority_middle_existing_ann() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
     
     std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
@@ -1743,9 +1765,9 @@ bool test_rovpp_prepending_priority_middle_existing_ann() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
         std::cerr << "rovpp_prepending_priority_middle_existing_ann failed." << std::endl;
         return false;
     }
@@ -1782,7 +1804,7 @@ bool test_rovpp_prepending_priority_beginning_existing_ann() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
     std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
@@ -1792,9 +1814,9 @@ bool test_rovpp_prepending_priority_beginning_existing_ann() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
         std::cerr << "rovpp_prepending_priority_beginning_existing_ann failed." << std::endl;
         return false;
     }
@@ -1832,12 +1854,12 @@ bool test_rovpp_prepending_priority_beginning_existing_ann2() {
     as_path->push_back(2);
     as_path->push_back(5);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 298 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 197) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 298 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 197) {
         std::cerr << "rovpp_prepending_priority_beginning_existing_ann2 failed." << std::endl;
         return false;
     }
@@ -1848,9 +1870,9 @@ bool test_rovpp_prepending_priority_beginning_existing_ann2() {
     as_path_b->push_back(5);
     e.give_ann_to_as_path(as_path_b, p, 2, 0);
 
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != 400 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != 299 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != 198) {
         std::cerr << "rovpp_prepending_priority_beginning_existing_ann2 failed." << std::endl;
         return false;
     }

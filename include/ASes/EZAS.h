@@ -26,8 +26,8 @@ public:
     // Store previous announcements for things (clarify this later)
     std::map<Prefix<>, EZAnnouncement> prev_anns;
 
-    EZAS(CommunityDetection *community_detection, uint32_t asn);
-    EZAS(uint32_t asn);
+    EZAS(CommunityDetection *community_detection, uint32_t asn, uint32_t max_block_prefix_id);
+    EZAS(uint32_t asn, uint32_t max_block_prefix_id);
     EZAS();
 
     ~EZAS();

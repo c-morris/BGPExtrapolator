@@ -8,7 +8,7 @@ EZASGraph::~EZASGraph() {
 }
 
 EZAS* EZASGraph::createNew(uint32_t asn) {
-    return new EZAS(asn);
+    return new EZAS(asn, this->max_block_prefix_id);
 }
 
 void EZASGraph::process(SQLQuerier<>* querier) {

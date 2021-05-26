@@ -10,10 +10,10 @@
 
 class ROVAS : public BaseAS<ROVAnnouncement> {
 public:
-    ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
-    ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results);
-    ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers);
-    ROVAS(uint32_t asn);
+    ROVAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rov_attackers, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
+    ROVAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rov_attackers, bool store_depref_results);
+    ROVAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rov_attackers);
+    ROVAS(uint32_t asn, uint32_t max_block_prefix_id);
     ROVAS();
     ~ROVAS();
 

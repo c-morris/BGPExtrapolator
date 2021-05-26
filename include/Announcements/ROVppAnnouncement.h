@@ -36,19 +36,21 @@ public:
     bool withdraw;              // if this is a withdrawn route
     std::vector<uint32_t> as_path; // stores full as path
 
+    /** "Uninitialized" constructor
+     */
+    ROVppAnnouncement();
+
     /** Default constructor
      */
     ROVppAnnouncement(uint32_t aorigin, 
-                        uint32_t aprefix, 
-                        uint32_t anetmask,
+                        Prefix<> prefix,
                         uint32_t from_asn, 
                         int64_t timestamp = 0);
     
     /** Priority constructor
      */
     ROVppAnnouncement(uint32_t aorigin, 
-                        uint32_t aprefix, 
-                        uint32_t anetmask,
+                        Prefix<> prefix,
                         uint32_t pr, 
                         uint32_t from_asn, 
                         int64_t timestamp, 
@@ -56,8 +58,7 @@ public:
                         bool a_from_monitor = false);
 
     ROVppAnnouncement(uint32_t aorigin, 
-                        uint32_t aprefix, 
-                        uint32_t anetmask,
+                        Prefix<> prefix,
                         uint32_t pr, 
                         uint32_t from_asn, 
                         int64_t timestamp,
@@ -92,7 +93,7 @@ public:
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    virtual std::ostream& to_csv(std::ostream &os);
+    virtual std::ostream& to_csv(std::ostream &os) const;
 
     /** Passes the announcement struct data to an output stream to csv generation.
      * For creating the rovpp_blackholes table only.

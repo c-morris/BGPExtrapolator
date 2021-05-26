@@ -183,6 +183,9 @@ bool test_rov_prepending_priority_middle_existing_ann();
 bool test_rov_prepending_priority_beginning_existing_ann();
 bool test_rov_prepending_priority_beginning_existing_ann2();
 
+//PrefixAnnouncementMap
+bool prefixAnnouncementMap_test_insert();
+
 //EZBGPsec
 bool ezbgpsec_test_path_propagation();
 bool ezbgpsec_test_gather_reports();
@@ -216,5 +219,6 @@ bool test_copy_to_db_string();
 bool test_select_prefix_string();
 bool test_clear_table_string();
 bool test_create_table_string();
+bool test_select_max_query_string();
 
 #endif

@@ -35,9 +35,11 @@ bool test_announcement(){
     Priority p;
     p.relationship = 1;
 
-    Announcement<> ann = Announcement<>(111, 0x01010101, 0xffffff00, p, 222, false);
-    if (ann.origin != 111 || ann.prefix.addr != 0x01010101 || ann.prefix.netmask != 0xffffff00 || ann.received_from_asn != 222 || ann.priority != p || ann.from_monitor != false)
+    Announcement<> ann = Announcement<>(111, Prefix<>(0x01010101, 0xffffff00, 0, 0), p, 222, 0, false);
+    if (ann.origin != 111 || ann.prefix.addr != 0x01010101 || ann.prefix.netmask != 0xffffff00 || ann.received_from_asn != 222 || 
+        ann.priority != p || ann.tstamp != 0 || ann.from_monitor != false) {
         return false;
+    }
     return true;
 }
 

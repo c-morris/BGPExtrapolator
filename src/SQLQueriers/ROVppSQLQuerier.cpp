@@ -88,7 +88,7 @@ pqxx::result ROVppSQLQuerier::select_subnet_pairs(Prefix<>* p, std::string const
  * @return         Database results as [prefix, netmask, as_path, origin, policy_index]
  */
 pqxx::result ROVppSQLQuerier::select_all_pairs_from(std::string const& cur_table){
-    std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin FROM " + cur_table;
+    std::string sql = "SELECT host(prefix) AS prefix_host, netmask(prefix) AS prefix_netmask, as_path, origin, prefix_id, block_prefix_id FROM " + cur_table;
     return execute(sql);
 }
 

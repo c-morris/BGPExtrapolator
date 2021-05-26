@@ -382,6 +382,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
         BOOST_CHECK( ezbgpsec_test_path_propagation() );
 }
 
+<<<<<<< HEAD
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports ) {
         BOOST_CHECK( ezbgpsec_test_gather_reports() );
 }
@@ -411,6 +412,11 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_transitive_bgpsec ) {
         BOOST_CHECK( ezbgpsec_test_transitive_bgpsec_contiguous3() );
 }
 
+//PrefixAnnouncementMap Tests
+BOOST_AUTO_TEST_CASE( PrefixAnnouncementMap_test_insert ) {
+        BOOST_CHECK( prefixAnnouncementMap_test_insert() );
+}
+
 //SQLQuerier Tests
 BOOST_AUTO_TEST_CASE( SQLQuerier_test_parse_config ) {
         BOOST_CHECK ( test_querier_buildup() );
@@ -422,6 +428,7 @@ BOOST_AUTO_TEST_CASE( SQLQuerier_test_string_methods ) {
         BOOST_CHECK ( test_select_prefix_string() );
         BOOST_CHECK ( test_copy_to_db_string() );
         BOOST_CHECK ( test_clear_table_string() );
+        BOOST_CHECK ( test_create_table_string() );
         BOOST_CHECK ( test_create_table_string() );
         BOOST_CHECK ( test_querier_teardown() );
 }

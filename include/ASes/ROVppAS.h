@@ -69,7 +69,7 @@ public:
     std::vector<ROVppAnnouncement> *withdrawals;
 
     // Maps of all announcements stored
-    std::map<Prefix<>, ROVppAnnouncement> *loc_rib;
+    PrefixAnnouncementMap<ROVppAnnouncement> *loc_rib;
 
     std::vector<uint32_t> policy_vector;
     std::set<uint32_t> *attackers;
@@ -85,8 +85,8 @@ public:
     static bool graph_changed;
     
     // Constructor
-    ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers);
-    ROVppAS(uint32_t asn);
+    ROVppAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rovpp_attackers);
+    ROVppAS(uint32_t asn, uint32_t max_block_prefix_id);
     ROVppAS();
 
     ~ROVppAS();

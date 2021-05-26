@@ -1,16 +1,16 @@
 #include "ASes/ROVAS.h"
 
-ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) 
-: BaseAS<ROVAnnouncement>(asn, store_depref_results, inverse_results) { 
+ROVAS::ROVAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rov_attackers, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results) 
+: BaseAS<ROVAnnouncement>(asn, max_block_prefix_id, store_depref_results, inverse_results) { 
     // Save reference to attackers
     attackers = rov_attackers;
     // ROV adoption is false by default
     adopts_rov = false;
 }
-ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers, bool store_depref_results) : ROVAS(asn, rov_attackers, store_depref_results, NULL) {}
-ROVAS::ROVAS(uint32_t asn, std::set<uint32_t> *rov_attackers) : ROVAS(asn, rov_attackers, false, NULL) {}
-ROVAS::ROVAS(uint32_t asn) : ROVAS(asn, NULL, false, NULL) {}
-ROVAS::ROVAS() : ROVAS(0, NULL, false, NULL) {}
+ROVAS::ROVAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rov_attackers, bool store_depref_results) : ROVAS(asn, max_block_prefix_id, rov_attackers, store_depref_results, NULL) {}
+ROVAS::ROVAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rov_attackers) : ROVAS(asn, max_block_prefix_id, rov_attackers, false, NULL) {}
+ROVAS::ROVAS(uint32_t asn, uint32_t max_block_prefix_id) : ROVAS(asn, max_block_prefix_id, NULL, false, NULL) {}
+ROVAS::ROVAS() : ROVAS(0, 20, NULL, false, NULL) {}
 ROVAS::~ROVAS() {}
 
 void ROVAS::process_announcement(ROVAnnouncement &ann, bool ran) {

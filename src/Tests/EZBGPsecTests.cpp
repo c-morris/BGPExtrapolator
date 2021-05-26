@@ -32,55 +32,55 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, pr, 5, 2, false, true);
+    EZAnnouncement attack_announcement(5, p, pr, 5, 2, false, true);
 
     e.graph->ases->find(5)->second->process_announcement(attack_announcement);
 
     e.propagate_up();
     e.propagate_down();
 
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(2)->second->all_anns->find(p)->second.as_path.at(0) != 2 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.as_path.at(1) != 5) {
+    if(e.graph->ases->find(2)->second->all_anns->find(p)->as_path.at(0) != 2 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->as_path.at(1) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #2 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(0) != 3 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(0) != 3 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #3 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(0) != 4 ||
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(0) != 4 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #4 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(5)->second->all_anns->find(p)->second.as_path.at(0) != 5) {
+    if(e.graph->ases->find(5)->second->all_anns->find(p)->as_path.at(0) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #5 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(6)->second->all_anns->find(p)->second.as_path.at(0) != 6 ||
-        e.graph->ases->find(6)->second->all_anns->find(p)->second.as_path.at(1) != 5) {
+    if(e.graph->ases->find(6)->second->all_anns->find(p)->as_path.at(0) != 6 ||
+        e.graph->ases->find(6)->second->all_anns->find(p)->as_path.at(1) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #2 full path incorrect!" << std::endl;
         return false;
@@ -124,7 +124,7 @@ bool ezbgpsec_test_gather_reports() {
     e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
 
     //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
     Priority pr;
@@ -171,7 +171,7 @@ bool ezbgpsec_test_gather_reports() {
 
     /******************************************************/
 
-    Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
+    Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0", 0, 0);
 
     EZAnnouncement attack_announcement2(3, p2.addr, p2.netmask, pr, 3, 2, false, true);
     attack_announcement2.as_path.push_back(3);//Make the origin on the path
@@ -690,7 +690,7 @@ bool ezbgpsec_test_bgpsec_noncontiguous() {
     e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
     EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
@@ -751,7 +751,7 @@ bool ezbgpsec_test_bgpsec_contiguous() {
     e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
     EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
@@ -818,7 +818,7 @@ bool ezbgpsec_test_bgpsec_contiguous2() {
     e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
     EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
@@ -886,7 +886,7 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous() {
     e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
     EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
@@ -959,7 +959,7 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous2() {
     e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
     EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
@@ -1031,7 +1031,7 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous3() {
     e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
     EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);

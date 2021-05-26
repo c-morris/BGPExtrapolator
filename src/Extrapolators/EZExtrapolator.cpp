@@ -103,7 +103,7 @@ void EZExtrapolator::perform_propagation() {
     // Generate iteration blocks
     std::vector<Prefix<>*> *prefix_blocks = new std::vector<Prefix<>*>; // Prefix blocks
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>; // Subnet blocks
-    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
+    Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0", 0, 0); // Start at 0.0.0.0/0
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
 
