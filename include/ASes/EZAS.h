@@ -24,7 +24,7 @@ public:
     CommunityDetection *community_detection;
     unsigned int policy;
     // Store previous announcements for things (clarify this later)
-    std::map<Prefix<>, EZAnnouncement> prev_anns;
+    PrefixAnnouncementMap<EZAnnouncement, uint32_t> prev_anns;
 
     EZAS(CommunityDetection *community_detection, uint32_t asn, uint32_t max_block_prefix_id);
     EZAS(uint32_t asn, uint32_t max_block_prefix_id);

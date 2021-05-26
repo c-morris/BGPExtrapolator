@@ -2,13 +2,13 @@
 #include "CommunityDetection.h"
 #include "Extrapolators/EZExtrapolator.h"
 
-EZAS::EZAS(CommunityDetection *community_detection, uint32_t asn) : BaseAS<EZAnnouncement>(asn, false, NULL), community_detection(community_detection) {
+EZAS::EZAS(CommunityDetection *community_detection, uint32_t asn, uint32_t max_block_prefix_id) : BaseAS<EZAnnouncement>(asn, max_block_prefix_id, false, NULL), community_detection(community_detection) {
 
 }
 
-EZAS::EZAS(uint32_t asn) : EZAS(NULL, asn) {
-
-}
+//EZAS::EZAS(uint32_t asn) : EZAS(NULL, asn, 4) {
+//
+//}
 
 EZAS::EZAS(uint32_t asn, uint32_t max_block_prefix_id) : BaseAS<EZAnnouncement>(asn, max_block_prefix_id, false, NULL) { }
 EZAS::EZAS() : EZAS(0, 20) { }

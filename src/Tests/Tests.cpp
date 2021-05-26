@@ -382,11 +382,6 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_path_propagation ) {
         BOOST_CHECK( ezbgpsec_test_path_propagation() );
 }
 
-<<<<<<< HEAD
-BOOST_AUTO_TEST_CASE( EZBGPsec_test_gather_reports ) {
-        BOOST_CHECK( ezbgpsec_test_gather_reports() );
-}
-
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_cd_algorithm ) {
         BOOST_CHECK( ezbgpsec_test_cd_algorithm() );
 }

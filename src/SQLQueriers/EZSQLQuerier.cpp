@@ -10,7 +10,7 @@ EZSQLQuerier::~EZSQLQuerier() {
 }
 
 pqxx::result EZSQLQuerier::get_attacker_po_pairs() {
-    std::string sql = "SELECT DISTINCT host(prefix), netmask(prefix), origin_hijack_asn FROM " + announcements_table;
+    std::string sql = "SELECT DISTINCT host(prefix), netmask(prefix), origin_hijack_asn, prefix_id, prefix_block_id FROM " + announcements_table;
     sql += " WHERE origin_hijack_asn IS NOT NULL;";
     return execute(sql);
 }

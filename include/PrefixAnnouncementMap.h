@@ -51,7 +51,7 @@ public:
      * memory does not need to be played with as much. In addition, this allows us to access announcements by index
      * since they will be populated in a vector, and their corresponding index is stored in the prefix obejct.
      */
-    PrefixAnnouncementMap(size_t capacity) : filled_size(0) {
+    PrefixAnnouncementMap(size_t capacity=0) : filled_size(0) {
         announcements.reserve(capacity);
 
         for(size_t i = 0; i < capacity; i++)

@@ -32,6 +32,10 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
     e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
 
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
@@ -129,7 +133,7 @@ bool ezbgpsec_test_gather_reports() {
     //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(3, p.addr, p.netmask, pr, 3, 2, false, true);
+    EZAnnouncement attack_announcement(3, p, pr, 3, 2, false, true);
     //The supposed path thus far
     attack_announcement.as_path.push_back(3);
 
@@ -173,7 +177,7 @@ bool ezbgpsec_test_gather_reports() {
 
     Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0", 0, 0);
 
-    EZAnnouncement attack_announcement2(3, p2.addr, p2.netmask, pr, 3, 2, false, true);
+    EZAnnouncement attack_announcement2(3, p2, pr, 3, 2, false, true);
     attack_announcement2.as_path.push_back(3);//Make the origin on the path
 
     e.graph->ases->find(1)->second->process_announcement(attack_announcement2);
@@ -693,7 +697,7 @@ bool ezbgpsec_test_bgpsec_noncontiguous() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -712,10 +716,10 @@ bool ezbgpsec_test_bgpsec_noncontiguous() {
     //std::cout << std::endl;
 
     // Announcement should be accepted
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 3 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
         
         std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
@@ -754,10 +758,10 @@ bool ezbgpsec_test_bgpsec_contiguous() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -780,9 +784,9 @@ bool ezbgpsec_test_bgpsec_contiguous() {
     //std::cout << std::endl;
 
     // Origin announcement should be preferred
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 13796) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 13796) {
         
         std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
@@ -821,10 +825,10 @@ bool ezbgpsec_test_bgpsec_contiguous2() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -847,10 +851,10 @@ bool ezbgpsec_test_bgpsec_contiguous2() {
     //std::cout << std::endl;
 
     // Hijack announcement should be preferred (testing security 2nd)
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 3 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
         
         std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
@@ -889,10 +893,10 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -914,16 +918,16 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous() {
     //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
     //std::cout << std::endl;
 
-    //auto path = e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path;
+    //auto path = e.graph->ases->find(1)->second->all_anns->find(p).as_path;
     //for (auto p : path) {
     //    std::cout << p << " ";
     //}
     //std::cout << std::endl;
 
     // Origin AS preferred, attacker's signature is missing
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 13796) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 13796) {
         
         std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
@@ -962,10 +966,10 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous2() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -988,10 +992,10 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous2() {
     //std::cout << std::endl;
 
     // Attacker's signature is missing, but is preferred because of relationship
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 3 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
         
         std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
@@ -1034,10 +1038,10 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous3() {
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     Priority pr;
     pr.relationship = 3;
-    EZAnnouncement attack_announcement(13796, p.addr, p.netmask, pr, 13796, 1, true, true);
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
     attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    EZAnnouncement origin_announcement(13796, p.addr, p.netmask, pr, 13796, 0, true, false);
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
     origin_announcement.as_path = std::vector<uint32_t>({});
 
     e.graph->ases->find(3)->second->process_announcement(attack_announcement);
@@ -1060,10 +1064,10 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous3() {
     //std::cout << std::endl;
 
     // Origin AS preferred over path length, attacker's signature is missing
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 4 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(3) != 13796) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 4 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
         
         std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
