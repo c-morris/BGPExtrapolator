@@ -106,6 +106,11 @@ void EZExtrapolator::perform_propagation() {
     Prefix<> *cur_prefix = new Prefix<>("0.0.0.0", "0.0.0.0"); // Start at 0.0.0.0/0
     this->populate_blocks(cur_prefix, prefix_blocks, subnet_blocks); // Select blocks based on iteration size
     delete cur_prefix;
+
+    // Propagate "round zero" so each AS knows what it can see with regular BGP
+    BOOST_LOG_TRIVIAL(info) << "Pre-populating prev_anns..." << round;
+    this->extrapolate(prefix_blocks, subnet_blocks);
+    graph->clear_announcements();
     
     // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
     for(round = 1; round <= num_rounds; round++) {

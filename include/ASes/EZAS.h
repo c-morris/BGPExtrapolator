@@ -23,6 +23,8 @@ class EZAS : public BaseAS<EZAnnouncement> {
 public:
     CommunityDetection *community_detection;
     unsigned int policy;
+    // Store previous announcements for things (clarify this later)
+    std::map<Prefix<>, EZAnnouncement> prev_anns;
 
     EZAS(CommunityDetection *community_detection, uint32_t asn);
     EZAS(uint32_t asn);
@@ -31,5 +33,6 @@ public:
     ~EZAS();
 
     virtual void process_announcement(EZAnnouncement &ann, bool ran=true);
+    virtual void clear_announcements();
 };
 #endif

@@ -165,3 +165,11 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
 
     BaseAS::process_announcement(ann, ran);
 }
+
+void EZAS::clear_announcements() {
+    prev_anns.clear();
+    // just download more ram, bro
+    prev_anns = *this->all_anns;
+
+    BaseAS::clear_announcements();
+}
