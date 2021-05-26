@@ -490,9 +490,20 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
         }
         // Propagate all announcements to customers
         if (to_customers) {
-            // Base priority is 0 for provider to customers
-            copy.priority = get_priority(ann.second, i);
-            anns_to_customers.push_back(copy);
+            // Special case to not send blackhole/preventive announcements to customers 
+            // if blackhole is created from an announcement which came from a 
+            // customer. The if conditional is to filter these blackhole/preventive announcements.
+            if (filtered) {
+                if (ann.second.share_special_ann) {
+                    // Base priority is 0 for provider to customers
+                    copy.priority = get_priority(ann.second, i);
+                    anns_to_customers.push_back(copy);
+                } // else don't share the ann
+            } else {
+                // Base priority is 0 for provider to customers
+                copy.priority = get_priority(ann.second, i);
+                anns_to_customers.push_back(copy);
+            }
         }
     }
     

@@ -51,6 +51,12 @@ public:
     bool withdraw;              // if this is a withdrawn route
     std::vector<uint32_t> as_path; // stores full as path
     uint32_t roa_validity;       // Inidicates the validity of the announcement (valid = 1; unknown = 2; invalid = 3; both = 4)
+    bool share_special_ann = true;  // This is just for implementation purposes of v2 and v2_lite special case to 
+                                      // to not share blackhole announcements generated as a result from an attacker
+                                      // received from a customer. Had to be added since there's no way to tell
+                                      // at send_all_announcements if the blackhole announcement was created 
+                                      // due to the special case, because we overwrite the received_from_asn with
+                                      // an optimization flag for blackholes in the received_from_asn field.
 
     /** Default constructor
      */
@@ -105,6 +111,7 @@ public:
         policy_index = ann.policy_index;     
         tiebreak_override = ann.tiebreak_override;
         withdraw =  ann.withdraw;              
+        share_special_ann = ann.share_special_ann;
         // this is the important part
         as_path = ann.as_path; 
      }
@@ -134,6 +141,7 @@ public:
         std::swap(a.withdraw, b.withdraw);
         a.as_path.resize(b.as_path.size());
         std::swap(a.as_path, b.as_path);
+        std::swap(a.share_special_ann, b.share_special_ann);
     }
 
     /** Defines the << operator for the Announcements
@@ -155,6 +163,7 @@ public:
             << "TieBrk:\t\t" << std::dec << ann.tiebreak_override << std::endl
             << "From Monitor:\t" << std::boolalpha << ann.from_monitor << std::endl
             << "Withdraw:\t" << std::boolalpha << ann.withdraw << std::endl
+            << "Share Special Ann:\t" << std::boolalpha << ann.share_special_ann << std::endl
             << "AS_PATH\t";
             for (auto i : ann.as_path) { os << i << ' '; }
             os << std::endl;

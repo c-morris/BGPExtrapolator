@@ -462,11 +462,18 @@ void ROVppAS::process_announcements(bool ran) {
                     } else {
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_ann == ann) { // If no alternative
+                            Announcement blackhole_ann = ann; 
                             // Mark as blackholed and accept this announcement
-                            blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann, false);
+                            blackholes->insert(blackhole_ann);  // Make copy of annoucement to share as a blackhole ann
+                            // If the blackhole announcement is generated as a result of an attack
+                            // ann from a customer, then we must not share a blackhole announcement (i.e.
+                            // only blackhole, don't share blackhole announcement).
+                            if (customers->find(blackhole_ann.received_from_asn) != customers->end()) {
+                                blackhole_ann.share_special_ann = false;
+                            }
+                            blackhole_ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            blackhole_ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            process_announcement(blackhole_ann, false);
                         } else {
                             process_announcement(best_alternative_ann, false);
                         }
@@ -481,17 +488,29 @@ void ROVppAS::process_announcements(bool ran) {
                         process_announcement(ann, false);
                     } else {
                         // If it is from a customer, silently drop it
-                        if (customers->find(ann.received_from_asn) != customers->end()) { continue; }
                         Announcement best_alternative_ann = best_alternative_route(ann); 
                         if (best_alternative_route(ann) == ann) { // If no alternative
+                            Announcement blackhole_ann = ann;  // Make copy of annoucement to share as a blackhole ann
                             // Mark as blackholed and accept this announcement
-                            blackholes->insert(ann);
-                            ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
-                            process_announcement(ann);
+                            blackholes->insert(blackhole_ann);
+                            // If the blackhole announcement is generated as a result of an attack
+                            // ann from a customer, then we must not share a blackhole announcement (i.e.
+                            // only blackhole, don't share blackhole announcement).
+                            if (customers->find(blackhole_ann.received_from_asn) != customers->end()) {
+                                blackhole_ann.share_special_ann = false;
+                            }
+                            blackhole_ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            blackhole_ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            process_announcement(blackhole_ann);
                         } else {
                             // Make preventive announcement
                             Announcement preventive_ann = best_alternative_ann;
+                            // If the preventive announcement is generated as a result of an attack
+                            // ann from a customer, then we must not share a blackhole announcement (i.e.
+                            // only blackhole, don't share blackhole announcement).
+                            if (customers->find(ann.received_from_asn) != customers->end()) {
+                                preventive_ann.share_special_ann = false;
+                            }
                             preventive_ann.prefix = ann.prefix;
                             preventive_ann.alt = best_alternative_ann.received_from_asn;
                             if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
