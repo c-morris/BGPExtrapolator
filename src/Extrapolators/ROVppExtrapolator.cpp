@@ -29,20 +29,25 @@
 ROVppExtrapolator::ROVppExtrapolator(std::vector<std::string> policy_tables,
                                         std::string announcement_table,
                                         std::string results_table,
+                                        std::string full_path_results_table,
                                         std::string tracked_ases_table,
                                         std::string simulation_table,
                                         std::string config_section,
-                                        int exclude_as_number)
-    : BaseExtrapolator(false, false, false) {
+                                        int exclude_as_number,
+                                        bool origin_only,
+                                        int max_threads)
+    // ROVppExtrapolator always saves regular results
+    : BaseExtrapolator(false, true, false, false, origin_only, NULL, max_threads) {
         
     this->graph = new ROVppASGraph();
 
     // fix rovpp extrapolation results table name, the default arg doesn't work right here
     results_table = !results_table.compare(RESULTS_TABLE) ? ROVPP_RESULTS_TABLE : results_table;
-    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, tracked_ases_table, simulation_table, exclude_as_number, config_section);
+    this->querier = new ROVppSQLQuerier(policy_tables, announcement_table, results_table, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, full_path_results_table, tracked_ases_table, simulation_table, exclude_as_number, config_section);
 }
 
-ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1) { }
+ROVppExtrapolator::ROVppExtrapolator() : ROVppExtrapolator(std::vector<std::string>(), ROVPP_ANNOUNCEMENTS_TABLE, ROVPP_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, ROVPP_TRACKED_ASES_TABLE, ROVPP_SIMULATION_TABLE, DEFAULT_QUERIER_CONFIG_SECTION, -1, DEFAULT_ORIGIN_ONLY, DEFAULT_MAX_THREADS) { }
+
 ROVppExtrapolator::~ROVppExtrapolator() { }
 
 void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
@@ -69,7 +74,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     graph->create_graph_from_db(querier);
     
     // Main differences start here
-    std::cout << "Beginning propagation..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Beginning propagation...";
     
     // Seed MRT announcements and propagate    
     // Iterate over Victim table (first), then Attacker table (second)
@@ -112,10 +117,10 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
         propagate_down();
         count++;
         if (count >= 100) {
-            std::cout << "Exceeded max propagation cycles" << std::endl;
+            BOOST_LOG_TRIVIAL(info) << "Exceeded max propagation cycles";
         }
     } while (ROVppAS::graph_changed && count < 100);
-    std::cout << "Times propagated: " << count << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Times propagated: " << count;
     
     // std::ofstream gvpythonfile;
     // gvpythonfile.open("asgraph.py");
@@ -123,7 +128,7 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     // rovpp_graph->to_graphviz(gvpythonfile, to_graph);
     // gvpythonfile.close();
     save_results(iter);
-    std::cout << "completed: ";
+    BOOST_LOG_TRIVIAL(info) << "completed: ";
 }
 
 void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, 
@@ -136,6 +141,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
     }
     
     uint32_t i = 0;
+    uint32_t path_l = as_path->size();
     uint32_t origin_asn = as_path->back();
     
     // Announcement at origin for checking along the path
@@ -151,6 +157,11 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
   
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
+        // Only seed at origin AS if origin only mode is enabled
+        if (this->origin_only == true && it != as_path->rbegin()) {
+            return;
+        }
+
         // Increments path length, including prepending
         i++;
         // If ASN not in graph, continue
@@ -162,16 +173,7 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         cur_path.insert(cur_path.begin(), asn_on_path);
         // Find the current AS on the path
         ROVppAS *as_on_path = graph->ases->find(asn_on_path)->second;
-        // Check if already received this prefix
-        if (as_on_path->already_received(ann_to_check_for)) {
-            // update path vector
-            if (cur_path.back() == as_on_path->asn) {
-                continue;
-            }
-            // Find the already received announcement and delete it
-            as_on_path->delete_ann(ann_to_check_for);
-        }
-        
+
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
@@ -181,20 +183,47 @@ void ROVppExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path,
         if (i > 1) {
             // Get the previous ASes relationship to current AS
             if (as_on_path->providers->find(*(it - 1)) != as_on_path->providers->end()) {
-                received_from = AS_REL_PROVIDER;
+                received_from = AS_REL_PROVIDER_ROVPP;
             } else if (as_on_path->peers->find(*(it - 1)) != as_on_path->peers->end()) {
-                received_from = AS_REL_PEER;
+                received_from = AS_REL_PEER_ROVPP;
             } else if (as_on_path->customers->find(*(it - 1)) != as_on_path->customers->end()) {
-                received_from = AS_REL_CUSTOMER;
+                received_from = AS_REL_CUSTOMER_ROVPP;
             } else {
                 broken_path = true;
             }
         }
 
-
         // This is how priority is calculated
         uint32_t path_len_weighted = 100 - (i - 1);
         uint32_t priority = received_from + path_len_weighted;
+
+        // Check if already received this prefix
+        if (as_on_path->already_received(ann_to_check_for)) {
+            // update path vector
+            if (cur_path.back() == as_on_path->asn) {
+                continue;
+            }
+
+            // Position of previous AS on path
+            uint32_t prevPos = path_l - i + 1;
+
+            // Position of the current AS on path
+            uint32_t currPos = path_l - i;
+
+            // Skip announcement if there exists one with a higher priority
+            ROVppAS *current_as = this->graph->ases->find(as_path->at(currPos))->second;
+            if (current_as->all_anns->find(prefix)->second.priority > priority) {
+                continue;
+            }
+
+            // Prepending check, use original priority
+            if (prevPos < path_l && prevPos >= 0 && as_path->at(prevPos) == as_on_path->asn) {
+                continue;
+            }
+
+            // Find the already received announcement and delete it
+            as_on_path->delete_ann(ann_to_check_for);
+        }
 
         uint32_t received_from_asn = 0;
         
@@ -578,9 +607,9 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
 }
 
 bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a, int d) {
-    if (d > 100) { std::cerr << "Maximum depth exceeded during traceback.\n"; return true; }
+    if (d > 100) { BOOST_LOG_TRIVIAL(error) << "Maximum depth exceeded during traceback."; return true; }
     auto ann_pair = cur_as.loc_rib->find(p);
-    const Announcement &ann = ann_pair->second;
+    const Announcement<> &ann = ann_pair->second;
     // i wonder if a cabinet holding a subwoofer counts as a bass case
     // Ba dum tss, nice
     if (ann.received_from_asn == a) { return true; }
@@ -593,7 +622,7 @@ bool ROVppExtrapolator::loop_check(Prefix<> p, const ROVppAS& cur_as, uint32_t a
         return false; 
     }
     auto next_as_pair = graph->ases->find(ann.received_from_asn);
-    if (next_as_pair == graph->ases->end()) { std::cerr << "Traced back announcement to nonexistent AS.\n"; return true; }
+    if (next_as_pair == graph->ases->end()) { BOOST_LOG_TRIVIAL(error) << "Traced back announcement to nonexistent AS."; return true; }
     const ROVppAS& next_as = *next_as_pair->second;
     return loop_check(p, next_as, a, d+1);
 }
@@ -608,7 +637,7 @@ void ROVppExtrapolator::save_results(int iteration) {
     blackhole_outfile.open(blackhole_file_name);
     
     // Iterate over all nodes in graph
-    std::cout << "Saving Results From Iteration: " << iteration << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Results From Iteration: " << iteration;
     for (auto &as : *graph->ases){
         as.second->stream_announcements(outfile);
         // Check if it's a ROVpp node

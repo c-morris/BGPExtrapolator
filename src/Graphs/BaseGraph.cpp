@@ -32,8 +32,8 @@
 #include "Graphs/ASGraph.h"
 #include "ASes/AS.h"
 
-template <class ASType>
-BaseGraph<ASType>::~BaseGraph() {
+template <class ASType, typename PrefixType>
+BaseGraph<ASType, PrefixType>::~BaseGraph() {
     for (auto const& as : *ases)
         delete as.second;
     delete ases;
@@ -57,8 +57,8 @@ BaseGraph<ASType>::~BaseGraph() {
     delete non_stubs;
 }
 
-template <class ASType>
-void BaseGraph<ASType>::clear_announcements() {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::clear_announcements() {
     for (auto const& as : *ases)
         as.second->clear_announcements();
 
@@ -69,8 +69,8 @@ void BaseGraph<ASType>::clear_announcements() {
     }
 }
 
-template <class ASType>
-void BaseGraph<ASType>::reset_ranks_and_components() {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::reset_ranks_and_components() {
     for(auto element : *ases) {
         element.second->rank = -1;
         element.second->index = -1;
@@ -99,8 +99,8 @@ void BaseGraph<ASType>::reset_ranks_and_components() {
     non_stubs->clear();
 }
 
-template <class ASType>
-void BaseGraph<ASType>::add_relationship(uint32_t asn, 
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::add_relationship(uint32_t asn, 
                                             uint32_t neighbor_asn, 
                                             int relation) {
     auto search = ases->find(asn);
@@ -113,16 +113,16 @@ void BaseGraph<ASType>::add_relationship(uint32_t asn,
     search->second->add_neighbor(neighbor_asn, relation);
 }
 
-template <class ASType>
-uint32_t BaseGraph<ASType>::translate_asn(uint32_t asn) {
+template <class ASType, typename PrefixType>
+uint32_t BaseGraph<ASType, PrefixType>::translate_asn(uint32_t asn) {
     auto search = component_translation->find(asn);
     if(search == component_translation->end())
         return asn; 
     return search->second;
 }
 
-template <class ASType>
-void BaseGraph<ASType>::process(SQLQuerier *querier) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::process(SQLQuerier<PrefixType> *querier) {
     remove_stubs(querier);
     tarjan();
     combine_components();
@@ -130,8 +130,8 @@ void BaseGraph<ASType>::process(SQLQuerier *querier) {
     decide_ranks();
 }
 
-template <class ASType>
-void BaseGraph<ASType>::create_graph_from_db(SQLQuerier *querier) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::create_graph_from_db(SQLQuerier<PrefixType> *querier) {
     // Assemble Peers
     pqxx::result R = querier->select_from_table(PEERS_TABLE);
     for (pqxx::result::const_iterator c = R.begin(); c!=R.end(); ++c){
@@ -153,8 +153,8 @@ void BaseGraph<ASType>::create_graph_from_db(SQLQuerier *querier) {
     this->process(querier);
 }
 
-template <class ASType>
-void BaseGraph<ASType>::remove_stubs(SQLQuerier *querier) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::remove_stubs(SQLQuerier<PrefixType> *querier) {
     std::vector<ASType*> to_remove;
     // For all ASes in the graph
     for (auto &as : *ases) {
@@ -191,8 +191,8 @@ void BaseGraph<ASType>::remove_stubs(SQLQuerier *querier) {
     save_non_stubs_to_db(querier);
 }
 
-template <class ASType>
-void BaseGraph<ASType>::save_stubs_to_db(SQLQuerier *querier) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::save_stubs_to_db(SQLQuerier<PrefixType> *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir)
         mkdir("/dev/shm/bgp",0777);
@@ -200,7 +200,7 @@ void BaseGraph<ASType>::save_stubs_to_db(SQLQuerier *querier) {
         closedir(dir);
 
     std::ofstream outfile;
-    std::cout << "Saving Stubs..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Stubs...";
     std::string file_name = "/dev/shm/bgp/stubs.csv";
     outfile.open(file_name);
 
@@ -212,8 +212,8 @@ void BaseGraph<ASType>::save_stubs_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
-template <class ASType>
-void BaseGraph<ASType>::save_non_stubs_to_db(SQLQuerier *querier) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::save_non_stubs_to_db(SQLQuerier<PrefixType> *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir)
         mkdir("/dev/shm/bgp",0777);
@@ -221,7 +221,7 @@ void BaseGraph<ASType>::save_non_stubs_to_db(SQLQuerier *querier) {
         closedir(dir);
 
     std::ofstream outfile;
-    std::cout << "Saving Non-Stubs..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Non-Stubs...";
     std::string file_name = "/dev/shm/bgp/non-stubs.csv";
     outfile.open(file_name);
 
@@ -233,8 +233,8 @@ void BaseGraph<ASType>::save_non_stubs_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
-template <class ASType>
-void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::save_supernodes_to_db(SQLQuerier<PrefixType> *querier) {
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir)
         mkdir("/dev/shm/bgp",0777);
@@ -242,7 +242,7 @@ void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
         closedir(dir);
 
     std::ofstream outfile;
-    std::cout << "Saving Supernodes..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Saving Supernodes...";
     std::string file_name = "/dev/shm/bgp/supernodes.csv";
     outfile.open(file_name); 
     
@@ -267,8 +267,8 @@ void BaseGraph<ASType>::save_supernodes_to_db(SQLQuerier *querier) {
     std::remove(file_name.c_str());
 }
 
-template <class ASType>
-void BaseGraph<ASType>::decide_ranks() {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::decide_ranks() {
     ases_by_rank->clear();
 
     // Initial set of customer ASes at the bottom of the DAG
@@ -306,8 +306,8 @@ void BaseGraph<ASType>::decide_ranks() {
     return;
 }
 
-template <class ASType>
-void BaseGraph<ASType>::tarjan() {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::tarjan() {
     int index = 0;
     std::stack<ASType*> s;
 
@@ -317,8 +317,8 @@ void BaseGraph<ASType>::tarjan() {
     return;
 }
 
-template <class ASType>
-void BaseGraph<ASType>::tarjan_helper(ASType *as, int &index, std::stack<ASType*> &s) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::tarjan_helper(ASType *as, int &index, std::stack<ASType*> &s) {
     as->index = index;
     as->lowlink = index;
     index++;
@@ -352,8 +352,8 @@ void BaseGraph<ASType>::tarjan_helper(ASType *as, int &index, std::stack<ASType*
     }
 }
 
-template <class ASType>
-void BaseGraph<ASType>::combine_components() {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::combine_components() {
     
     // For each strongly connected component
     for (auto const& component : *components) {
@@ -457,15 +457,15 @@ void BaseGraph<ASType>::combine_components() {
     return;
 }
 
-template <class ASType>
-void BaseGraph<ASType>::printDebug() {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::printDebug() {
     for (auto const& as : *ases)
-        std::cout << as.first << ':' << as.second->asn << std::endl;
+        BOOST_LOG_TRIVIAL(debug) << as.first << ':' << as.second->asn;
     return; 
 }
 
-template <class ASType>
-void BaseGraph<ASType>::to_graphviz(std::ostream &os) {
+template <class ASType, typename PrefixType>
+void BaseGraph<ASType, PrefixType>::to_graphviz(std::ostream &os) {
     std::string id = "";
     for (auto const &as : *ases) {
         os << "dot.node('" << as.second->asn << "', '" << as.second->asn << "')" << std::endl;
@@ -484,6 +484,8 @@ std::ostream& operator<<(std::ostream &os, const BaseGraph<U>& asg) {
 }
 
 //We love C++
-template class BaseGraph<AS>;
+template class BaseGraph<AS<>>;
+template class BaseGraph<AS<uint128_t>, uint128_t>;
 template class BaseGraph<EZAS>;
 template class BaseGraph<ROVppAS>;
+template class BaseGraph<ROVAS>;

@@ -31,11 +31,12 @@ ROVppSQLQuerier::ROVppSQLQuerier(std::vector<std::string> policy_tables /* = std
                                     std::string results_table /* = ROVPP_RESULTS_TABLE */,
                                     std::string inverse_results_table /* = INVERSE_RESULTS_TABLE */, 
                                     std::string depref_results_table /* = DEPREF_RESULTS_TABLE */,
+                                    std::string full_path_results_table /* = FULL_PATH_RESULTS_TABLE */,
                                     std::string tracked_ases_table /* = TRACKED_ASES_TABLE */,
                                     std::string simulation_table /* = ROVPP_SIMULATION_TABLE */,
                                     int exclude_as_number /* = -1 */,
                                     std::string config_section /* = "bgp" */)
-    : SQLQuerier(announcement_table, results_table, inverse_results_table, depref_results_table, exclude_as_number, config_section) {
+    : SQLQuerier<>(announcement_table, results_table, inverse_results_table, depref_results_table, full_path_results_table, exclude_as_number, config_section) {
     
     this->policy_tables = policy_tables;
     this->results_table = results_table;
@@ -116,7 +117,7 @@ void ROVppSQLQuerier::create_results_tbl(){
     std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + results_table + " (\
     asn bigint,prefix cidr, origin bigint, received_from_asn \
     bigint, time bigint, alternate_as bigint, opt_flag int); GRANT ALL ON TABLE " + results_table + " TO bgp_user;");
-    std::cout << "Creating " << results_table << " table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating " << results_table << " table...";
     execute(sql, false);
 }
 
@@ -138,10 +139,10 @@ void ROVppSQLQuerier::copy_blackhole_list_to_db(std::string file_name) {
 void ROVppSQLQuerier::create_rovpp_blacklist_tbl() {
   // Drop the results table
   std::string sql = std::string("DROP TABLE IF EXISTS " ROVPP_BLACKHOLES_TABLE " ;");
-  std::cout << "Dropping " ROVPP_BLACKHOLES_TABLE " table..." << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Dropping " ROVPP_BLACKHOLES_TABLE " table...";
   execute(sql, false);
   // Create it again
   std::string sql2 = std::string("CREATE TABLE IF NOT EXISTS " ROVPP_BLACKHOLES_TABLE "(asn BIGINT, prefix CIDR, origin BIGINT, received_from_asn BIGINT, tstamp BIGINT)");
-  std::cout << "Creating " ROVPP_BLACKHOLES_TABLE " table..." << std::endl;
+  BOOST_LOG_TRIVIAL(info) << "Creating " ROVPP_BLACKHOLES_TABLE " table...";
   execute(sql2, false);
 }

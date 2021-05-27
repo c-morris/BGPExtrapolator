@@ -1,6 +1,6 @@
 #include "SQLQueriers/EZSQLQuerier.h" 
 
-EZSQLQuerier::EZSQLQuerier(std::string a, std::string r, std::string i, std::string d, std::vector<std::string> *pt, int n, std::string s) : SQLQuerier(a, r, i, d, n, s) {
+EZSQLQuerier::EZSQLQuerier(std::string a, std::string r, std::string i, std::string d, std::string f, std::vector<std::string> *pt, int n, std::string s) : SQLQuerier<>(a, r, i, d, f, n, s) {
    if (pt != NULL)
        this->policy_tables = *pt;
 }
@@ -23,10 +23,10 @@ pqxx::result EZSQLQuerier::select_policy_assignments(std::string const& policy_t
 void EZSQLQuerier::create_round_results_tbl(int i) {
     std::stringstream sql;
     sql << "CREATE UNLOGGED TABLE IF NOT EXISTS " << EZBGPSEC_ROUND_TABLE_BASE_NAME <<
-    i << " (asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint);" <<
+    i << " (asn bigint,prefix cidr, origin bigint, received_from_asn bigint, time bigint, prefix_id bigint);" <<
     "GRANT ALL ON TABLE " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << " TO bgp_user;";
 
-    std::cout << "Creating round results table..." << std::endl;
+    BOOST_LOG_TRIVIAL(info) << "Creating round " << i << " results table...";
     execute(sql.str(), false);
 }
 
@@ -36,5 +36,4 @@ void EZSQLQuerier::clear_round_results_from_db(int i) {
     sql << "DROP TABLE IF EXISTS " << EZBGPSEC_ROUND_TABLE_BASE_NAME << i << ";";
     execute(sql.str());
 }
-
 

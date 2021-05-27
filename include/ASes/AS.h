@@ -29,9 +29,10 @@
 #include "ASes/BaseAS.h"
 #include "Announcements/Announcement.h"
 
-class AS : public BaseAS<Announcement> {
+template <typename PrefixType = uint32_t>
+class AS : public BaseAS<Announcement<PrefixType>, PrefixType> {
 public:
-    AS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<>, uint32_t>, std::set<uint32_t>*> *inverse_results);
+    AS(uint32_t asn, bool store_depref_results, std::map<std::pair<Prefix<PrefixType>, uint32_t>, std::set<uint32_t>*> *inverse_results);
     AS(uint32_t asn, bool store_depref_results);
     AS(uint32_t asn);
     AS();

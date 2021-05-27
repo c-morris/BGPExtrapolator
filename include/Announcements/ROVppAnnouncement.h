@@ -21,16 +21,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef ROV_ANNOUNCEMENT_H
-#define ROV_ANNOUNCEMENT_H
+#ifndef ROVPP_ANNOUNCEMENT_H
+#define ROVPP_ANNOUNCEMENT_H
 
 #include "Announcements/Announcement.h"
 
-class ROVppAnnouncement : public Announcement {
+class ROVppAnnouncement : public Announcement<> {
 public:
     uint32_t alt;               // flag meaning a "hole" along the path
     uint32_t tiebreak_override; // ensure tiebreaks propagate where they should
     uint32_t sent_to_asn;       // ASN this ann is being sent to
+    uint32_t priority;          // Announcement uses the Priority struct now, but the ROVpp version still uses uint32 instead
 
     bool withdraw;              // if this is a withdrawn route
     std::vector<uint32_t> as_path; // stores full as path

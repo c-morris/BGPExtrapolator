@@ -11,7 +11,7 @@ EZAS* EZASGraph::createNew(uint32_t asn) {
     return new EZAS(asn);
 }
 
-void EZASGraph::process(SQLQuerier* querier) {
+void EZASGraph::process(SQLQuerier<>* querier) {
     //We definately want stubs/edge ASes
     tarjan();
     combine_components();
