@@ -501,11 +501,6 @@ void ROVppAS::process_announcements(bool ran) {
                         } else {
                             // Make preventive announcement
                             Announcement preventive_ann = best_alternative_ann;
-                            // Debugging Statements (Delete when done debugging)
-                            // ---------------------------------------------------
-                            bool seven_o_one = bad_neighbors->find(701) != bad_neighbors->end();
-                            bool one_two_nine_nine = bad_neighbors->find(1299) != bad_neighbors->end();
-                            // ---------------------------------------------------
                             preventive_ann.prefix = ann.prefix;
                             preventive_ann.alt = best_alternative_ann.received_from_asn;
                             if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
@@ -694,4 +689,3 @@ std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
   }
   return os;
 }
-
