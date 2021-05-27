@@ -51,8 +51,8 @@ public:
     bool withdraw;              // if this is a withdrawn route
     std::vector<uint32_t> as_path; // stores full as path
     uint32_t roa_validity;       // Inidicates the validity of the announcement (valid = 1; unknown = 2; invalid = 3; both = 4)
-
-    /** Default constructor
+	
+     /** Default constructor
      */
     Announcement(uint32_t aorigin, 
                  uint32_t aprefix, 
