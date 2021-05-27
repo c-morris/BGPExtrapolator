@@ -3,6 +3,9 @@
 /******************** Iterator ********************/
 template <class AnnouncementType, typename PrefixType>
 typename PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator& PrefixAnnouncementMap<AnnouncementType, PrefixType>::Iterator::operator++() {
+    if (index == parent->announcements.size()) {
+        return *this;
+    }
     index++;
     while(index < parent->announcements.size()) {
         if(parent->announcements.at(index).tstamp != -1) {

@@ -285,7 +285,13 @@ std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType
             break;
         }
         as_path_vect.push_back(ann.received_from_asn);
-        ann = *graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix);
+        auto ann_search = graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix);
+        if (ann_search != graph->ases->find(ann.received_from_asn)->second->all_anns->end()) {
+            ann = *ann_search;
+        } else {
+            BOOST_LOG_TRIVIAL(warning) << "Terminating AS_PATH at " << ann.received_from_asn << " instead of expected origin " << ann.origin << " for prefix " << ann.prefix.to_cidr();
+            break;
+        }
     }
     // Stringify
     as_path << '{' << asn << ',';
