@@ -480,6 +480,13 @@ void ROVppAS::process_announcements(bool ran) {
                     // Also make a preventive announcement if there is an alt route.
                     if (pass_rovpp(ann)) {
                         passed_rov->insert(ann);
+                        // For passed_rov announcements, we need to add a flag that indicates if the 
+                        // attacking announcement was seen from the neighbor that shared this 
+                        // passed_rov announcement. In which ROVppv3 would not select such announcement
+                        // as an alternative route to issue a preventive announcement with.
+                        if (bad_neighbors->find(ann.received_from_asn) != bad_neighbors->end()) {
+                            ann.alt = ATTACKER_ON_ROUTE_FLAG;
+                        }
                         process_announcement(ann, false);
                     } else {
                         // If it is from a customer, silently drop it
@@ -552,7 +559,13 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
                 (ann.prefix.contained_in_or_equal_to(candidate_ann.prefix) || candidate_ann.prefix.contained_in_or_equal_to(ann.prefix))) {
                 return ann;
            } else {
-                candidates.push_back(candidate_ann);
+                if (policy == ROVPPAS_TYPE_ROVPPBP_LITE) {
+                    if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
+                        candidates.push_back(candidate_ann);
+                    }
+                } else {
+                    candidates.push_back(candidate_ann);
+                }
            }
        }
        // Since we preocessed all the candidates above, picking the first on the list here is appropriate
@@ -571,7 +584,13 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
     else { 
         for (auto candidate_ann : *ribs_in) {
             if (pass_rovpp(candidate_ann) && !candidate_ann.withdraw) {
-              candidates.push_back(candidate_ann);
+                if (policy == ROVPPAS_TYPE_ROVPPBP) {
+                    if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
+                        candidates.push_back(candidate_ann);
+                    }
+                } else {
+                    candidates.push_back(candidate_ann);
+                }
             } else {
               bad_ases_tmp.insert(candidate_ann);
             }
@@ -670,4 +689,3 @@ std::ostream& ROVppAS::stream_blackholes(std:: ostream &os) {
   }
   return os;
 }
-
