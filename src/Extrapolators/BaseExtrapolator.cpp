@@ -215,7 +215,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
     if (full_path_asns != NULL) {
         for (uint32_t asn : *full_path_asns){
             if (counter++ % num_threads == 0) {
-                this->save_results_at_asn(asn);
+                this->save_results_at_asn(asn, &querier_copy);
             }
         }
     }
@@ -250,7 +250,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_at_asn(uint32_t asn){
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_at_asn(uint32_t asn, SQLQuerierType *querier_copy){
     auto search = graph->ases->find(asn); 
     if (search == graph->ases->end()) {
         // If the asn does not exist, return
@@ -265,7 +265,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
         outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ',' << a.prefix.id << ",\"" << this->stream_as_path(a, asn) << "\"\n";
     }
     outfile.close();
-    this->querier->copy_single_results_to_db(file_name);
+    querier_copy->copy_single_results_to_db(file_name);
     std::remove(file_name.c_str());
 }
 

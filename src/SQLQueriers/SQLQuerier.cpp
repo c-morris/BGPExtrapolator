@@ -113,6 +113,7 @@ void SQLQuerier<PrefixType>::read_config() {
         }
     } else {
         BOOST_LOG_TRIVIAL(error) << "Error loading config file \"" << config_path << "\"";
+        exit(2);
     }
 }
 
@@ -138,6 +139,7 @@ void SQLQuerier<PrefixType>::open_connection() {
         }
     } catch (const std::exception &e) {
         BOOST_LOG_TRIVIAL(error) << e.what();
+        exit(5432);
     }
 }
 
@@ -168,6 +170,7 @@ pqxx::result SQLQuerier<PrefixType>::execute(std::string sql, bool insert) {
             return R;
         } catch(const std::exception &e) {
             BOOST_LOG_TRIVIAL(error) << e.what();
+            exit(5432);
         }
     } else {
         try {
@@ -176,6 +179,7 @@ pqxx::result SQLQuerier<PrefixType>::execute(std::string sql, bool insert) {
             return R;
         } catch(const std::exception &e) {
             BOOST_LOG_TRIVIAL(error) << e.what();
+            exit(5432);
         }
     }
     return R;

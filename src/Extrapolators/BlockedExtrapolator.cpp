@@ -9,7 +9,7 @@ BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixT
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType>
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::init() {
-        // Make tmp directory if it does not exist
+    // Make tmp directory if it does not exist
     DIR* dir = opendir("/dev/shm/bgp");
     if(!dir){
         mkdir("/dev/shm/bgp", 0777); 
@@ -133,7 +133,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         // Check for empty block
         auto bsize = ann_block.size();
         if (bsize == 0) {
-            //BOOST_LOG_TRIVIAL(info) << "No announcements with this block id...";
+            BOOST_LOG_TRIVIAL(debug) << "No announcements with this block id...";
             continue;
         }
         announcement_count += bsize;
@@ -455,6 +455,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         if (this->graph->ases->find(*it) == this->graph->ases->end()) {
             continue;
         }
+        // If ASN prepended, continue
+        if (i != 1 && *it == *(it-1)) {
+            continue;
+        }
         // Translate ASN to it's supernode
         uint32_t asn_on_path = this->graph->translate_asn(*it);
         // Find the current AS on the path
@@ -462,6 +466,12 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 
         auto second_announcement_search = as_on_path->all_anns->find(prefix);
 
+        // If this is from monitor don't replace it
+        if (second_announcement_search != as_on_path->all_anns->end()) {
+            if (second_announcement_search->from_monitor) {
+                continue;
+            }
+        }
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
@@ -479,7 +489,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             } else {
                 // If this is a stub AS that was removed from the graph, the path is not broken
                 auto search = this->graph->stubs_to_parents->find(*(it - 1));
-                if (search != this->graph->stubs_to_parents->end() || search->second != *it) {
+                if (search != this->graph->stubs_to_parents->end() && search->second != *it) {
                     broken_path = true;
                 } else {
                     received_from = AS_REL_CUSTOMER;
@@ -500,9 +510,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 // Skip it
                 continue;
             } else if (timestamp == second_announcement.tstamp) {
-                // Position of previous AS on path
-                uint32_t prevPos = path_l - i + 1;
-
                 // Position of the current AS on path
                 uint32_t currPos = path_l - i;
 
@@ -532,10 +539,13 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                     continue;
                 } else {
                     // Prepending check, use original priority
-                    if (prevPos < path_l && prevPos >= 0 && as_path->at(prevPos) == as_on_path->asn) {
+                    if (it - 1 != as_path->rend() && *it == *(it-1)) {
                         continue;
                     }
-                    as_on_path->delete_ann(prefix);
+                    if (!broken_path) {
+                        // Only delete if is going to be replaced
+                        as_on_path->delete_ann(prefix);
+                    }
                 }
             } else {
                 // Log announcements that arent handled by sorting
@@ -546,7 +556,10 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 //     << ", origin: " << as_path->at(path_l-1);
 
                 // Delete worse MRT announcement, proceed with seeding
-                as_on_path->delete_ann(prefix);
+                if (!broken_path) {
+                    // Only delete if is going to be replaced
+                    as_on_path->delete_ann(prefix);
+                }
             }
         }
         
@@ -559,6 +572,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             // Otherwise received it from previous AS
             received_from_asn = *(it-1);
         }
+
         // No break in path so send the announcement
         if (!broken_path) {
             AnnouncementType ann = AnnouncementType(*as_path->rbegin(),
@@ -581,7 +595,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             // Count the broken path
             g_broken_path++;
             // Log the part of path where break takes place
-            BOOST_LOG_TRIVIAL(warning) << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
+            BOOST_LOG_TRIVIAL(debug) << "Broken Path #" << g_broken_path << ", between these two ASes: " << *(it - 1) << ", " << *it;
         }
     }
 }
