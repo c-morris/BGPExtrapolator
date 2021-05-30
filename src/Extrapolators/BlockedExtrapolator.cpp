@@ -433,14 +433,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
     }
     
     uint32_t i = 0;
-    uint32_t path_l = as_path->size();
-    
-    // Announcement at origin for checking along the path
-    // AnnouncementType ann_to_check_for(as_path->at(path_l-1),
-    //                                     prefix.addr,
-    //                                     prefix.netmask,
-    //                                     0,
-    //                                     timestamp); 
     
     // Iterate through path starting at the origin
     for (auto it = as_path->rbegin(); it != as_path->rend(); ++it) {
@@ -466,12 +458,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 
         auto second_announcement_search = as_on_path->all_anns->find(prefix);
 
-        // If this is from monitor don't replace it
-        if (second_announcement_search != as_on_path->all_anns->end()) {
-            if (second_announcement_search->from_monitor) {
-                continue;
-            }
-        }
         // If ASes in the path aren't neighbors (data is out of sync)
         bool broken_path = false;
 
@@ -497,7 +483,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             }
         }
 
-        // This is how priority is calculated
+        // Set priority
         Priority priority;
         priority.path_length = i - 1;
         priority.relationship = received_from;
@@ -510,9 +496,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 // Skip it
                 continue;
             } else if (timestamp == second_announcement.tstamp) {
-                // Position of the current AS on path
-                uint32_t currPos = path_l - i;
-
                 // Tie breaker for equal timestamp
                 bool keep_first = true;
                 // Random tiebreak if enabled
@@ -521,18 +504,13 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
 
                 // Skip announcement if there exists one with a higher priority
-                ASType *current_as = this->graph->ases->find(as_path->at(currPos))->second;
+                ASType *current_as = this->graph->ases->find(*it)->second;
                 if (current_as->all_anns->find(prefix)->priority > priority) {
                     continue;
                 // If the new announcement has a higher priority, change keep_first to false to make sure we save it
                 } else if (current_as->all_anns->find(prefix)->priority < priority) {
                     keep_first = false;
                 }
-
-                // Log annoucements with equal timestamps 
-                // Logger::getInstance().log("Equal_Timestamp") << "Equal Timestamp on announcements. Prefix: " << prefix.to_cidr() << 
-                //     ", rand value: " << keep_first << ", tstamp on announcements: " << timestamp << 
-                //     ", origin on ann_to_check_for: " << as_path->at(path_l-1) << ", origin on stored announcement: " << second_announcement.origin;
 
                 // First come, first saved if random is disabled
                 if (keep_first) {
@@ -549,11 +527,13 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 }
             } else {
                 // Log announcements that arent handled by sorting
-                // Logger::getInstance().log("Unsorted_Announcements") 
-                //     << "This announcement is being deleted and is not handled by sorting." 
-                //     << " Prefix: " << prefix.to_cidr() 
-                //     << ", tstamp: " << timestamp 
-                //     << ", origin: " << as_path->at(path_l-1);
+                //BOOST_LOG_TRIVIAL(debug) 
+                //std::cerr
+                //    << "This announcement is being deleted and is not handled by sorting." 
+                //    << " Prefix: " << prefix.to_cidr() 
+                //    << ", tstamp: " << timestamp 
+                //    << ", origin: " << *as_path->rbegin()
+                //    << ", broken_path: " << broken_path;
 
                 // Delete worse MRT announcement, proceed with seeding
                 if (!broken_path) {
@@ -628,16 +608,15 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
 
     // Only propagate to peers from multihomed
     if (mh_mode == 3) {
-            // Check if AS is multihomed
-            if (source_as->customers->empty()) {
-                if (to_peers) {
-                    to_providers = false;
-                    to_customers = false;
-                } else {
-                    return;
-                }
-                
+        // Check if AS is multihomed
+        if (source_as->customers->empty()) {
+            if (to_peers) {
+                to_providers = false;
+                to_customers = false;
+            } else {
+                return;
             }
+        }
     }
 
     // If we are sending to providers
@@ -686,14 +665,6 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
                 temp.priority = priority;
                 temp.from_monitor = false;
                 temp.received_from_asn = asn;
-
-                // Push announcement with new priority to ann vector
-                // anns_to_providers.push_back(AnnouncementType(ann.second.origin,
-                //                                          ann.second.prefix.addr,
-                //                                          ann.second.prefix.netmask,
-                //                                          priority,
-                //                                          asn,
-                //                                          ann.second.tstamp));
 
                 anns_to_providers.push_back(temp);
             }
