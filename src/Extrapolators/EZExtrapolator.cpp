@@ -148,7 +148,7 @@ void EZExtrapolator::perform_propagation() {
  * In addition, seeded announcement such as these don't need path propagation since they should not (very unlikely) have an attacker in the path...
  * Attackers are the only announcements that we need paths from, thus we don't need to build up the path as we seed the path
  */
-void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp /* = 0 */, uint32_t prefix_id) {
+void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp /* = 0 */) {
     //BlockedExtrapolator::give_ann_to_as_path(as_path, prefix, timestamp);
     
     uint32_t path_origin_asn = as_path->at(as_path->size() - 1);
@@ -164,7 +164,6 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
             return;
         
         EZAS* as = as_search->second;
-        BOOST_LOG_TRIVIAL(info) << "GIVING NON ATTACKER ANN\n";
 
         Priority pr;
         pr.relationship = 3;
@@ -176,7 +175,6 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         as->process_announcement(announcement, this->random_tiebraking);
     } else {
     // Attacker
-        BOOST_LOG_TRIVIAL(info) << "GIVING ATTACKER ANN\n";
         //uint32_t victim2_asn = result->second.second;
 
         //Check if we have a prefix set to attack already, don't announce attack
