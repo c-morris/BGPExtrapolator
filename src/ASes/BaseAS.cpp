@@ -146,6 +146,10 @@ void BaseAS<AnnouncementType, PrefixType>::process_announcement(AnnouncementType
         //             << ann.tstamp << ", timestamp on stored announcement: " << search->tstamp
         //             << ", origin on processing announcement: " << ann.origin << ", origin on stored announcement: " << search->origin;
 
+        // If this is from monitor don't replace it
+        if (search->from_monitor) {
+            return;
+        }
         // Tiebraker for equal priority between old and new ann
         if (ann.priority == search->priority) { 
             // Tiebreaker
