@@ -1708,7 +1708,7 @@ bool test_save_results_at_asn() {
 
     e.querier->clear_full_path_from_db();
     e.querier->create_full_path_results_tbl();
-    e.save_results_at_asn(5);
+    e.save_results_at_asn(5, e.querier);
 
     // Get extrapolation results
     pqxx::result r = e.querier->select_from_table(full_path_results_table);
