@@ -54,7 +54,7 @@ EZExtrapolator::~EZExtrapolator() {
 
 void EZExtrapolator::init() {
     BlockedExtrapolator::init();
-    for (unsigned int i = 1; i <= num_rounds; i++) {
+    for (unsigned int i = 0; i <= num_rounds; i++) {
         this->querier->clear_round_results_from_db(i);
         this->querier->create_round_results_tbl(i);
     }
@@ -110,9 +110,14 @@ void EZExtrapolator::perform_propagation() {
     delete cur_prefix;
 
     // Propagate "round zero" so each AS knows what it can see with regular BGP
-    BOOST_LOG_TRIVIAL(info) << "Pre-populating prev_anns..." << round;
+    round = 0;
+    BOOST_LOG_TRIVIAL(info) << "Pre-populating prev_anns...";
+    for (auto &as : *this->graph->ases) {
+        as.second->community_detection = communityDetection;
+    }
     this->extrapolate(prefix_blocks, subnet_blocks);
     graph->clear_announcements();
+    round = 1;
     
     // Propagate the graph, but after each round disconnect the attacker from the neighbor on the path
     for(round = 1; round <= num_rounds; round++) {
@@ -159,6 +164,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
             return;
         
         EZAS* as = as_search->second;
+        BOOST_LOG_TRIVIAL(info) << "GIVING NON ATTACKER ANN\n";
 
         Priority pr;
         pr.relationship = 3;
@@ -170,6 +176,7 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         as->process_announcement(announcement, this->random_tiebraking);
     } else {
     // Attacker
+        BOOST_LOG_TRIVIAL(info) << "GIVING ATTACKER ANN\n";
         //uint32_t victim2_asn = result->second.second;
 
         //Check if we have a prefix set to attack already, don't announce attack

@@ -99,7 +99,7 @@ public:
      * This is where the attacker announcement is sent out. All paths are seeded and if an origin of the path
      *      is to be attacked, then have the attacker process a malicous announcement and send it out (muahahaa).
      */
-    void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0, uint32_t prefix_id = 0);
+    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0, uint32_t prefix_id = 0);
 
     /**
      * Return a never-before-seen ASN
