@@ -49,13 +49,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
     pqxx::result r;
     if (select_block_id) {
         BOOST_LOG_TRIVIAL(info) << "Calculating max block_prefix_id";
-        r = this->querier->select_max_block_prefix_id();
+        //r = this->querier->select_max_block_prefix_id();
     } else {
         // If creating blocks manually, use prefix_id instead
         BOOST_LOG_TRIVIAL(info) << "Calculating max prefix_id";
         r = this->querier->select_max_prefix_id();
     }
-    this->graph->max_block_prefix_id = r[0][0].as<uint32_t>() + 1;  
+    //this->graph->max_block_prefix_id = r[0][0].as<uint32_t>() + 1;  
+    this->graph->max_block_prefix_id = 400;  
 
     // Generate the graph and populate the stubs & supernode tables
     this->graph->create_graph_from_db(this->querier);
@@ -198,8 +199,14 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
             for (int i = 0; i < this->max_workers; i++) {
                 // Start the worker threads
                 propagation_threads.push_back(std::thread(&BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_up, this, i));
+            }
+            for (size_t i = 0; i < propagation_threads.size(); i++) {
+                propagation_threads[i].join();
+            }
+            propagation_threads.clear()
+            for (int i = 0; i < this->max_workers; i++) {
+                // Start the worker threads
                 propagation_threads.push_back(std::thread(&BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_down, this, i));
-                std::cerr << "spawning prop thread with id " << i << std::endl;
             }
             for (size_t i = 0; i < propagation_threads.size(); i++) {
                 propagation_threads[i].join();
