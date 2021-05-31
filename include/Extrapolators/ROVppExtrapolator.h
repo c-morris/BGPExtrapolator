@@ -129,7 +129,8 @@ struct ROVppExtrapolator: public BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph,
     void send_all_announcements(uint32_t asn,
                                 bool to_providers = false,
                                 bool to_peers = false,
-                                bool to_customers = false);
+                                bool to_customers = false,
+                                int thread_num = 0);
 
     /** Saves the results of the extrapolation. ROVpp version uses the ROVppQuerier.
     */

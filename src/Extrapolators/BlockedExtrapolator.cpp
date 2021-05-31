@@ -193,8 +193,21 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         }
         // Propagate for this subnet
         BOOST_LOG_TRIVIAL(info) << "Propagating...";
-        this->propagate_up();
-        this->propagate_down();
+        std::vector<std::thread> propagation_threads;
+        if (this->max_workers > 1) {
+            for (int i = 0; i < this->max_workers; i++) {
+                // Start the worker threads
+                propagation_threads.push_back(std::thread(&BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_up, this, i));
+                propagation_threads.push_back(std::thread(&BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_down, this, i));
+                std::cerr << "spawning prop thread with id " << i << std::endl;
+            }
+            for (size_t i = 0; i < propagation_threads.size(); i++) {
+                propagation_threads[i].join();
+            }
+        } else {
+            this->propagate_up();
+            this->propagate_down();
+        }
 
         // Make sure we finish saving to the database before running save_results() on the next prefix
         if (save_res_thread.joinable()) {
@@ -584,7 +597,8 @@ template <class SQLQuerierType, class GraphType, class AnnouncementType, class A
 void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, PrefixType>::send_all_announcements(uint32_t asn, 
                                                                                                         bool to_providers, 
                                                                                                         bool to_peers, 
-                                                                                                        bool to_customers) {
+                                                                                                        bool to_customers,
+                                                                                                        int thread_num) {
     // Get the AS that is sending it's announcements
     auto *source_as = this->graph->ases->find(asn)->second;
 
@@ -624,7 +638,9 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         // Assemble the list of announcements to send to providers
         std::vector<AnnouncementType> anns_to_providers;
         for (auto &ann : *source_as->all_anns) {
-            if(!source_as->all_anns->filled(ann))
+            if (!source_as->all_anns->filled(ann))
+                continue;
+            if ((thread_num + ann.prefix.id) % this->max_workers != 0)
                 continue;
 
             // Do not propagate any announcements from peers/providers
@@ -673,7 +689,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         for (uint32_t provider_asn : *source_as->providers) {
             // For each provider, give the vector of announcements
             auto *recving_as = this->graph->ases->find(provider_asn)->second;
-            recving_as->receive_announcements(anns_to_providers);
+            recving_as->receive_announcements(anns_to_providers, this->random_tiebraking);
         }
     }
 
@@ -683,6 +699,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         std::vector<AnnouncementType> anns_to_peers;
         for (auto &ann : *source_as->all_anns) {
             if(!source_as->all_anns->filled(ann))
+                continue;
+            if ((thread_num + ann.prefix.id) % this->max_workers != 0)
                 continue;
 
             // Do not propagate any announcements from peers/providers
@@ -709,7 +727,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         for (uint32_t peer_asn : *source_as->peers) {
             // For each provider, give the vector of announcements
             auto *recving_as = this->graph->ases->find(peer_asn)->second;
-            recving_as->receive_announcements(anns_to_peers);
+            recving_as->receive_announcements(anns_to_peers, this->random_tiebraking);
         }
     }
 
@@ -719,6 +737,8 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         std::vector<AnnouncementType> anns_to_customers;
         for (auto &ann : *source_as->all_anns) {
             if(!source_as->all_anns->filled(ann))
+                continue;
+            if ((thread_num + ann.prefix.id) % this->max_workers != 0)
                 continue;
 
             // Propagate all announcements to customers
@@ -741,7 +761,7 @@ void BlockedExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType, Pr
         for (uint32_t customer_asn : *source_as->customers) {
             // For each customer, give the vector of announcements
             auto *recving_as = this->graph->ases->find(customer_asn)->second;
-            recving_as->receive_announcements(anns_to_customers);
+            recving_as->receive_announcements(anns_to_customers, this->random_tiebraking);
         }
     }
 }

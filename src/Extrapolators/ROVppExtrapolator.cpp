@@ -392,7 +392,8 @@ bool ROVppExtrapolator::is_filtered(ROVppAS *rovpp_as, ROVppAnnouncement const& 
 void ROVppExtrapolator::send_all_announcements(uint32_t asn, 
                                                bool to_providers, 
                                                bool to_peers, 
-                                               bool to_customers) {
+                                               bool to_customers,
+                                               int thread_num) {
     std::vector<ROVppAnnouncement> anns_to_providers;
     std::vector<ROVppAnnouncement> anns_to_peers;
     std::vector<ROVppAnnouncement> anns_to_customers;

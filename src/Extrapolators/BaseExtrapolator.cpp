@@ -81,7 +81,8 @@ bool BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::find
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_up() {
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_up(int thread_num) {
+    sem_wait(&worker_thread_count);
     size_t levels = graph->ases_by_rank->size();
     // Propagate to providers
     for (size_t level = 0; level < levels; level++) {
@@ -90,7 +91,7 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(asn, true, false, false);
+                send_all_announcements(asn, true, false, false, thread_num);
             }
         }
     }
@@ -104,15 +105,18 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(asn, false, true, false);
+                send_all_announcements(asn, false, true, false, thread_num);
             }
         }
     }
+    sem_post(&worker_thread_count);
 }
 
-
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_down() {
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::propagate_down(int thread_num) {
+    // Decrement semaphore to limit the number of concurrent threads
+    sem_wait(&worker_thread_count);
+
     size_t levels = graph->ases_by_rank->size();
     for (size_t level = levels-1; level-- > 0;) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
@@ -120,10 +124,11 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
             search->second->process_announcements(random_tiebraking);
             bool is_empty = search->second->all_anns->empty();
             if (!is_empty) {
-                send_all_announcements(asn, false, false, true);
+                send_all_announcements(asn, false, false, true, thread_num);
             }
         }
     }
+    sem_post(&worker_thread_count);
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -222,7 +227,6 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save
 
     querier_copy.close_connection();
     sem_post(&worker_thread_count);
-
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>

@@ -154,7 +154,7 @@ public:
      *
      * @param announcements The announcements to be pushed onto the incoming_announcements vector.
      */
-    virtual void receive_announcements(std::vector<AnnouncementType> &announcements);
+    virtual void receive_announcements(std::vector<AnnouncementType> &announcements, bool ran=true);
 
     /** Processes a single announcement, adding it to the ASes set of announcements if appropriate.
      *

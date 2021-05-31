@@ -205,11 +205,11 @@ public:
 
     /** Propagate announcements from customers to peers and providers ASes.
     */
-    virtual void propagate_up();
+    virtual void propagate_up(int thread_num=0);
 
     /** Send "best" announces from providers to customer ASes. 
     */
-    virtual void propagate_down();
+    virtual void propagate_down(int thread_num=0);
 
     
     /** Send all announcements kept by an AS to its neighbors. 
@@ -224,7 +224,8 @@ public:
     virtual void send_all_announcements(uint32_t asn, 
                                         bool to_providers = false, 
                                         bool to_peers = false, 
-                                        bool to_customers = false) = 0;
+                                        bool to_customers = false,
+                                        int thread_num = 0) = 0;
 
     /** Save the results of a single iteration to a in-memory
      *

@@ -100,7 +100,7 @@ public:
      * @param to_peers Send to peers
      * @param to_customers Send to customers
      */
-    virtual void send_all_announcements(uint32_t asn, bool to_providers = false, bool to_peers = false, bool to_customers = false);
+    virtual void send_all_announcements(uint32_t asn, bool to_providers = false, bool to_peers = false, bool to_customers = false, int thread_num = 0);
 };
 
 #endif

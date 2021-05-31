@@ -102,10 +102,9 @@ void BaseAS<AnnouncementType, PrefixType>::swap_inverse_result(std::pair<Prefix<
 }
 
 template <class AnnouncementType, typename PrefixType>
-void BaseAS<AnnouncementType, PrefixType>::receive_announcements(std::vector<AnnouncementType> &announcements) {
+void BaseAS<AnnouncementType, PrefixType>::receive_announcements(std::vector<AnnouncementType> &announcements, bool ran) {
     for (AnnouncementType &ann : announcements) {
-        // push_back makes a copy of the announcement
-        incoming_announcements->push_back(ann);
+        process_announcement(ann, ran);
     }
 }
 

@@ -118,6 +118,7 @@ bool test_give_ann_to_as_path() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -229,6 +230,7 @@ bool test_give_ann_to_as_path_origin_only() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -293,6 +295,7 @@ bool test_propagate_up_no_multihomed() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     
@@ -353,6 +356,7 @@ bool test_propagate_up() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -444,6 +448,7 @@ bool test_propagate_up_multihomed_standard() {
     e.graph->add_relationship(3, 5, AS_REL_PEER);
     e.graph->add_relationship(5, 3, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -519,6 +524,7 @@ bool test_propagate_up_multihomed_peer_mode() {
     e.graph->add_relationship(3, 5, AS_REL_PEER);
     e.graph->add_relationship(5, 3, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -595,6 +601,7 @@ bool test_propagate_down_no_multihomed() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -670,6 +677,7 @@ bool test_propagate_down_no_multihomed2() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -734,6 +742,7 @@ bool test_propagate_down() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -807,6 +816,7 @@ bool test_propagate_down2() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -864,6 +874,7 @@ bool test_propagate_down_multihomed_standard() {
     e.graph->add_relationship(3, 5, AS_REL_PEER);
     e.graph->add_relationship(5, 3, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -915,6 +926,7 @@ bool test_send_all_announcements() {
     e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
     e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -925,9 +937,9 @@ bool test_send_all_announcements() {
 
     // Check to providers
     e.send_all_announcements(4, true, false, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to providers" << std::endl;
         return false;
@@ -935,9 +947,9 @@ bool test_send_all_announcements() {
     
     // Check to peers
     e.send_all_announcements(4, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to peers" << std::endl;
         return false;
@@ -945,9 +957,9 @@ bool test_send_all_announcements() {
 
     // Check to customers
     e.send_all_announcements(4, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to customers" << std::endl;
         return false;
@@ -989,6 +1001,7 @@ bool test_send_all_announcements2() {
     e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
     e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1006,9 +1019,9 @@ bool test_send_all_announcements2() {
     // Check to providers
     e.send_all_announcements(4, true, false, false);
 
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to providers" << std::endl;
         return false;
@@ -1016,9 +1029,9 @@ bool test_send_all_announcements2() {
     
     // Check to peers
     e.send_all_announcements(4, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to peers" << std::endl;
         return false;
@@ -1026,9 +1039,9 @@ bool test_send_all_announcements2() {
 
     // Check to customers
     e.send_all_announcements(4, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to customers" << std::endl;
         return false;
@@ -1070,6 +1083,7 @@ bool test_send_all_announcements3() {
     e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
     e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1082,9 +1096,9 @@ bool test_send_all_announcements3() {
     // Check to providers
     e.send_all_announcements(4, true, false, false);
 
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to providers" << std::endl;
         return false;
@@ -1092,9 +1106,9 @@ bool test_send_all_announcements3() {
     
     // Check to peers
     e.send_all_announcements(4, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to peers" << std::endl;
         return false;
@@ -1102,9 +1116,9 @@ bool test_send_all_announcements3() {
 
     // Check to customers
     e.send_all_announcements(4, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1)) {
         std::cerr << "Err sending to customers" << std::endl;
         return false;
@@ -1153,6 +1167,7 @@ bool test_send_all_announcements_no_multihomed() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1164,7 +1179,7 @@ bool test_send_all_announcements_no_multihomed() {
 
     // Check to providers
     e.send_all_announcements(2, true, false, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
@@ -1177,11 +1192,11 @@ bool test_send_all_announcements_no_multihomed() {
     
     // Check to peers
     e.send_all_announcements(2, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to peers" << std::endl;
@@ -1190,11 +1205,11 @@ bool test_send_all_announcements_no_multihomed() {
 
     // Check to customers
     e.send_all_announcements(2, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
@@ -1247,6 +1262,7 @@ bool test_send_all_announcements_multihomed_standard1() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1258,7 +1274,7 @@ bool test_send_all_announcements_multihomed_standard1() {
 
     // Check to providers
     e.send_all_announcements(2, true, false, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
@@ -1271,9 +1287,9 @@ bool test_send_all_announcements_multihomed_standard1() {
     
     // Check to peers
     e.send_all_announcements(2, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
           e.graph->ases->find(5)->second->all_anns->size() == 0 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
@@ -1284,11 +1300,11 @@ bool test_send_all_announcements_multihomed_standard1() {
 
     // Check to customers
     e.send_all_announcements(2, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
@@ -1342,6 +1358,7 @@ bool test_send_all_announcements_multihomed_standard2() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1427,6 +1444,7 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1438,7 +1456,7 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
 
     // Check to providers
     e.send_all_announcements(2, true, false, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
           e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
@@ -1451,11 +1469,11 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
     
     // Check to peers
     e.send_all_announcements(2, false, true, false);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to peers" << std::endl;
@@ -1464,11 +1482,11 @@ bool test_send_all_announcements_multihomed_peer_mode1() {
 
     // Check to customers
     e.send_all_announcements(2, false, false, true);
-    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
           e.graph->ases->find(4)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
           e.graph->ases->find(6)->second->all_anns->size() == 0 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
@@ -1521,6 +1539,7 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1550,7 +1569,7 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
           e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 0 &&
           e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(6)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 1 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to peers" << std::endl;
         return false;
@@ -1563,7 +1582,7 @@ bool test_send_all_announcements_multihomed_peer_mode2() {
           e.graph->ases->find(3)->second->all_anns->size() == 0 &&
           e.graph->ases->find(4)->second->all_anns->size() == 0 &&
           e.graph->ases->find(5)->second->all_anns->size() == 1 &&
-          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 1 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
         std::cerr << "Err sending to customers" << std::endl;
         return false;
@@ -1610,6 +1629,7 @@ bool test_save_results_parallel() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -1695,6 +1715,7 @@ bool test_save_results_at_asn() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
@@ -1758,6 +1779,7 @@ bool test_prepending_priority_back() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1801,6 +1823,7 @@ bool test_prepending_priority_middle() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1844,6 +1867,7 @@ bool test_prepending_priority_beginning() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1887,6 +1911,7 @@ bool test_prepending_priority_back_existing_ann() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1936,6 +1961,7 @@ bool test_prepending_priority_middle_existing_ann() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -1985,6 +2011,7 @@ bool test_prepending_priority_beginning_existing_ann() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -2034,6 +2061,7 @@ bool test_prepending_priority_beginning_existing_ann2() {
     e.graph->add_relationship(3, 2, AS_REL_PEER);
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.max_workers = 1;
     e.graph->decide_ranks();
 
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
@@ -2143,6 +2171,7 @@ bool test_extrapolate_blocks() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>;
@@ -2231,6 +2260,7 @@ bool test_extrapolate_by_block_id() {
     e.graph->add_relationship(5, 6, AS_REL_PEER);
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
+    e.max_workers = 1;
     e.graph->decide_ranks();
     
     e.querier->clear_results_from_db();
