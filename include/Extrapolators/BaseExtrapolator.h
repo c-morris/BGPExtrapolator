@@ -244,8 +244,9 @@ public:
      * the announcements to their origin. These results are not inverted.
      *
      * @param asn AS to save results for
+     * @param querier_copy Copy of the SQLQuerier, for single thread can use this->querier
      */
-    virtual void save_results_at_asn(uint32_t asn);
+    virtual void save_results_at_asn(uint32_t asn, SQLQuerierType *querier_copy);
 
     /** Return the AS_PATH of an Announcement.
      *

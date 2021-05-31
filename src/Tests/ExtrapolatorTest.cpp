@@ -188,7 +188,7 @@ bool test_give_ann_to_as_path() {
     }
 
     if ((*as_2_search_2).tstamp != 1) {
-        std::cerr << "as_2_search_2 announcement has the wrong timestamp for tiebraking!" << std::endl;
+        std::cerr << "as_2_search_2 announcement has the wrong timestamp for tiebraking! Timestamp was " << (*as_2_search_2).tstamp << std::endl;
         return false;
     }
     
@@ -1708,7 +1708,7 @@ bool test_save_results_at_asn() {
 
     e.querier->clear_full_path_from_db();
     e.querier->create_full_path_results_tbl();
-    e.save_results_at_asn(5);
+    e.save_results_at_asn(5, e.querier);
 
     // Get extrapolation results
     pqxx::result r = e.querier->select_from_table(full_path_results_table);
