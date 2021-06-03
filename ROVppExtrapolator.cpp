@@ -325,13 +325,13 @@ bool ROVppExtrapolator::is_filtered(ROVppAS *rovpp_as, Announcement const& ann) 
     bool filter_ann = false;
     for (auto blackhole_ann : *rovpp_as->blackholes) {
         if (blackhole_ann.prefix == ann.prefix &&
-            blackhole_ann.origin == ann.origin) {
+            ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) {
             filter_ann = true;
         }
     }
     for (auto ann_pair : *rovpp_as->preventive_anns) {
         if (ann_pair.first.prefix == ann.prefix &&
-            ann_pair.first.origin == ann.origin) {
+            ann.origin == 64514) {
             filter_ann = true;
         }
     }
@@ -494,11 +494,17 @@ void ROVppExtrapolator::send_all_announcements(uint32_t asn,
             // if blackhole is created from an announcement which came from a 
             // customer. The if conditional is to filter these blackhole/preventive announcements.
             if (filtered) {
-                if (ann.second.priority > 200) {
+                if (!is_filtered(rovpp_as, ann.second)) {
                     // Base priority is 0 for provider to customers
                     copy.priority = get_priority(ann.second, i);
                     anns_to_customers.push_back(copy);
-                } // else don't share the ann
+                } else if (is_filtered(rovpp_as, ann.second) && ann.second.priority > 200) {
+                    // Don't Share
+                } else {
+                    // Base priority is 0 for provider to customers
+                    copy.priority = get_priority(ann.second, i);
+                    anns_to_customers.push_back(copy);
+                }
             } else {
                 // Base priority is 0 for provider to customers
                 copy.priority = get_priority(ann.second, i);
