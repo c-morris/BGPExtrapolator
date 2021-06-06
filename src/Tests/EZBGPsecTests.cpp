@@ -286,18 +286,16 @@ bool ezbgpsec_test_gen_ind_asn() {
     cd.add_hyper_edge(edge3);
     cd.add_hyper_edge(edge4);
 
-    std::set<uint32_t> s({30, 20, 21, 22, 23, 666, 11, 12, 1});
+    // std::set<uint32_t> s({30, 20, 21, 22, 23, 666, 11, 12, 1});
     auto ind_asn = cd.gen_ind_asn();
 
-    if (ind_asn[1]   == std::set<uint32_t>({1, 30, 666 })
-     && ind_asn[11]  == std::set<uint32_t>({11})
+    if (ind_asn[11]  == std::set<uint32_t>({11})
      && ind_asn[12]  == std::set<uint32_t>({12})
      && ind_asn[20]  == std::set<uint32_t>({20})
      && ind_asn[21]  == std::set<uint32_t>({21})
      && ind_asn[22]  == std::set<uint32_t>({22})
      && ind_asn[23]  == std::set<uint32_t>({23})
-     && ind_asn[30]  == std::set<uint32_t>({1, 30, 666 })
-     && ind_asn[666] == std::set<uint32_t>({1, 30, 666 })) {
+     && ind_asn[30]  == std::set<uint32_t>({1, 30, 666 })) {
         return true;
     } else {
         std::cerr << "ind_asn was not correct, output was\n";
@@ -548,6 +546,19 @@ bool ezbgpsec_test_cd_algorithm() {
         cd.add_hyper_edge(e);
 
     cd.CD_algorithm();
+
+    std::vector<std::vector<uint32_t>> blacklist = {{ 33, 44, 66 }, {33, 666, 44}, {33, 666, 66, 88}};
+
+    if(cd.blacklist.size() != blacklist.size()) {
+        std::cerr << "Incorrect amount of blacklists!" << std::endl;
+        return false;
+    }
+
+    for(auto &b : cd.blacklist) {
+        if(std::find(blacklist.begin(), blacklist.end(), b) == blacklist.end()) {
+            std::cerr << "Blackists are not correct!" << std::endl;
+        }
+    }
 
     return true;
 }

@@ -65,34 +65,87 @@ bool CommunityDetection::is_cover(std::unordered_set<uint32_t> &cover_candidate)
     return true;
 }
 
-// return a map of ASN to set of those it is indistinguishable from
-std::map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn() {
-    std::map<uint32_t, std::set<uint32_t>> retval;
-    for (auto iterator = asn_to_degree.begin(); iterator != asn_to_degree.end(); ++iterator) {
-        //Make a set of all of the unique asns to eliminate that are indistinguishable from the AS "iterator" points to
-        std::set<uint32_t> s_copy;
-        for(auto copy_it = asn_to_degree.begin(); copy_it != asn_to_degree.end(); ++copy_it)
-            s_copy.insert(copy_it->first);
+bool CommunityDetection::are_indistinguishable(uint32_t asn1, uint32_t asn2) {
+    for(auto &edge : hyper_edges) {
+        bool contain_asn1 = false;
+        bool contain_asn2 = false;
 
-        for (auto edge : hyper_edges) {
-            if (std::find(edge.begin(), edge.end(), iterator->first) != edge.end()) {
-                // if asn in edge, only save other ASNs also in the edge
-                for (auto it = s_copy.begin(); it != s_copy.end() ;) {
-                    if (*it != iterator->first && std::find(edge.begin(), edge.end(), *it) == edge.end()) {
-                        // if asn missing from edge but present in s_copy, remove from s_copy
-                        it = s_copy.erase(it);
-                    } else { 
-                        ++it;
-                    }
-                }
-            } else {// If the asn is not in the list, remove everything that is there since they are not indistinguishable from the asn
-                for(auto asn : edge)
-                    s_copy.erase(asn);
+        for(auto asn : edge) {
+            if(asn == asn1)
+                contain_asn1 = true;
+
+            else if(asn == asn2)
+                contain_asn2 = true;
+        }
+
+        if(contain_asn1 != contain_asn2)
+            return false;
+    }
+
+    return true;
+}
+
+// return a map of ASN to set of those it is indistinguishable from
+std::unordered_map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn() {
+    std::sort(sorted_asn_degree.begin(), sorted_asn_degree.end(), [](auto a, auto b) {
+        // Sort from greatest degree to least
+        return (*(a.second)) > (*(b.second));
+    });
+
+    std::unordered_map<uint32_t, std::set<uint32_t>> to_return;
+    std::unordered_set<uint32_t> checked;
+
+    for(size_t i = 0; i < sorted_asn_degree.size(); i++) {
+        auto &pair = sorted_asn_degree[i];
+
+        if(checked.find(pair.first) != checked.end())
+            continue;
+        
+        std::set<uint32_t> to_add = { pair.first };
+
+        for(size_t j = i + 1; j < sorted_asn_degree.size(); j++) {
+            auto &other_pair = sorted_asn_degree.at(j);
+
+            if(*other_pair.second != *pair.second)
+                break;
+
+            if(are_indistinguishable(pair.first, other_pair.first)) {
+                to_add.insert(other_pair.first);
+                checked.insert(other_pair.first);
             }
         }
-        retval.insert(std::pair<uint32_t, std::set<uint32_t>>(iterator->first, s_copy));
+
+        to_return.insert(std::make_pair(pair.first, to_add));
     }
-    return retval;
+
+    return to_return;
+
+    // std::map<uint32_t, std::set<uint32_t>> retval;
+    // for (auto iterator = asn_to_degree.begin(); iterator != asn_to_degree.end(); ++iterator) {
+    //     //Make a set of all of the unique asns to eliminate that are indistinguishable from the AS "iterator" points to
+    //     std::set<uint32_t> s_copy;
+    //     for(auto copy_it = asn_to_degree.begin(); copy_it != asn_to_degree.end(); ++copy_it)
+    //         s_copy.insert(copy_it->first);
+
+    //     for (auto edge : hyper_edges) {
+    //         if (std::find(edge.begin(), edge.end(), iterator->first) != edge.end()) {
+    //             // if asn in edge, only save other ASNs also in the edge
+    //             for (auto it = s_copy.begin(); it != s_copy.end() ;) {
+    //                 if (*it != iterator->first && std::find(edge.begin(), edge.end(), *it) == edge.end()) {
+    //                     // if asn missing from edge but present in s_copy, remove from s_copy
+    //                     it = s_copy.erase(it);
+    //                 } else { 
+    //                     ++it;
+    //                 }
+    //             }
+    //         } else {// If the asn is not in the list, remove everything that is there since they are not indistinguishable from the asn
+    //             for(auto asn : edge)
+    //                 s_copy.erase(asn);
+    //         }
+    //     }
+    //     retval.insert(std::pair<uint32_t, std::set<uint32_t>>(iterator->first, s_copy));
+    // }
+    // return retval;
 }
 
 bool CommunityDetection::is_suspect_helper(std::unordered_set<uint32_t> &nodes, std::unordered_set<uint32_t> &building_subset, 
@@ -123,43 +176,34 @@ bool CommunityDetection::is_suspect_helper(std::unordered_set<uint32_t> &nodes, 
 bool CommunityDetection::is_suspect(std::vector<uint32_t> &candidate) {
     std::unordered_set<uint32_t> s_copy;
     for(auto copy_it = asn_to_degree.begin(); copy_it != asn_to_degree.end(); ++copy_it)
-        s_copy.insert(copy_it->first);
+        if(std::find(candidate.begin(), candidate.end(), copy_it->first) == candidate.end())
+            s_copy.insert(copy_it->first);
     
-    for(auto asn : candidate)
-        s_copy.erase(asn);
+    // for(auto asn : candidate)
+    //     s_copy.erase(asn);
 
     std::unordered_set<uint32_t> building_subset;
 
     return !is_suspect_helper(s_copy, building_subset, s_copy.begin(), local_threshold);
 }
 
-// return a map of ASN to its degree in the specified set of edges
-// std::map<uint32_t, uint32_t> CommunityDetection::get_degrees(std::set<uint32_t> s, const std::vector<std::vector<uint32_t>> &edges) {
-//     std::map<uint32_t, uint32_t> retval;
-//     for (uint32_t asn : s) {
-//         retval.insert(std::pair<uint32_t,uint32_t>(asn, 0));
-//     }
-//     for (auto edge : edges) {
-//         for (auto asn : edge) {
-//             retval[asn]++;
-//         }
-//     }
-//     return retval;
-// }
+bool CommunityDetection::is_subset(std::vector<uint32_t> &super_set, std::vector<uint32_t> &candidate_subset) {
+    for(auto asn : candidate_subset)
+        if(std::find(super_set.begin(), super_set.end(), asn) == super_set.end())
+            return false;
+    return true;
+}
 
-// generate a set of unique ASNs in the set of edges
-// std::set<uint32_t> CommunityDetection::get_unique_asns(std::vector<std::vector<uint32_t>> edges) {
-//     std::set<uint32_t> unique_asns;
-//     for (auto edge : edges) {
-//         for (auto asn : edge) {
-//             unique_asns.insert(asn);
-//         }
-//     }
-//     return unique_asns;
-// }
-
-void CommunityDetection::gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::map<uint32_t, std::set<uint32_t>> &ind_map, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex) {
-    if(is_suspect(current_subset)) {
+void CommunityDetection::gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::unordered_map<uint32_t, std::set<uint32_t>> &ind_map, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex) {
+    bool subset = false;
+    for(auto &edge : hyper_edges) {
+        if(is_subset(edge, current_subset)) {
+            subset = true;
+            break;
+        }
+    }
+    
+    if(subset && is_suspect(current_subset)) {
         blacklist.insert(current_subset);
         return;
     }
@@ -181,7 +225,7 @@ void CommunityDetection::gen_suspect_candidates_helper_subset(std::vector<uint32
     gen_suspect_candidates_helper_subset(current_subset, ind_map, distinguishable_subsets, results, startIndex + 1, endIndex);
 }
 
-void CommunityDetection::iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::map<uint32_t, std::set<uint32_t>> &ind_map, 
+void CommunityDetection::iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::unordered_map<uint32_t, std::set<uint32_t>> &ind_map, 
                                                                             std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, uint32_t distinguishable_index) {
 
     if(distinguishable_index >= distinguishable_subsets.size() - 1)
@@ -212,22 +256,27 @@ void CommunityDetection::iterate_suspect_candidates_and_blacklist_helper(std::ve
     //     else
         for(auto &subset_to_continue : subsets_to_continue)
             iterate_suspect_candidates_and_blacklist_helper(subset_to_continue, ind_map, distinguishable_subsets, end_same_degree_index);
-    // }
+    // } 
 }
 
 // generate all possible cover candidates of size sz with given indistinguishability map
-void CommunityDetection::iterate_suspect_candidates_and_blacklist(std::map<uint32_t, std::set<uint32_t>> &ind_map) {
-    auto distinguishable_subsets = sorted_asn_degree;
+void CommunityDetection::iterate_suspect_candidates_and_blacklist(std::unordered_map<uint32_t, std::set<uint32_t>> &ind_map) {
+    // auto distinguishable_subsets = sorted_asn_degree;
     // Indistinguishable nodes must be grouped together, so remove 'duplicates'
-    for (auto it = distinguishable_subsets.begin(); it != distinguishable_subsets.end(); ++it) {
-        for (auto it2 = it+1; it2 != distinguishable_subsets.end();) {
-            if (std::find(ind_map[it->first].begin(), ind_map[it->first].end(), it2->first) != ind_map[it->first].end()) {
-                it2 = distinguishable_subsets.erase(it2);
-            } else {
-                ++it2;
-            }
-        }
-    }
+    // for (auto it = distinguishable_subsets.begin(); it != distinguishable_subsets.end(); ++it) {
+        // for (auto it2 = it+1; it2 != distinguishable_subsets.end();) {
+        //     if (std::find(ind_map[it->first].begin(), ind_map[it->first].end(), it2->first) != ind_map[it->first].end()) {
+        //         it2 = distinguishable_subsets.erase(it2);
+        //     } else {
+        //         ++it2;
+        //     }
+        // }
+    // }
+
+    std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> distinguishable_subsets;
+    for(auto &p : sorted_asn_degree)
+        if(ind_map.find(p.first) != ind_map.end())
+            distinguishable_subsets.push_back(p);
 
     std::vector<uint32_t> running_sum;
     iterate_suspect_candidates_and_blacklist_helper(running_sum, ind_map, distinguishable_subsets, 0);
@@ -330,13 +379,8 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
 }
 
 void CommunityDetection::CD_algorithm() {
-    std::sort(sorted_asn_degree.begin(), sorted_asn_degree.end(), [](auto a, auto b) {
-        // Sort from greatest degree to least
-        return (*(a.second)) > (*(b.second));
-    });
-
     // std::set<uint32_t> unique_asns = get_unique_asns(hyper_edges);
-    std::map<uint32_t, std::set<uint32_t>> ind_asn = gen_ind_asn();
+    auto ind_asn = gen_ind_asn();
     // std::map<uint32_t, uint32_t> degrees = get_degrees(unique_asns, hyper_edges);
 
     iterate_suspect_candidates_and_blacklist(ind_asn);
