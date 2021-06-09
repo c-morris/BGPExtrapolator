@@ -121,7 +121,7 @@ bool CommunityDetection::are_indistinguishable(uint32_t asn1, uint32_t asn2) {
 
 // return a map of ASN to set of those it is indistinguishable from
 std::unordered_map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn() {
-    std::sort(sorted_asn_degree.begin(), sorted_asn_degree.end(), [](auto a, auto b) {
+    std::sort(sorted_asn_degree.begin(), sorted_asn_degree.end(), [](auto &a, auto &b) {
         // Sort from greatest degree to least
         return (*(a.second)) > (*(b.second));
     });
@@ -131,6 +131,10 @@ std::unordered_map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn
 
     for(size_t i = 0; i < sorted_asn_degree.size(); i++) {
         auto &pair = sorted_asn_degree[i];
+
+        //until no AS with degree >= t + 1 remains
+        if(*pair.second <= local_threshold)
+            break;
 
         if(checked.find(pair.first) != checked.end())
             continue;

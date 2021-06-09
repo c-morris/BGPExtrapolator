@@ -289,13 +289,7 @@ bool ezbgpsec_test_gen_ind_asn() {
     // std::set<uint32_t> s({30, 20, 21, 22, 23, 666, 11, 12, 1});
     auto ind_asn = cd.gen_ind_asn();
 
-    if (ind_asn[11]  == std::set<uint32_t>({11})
-     && ind_asn[12]  == std::set<uint32_t>({12})
-     && ind_asn[20]  == std::set<uint32_t>({20})
-     && ind_asn[21]  == std::set<uint32_t>({21})
-     && ind_asn[22]  == std::set<uint32_t>({22})
-     && ind_asn[23]  == std::set<uint32_t>({23})
-     && ind_asn[30]  == std::set<uint32_t>({1, 30, 666 })) {
+    if (ind_asn.size() == 1 && ind_asn[30]  == std::set<uint32_t>({1, 30, 666 })) {
         return true;
     } else {
         std::cerr << "ind_asn was not correct, output was\n";
