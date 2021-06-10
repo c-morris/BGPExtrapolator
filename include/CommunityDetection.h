@@ -36,6 +36,9 @@ public:
     std::unordered_map<uint32_t, std::shared_ptr<uint32_t>> asn_to_degree;
     std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> sorted_asn_degree;
 
+    //Sum of all of the lengths of the edges that the asn is in.
+    std::unordered_map<uint32_t, uint32_t> asn_to_cardinality;
+
     std::vector<std::vector<uint32_t>> hyper_edges;
 
     uint32_t local_threshold;

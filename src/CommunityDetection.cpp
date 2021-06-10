@@ -21,8 +21,12 @@ void CommunityDetection::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
             std::shared_ptr<uint32_t> degree = std::make_shared<uint32_t>(1);
             asn_to_degree.insert(std::make_pair(asn, degree));
             sorted_asn_degree.push_back(std::make_pair(asn, degree));
+
+            asn_to_cardinality.insert(std::make_pair(asn, hyper_edge.size()));
         } else {
             (*(asn_search->second))++;
+
+            asn_to_cardinality.find(asn)->second += hyper_edge.size();
         }
     }
 }
@@ -131,6 +135,7 @@ std::unordered_map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn
 
     for(size_t i = 0; i < sorted_asn_degree.size(); i++) {
         auto &pair = sorted_asn_degree[i];
+        uint32_t cardinality = asn_to_cardinality.find(pair.first)->second;
 
         //until no AS with degree >= t + 1 remains
         if(*pair.second <= local_threshold)
@@ -146,6 +151,10 @@ std::unordered_map<uint32_t, std::set<uint32_t>> CommunityDetection::gen_ind_asn
 
             if(*other_pair.second != *pair.second)
                 break;
+
+            //If they have different cardinalities then it is not worth checking
+            if(cardinality != asn_to_cardinality.find(other_pair.first)->second)
+                continue;
 
             if(are_indistinguishable(pair.first, other_pair.first)) {
                 to_add.insert(other_pair.first);
