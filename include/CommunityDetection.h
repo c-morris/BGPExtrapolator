@@ -41,6 +41,8 @@ public:
 
     std::vector<std::vector<uint32_t>> hyper_edges;
 
+    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> ind_map;
+
     uint32_t local_threshold;
 
     /**
@@ -104,23 +106,16 @@ public:
 
     bool are_indistinguishable(uint32_t asn1, uint32_t asn2);
 
-    /**
-     * Generate a map of ASNs to other ASNs which are indistinguishable from them.
-     *
-     * @return the map described above 
-     */
-    std::unordered_map<uint32_t, std::set<uint32_t>> gen_ind_asn();
-
     bool is_suspect(std::vector<uint32_t> &nodes, std::vector<std::unordered_set<uint32_t>> &covers);
 
     bool is_subset(std::vector<uint32_t> &super_set, std::vector<uint32_t> &candidate_subset);
 
-    void gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::vector<std::unordered_set<uint32_t>> &covers, std::unordered_map<uint32_t, std::set<uint32_t>> &ind_map, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex);
+    void gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::vector<std::unordered_set<uint32_t>> &covers, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex);
 
-    void iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::vector<std::unordered_set<uint32_t>> &covers, std::unordered_map<uint32_t, std::set<uint32_t>> &ind_map, 
+    void iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::vector<std::unordered_set<uint32_t>> &covers, 
                                                             std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, uint32_t distinguishable_index);
 
-    void iterate_suspect_candidates_and_blacklist(std::unordered_map<uint32_t, std::set<uint32_t>> &ind_map);
+    void iterate_suspect_candidates_and_blacklist();
 
     void local_threshold_approx_filtering();
 
