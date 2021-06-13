@@ -22,10 +22,10 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
     ann.as_path.insert(ann.as_path.begin(), asn);
 
 
-    // Reset reserved3, 4 and 5 from any previous modifications
+    // Reset reserved5, 4 and 5 from any previous modifications
     ann.priority.reserved4 = 0; // default security info missing
-    ann.priority.reserved5 = 1; // default valid
-    ann.priority.reserved3 = 1; // default short path
+    ann.priority.reserved6 = 1; // default valid
+    ann.priority.reserved5 = 1; // default short path
 
     // If origin is only AS on path, accept
     if (ann.origin == asn) {
@@ -38,10 +38,12 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         if (policy != EZAS_TYPE_BGP) {
             // TODO fix this, need to actually check if received prefix before
             if (community_detection->extrapolator->round > 1) {
-                if (ann.as_path.size() > 5) {
-                    ann.priority.reserved3 = 0;
+                if (ann.as_path.size() > 5 && 
+                    this->prev_anns.find(ann.prefix) != this->prev_anns.end() &&
+                    this->prev_anns.find(ann.prefix)->as_path != ann.as_path) {
+                    ann.priority.reserved5 = 0;
                 } else {
-                    ann.priority.reserved3 = 1;
+                    ann.priority.reserved5 = 1;
                 }
             }
         }
@@ -95,7 +97,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
             // Security second (between path length and relationship)
             ann.priority.reserved4 = static_cast<uint8_t>(contiguous);
             if (contiguous && ann.from_attacker) {
-                ann.priority.reserved5 = 0; // invalid
+                ann.priority.reserved6 = 0; // invalid
             }
         }
 
