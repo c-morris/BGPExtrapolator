@@ -248,7 +248,7 @@ bool ezbgpsec_test_is_cover() {
 
     bool error = false;
 
-    std::vector<std::unordered_set<uint32_t>> true_covers = {{30}, {20, 21, 22, 23}, {666}, {666, 45}, {1}, {11, 12}, {666, 30, 1}};
+    std::vector<std::vector<uint32_t>> true_covers = {{30}, {20, 21, 22, 23}, {666}, {666, 45}, {1}, {11, 12}, {666, 30, 1}};
     for(auto &cover : true_covers) {
         if(!cd.is_cover(cover)) {
             error = true;
@@ -260,7 +260,7 @@ bool ezbgpsec_test_is_cover() {
         }
     }
 
-    std::vector<std::unordered_set<uint32_t>> false_covers = {{4, 5, 6}, {11}, {11, 22}, {20, 22}, {12}, {12, 23}};
+    std::vector<std::vector<uint32_t>> false_covers = {{4, 5, 6}, {11}, {11, 22}, {20, 22}, {12}, {12, 23}};
     for(auto &cover : false_covers) {
         if(cd.is_cover(cover)) {
             error = true;

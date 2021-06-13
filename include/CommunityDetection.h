@@ -97,22 +97,22 @@ public:
      *
      * @return true if sprime covers s, false otherwise.
      */
-    bool is_cover(std::unordered_set<uint32_t> &suspect);
+    bool is_cover(std::vector<uint32_t> &suspect);
 
     void generate_covers_helper(std::unordered_map<uint32_t, std::shared_ptr<uint32_t>>::iterator asn_to_degree_it,
-                                std::unordered_set<uint32_t> &building_subset, uint32_t subset_length, std::vector<std::unordered_set<uint32_t>> &covers);
+                                std::vector<uint32_t> &building_subset, std::vector<std::vector<uint32_t>> &covers);
 
-    std::vector<std::unordered_set<uint32_t>> generate_covers();
+    std::vector<std::vector<uint32_t>> generate_covers();
 
     bool are_indistinguishable(uint32_t asn1, uint32_t asn2);
 
-    bool is_suspect(std::vector<uint32_t> &nodes, std::vector<std::unordered_set<uint32_t>> &covers);
+    bool is_suspect(std::vector<uint32_t> &nodes, std::vector<std::vector<uint32_t>> &covers);
 
     bool is_subset(std::vector<uint32_t> &super_set, std::vector<uint32_t> &candidate_subset);
 
-    void gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::vector<std::unordered_set<uint32_t>> &covers, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex);
+    void gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::vector<std::vector<uint32_t>> &covers, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex);
 
-    void iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::vector<std::unordered_set<uint32_t>> &covers, 
+    void iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::vector<std::vector<uint32_t>> &covers, 
                                                             std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, uint32_t distinguishable_index);
 
     void iterate_suspect_candidates_and_blacklist();

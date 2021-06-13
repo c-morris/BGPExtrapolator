@@ -58,7 +58,7 @@ void CommunityDetection::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
     }
 }
 
-bool CommunityDetection::is_cover(std::unordered_set<uint32_t> &cover_candidate) {
+bool CommunityDetection::is_cover(std::vector<uint32_t> &cover_candidate) {
     // We are not testing if s prime makes a cover, we are testing for what the MVC is by testing if any subset of S/S' with length threshold make a cover
 
     // // does s prime form a set cover over s
@@ -97,10 +97,10 @@ bool CommunityDetection::is_cover(std::unordered_set<uint32_t> &cover_candidate)
 }
 
 void CommunityDetection::generate_covers_helper(std::unordered_map<uint32_t, std::shared_ptr<uint32_t>>::iterator asn_to_degree_it,
-                                                std::unordered_set<uint32_t> &building_subset, uint32_t subset_length, std::vector<std::unordered_set<uint32_t>> &covers) {
+                                                std::vector<uint32_t> &building_subset, std::vector<std::vector<uint32_t>> &covers) {
 
     //The subset we are building has reached the neccessary length
-    if(building_subset.size() == subset_length) {
+    if(building_subset.size() == local_threshold) {
         if(is_cover(building_subset))
             covers.push_back(building_subset);
         return;
@@ -114,18 +114,28 @@ void CommunityDetection::generate_covers_helper(std::unordered_map<uint32_t, std
     asn_to_degree_it++;
 
     //Make a choice: include or exclude this asn
-    building_subset.insert(asn);
-    generate_covers_helper(asn_to_degree_it, building_subset, subset_length, covers);
+    building_subset.push_back(asn);
+    generate_covers_helper(asn_to_degree_it, building_subset, covers);
 
-    building_subset.erase(asn);
-    return generate_covers_helper(asn_to_degree_it, building_subset, subset_length, covers);
+    building_subset.pop_back();
+    return generate_covers_helper(asn_to_degree_it, building_subset, covers);
 }
 
-std::vector<std::unordered_set<uint32_t>> CommunityDetection::generate_covers() {
-    std::vector<std::unordered_set<uint32_t>> covers;
-    std::unordered_set<uint32_t> building_subset;
+std::vector<std::vector<uint32_t>> CommunityDetection::generate_covers() {
+    std::vector<std::vector<uint32_t>> covers;
+    std::vector<uint32_t> building_subset;
 
-    generate_covers_helper(asn_to_degree.begin(), building_subset, local_threshold, covers);
+    size_t cover_amt = 1;
+
+    //Number of subsets = n choose k. n -> unique asns, k -> local threshold. 
+    for(uint32_t i = 0; i < local_threshold; i++) {
+        cover_amt *= asn_to_degree.size() - i;
+        cover_amt /= i + 1;
+    }
+
+    covers.reserve(cover_amt);
+
+    generate_covers_helper(asn_to_degree.begin(), building_subset, covers);
 
     return covers;
 }
@@ -133,7 +143,7 @@ std::vector<std::unordered_set<uint32_t>> CommunityDetection::generate_covers() 
 
 //Generate all of the subsets of nodes with length of local_threshold
 //To be used to test MVC
-bool CommunityDetection::is_suspect(std::vector<uint32_t> &candidate, std::vector<std::unordered_set<uint32_t>> &covers) {
+bool CommunityDetection::is_suspect(std::vector<uint32_t> &candidate, std::vector<std::vector<uint32_t>> &covers) {
     for(auto &cover : covers) {
         bool contains_candidate_node = false;
 
@@ -158,7 +168,7 @@ bool CommunityDetection::is_subset(std::vector<uint32_t> &super_set, std::vector
     return true;
 }
 
-void CommunityDetection::gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::vector<std::unordered_set<uint32_t>> &covers, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex) {
+void CommunityDetection::gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::vector<std::vector<uint32_t>> &covers, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex) {
     bool subset = false;
     for(auto &edge : hyper_edges) {
         if(is_subset(edge, current_subset)) {
@@ -189,7 +199,7 @@ void CommunityDetection::gen_suspect_candidates_helper_subset(std::vector<uint32
     gen_suspect_candidates_helper_subset(current_subset, covers, distinguishable_subsets, results, startIndex + 1, endIndex);
 }
 
-void CommunityDetection::iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::vector<std::unordered_set<uint32_t>> &covers, 
+void CommunityDetection::iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current, std::vector<std::vector<uint32_t>> &covers, 
                                                                             std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, uint32_t distinguishable_index) {
 
     if(distinguishable_index >= distinguishable_subsets.size() - 1)
