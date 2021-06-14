@@ -5,7 +5,7 @@ CommunityDetection::CommunityDetection(EZExtrapolator *extrapolator, uint32_t lo
 
 bool CommunityDetection::contains_hyper_edge(std::vector<uint32_t> &hyper_edge) {
     for(auto &temp_edge : hyper_edges)
-        if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin()))
+        if(temp_edge.size() == hyper_edge.size() && std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin()))
             return true;
     return false;
 }
@@ -101,6 +101,15 @@ void CommunityDetection::generate_covers_helper(std::unordered_map<uint32_t, std
 
     //The subset we are building has reached the neccessary length
     if(building_subset.size() == local_threshold) {
+        //if the sum of all of the degrees is not at least the amount of edges (1 attack so they are all in one connected component) then it cannot possibly be a cover
+        uint32_t degree_sum = 0;
+        for(auto asn : building_subset)
+            degree_sum += *asn_to_degree.at(asn);
+
+        if(degree_sum < hyper_edges.size())
+            return;
+
+        //Expensive on the amount of edges stored
         if(is_cover(building_subset))
             covers.push_back(building_subset);
         return;
@@ -124,16 +133,6 @@ void CommunityDetection::generate_covers_helper(std::unordered_map<uint32_t, std
 std::vector<std::vector<uint32_t>> CommunityDetection::generate_covers() {
     std::vector<std::vector<uint32_t>> covers;
     std::vector<uint32_t> building_subset;
-
-    size_t cover_amt = 1;
-
-    //Number of subsets = n choose k. n -> unique asns, k -> local threshold. 
-    for(uint32_t i = 0; i < local_threshold; i++) {
-        cover_amt *= asn_to_degree.size() - i;
-        cover_amt /= i + 1;
-    }
-
-    covers.reserve(cover_amt);
 
     generate_covers_helper(asn_to_degree.begin(), building_subset, covers);
 
@@ -260,6 +259,8 @@ void CommunityDetection::iterate_suspect_candidates_and_blacklist() {
     }
 
     auto covers = generate_covers();
+
+    std::cout << "Amt covers: " << covers.size() << std::endl;
 
     std::vector<uint32_t> running_sum;
     iterate_suspect_candidates_and_blacklist_helper(running_sum, covers, distinguishable_subsets, 0);
