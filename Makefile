@@ -7,7 +7,7 @@ HEADER_FILES := h
 OBJECT_FILES := o
 
 CC       := g++
-CPPFLAGS := -std=c++14 -g -O3 -Wall -DBOOST_LOG_DYN_LINK -I $(HEADER_DIR)
+CPPFLAGS := -std=c++14 -O3 -g -Wall -DBOOST_LOG_DYN_LINK -I $(HEADER_DIR)
 LDFLAGS  := -lpqxx -lpq -lboost_program_options -lboost_unit_test_framework -lboost_log -lboost_filesystem -lboost_thread -lpthread -lboost_system -lboost_log_setup
 DANGEROUSFLAGS := -fno-stack-protector
 

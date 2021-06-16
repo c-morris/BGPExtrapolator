@@ -101,6 +101,24 @@ public:
      */
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
 
+    /**  Swap out ASNs on the path each round.
+    *  
+    *  With a fixed k in a k-hop origin hijack, the attacker wants to 
+    *  maintain the largest collection of adjacent suspects as possible
+    *  without exceeding the threshold. 
+    *          
+    *  Consider a fixed k with local threshold t, the matrix of attack
+    *  paths is:
+    *
+    *  [666, a_11, a_12,... a_1t, origin]
+    *  [666, a_21, a_22,... a_2t, origin]
+    *  ...
+    *  [666, a_k1, a_k2,... a_kt, origin]
+    */
+    std::vector<uint32_t> gen_fake_as_path(std::vector<uint32_t> as_path);
+
+    std::vector<uint32_t> get_nonadopting_path(int k, EZAS *origin, EZAS *attacker, std::vector<uint32_t> as_path);
+
     /**
      * Return a never-before-seen ASN
      */

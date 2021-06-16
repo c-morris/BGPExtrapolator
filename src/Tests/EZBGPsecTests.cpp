@@ -973,3 +973,42 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous3() {
     }
     return true;
 }
+
+/** Test fake path generation
+ */
+bool ezbgpsec_test_gen_fake_as_path() {
+    EZExtrapolator e = EZExtrapolator();
+    e.communityDetection->local_threshold = 2;
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    // test k=2
+    std::vector<uint32_t> p1 = {3, 2, 1};
+    std::vector<std::vector<uint32_t>> fake_paths;
+    for (size_t i = 0; i <= (p1.size()-1)*e.communityDetection->local_threshold; i++) {
+        fake_paths.push_back(e.gen_fake_as_path(p1));
+        e.round++;
+    }
+
+    // debug
+    //for (auto f : fake_paths) {
+    //    for (auto a : f) {
+    //        std::cout << a << ' ';
+    //    }
+    //    std::cout << '\n';
+    //}
+
+    // first should be equal to last
+    if (fake_paths[0] != *fake_paths.rbegin()) {
+        std::cout << "Cycle of fake paths does not repeat\n";
+        return false;
+    }
+    if (fake_paths[0] == fake_paths[1]) {
+        std::cout << "Consecutive fake paths are identical\n";
+        return false;
+    }
+
+    return true;
+}
