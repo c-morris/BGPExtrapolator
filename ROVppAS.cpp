@@ -22,6 +22,7 @@
  ************************************************************************/
 
 #include "ROVppAS.h"
+#include <algorithm>    // std::find
 
 ROVppAS::ROVppAS(uint32_t myasn,
                  std::set<uint32_t> *rovpp_attackers,
@@ -579,11 +580,24 @@ Announcement ROVppAS::best_alternative_route(Announcement &ann) {
 
     // For Non_LITE Versions
     else { 
+        // For v3 we need to not consider ASes that have sent us the prefix
+        std::vector<uint32_t> customer_asn_sent_prefix;
+        if (policy == ROVPPAS_TYPE_ROVPPBP) {
+            for (Announcement curr_ann : *passed_rov) {
+                if (curr_ann.prefix.netmask == 0xFFFF0000) {
+                    customer_asn_sent_prefix.push_back(curr_ann.received_from_asn);
+                }
+            }
+        }
         for (auto candidate_ann : *ribs_in) {
             if (pass_rovpp(candidate_ann) && !candidate_ann.withdraw) {
                 if (policy == ROVPPAS_TYPE_ROVPPBP) {
                     if (candidate_ann.alt != ATTACKER_ON_ROUTE_FLAG) {
-                        candidates.push_back(candidate_ann);
+                        // Check if the candidate has not sent the prefix
+                        // if (customer_asn_sent_prefix.find(candidate_ann.received_from_asn) ==  customer_asn_sent_prefix.end()) {
+                        if (std::find(customer_asn_sent_prefix.begin(), customer_asn_sent_prefix.end(), candidate_ann.received_from_asn) != customer_asn_sent_prefix.end()) {
+                            candidates.push_back(candidate_ann);
+                        }
                     }
                 } else {
                     candidates.push_back(candidate_ann);

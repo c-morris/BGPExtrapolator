@@ -331,7 +331,7 @@ bool ROVppExtrapolator::is_filtered(ROVppAS *rovpp_as, Announcement const& ann) 
     }
     for (auto ann_pair : *rovpp_as->preventive_anns) {
         if (ann_pair.first.prefix == ann.prefix &&
-            ann.origin == 64514) {
+            ann_pair.first.origin == ann.origin) {
             filter_ann = true;
         }
     }
