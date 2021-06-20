@@ -118,6 +118,7 @@ public:
     std::vector<uint32_t> gen_fake_as_path(std::vector<uint32_t> as_path);
 
     std::vector<uint32_t> get_nonadopting_path(int k, EZAS *origin, EZAS *attacker, std::vector<uint32_t> as_path);
+    std::vector<uint32_t> get_nonadopting_path_previously_seen(int k, EZAS *origin, EZAS *attacker, Prefix<> prefix);
 
     /**
      * Return a never-before-seen ASN

@@ -1012,3 +1012,53 @@ bool ezbgpsec_test_gen_fake_as_path() {
 
     return true;
 }
+
+/** Test previously seen real path generation
+ */
+bool ezbgpsec_test_previously_seen_as_path() {
+    EZExtrapolator e = EZExtrapolator();
+
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> p1 = {};
+    std::vector<uint32_t> found_path;
+    
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement origin_announcement(3, p, pr, 64514, 0, true, false);
+    origin_announcement.as_path = p1;
+    e.graph->ases->find(3)->second->process_announcement(origin_announcement);
+
+    found_path = e.get_nonadopting_path_previously_seen(p1.size(), e.graph->ases->find(3)->second, e.graph->ases->find(1)->second, p);
+    if (found_path != std::vector<uint32_t>({1})) {
+        return false;
+    }
+    e.propagate_up();
+    e.propagate_down();
+    e.graph->clear_announcements();
+
+    found_path = e.get_nonadopting_path_previously_seen(p1.size(), e.graph->ases->find(3)->second, e.graph->ases->find(1)->second, p);
+    if (found_path != std::vector<uint32_t>({1, 2, 3})) {
+        return false;
+    }
+    // debug
+    //for (auto a : found_path) {
+    //    std::cout << a << ' ';
+    //}
+    //std::cout << '\n';
+
+    return true;
+}

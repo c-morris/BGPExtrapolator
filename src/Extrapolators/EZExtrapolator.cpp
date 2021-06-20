@@ -206,7 +206,8 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         as_path->erase(as_path->begin());
 
         // if policy x do y to as path        
-        *as_path = gen_fake_as_path(*as_path);
+        //*as_path = gen_fake_as_path(*as_path);
+        *as_path = get_nonadopting_path_previously_seen(as_path->size(), origin, attacker, prefix);
 
         // debug
         for (auto a : *as_path) {
@@ -216,7 +217,10 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
 
         attackAnnouncement.as_path = *as_path;
         attackAnnouncement.received_from_asn = HIJACKED;
-        attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
+        if (round != 0) {
+            // Don't seed attacker's announcement if round zero
+            attacker->process_announcement(attackAnnouncement, this->random_tiebraking);
+        }
     }
 }
 
@@ -227,6 +231,16 @@ std::vector<uint32_t> EZExtrapolator::gen_fake_as_path(std::vector<uint32_t> as_
              (((round-1) / static_cast<uint32_t>(pow(communityDetection->local_threshold, pl)) % communityDetection->local_threshold));
     }
     return as_path;
+}
+
+std::vector<uint32_t> EZExtrapolator::get_nonadopting_path_previously_seen(int k, EZAS *origin, EZAS *attacker, Prefix<> prefix) {
+    auto search = attacker->prev_anns.find(prefix);
+    if (search != attacker->prev_anns.end() && !search->from_attacker) {
+        return search->as_path;
+    } else {
+        // if no path found, default to just the attacker
+        return std::vector<uint32_t>({attacker->asn});
+    }
 }
 
 std::vector<uint32_t> EZExtrapolator::get_nonadopting_path(int k, EZAS *origin, EZAS *attacker, std::vector<uint32_t> as_path) {

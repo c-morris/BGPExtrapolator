@@ -409,6 +409,7 @@ BOOST_AUTO_TEST_CASE( EZBGPsec_test_transitive_bgpsec ) {
 
 BOOST_AUTO_TEST_CASE( EZBGPsec_test_misc ) {
         BOOST_CHECK( ezbgpsec_test_gen_fake_as_path() );
+        BOOST_CHECK( ezbgpsec_test_previously_seen_as_path() );
 }
 
 //PrefixAnnouncementMap Tests

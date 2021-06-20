@@ -212,6 +212,7 @@ bool ezbgpsec_test_transitive_bgpsec_contiguous3();
 bool ezbgpsec_test_cd_algorithm();
 
 bool ezbgpsec_test_gen_fake_as_path();
+bool ezbgpsec_test_previously_seen_as_path();
 
 //SQLQuerier
 bool test_querier_buildup();

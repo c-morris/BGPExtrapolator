@@ -36,7 +36,6 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
     // Now deprefer long paths for all policies except BGP
     if (community_detection != NULL) {
         if (policy != EZAS_TYPE_BGP) {
-            // TODO fix this, need to actually check if received prefix before
             if (community_detection->extrapolator->round > 1) {
                 if (ann.as_path.size() > 5 && 
                     this->prev_anns.find(ann.prefix) != this->prev_anns.end() &&
