@@ -205,9 +205,12 @@ void EZExtrapolator::give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<
         // Remove first element of as_path so the attacker doesn't see itself on the path (and reject the announcement because of that)
         as_path->erase(as_path->begin());
 
-        // if policy x do y to as path        
-        //*as_path = gen_fake_as_path(*as_path);
-        *as_path = get_nonadopting_path_previously_seen(as_path->size(), origin, attacker, prefix);
+        // always prefer received path, if none received then generate a fake path
+        auto atk_path = get_nonadopting_path_previously_seen(as_path->size(), origin, attacker, prefix);
+        if (atk_path == std::vector<uint32_t>({attacker->asn})) {
+            atk_path = gen_fake_as_path(*as_path);
+        }
+        *as_path = atk_path;
 
         // debug
         for (auto a : *as_path) {
@@ -244,8 +247,8 @@ std::vector<uint32_t> EZExtrapolator::get_nonadopting_path_previously_seen(int k
 }
 
 std::vector<uint32_t> EZExtrapolator::get_nonadopting_path(int k, EZAS *origin, EZAS *attacker, std::vector<uint32_t> as_path) {
-// If transitive BGPsec is the policy, try to find a non-adopting neighbor
-// of the origin (that way a valid signature can be used)
+    // If transitive BGPsec is the policy, try to find a non-adopting neighbor
+    // of the origin (that way a valid signature can be used)
     if (origin->policy == EZAS_TYPE_BGPSEC_TRANSITIVE || origin->policy == EZAS_TYPE_BGPSEC) {
         std::set<uint32_t> neighbors;
         neighbors.insert(attacker->providers->begin(), attacker->providers->end());
