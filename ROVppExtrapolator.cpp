@@ -136,11 +136,11 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     } while (AS::graph_changed && count < 100);
     std::cout << "Times propagated: " << count << std::endl;
     
-    // std::ofstream gvpythonfile;
-    // gvpythonfile.open("asgraph.py");
-    // std::vector<uint32_t> to_graph = {  };
-    // rovpp_graph->to_graphviz(gvpythonfile, to_graph);
-    // gvpythonfile.close();
+    std::ofstream gvpythonfile;
+    gvpythonfile.open("asgraph.py");
+    std::vector<uint32_t> to_graph = { 271457 };
+    rovpp_graph->to_graphviz(gvpythonfile, to_graph);
+    gvpythonfile.close();
     save_results(iter);
     std::cout << "completed: ";
 }
@@ -326,13 +326,16 @@ bool ROVppExtrapolator::is_filtered(ROVppAS *rovpp_as, Announcement const& ann) 
     for (auto blackhole_ann : *rovpp_as->blackholes) {
         if (blackhole_ann.prefix == ann.prefix &&
             ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) {
-            filter_ann = true;
+            return true;
         }
+    }
+    if (ann.is_preventive) {
+       return true;
     }
     for (auto ann_pair : *rovpp_as->preventive_anns) {
         if (ann_pair.first.prefix == ann.prefix &&
             ann_pair.first.origin == ann.origin) {
-            filter_ann = true;
+            return true;
         }
     }
     return filter_ann;

@@ -501,6 +501,7 @@ void ROVppAS::process_announcements(bool ran) {
                             Announcement preventive_ann = best_alternative_ann;
                             preventive_ann.prefix = ann.prefix;
                             preventive_ann.alt = best_alternative_ann.received_from_asn;
+                            preventive_ann.is_preventive = true;
                             if (preventive_ann.origin == asn) { preventive_ann.received_from_asn=64514; }
                             preventive_anns->insert(std::pair<Announcement,Announcement>(preventive_ann, best_alternative_ann));
                             process_announcement(preventive_ann, false);
