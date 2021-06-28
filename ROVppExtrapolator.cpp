@@ -136,11 +136,11 @@ void ROVppExtrapolator::perform_propagation(bool propagate_twice=true) {
     } while (AS::graph_changed && count < 100);
     std::cout << "Times propagated: " << count << std::endl;
     
-    std::ofstream gvpythonfile;
-    gvpythonfile.open("asgraph.py");
-    std::vector<uint32_t> to_graph = { 271457 };
-    rovpp_graph->to_graphviz(gvpythonfile, to_graph);
-    gvpythonfile.close();
+    //td::ofstream gvpythonfile;
+    //vpythonfile.open("asgraph.py");
+    //std::vector<uint32_t> to_graph = { 271457 };
+    //rovpp_graph->to_graphviz(gvpythonfile, to_graph);
+    //gvpythonfile.close();
     save_results(iter);
     std::cout << "completed: ";
 }
@@ -322,23 +322,31 @@ uint32_t ROVppExtrapolator::get_priority(Announcement const& ann, uint32_t i) {
 /** Checks whether an announcement should be filtered out. 
  */
 bool ROVppExtrapolator::is_filtered(ROVppAS *rovpp_as, Announcement const& ann) {
-    bool filter_ann = false;
+    // bool filter_ann = false;
+    if (ann.is_blackhole_ann) {
+        return true;
+    }
+    /*
     for (auto blackhole_ann : *rovpp_as->blackholes) {
         if (blackhole_ann.prefix == ann.prefix &&
             ann.origin == UNUSED_ASN_FLAG_FOR_BLACKHOLES) {
             return true;
         }
     }
+    */
     if (ann.is_preventive) {
        return true;
     }
+    /*
     for (auto ann_pair : *rovpp_as->preventive_anns) {
         if (ann_pair.first.prefix == ann.prefix &&
             ann_pair.first.origin == ann.origin) {
             return true;
         }
     }
-    return filter_ann;
+    */
+    return false;
+    //return filter_ann;
 }
 
 /** Send all announcements kept by an AS to its neighbors. 

@@ -429,6 +429,7 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.is_blackhole_ann = true;
                             process_announcement(ann, false);
                         } else {
                             process_announcement(best_alternative_ann, false);
@@ -448,6 +449,7 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->insert(ann);
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.is_blackhole_ann = true;
                             process_announcement(ann, false);
                         } else {
                             process_announcement(best_alternative_ann, false);
@@ -467,6 +469,7 @@ void ROVppAS::process_announcements(bool ran) {
                             blackholes->insert(ann);  // Make copy of annoucement to share as a blackhole ann
                             ann.origin = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
                             ann.received_from_asn = UNUSED_ASN_FLAG_FOR_BLACKHOLES;
+                            ann.is_blackhole_ann = true;
                             process_announcement(ann, false);
                         } else {
                             process_announcement(best_alternative_ann, false);
