@@ -28,6 +28,9 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <vector>
+#include <thread>
+#include <semaphore.h>
 
 #include "Logger.h"
 #include "Extrapolators/BaseExtrapolator.h"
@@ -38,6 +41,8 @@ BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::~BaseExtr
         delete graph;
     if(querier != NULL)
         delete querier;
+    sem_destroy(&worker_thread_count);
+    sem_destroy(&csvs_written);
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
@@ -48,23 +53,14 @@ std::vector<uint32_t>* BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementT
     path_as_string.erase(std::find(path_as_string.begin(), path_as_string.end(), '{'));
 
     // Fill as_path vector from parsing string
-    std::string delimiter = ",";
-    std::string::size_type pos = 0;
-    std::string token;
-    while ((pos = path_as_string.find(delimiter)) != std::string::npos) {
-        token = path_as_string.substr(0,pos);
+    std::stringstream str_stream(path_as_string);
+    std::string tokenN;
+    while(getline(str_stream, tokenN, ',')) {
         try {
-            as_path->push_back(std::stoul(token));
+            as_path->push_back(std::stoul(tokenN));
         } catch(...) {
-            std::cerr << "Parse path error, token was: " << token << std::endl;
+            BOOST_LOG_TRIVIAL(error) << "Parse path error, token was: " << tokenN;
         }
-        path_as_string.erase(0,pos + delimiter.length());
-    }
-    // Handle last ASN after loop
-    try {
-        as_path->push_back(std::stoul(path_as_string));
-    } catch(...) {
-        std::cerr << "Parse path error, token was: " << path_as_string << std::endl;
     }
     return as_path;
 }
@@ -99,6 +95,9 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
         }
     }
     // Propagate to peers
+    // When propagating to peers,
+    // all ASes may not have processed all incoming announcements after the function completes.
+    // Those announcements will be processed after propagate_down()
     for (size_t level = 0; level < levels; level++) {
         for (uint32_t asn : *graph->ases_by_rank->at(level)) {
             auto search = graph->ases->find(asn);
@@ -128,51 +127,185 @@ void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::prop
 }
 
 template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
-void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread(int iteration, int thread_num, int num_threads){
+    // Decrement semaphore to limit the number of concurrent threads
+    sem_wait(&worker_thread_count);
+    int counter = thread_num;
     std::ofstream outfile;
-    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + ".csv";
-    outfile.open(file_name);
-    
-    // Handle inverse results
-    if (store_invert_results) {
-        std::cout << "Saving Inverse Results From Iteration: " << iteration << std::endl;
-        for (auto po : *graph->inverse_results){
-            for (uint32_t asn : *po.second) {
-                outfile << asn << ','
-                        << po.first.first.to_cidr() << ','
-                        << po.first.second << '\n';
+    std::string file_name = "/dev/shm/bgp/" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+    std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+    std::string inverse_file_name = "/dev/shm/bgp/inverse" + std::to_string(iteration) + "_" + std::to_string(thread_num) + ".csv";
+
+    // Handle standard results
+    if (store_results) {
+        outfile.open(file_name);
+        for (auto &as : *graph->ases){
+            if (counter++ % num_threads == 0) {
+                as.second->stream_announcements(outfile);
             }
         }
         outfile.close();
-        querier->copy_inverse_results_to_db(file_name);
+    }
+    
+    // Handle inverse results
+    if (store_invert_results) {
+        outfile.open(inverse_file_name);
+        for (auto po : *graph->inverse_results){
+            // The results are divided into num_threads CSVs. For example, with 
+            // four threads, this loop will save every fourth item in the loop.
+            if (counter++ % num_threads == 0) {
+                for (uint32_t asn : *po.second) {
+                    outfile << asn << ','
+                            << po.first.first.to_cidr() << ','
+                            << po.first.first.id << ','
+                            << po.first.second << '\n';
+                }
+            }
+        }
+        outfile.close();
     
     // Handle standard results
     } else {
-        std::cout << "Saving Results From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases){
-            as.second->stream_announcements(outfile);
+            if (counter++ % num_threads == 0) {
+                as.second->stream_announcements(outfile);
+            }
         }
         outfile.close();
-        querier->copy_results_to_db(file_name);
 
     }
-    std::remove(file_name.c_str());
     
     // Handle depref results
     if (store_depref_results) {
-        std::string depref_name = "/dev/shm/bgp/depref" + std::to_string(iteration) + ".csv";
         outfile.open(depref_name);
-        std::cout << "Saving Depref From Iteration: " << iteration << std::endl;
         for (auto &as : *graph->ases) {
-            as.second->stream_depref(outfile);
+            if (counter++ % num_threads == 0) {
+                as.second->stream_depref(outfile);
+            }
         }
         outfile.close();
-        querier->copy_depref_to_db(depref_name);
+    }
+
+    // Csvs are saved, release the semaphore 
+    sem_post(&csvs_written);
+
+    // Need a copy of the querier to make a new db connection to avoid resource conflicts 
+    SQLQuerierType querier_copy(*querier);
+    querier_copy.open_connection();
+    
+    // Handle inverse results
+    if (store_invert_results) {
+        querier_copy.copy_inverse_results_to_db(file_name);
+        std::remove(inverse_file_name.c_str());
+    
+    // Handle standard results
+    }
+    if (store_results) {
+        querier_copy.copy_results_to_db(file_name);
+        std::remove(file_name.c_str());
+    }
+    
+    // Handle depref results
+    if (store_depref_results) {
+        querier_copy.copy_depref_to_db(depref_name);
         std::remove(depref_name.c_str());
+    }
+
+    // Handle full_path results
+    if (full_path_asns != NULL) {
+        for (uint32_t asn : *full_path_asns){
+            if (counter++ % num_threads == 0) {
+                this->save_results_at_asn(asn, &querier_copy);
+            }
+        }
+    }
+
+    querier_copy.close_connection();
+    sem_post(&worker_thread_count);
+
+}
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results(int iteration){
+    if (store_invert_results) {
+        BOOST_LOG_TRIVIAL(info) << "Saving Inverse Results From Iteration: " << iteration;
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "Saving Results From Iteration: " << iteration;
+    }
+    if (store_depref_results) {
+        BOOST_LOG_TRIVIAL(info) << "Saving Depref Results From Iteration: " << iteration;
+    }
+    std::vector<std::thread> threads;
+    if (max_workers > 1) {
+        for (int i = 0; i < max_workers; i++) {
+            // Start the worker threads
+            threads.push_back(std::thread(&BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_thread, this, iteration, i, max_workers));
+        }
+        for (size_t i = 0; i < threads.size(); i++) {
+            threads[i].join();
+        }
+    } else {
+        this->save_results_thread(iteration, 0, 1);
     }
 }
 
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+void BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::save_results_at_asn(uint32_t asn, SQLQuerierType *querier_copy){
+    auto search = graph->ases->find(asn); 
+    if (search == graph->ases->end()) {
+        // If the asn does not exist, return
+        return;
+    }
+    ASType &as = *search->second;
+    std::ofstream outfile;
+    std::string file_name = "/dev/shm/bgp/as" + std::to_string(asn) + ".csv";
+    outfile.open(file_name);
+    for (auto &ann : *as.all_anns) {
+        const AnnouncementType &a = ann;
+        outfile << asn << ',' << a.prefix.to_cidr() << ',' << a.origin << ',' << a.received_from_asn << ',' << a.tstamp << ',' << a.prefix.id << ",\"" << this->stream_as_path(a, asn) << "\"\n";
+    }
+    outfile.close();
+    querier_copy->copy_single_results_to_db(file_name);
+    std::remove(file_name.c_str());
+}
+
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+std::string BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>::stream_as_path(AnnouncementType ann, uint32_t asn){
+    std::stringstream as_path;
+    std::vector<uint32_t> as_path_vect;
+
+    // Trace back until one of these conditions
+    // 1. The origin is the received from ASN
+    // 2. The received from ASN does not exist in the graph
+    // 3. A loop in the topology is detected
+    while (ann.origin != ann.received_from_asn && 
+           graph->ases->find(ann.received_from_asn) != graph->ases->end()) {
+        if (std::find(as_path_vect.begin(), as_path_vect.end(), ann.received_from_asn) != as_path_vect.end()) {
+            BOOST_LOG_TRIVIAL(warning) << "Loop detected in AS_PATH from AS " << asn << " to prefix " << ann.prefix.to_cidr();
+            break;
+        }
+        as_path_vect.push_back(ann.received_from_asn);
+        auto ann_search = graph->ases->find(ann.received_from_asn)->second->all_anns->find(ann.prefix);
+        if (ann_search != graph->ases->find(ann.received_from_asn)->second->all_anns->end()) {
+            ann = *ann_search;
+        } else {
+            BOOST_LOG_TRIVIAL(warning) << "Terminating AS_PATH at " << ann.received_from_asn << " instead of expected origin " << ann.origin << " for prefix " << ann.prefix.to_cidr();
+            break;
+        }
+    }
+    // Stringify
+    as_path << '{' << asn << ',';
+    for (uint32_t path_asn : as_path_vect) {
+        as_path << path_asn << ',';
+    }
+    // Add the last AS on the path
+    as_path << ann.received_from_asn << '}';
+    return as_path.str();
+}
+
 //We love C++ class templating. Please find another way to do this. I want to be wrong.
-template class BaseExtrapolator<SQLQuerier, ASGraph, Announcement, AS>;
+template class BaseExtrapolator<SQLQuerier<>, ASGraph<>, Announcement<>, AS<>>;
+template class BaseExtrapolator<SQLQuerier<uint128_t>, ASGraph<uint128_t>, Announcement<uint128_t>, AS<uint128_t>>;
 template class BaseExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS>;
 template class BaseExtrapolator<ROVppSQLQuerier, ROVppASGraph, ROVppAnnouncement, ROVppAS>;
+template class BaseExtrapolator<ROVSQLQuerier, ROVASGraph, ROVAnnouncement, ROVAS>;

@@ -38,7 +38,7 @@
 // They can be used to identify the type of ROVppAS
 // and the in the set_rovpp_as_type function to set the type.
 #define ROVPPAS_TYPE_BGP 0        // Regular BGP
-#define ROVPPAS_TYPE_ROV 1        // Just standard ROV
+#define ROVPPAS_TYPE_ROV 2        // Just standard ROV
 #define ROVPPAS_TYPE_ROVPP0 7      // ROVpp 0 (Just don't send to bad neighbors)
 #define ROVPPAS_TYPE_ROVPP 2      // ROVpp 0.1 (Just Blackholing)
 #define ROVPPAS_TYPE_ROVPPB 3     // ROVpp 0.2 (Blackhole Announcements)
@@ -69,7 +69,7 @@ public:
     std::vector<ROVppAnnouncement> *withdrawals;
 
     // Maps of all announcements stored
-    std::map<Prefix<>, ROVppAnnouncement> *loc_rib;
+    PrefixAnnouncementMap<ROVppAnnouncement> *loc_rib;
 
     std::vector<uint32_t> policy_vector;
     std::set<uint32_t> *attackers;
@@ -85,8 +85,8 @@ public:
     static bool graph_changed;
     
     // Constructor
-    ROVppAS(uint32_t asn, std::set<uint32_t> *rovpp_attackers);
-    ROVppAS(uint32_t asn);
+    ROVppAS(uint32_t asn, uint32_t max_block_prefix_id, std::set<uint32_t> *rovpp_attackers);
+    ROVppAS(uint32_t asn, uint32_t max_block_prefix_id);
     ROVppAS();
 
     ~ROVppAS();
@@ -144,11 +144,7 @@ public:
      */
     void withdraw(ROVppAnnouncement &ann);
     void withdraw(ROVppAnnouncement &ann, ROVppAS &neighbor);
-
-    /** Tiny galois field hash with a fixed key of 3.
-    */
-    uint8_t tiny_hash(uint32_t);
-
+    
     void check_preventives(ROVppAnnouncement ann);
     void receive_announcements(std::vector<ROVppAnnouncement> &announcements);
 

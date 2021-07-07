@@ -1,8 +1,12 @@
 #ifndef EZ_EXTRAPLATOR_H
 #define EZ_EXTRAPLATOR_H
 
-#define DEFAULT_NUM_ASES_BETWEEN_ATTACKER 0
-#define DEFAULT_COMMUNITY_DETECTION_THRESHOLD 0
+#define DEFAULT_COMMUNITY_DETECTION_LOCAL_THRESHOLD 3
+#define DEFAULT_POLICY_TABLES NULL
+#define HIJACKED 64513
+#define NOTHIJACKED 64514
+
+#include <sstream>
 
 #include "Extrapolators/BlockedExtrapolator.h"
 
@@ -10,10 +14,11 @@
 #include "Graphs/EZASGraph.h"
 #include "Announcements/EZAnnouncement.h"
 #include "ASes/EZAS.h"
+#include "TableNames.h"
 #include "CommunityDetection.h"
 
 /**
- * The idea here is to estimate the probability that an "edge" AS can pull off an attacck
+ * The idea here is to estimate the probability that an "edge" AS can pull off an attack
  * 
  * "Edge" AS: an AS with at least one provider and no customers.
  * 
@@ -45,31 +50,36 @@
 class EZExtrapolator : public BlockedExtrapolator<EZSQLQuerier, EZASGraph, EZAnnouncement, EZAS> {
 public:
     CommunityDetection *communityDetection;
+    std::set<std::pair<Prefix<>,uint32_t>> attacker_prefix_pairs;
 
     /*   - Attacker gets the traffic: successful attack
      *   - Origin gets the traffic: successful connection
      *   - Nobody gets the traffic: disconnection
      */
-    uint32_t successful_attacks;
-    uint32_t successful_connections;
-    uint32_t disconnections;
 
-    uint32_t num_rounds;
-
-    //Number of "ASes" between the attacker and the origin
-    uint32_t num_between;
+    uint32_t num_rounds; // Number of rounds in simulation
+    uint32_t round; // Current round
+    uint32_t next_unused_asn; // Unused ASNs to populate attacker announcements
 
     EZExtrapolator(bool random_tiebraking,
+                    bool store_results, 
                     bool store_invert_results, 
                     bool store_depref_results, 
                     std::string announcement_table,
                     std::string results_table, 
                     std::string inverse_results_table, 
                     std::string depref_results_table, 
+                    std::string full_path_results_table, 
+                    std::vector<std::string> *policy_tables, 
+                    std::string config_section,
                     uint32_t iteration_size,
                     uint32_t num_rounds,
-                    uint32_t num_between,
-                    uint32_t community_detection_threshold);
+                    uint32_t community_detection_threshold,
+                    int exclude_as_number,
+                    uint32_t mh_mode,
+                    bool origin_only,
+                    std::vector<uint32_t> *full_path_asns,
+                    int max_threads);
     
     EZExtrapolator(uint32_t community_detection_threshold);
 
@@ -91,23 +101,30 @@ public:
      */
     void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
 
-    /**
-     * This will find the neighbor to the attacker on the AS path.
-     * The initial call should have the as be the victim.
-     * This fucntion will likely get removed in the future because of path propagation.
-     */
-    uint32_t getPathNeighborOfAttacker(EZAS* as, Prefix<> &prefix, uint32_t attacker_asn);
+    /**  Swap out ASNs on the path each round.
+    *  
+    *  With a fixed k in a k-hop origin hijack, the attacker wants to 
+    *  maintain the largest collection of adjacent suspects as possible
+    *  without exceeding the threshold. 
+    *          
+    *  Consider a fixed k with local threshold t, the matrix of attack
+    *  paths is:
+    *
+    *  [666, a_11, a_12,... a_1t, origin]
+    *  [666, a_21, a_22,... a_2t, origin]
+    *  ...
+    *  [666, a_k1, a_k2,... a_kt, origin]
+    */
+    std::vector<uint32_t> gen_fake_as_path(std::vector<uint32_t> as_path);
+
+    //This will take the path generated for an arbitrary 2 hop attack and substitue in a real neighbor AS of the origin into the path for the intermediate AS between the attacker and the origin 
+    std::vector<uint32_t> substitueNeighborPathEndAttack(EZAS *origin, EZAS *attacker, std::vector<uint32_t> as_path);
+    std::vector<uint32_t> get_nonadopting_path_previously_seen(int k, EZAS *origin, EZAS *attacker, Prefix<> prefix);
 
     /**
-     * This runs at the end of every iteration
-     * 
-     * Baically, go to the victim and see if it chose the attacker route.
-     * if the prefix didn't reach the victim (an odd edge case), then it does not count to the total
-     * If the Victim chose the fake announcement path, then sucessful attack++
-     * 
-     * In addition, if there was a successful attack, record the edge (asn pair) from the attacker to the neighbor on the path
+     * Return a never-before-seen ASN
      */
-    void calculate_successful_attacks();
+    uint32_t get_unused_asn();
 
     /*
     * A quick overwrite that removes the traditional saving functionality since we are 
@@ -115,6 +132,8 @@ public:
     * Comment out the first line if the output is needed.
     */
     void save_results(int iteration);
+
+    void save_results_round(int iteration);
 };
 
 #endif

@@ -1,20 +1,39 @@
 #ifndef EZ_AS_H
 #define EZ_AS_H
 
+#include <vector>
+#include <set>
+#include <unordered_set>
+
 #include "ASes/BaseAS.h"
 #include "Announcements/EZAnnouncement.h"
 
+#define EZAS_TYPE_BGP 0                               // Regular BGP
+#define EZAS_TYPE_DIRECTORY_ONLY 64                   // No CD
+#define EZAS_TYPE_COMMUNITY_DETECTION_LOCAL 65        // Local CD threshold Only
+#define EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL 66       // Global CD Only (future work)
+#define EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL 67 // Local and Global (future work)
+#define EZAS_TYPE_BGPSEC 68
+#define EZAS_TYPE_BGPSEC_TRANSITIVE 69
+#define EZAS_TYPE_PATH_END 70
+
+//Forward Declaration to deal with circular dependency
+class CommunityDetection;
+
 class EZAS : public BaseAS<EZAnnouncement> {
 public:
-    bool attacker;
-    bool adopter;
+    CommunityDetection *community_detection;
+    unsigned int policy;
+    // Store previous announcements for things (clarify this later)
+    PrefixAnnouncementMap<EZAnnouncement, uint32_t> prev_anns;
 
-    EZAS(uint32_t asn);
+    EZAS(CommunityDetection *community_detection, uint32_t asn, uint32_t max_block_prefix_id);
+    EZAS(uint32_t asn, uint32_t max_block_prefix_id);
     EZAS();
 
     ~EZAS();
 
     virtual void process_announcement(EZAnnouncement &ann, bool ran=true);
+    virtual void clear_announcements();
 };
-
 #endif

@@ -2,13 +2,17 @@
 #define BLOCKED_EXTRAPOLATOR_H
 
 #define DEFAULT_ITERATION_SIZE 50000
+#define DEFAULT_MH_MODE 1
 
 #include "Extrapolators/BaseExtrapolator.h"
 
-template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType>
+template <class SQLQuerierType, class GraphType, class AnnouncementType, class ASType, typename PrefixType = uint32_t>
 class BlockedExtrapolator : public BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>  {
 protected:
     uint32_t iteration_size;
+    uint32_t mh_mode;
+    bool select_block_id;
+    uint32_t max_block_id;
 
     /**
      *  Overrwritable function that is first called in the preform_propagation function.
@@ -20,19 +24,27 @@ protected:
      *  Overrwritable function that is called after populate_blocks in the preform_propagation function.
      *  Purely here for inheritance reasons.
      */
-    virtual void extrapolate(std::vector<Prefix<>*> *prefix_blocks, std::vector<Prefix<>*> *subnet_blocks);
+    virtual void extrapolate(std::vector<Prefix<PrefixType>*> *prefix_blocks, std::vector<Prefix<PrefixType>*> *subnet_blocks);
 
 public:
     BlockedExtrapolator(bool random_tiebraking,
+                        bool store_results, 
                         bool store_invert_results, 
                         bool store_depref_results,
-                        uint32_t iteration_size) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_invert_results, store_depref_results) {
+                        uint32_t iteration_size,
+                        uint32_t mh_mode,
+                        bool origin_only,
+                        std::vector<uint32_t> *full_path_asns,
+                        int max_threads,
+                        bool select_block_id) : BaseExtrapolator<SQLQuerierType, GraphType, AnnouncementType, ASType>(random_tiebraking, store_results, store_invert_results, store_depref_results, origin_only, full_path_asns, max_threads) {
         
         this->iteration_size = iteration_size;
+        this->mh_mode = mh_mode;
+        this->select_block_id = select_block_id;
     }
 
-    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE) { }
-    
+    BlockedExtrapolator() : BlockedExtrapolator(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, DEFAULT_ITERATION_SIZE, DEFAULT_MH_MODE, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID) { }
+
     virtual ~BlockedExtrapolator();
 
     /** Performs all tasks necessary to propagate a set of announcements given:
@@ -42,21 +54,30 @@ public:
      */
     virtual void perform_propagation();
 
+    /** A function to extrapolate blocks using announcement's block ids 
+     * instead of the manually populated blocks from populate_blocks
+     * 
+     * Called by perform_propagation when select_block_id = true
+     *
+     * @param max_block_id The max value of block_id in the announcements table
+     */
+    virtual void extrapolate_by_block_id(uint32_t max_block_id);
+
     /** Recursive function to break the input mrt_announcements into manageable blocks.
      *
      * @param p The current subnet for checking announcement block size
      * @param prefix_vector The vector of prefixes of appropriate size
      */
-    virtual void populate_blocks(Prefix<>*, 
-                                    std::vector<Prefix<>*>*, 
-                                    std::vector<Prefix<>*>*);
+    virtual void populate_blocks(Prefix<PrefixType>*, 
+                                    std::vector<Prefix<PrefixType>*>*, 
+                                    std::vector<Prefix<PrefixType>*>*);
 
     /** Process a set of prefix or subnet blocks in iterations.
     */
     virtual void extrapolate_blocks(uint32_t &announcement_count, 
                                     int &iteration, 
                                     bool subnet, 
-                                    std::vector<Prefix<>*> *prefix_set);
+                                    std::vector<Prefix<PrefixType>*> *prefix_set);
 
     /** Seed announcement on all ASes on as_path. 
      *
@@ -68,7 +89,7 @@ public:
      * @param as_path Vector of ASNs for this announcement.
      * @param prefix The prefix this announcement is for.
      */
-    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<> prefix, int64_t timestamp = 0);
+    virtual void give_ann_to_as_path(std::vector<uint32_t>* as_path, Prefix<PrefixType> prefix, int64_t timestamp = 0);
 
     /** Send all announcements kept by an AS to its neighbors. 
      *

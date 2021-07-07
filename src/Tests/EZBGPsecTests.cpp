@@ -1,5 +1,6 @@
 #include "Tests/Tests.h"
 #include "Extrapolators/EZExtrapolator.h"
+#include "ASes/BaseAS.h"
 
 /** Test path seeding the graph with announcements from monitors. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
@@ -24,53 +25,66 @@ bool ezbgpsec_test_path_propagation() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 300, 5, 2, false, true);
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(5, p, pr, 5, 2, false, true);
 
     e.graph->ases->find(5)->second->process_announcement(attack_announcement);
 
     e.propagate_up();
     e.propagate_down();
 
-    if(e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(0) != 1 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(2)->second->all_anns->find(p)->second.as_path.at(0) != 2 ||
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.as_path.at(1) != 5) {
+    if(e.graph->ases->find(2)->second->all_anns->find(p)->as_path.at(0) != 2 ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->as_path.at(1) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #2 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(0) != 3 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(0) != 3 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #3 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(0) != 4 ||
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(1) != 2 ||
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.as_path.at(2) != 5) {
+    if(e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(0) != 4 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->as_path.at(2) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #4 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(5)->second->all_anns->find(p)->second.as_path.at(0) != 5) {
+    if(e.graph->ases->find(5)->second->all_anns->find(p)->as_path.at(0) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #5 full path incorrect!" << std::endl;
         return false;
     }
 
-    if(e.graph->ases->find(6)->second->all_anns->find(p)->second.as_path.at(0) != 6 ||
-        e.graph->ases->find(6)->second->all_anns->find(p)->second.as_path.at(1) != 5) {
+    if(e.graph->ases->find(6)->second->all_anns->find(p)->as_path.at(0) != 6 ||
+        e.graph->ases->find(6)->second->all_anns->find(p)->as_path.at(1) != 5) {
         
         std::cerr << "EZBGPsec test_path_propagation. AS #2 full path incorrect!" << std::endl;
         return false;
@@ -106,26 +120,20 @@ bool ezbgpsec_test_gather_reports() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
     e.graph->decide_ranks();
 
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(2);
-    e.graph->adopters->push_back(4);
-    e.graph->adopters->push_back(3);
-    // e.graph->adopters->push_back(1);
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_LOCAL;
+    e.graph->ases->find(4)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_LOCAL;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_COMMUNITY_DETECTION_LOCAL;
 
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
-    }
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(5)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(6)->second->policy = EZAS_TYPE_BGP;
 
-    // e.graph->adopters->push_back(6);
-
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
 
     //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
-    EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(3, p, pr, 3, 2, false, true);
     //The supposed path thus far
     attack_announcement.as_path.push_back(3);
 
@@ -135,86 +143,41 @@ bool ezbgpsec_test_gather_reports() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
 
-    CommunityDetection *community_detection = e.communityDetection;
-    if(community_detection->identifier_to_component.size() != 1) {
-        std::cerr << "Component was not created properly!" << std::endl;
-        return false;
-    }
+    std::vector<uint32_t> test_vector = { 2, 5, 3 };
+    std::vector<uint32_t> test_vectorb = { 4, 2, 5, 3 };
 
-    //2 should be the identifier since it will be the first adopter to report the invalid MAC
-    auto compnent_search = community_detection->identifier_to_component.find(2);
-    if(compnent_search == community_detection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct!" << std::endl;
-        return false;
-    }
-
-    CommunityDetection::Component *component = compnent_search->second;
-    if(component->hyper_edges.size() != 1) {
+    if(e.communityDetection->hyper_edges.size() != 2) {
         std::cerr << "The hyper edge was not added to the component properly!" << std::endl;
+        std::cerr << "hyper_edges contains " << std::endl;
+        for (auto path : e.communityDetection->hyper_edges) {
+            for (auto asn : path) {
+                std::cerr << asn << ' ';
+            }
+            std::cerr << std::endl;
+        }
         return false;
     }
 
-    //Check degree count and existance of AS 3
-    auto three_search = component->as_to_degree_count.find(3);
-    if(three_search == component->as_to_degree_count.end()) {
-        std::cerr << "AS 3 is not in the component!" << std::endl;
+    if(e.communityDetection->hyper_edges[0] != test_vector || e.communityDetection->hyper_edges[1] != test_vectorb) {
+        std::cerr << "The hyper edge path(s) are not correct! Paths are currently:\n";
+        for (auto path : e.communityDetection->hyper_edges) {
+            for (auto asn : path) {
+                std::cerr << asn << ' ';
+            }
+            std::cerr << std::endl;
+        }
+
+        std::cerr << std::endl;
         return false;
     }
 
-    if(three_search->second != 1) {
-        std::cerr << "AS 3 has the wrong degree count!" << std::endl;
-        return false;
-    }
+    /******************************************************/
 
-    ///Check degree count and existance of AS 5
-    auto five_search = component->as_to_degree_count.find(5);
-    if(five_search == component->as_to_degree_count.end()) {
-        std::cerr << "AS 5 is not in the component!" << std::endl;
-        return false;
-    }
+    Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0", 0, 0);
 
-    if(five_search->second != 1) {
-        std::cerr << "AS 5 has the wrong degree count!" << std::endl;
-        return false;
-    }
-
-    //Check degree count and existance of AS 2
-    auto two_search = component->as_to_degree_count.find(2);
-    if(two_search == component->as_to_degree_count.end()) {
-        std::cerr << "AS 2 is not in the component!" << std::endl;
-        return false;
-    }
-
-    if(two_search->second != 1) {
-        std::cerr << "AS 2 has the wrong degree count!" << std::endl;
-        return false;
-    }
-
-    //All of the ASes with degree count of 1
-    auto degree_set_search = component->degree_sets.find(1);
-    if(degree_set_search == component->degree_sets.end()) {
-        std::cerr << "Degree Set was not created for the first announcement!" << std::endl;
-        return false;
-    }
-
-    std::set<uint32_t> degree_set = degree_set_search->second;
-    if(degree_set.size() != 3) {
-        std::cerr << "Degree Set does not have just the 3 ASes for the first announcement!" << std::endl;
-        return false;
-    }
-
-    if(degree_set.find(2) == degree_set.end() || degree_set.find(3) == degree_set.end() || degree_set.find(5) == degree_set.end()) {
-        std::cerr << "Degree Set has the wrong ASes in it for the first announcement!" << std::endl;
-        return false; 
-    }
-
-    Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
-
-    //Prefixes need not compete for 2's favor, thus they both need to be checked
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
-
-    EZAnnouncement attack_announcement2(3, p2.addr, p2.netmask, 299, 3, 2, false, true);
+    EZAnnouncement attack_announcement2(3, p2, pr, 3, 2, false, true);
     attack_announcement2.as_path.push_back(3);//Make the origin on the path
 
     e.graph->ases->find(1)->second->process_announcement(attack_announcement2);
@@ -223,758 +186,880 @@ bool ezbgpsec_test_gather_reports() {
     e.propagate_down();
 
     e.gather_community_detection_reports();
+    e.communityDetection->process_reports(e.graph);
 
-    if(community_detection->identifier_to_component.size() != 1) {
-        std::cerr << "Component was not created properly after the second announcement!" << std::endl;
-        return false;
-    }
-
-    //2 should be the identifier since it will be the first adopter to report the invalid MAC
-    auto compnent_search2 = community_detection->identifier_to_component.find(2);
-    if(compnent_search2 == community_detection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct after the second announcement!" << std::endl;
-        return false;
-    }
-
-    if(component->hyper_edges.size() != 2) {
+    if(e.communityDetection->hyper_edges.size() != 4) {
         std::cerr << "The hyper edge was not added to the component properly after the second announcement!" << std::endl;
+        std::cerr << "Paths are currently:\n";
+        for (auto path : e.communityDetection->hyper_edges) {
+            for (auto asn : path) {
+                std::cerr << asn << ' ';
+            }
+            std::cerr << std::endl;
+        }
+
         return false;
     }
 
-    //Check degree count and existance of AS 3
-    auto three_search2 = component->as_to_degree_count.find(3);
-    if(three_search2 == component->as_to_degree_count.end()) {
-        std::cerr << "AS 3 is not in the component after the second announcement!" << std::endl;
+    std::vector<uint32_t> test_vector2 = { 2, 1, 3 };
+    if(e.communityDetection->hyper_edges[2] != test_vector2) {
+        std::cerr << "The hyper edge (index 2) path is not correct after second announcement! Path is currently: { ";
+
+        for(uint32_t asn : e.communityDetection->hyper_edges[2]) {
+            std::cerr << asn << ", ";
+        }
+
+        std::cerr << "}" << std::endl;
+
         return false;
     }
 
-    if(three_search2->second != 2) {
-        std::cerr << "AS 3 has the wrong degree count after second announcement!" << std::endl;
+    if(e.communityDetection->hyper_edges[0] != test_vector) {
+        std::cerr << "The hyper edge (index 0) path is not correct after second announcement! Path is currently: { ";
+
+        for(uint32_t asn : e.communityDetection->hyper_edges[0]) {
+            std::cerr << asn << ", ";
+        }
+
+        std::cerr << std::endl;
+
         return false;
     }
 
-    ///Check degree count and existance of AS 5
-    auto five_search2 = component->as_to_degree_count.find(5);
-    if(five_search2 == component->as_to_degree_count.end()) {
-        std::cerr << "AS 5 is not in the component after the second announcement!" << std::endl;
+    if(e.communityDetection->hyper_edges[0] == e.communityDetection->hyper_edges[1]) {
+        std::cerr << "The two hyper edges should not be equal! How did you manage this???" << std::endl;
+
         return false;
-    }
-
-    if(five_search2->second != 1) {
-        std::cerr << "AS 5 has the wrong degree count after the second announcement!" << std::endl;
-        return false;
-    }
-
-    ///Check degree count and existance of AS 5
-    auto one_search = component->as_to_degree_count.find(1);
-    if(one_search == component->as_to_degree_count.end()) {
-        std::cerr << "AS 1 is not in the component after the second announcement!" << std::endl;
-        return false;
-    }
-
-    if(one_search->second != 1) {
-        std::cerr << "AS 1 has the wrong degree count after the second announcement!" << std::endl;
-        return false;
-    }
-
-    //Check degree count and existance of AS 2
-    auto two_search2 = component->as_to_degree_count.find(2);
-    if(two_search2 == component->as_to_degree_count.end()) {
-        std::cerr << "AS 2 is not in the component after the second announcement!" << std::endl;
-        return false;
-    }
-
-    if(two_search2->second != 2) {
-        std::cerr << "AS 2 has the wrong degree count after the second announcement!" << std::endl;
-        return false;
-    }
-
-    //All of the ASes with degree count of 1
-    auto degree_set_search1 = component->degree_sets.find(1);
-    if(degree_set_search1 == component->degree_sets.end()) {
-        std::cerr << "Degree Set 1 was not created for the second announcement!" << std::endl;
-        return false;
-    }
-
-    std::set<uint32_t> degree_set1 = degree_set_search1->second;
-    if(degree_set1.size() != 2) {
-        std::cerr << "Degree Set 1 does not have just the 2 ASes for the second announcement!" << std::endl;
-        return false;
-    }
-
-    if(degree_set1.find(1) == degree_set1.end() || degree_set1.find(5) == degree_set1.end()) {
-        std::cerr << "Degree Set 1 has the wrong ASes in it for the second announcement!" << std::endl;
-        return false; 
-    }
-
-    //All of the ASes with degree count of 2
-    auto degree_set_search2 = component->degree_sets.find(2);
-    if(degree_set_search2 == component->degree_sets.end()) {
-        std::cerr << "Degree Set 2 was not created for the second announcement!" << std::endl;
-        return false;
-    }
-
-    std::set<uint32_t> degree_set2 = degree_set_search2->second;
-    if(degree_set2.size() != 2) {
-        std::cerr << "Degree Set 2 does not have just the 2 ASes for the second announcement!" << std::endl;
-        return false;
-    }
-
-    if(degree_set2.find(3) == degree_set2.end() || degree_set2.find(2) == degree_set2.end()) {
-        std::cerr << "Degree Set 2 has the wrong ASes in it for the second announcement!" << std::endl;
-        return false; 
     }
 
     return true;
 }
 
-/** Test if components can be merged in the CD graph
- *  Horizontal lines are peer relationships, vertical lines are customer-provider
- *  
- *  Non-adopters/Attackers: 1 and 4
- * 
- *  1   4
- *  |   |
- *  2   5
- *  |   |
- *  3   6
- * 
- * Attacks will be done by 1 and 4, claiming to be neighbors to 3 and 6 respectively. Then, 1 will claim to be a neighbor to 5. 
- * This will merge the components IN THE HYPERGRAPH.
- */
-bool ezbgpsec_test_gather_reports_merge() {
-    // Logger::setFolder("./Logs/");
+bool ezbgpsec_test_is_cover() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
 
-    EZExtrapolator e = EZExtrapolator();
-    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
-    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    bool error = false;
 
-    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
-    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    std::vector<std::vector<uint32_t>> true_covers = {{30}, {20, 21, 22, 23}, {666}, {666, 45}, {1}, {11, 12}, {666, 30, 1}};
+    for(auto &cover : true_covers) {
+        if(!cd.is_cover(cover)) {
+            error = true;
 
-    e.graph->add_relationship(5, 4, AS_REL_PROVIDER);
-    e.graph->add_relationship(4, 5, AS_REL_CUSTOMER);
-
-    e.graph->add_relationship(6, 5, AS_REL_PROVIDER);
-    e.graph->add_relationship(5, 6, AS_REL_CUSTOMER);
-
-    e.graph->decide_ranks();
-
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(2);
-    e.graph->adopters->push_back(3);
-
-    e.graph->adopters->push_back(5);
-    e.graph->adopters->push_back(6);
-
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
-    }
-
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
-
-    //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
-    EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
-    //The supposed path thus far
-    attack_announcement.as_path.push_back(3);
-
-    e.graph->ases->find(1)->second->process_announcement(attack_announcement);
-
-    e.propagate_up();
-    e.propagate_down();
-
-    e.gather_community_detection_reports();
-
-    CommunityDetection *community_detection = e.communityDetection;
-    if(community_detection->identifier_to_component.size() != 1) {
-        std::cerr << "Component was not created properly!" << std::endl;
-        return false;
-    }
-
-    //2 should be the identifier since it will be the first adopter to report the invalid MAC
-    auto compnent_search = community_detection->identifier_to_component.find(2);
-    if(compnent_search == community_detection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct!" << std::endl;
-        return false;
-    }
-
-    CommunityDetection::Component *component = compnent_search->second;
-    if(component->hyper_edges.size() != 1) {
-        std::cerr << "The hyper edge was not added to the component properly!" << std::endl;
-        return false;
-    }
-
-    //Check degree count and existance of AS 3
-    auto three_search = component->as_to_degree_count.find(3);
-    if(three_search == component->as_to_degree_count.end()) {
-        std::cerr << "AS 3 is not in the component!" << std::endl;
-        return false;
-    }
-
-    if(three_search->second != 1) {
-        std::cerr << "AS 3 has the wrong degree count!" << std::endl;
-        return false;
-    }
-
-    ///Check degree count and existance of AS 1
-    auto one_search = component->as_to_degree_count.find(1);
-    if(one_search == component->as_to_degree_count.end()) {
-        std::cerr << "AS 1 is not in the component!" << std::endl;
-        return false;
-    }
-
-    if(one_search->second != 1) {
-        std::cerr << "AS 1 has the wrong degree count!" << std::endl;
-        return false;
-    }
-
-    //Check degree count and existance of AS 2
-    auto two_search = component->as_to_degree_count.find(2);
-    if(two_search == component->as_to_degree_count.end()) {
-        std::cerr << "AS 2 is not in the component!" << std::endl;
-        return false;
-    }
-
-    if(two_search->second != 1) {
-        std::cerr << "AS 2 has the wrong degree count!" << std::endl;
-        return false;
-    }
-
-    //All of the ASes with degree count of 1
-    auto degree_set_search = component->degree_sets.find(1);
-    if(degree_set_search == component->degree_sets.end()) {
-        std::cerr << "Degree Set was not created for the first announcement!" << std::endl;
-        return false;
-    }
-
-    std::set<uint32_t> degree_set = degree_set_search->second;
-    if(degree_set.size() != 3) {
-        std::cerr << "Degree Set does not have just the 3 ASes for the first announcement!" << std::endl;
-        return false;
-    }
-
-    if(degree_set.find(1) == degree_set.end() || degree_set.find(2) == degree_set.end() || degree_set.find(3) == degree_set.end()) {
-        std::cerr << "Degree Set has the wrong ASes in it for the first announcement!" << std::endl;
-        return false; 
-    }
-
-    Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
-
-    //Prefixes need not compete for 2's favor, thus they both need to be checked
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
-
-    EZAnnouncement attack_announcement2(6, p2.addr, p2.netmask, 299, 6, 2, false, true);
-    attack_announcement2.as_path.push_back(6);//Make the origin on the path
-
-    e.graph->ases->find(4)->second->process_announcement(attack_announcement2);
-
-    e.propagate_up();
-    e.propagate_down();
-
-    e.gather_community_detection_reports();
-
-    if(community_detection->identifier_to_component.size() != 2) {
-        std::cerr << "Second component was not created properly after the second announcement!" << std::endl;
-        return false;
-    }
-
-    //5 should be the identifier since it will be the first adopter to report the invalid MAC
-    auto component_search2 = community_detection->identifier_to_component.find(5);
-    if(component_search2 == community_detection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct after the second announcement!" << std::endl;
-        return false;
-    }
-
-    CommunityDetection::Component *component2 = component_search2->second;
-    if(component2->hyper_edges.size() != 1) {
-        std::cerr << "The hyper edge was not added to the second component properly after the second announcement!" << std::endl;
-        return false;
-    }
-
-    //All should have 1 degree
-    for(int i = 4; i <= 6; i++) {
-        //Check degree count and existance of AS i
-        auto search2 = component2->as_to_degree_count.find(i);
-        if(search2 == component2->as_to_degree_count.end()) {
-            std::cerr << "AS " << i << " is not in the component after the second announcement!" << std::endl;
-            return false;
-        }
-
-        if(search2->second != 1) {
-            std::cerr << "AS " << i << " has the wrong degree count after second announcement!" << std::endl;
-            return false;
+            std::cerr << "The set: { ";
+            for(auto asn : cover)
+                std::cerr << asn << " ";
+            std::cerr << "} does not make a cover when it should" << std::endl;
         }
     }
 
-    //All of the ASes with degree count of 1
-    auto degree_set_search1 = component2->degree_sets.find(1);
-    if(degree_set_search1 == component2->degree_sets.end()) {
-        std::cerr << "Degree Set 1 was not created for the second announcement!" << std::endl;
-        return false;
-    }
+    std::vector<std::vector<uint32_t>> false_covers = {{4, 5, 6}, {11}, {11, 22}, {20, 22}, {12}, {12, 23}};
+    for(auto &cover : false_covers) {
+        if(cd.is_cover(cover)) {
+            error = true;
 
-    std::set<uint32_t> degree_set1 = degree_set_search1->second;
-    if(degree_set1.size() != 3) {
-        std::cerr << "Degree Set 1 does not have just the 2 ASes for the second announcement!" << std::endl;
-        return false;
-    }
-
-    if(degree_set1.find(4) == degree_set1.end() || degree_set1.find(5) == degree_set1.end() || degree_set1.find(6) == degree_set1.end()) {
-        std::cerr << "Degree Set 1 has the wrong ASes in it for the second announcement!" << std::endl;
-        return false; 
-    }
-
-    //MERGE TIME
-    Prefix<> p3 = Prefix<>("211.99.0.0", "255.255.0.0");
-
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(1, p3));
-
-    //Make an announcement that states 5 and 1 are neighbors. This will create an invalid MAC
-    EZAnnouncement attack_announcement3(5, p3.addr, p3.netmask, 299, 5, 2, false, true);
-    //The supposed path thus far
-    attack_announcement3.as_path.push_back(5);
-
-    e.graph->ases->find(1)->second->process_announcement(attack_announcement3);
-
-    e.propagate_up();
-    e.propagate_down();
-
-    e.gather_community_detection_reports();
-
-    /*
-     * 1   4
-     * | \ |
-     * 2   5
-     * |   |
-     * 3   6
-     * 
-     * AS 1 should have 2 degrees
-     * AS 2 should have 2 degrees
-     * AS 5 should have 2 degrees
-     * 
-     * All others, 1 degree
-     */
-
-    //Check if merged
-    if(community_detection->identifier_to_component.size() != 1) {
-        std::cerr << "Components were not merged correctly!" << std::endl;
-        return false;
-    }
-
-    //Cannot be sure what identifier survives
-    CommunityDetection::Component *component3 = community_detection->identifier_to_component.begin()->second;
-    if(component2->hyper_edges.size() != 3) {
-        std::cerr << "The hyper edges were not added to the merged component correctly!" << std::endl;
-        return false;
-    }
-
-    //All should have 1 degree
-    for(int i = 4; i <= 6; i++) {
-        //Check degree count and existance of AS i
-        auto search3 = component3->as_to_degree_count.find(i);
-        if(search3 == component3->as_to_degree_count.end()) {
-            std::cerr << "AS " << i << " is not in the component after merge!" << std::endl;
-            return false;
-        }
-
-        if(((i == 1 || i == 2 || i == 5) && search3->second != 2) ||
-            ((i != 1 && i != 2 && i != 5) && search3->second != 1)) {
-            
-            std::cerr << "AS " << i << " has the wrong degree count after merge!" << std::endl;
-            return false;
+            std::cerr << "The set: { ";
+            for(auto asn : cover)
+                std::cerr << asn << " ";
+            std::cerr << "} does make a cover when it should not" << std::endl;
         }
     }
 
-    //All of the ASes with degree count of 1
-    auto degree_set_search_merged_1 = component3->degree_sets.find(1);
-    if(degree_set_search_merged_1 == component3->degree_sets.end()) {
-        std::cerr << "Degree Set 1 was not created after merge!" << std::endl;
+    return !error;
+}
+
+bool ezbgpsec_test_gen_ind_asn() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    // std::set<uint32_t> s({30, 20, 21, 22, 23, 666, 11, 12, 1});
+    auto ind_asn = cd.ind_map;
+
+    if (ind_asn[1]   == std::unordered_set<uint32_t>({1, 30, 666 })
+     && ind_asn[11]  == std::unordered_set<uint32_t>({11})
+     && ind_asn[12]  == std::unordered_set<uint32_t>({12})
+     && ind_asn[20]  == std::unordered_set<uint32_t>({20})
+     && ind_asn[21]  == std::unordered_set<uint32_t>({21})
+     && ind_asn[22]  == std::unordered_set<uint32_t>({22})
+     && ind_asn[23]  == std::unordered_set<uint32_t>({23})
+     && ind_asn[30]  == std::unordered_set<uint32_t>({1, 30, 666 })
+     && ind_asn[666] == std::unordered_set<uint32_t>({1, 30, 666 })) {
+        return true;
+    } else {
+        std::cerr << "ind_asn was not correct, output was\n";
+        for (auto pr : ind_asn) {
+            std::cerr << pr.first << ": ";
+            for (auto a : pr.second) {
+                std::cerr << a << ' ';
+            }
+            std::cerr << '\n';
+        }
+        return false;
+    }
+}
+
+
+bool ezbgpsec_test_get_unique_asns() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    auto test_s = cd.asn_to_degree;
+
+    std::set<uint32_t> expected_s({30, 20, 21, 22, 23, 666, 11, 12, 1});
+    if(test_s.size() != expected_s.size())
+        return false;
+
+    for(auto node : expected_s)
+        if(test_s.find(node) == test_s.end())
+            return false;
+
+    return true;
+}
+
+
+bool ezbgpsec_test_get_degrees() {
+    std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    CommunityDetection cd(NULL, 2);
+    cd.add_hyper_edge(edge1);
+    cd.add_hyper_edge(edge2);
+    cd.add_hyper_edge(edge3);
+    cd.add_hyper_edge(edge4);
+
+    auto test_degrees = cd.asn_to_degree;
+
+    if (!(*test_degrees[1] == 4
+       && *test_degrees[11] == 2
+       && *test_degrees[12] == 2
+       && *test_degrees[20] == 1
+       && *test_degrees[21] == 1
+       && *test_degrees[22] == 1
+       && *test_degrees[23] == 1
+       && *test_degrees[30] == 4
+       && *test_degrees[666] == 4)) {
+        return false;
+    }
+    return true;
+}
+
+bool ezbgpsec_test_gen_suspect_candidates() {
+    // std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    // std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    // std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    // std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    // CommunityDetection cd(NULL, 2);
+    // cd.add_hyper_edge(edge1);
+    // cd.add_hyper_edge(edge2);
+    // cd.add_hyper_edge(edge3);
+    // cd.add_hyper_edge(edge4);
+
+    // auto test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
+    // auto test_s = cd.get_unique_asns(cd.hyper_edges);
+    // auto test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
+
+    // std::vector<std::vector<uint32_t>> test_suspect_candidates = cd.gen_suspect_candidates(test_ind_map, test_degrees);
+
+    // std::vector<std::vector<uint32_t>> true_suspect_candidates = {{1, 30, 666}};
+
+    // bool error = false;
+    // for(auto &suspect : true_suspect_candidates) {
+    //     if(std::find(test_suspect_candidates.begin(), test_suspect_candidates.end(), suspect) == test_suspect_candidates.end()) {
+    //         error = true;
+
+    //         std::cerr << "The candidate suspect: { ";
+    //         for(auto asn : suspect)
+    //             std::cerr << asn << " ";
+    //         std::cerr << "} is not in the suspect list" << std::endl;
+    //     }
+    // }
+
+    // if(test_suspect_candidates.size() != true_suspect_candidates.size()) {
+    //     error = true;
+
+    //     std::cerr << "The elements of the candidates are not correct. Candidates are currently: ";
+
+    //     std::cerr << "{ ";
+    //     for(auto &suspect : test_suspect_candidates) {
+    //         std::cerr << "{ ";
+    //             for(auto asn : suspect)
+    //                 std::cerr << asn << " ";
+    //         std::cerr << "} ";
+    //     }
+    //     std::cerr << "} " << std::endl;;
+    // }
+
+    // // std::vector<uint32_t> edge1 = {30, 20, 666, 11, 1}; 
+    // // std::vector<uint32_t> edge2 = {30, 21, 666, 11, 1};
+    // // std::vector<uint32_t> edge3 = {30, 22, 666, 12, 1};
+    // // std::vector<uint32_t> edge4 = {30, 23, 666, 12, 1};
+    // std::vector<uint32_t> edge5 = {31, 20, 666, 13, 1};
+    // std::vector<uint32_t> edge6 = {32, 20, 666, 14, 1};
+    // std::vector<uint32_t> edge7 = {33, 26, 666, 15, 1};
+    // cd.add_hyper_edge(edge5);
+    // cd.add_hyper_edge(edge6);
+    // cd.add_hyper_edge(edge7);
+
+    // test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
+    // test_s = cd.get_unique_asns(cd.hyper_edges);
+    // test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
+
+    // test_suspect_candidates = cd.gen_suspect_candidates(test_ind_map, test_degrees);
+
+    // true_suspect_candidates = {{1, 666}, {1, 666, 30}, {1, 666, 30, 20}};
+
+    // for(auto &suspect : true_suspect_candidates) {
+    //     if(std::find(test_suspect_candidates.begin(), test_suspect_candidates.end(), suspect) == test_suspect_candidates.end()) {
+    //         error = true;
+
+    //         std::cerr << "The candidate suspect: { ";
+    //         for(auto asn : suspect)
+    //             std::cerr << asn << " ";
+    //         std::cerr << "} is not in the suspect list (Pt 2.)" << std::endl;
+    //     }
+    // }
+
+    // if(test_suspect_candidates.size() != true_suspect_candidates.size()) {
+    //     error = true;
+
+    //     std::cerr << "The elements of the suspect candidates (Pt 2.) are not correct. Candidates are currently: ";
+
+    //     std::cerr << "{ ";
+    //     for(auto &suspect : test_suspect_candidates) {
+    //         std::cerr << "{ ";
+    //             for(auto asn : suspect)
+    //                 std::cerr << asn << " ";
+    //         std::cerr << "} ";
+    //     }
+    //     std::cerr << "} " << std::endl;;
+    // }
+
+    // return !error;
+
+    return true;
+}
+
+bool ezbgpsec_test_gen_suspect_candidates_tiebrake() {
+    // std::vector<uint32_t> edge1 = {30, 20, 3, 666, 2, 1}; 
+    // std::vector<uint32_t> edge2 = {30, 21, 3, 666, 2, 1};
+    // std::vector<uint32_t> edge3 = {30, 22, 5, 666, 4, 1};
+    // std::vector<uint32_t> edge4 = {30, 23, 5, 666, 4, 1};
+    // std::vector<uint32_t> edge5 = {30, 24, 7, 666, 6, 1};
+    // std::vector<uint32_t> edge6 = {30, 25, 7, 666, 6, 1};
+    // CommunityDetection cd(NULL, 1);
+    // cd.add_hyper_edge(edge1);
+    // cd.add_hyper_edge(edge2);
+    // cd.add_hyper_edge(edge3);
+    // cd.add_hyper_edge(edge4);
+    // cd.add_hyper_edge(edge5);
+    // cd.add_hyper_edge(edge6);
+
+    // auto test_degrees = cd.get_degrees(cd.get_unique_asns(cd.hyper_edges), cd.hyper_edges);
+    // auto test_s = cd.get_unique_asns(cd.hyper_edges);
+    // auto test_ind_map = cd.gen_ind_asn(test_s, cd.hyper_edges);
+
+    // std::vector<std::vector<uint32_t>> test_suspect_candidates = cd.gen_suspect_candidates(test_ind_map, test_degrees);
+
+    // std::vector<std::vector<uint32_t>> true_suspect_candidates = {{1, 30, 666}, { 1, 30, 666, 2, 3 }, { 1, 30, 666, 2, 3, 4, 5 }, { 1, 30, 666, 2, 3, 4, 5, 6, 7 }, { 1, 30, 666, 2, 3, 6, 7 }, { 1, 30, 666, 4, 5 }, { 1, 30, 666, 4, 5, 6, 7 }, { 1, 30, 666, 6, 7 }};
+
+    // bool error = false;
+    // for(auto &suspect : true_suspect_candidates) {
+    //     if(std::find(test_suspect_candidates.begin(), test_suspect_candidates.end(), suspect) == test_suspect_candidates.end()) {
+    //         error = true;
+
+    //         std::cerr << "The candidate suspect (in tiebrake test): { ";
+    //         for(auto asn : suspect)
+    //             std::cerr << asn << " ";
+    //         std::cerr << "} is not in the suspect list" << std::endl;
+    //     }
+    // }
+
+    // if(test_suspect_candidates.size() != true_suspect_candidates.size()) {
+    //     error = true;
+
+    //     std::cerr << "The elements of the candidates (in tiebrake test) are not correct. Candidates are currently: ";
+
+    //     std::cerr << "{ ";
+    //     for(auto &suspect : test_suspect_candidates) {
+    //         std::cerr << "{ ";
+    //             for(auto asn : suspect)
+    //                 std::cerr << asn << " ";
+    //         std::cerr << "} ";
+    //     }
+    //     std::cerr << "} " << std::endl;;
+    // }
+
+    // return !error;
+    return true;
+}
+
+bool ezbgpsec_test_cd_algorithm() {
+    CommunityDetection cd(NULL, 2);
+
+    std::vector<std::vector<uint32_t>> to_add = {
+        { 88, 666, 1 },
+        { 88, 666, 3 },
+        { 88, 666, 5 },
+
+        { 99, 44, 33, 666, 1 },
+        { 99, 44, 33, 666, 3 },
+        { 99, 44, 33, 666, 5 },
+
+        { 55, 44, 33, 666, 1 },
+        { 55, 44, 33, 666, 3 },
+        { 55, 44, 33, 666, 5 },
+
+        { 88, 666, 33, 66, 2 },
+        { 88, 666, 33, 66, 4 },
+        { 88, 666, 33, 66, 6 },
+
+        { 99, 44, 33, 66, 2 },
+        { 99, 44, 33, 66, 4 },
+        { 99, 44, 33, 66, 6 },
+
+        { 55, 44, 33, 66, 2 },
+        { 55, 44, 33, 66, 4 },
+        { 55, 44, 33, 66, 6 }
+    };
+
+    for(auto &e : to_add)
+        cd.add_hyper_edge(e);
+
+    cd.CD_algorithm();
+
+    std::vector<std::vector<uint32_t>> blacklist = {{ 33, 44, 66 }, {33, 666, 44}, {33, 666, 66, 88}};
+
+    if(cd.blacklist.size() != blacklist.size()) {
+        std::cerr << "Incorrect amount of blacklists!" << std::endl;
         return false;
     }
 
-    std::set<uint32_t> degree_set_merged_1 = degree_set_search_merged_1->second;
-    if(degree_set_merged_1.size() != 3) {
-        std::cerr << "Degree Set 1 does not have the right ASes after merge!" << std::endl;
-        return false;
-    }
-
-    if(degree_set_merged_1.find(4) == degree_set_merged_1.end() || degree_set_merged_1.find(3) == degree_set_merged_1.end() || 
-            degree_set_merged_1.find(6) == degree_set_merged_1.end()) {
-        
-        std::cerr << "Degree Set 1 has the wrong ASes in it after the merge!" << std::endl;
-        return false; 
-    }
-
-    //All of the ASes with degree count of 1
-    auto degree_set_search_merged_2 = component3->degree_sets.find(2);
-    if(degree_set_search_merged_2 == component3->degree_sets.end()) {
-        std::cerr << "Degree Set 2 was not created after merge!" << std::endl;
-        return false;
-    }
-
-    std::set<uint32_t> degree_set_merged_2 = degree_set_search_merged_2->second;
-    if(degree_set_merged_2.size() != 3) {
-        std::cerr << "Degree Set 2 does not have the right ASes after merge!" << std::endl;
-        return false;
-    }
-
-    if(degree_set_merged_2.find(5) == degree_set_merged_2.end() || degree_set_merged_2.find(1) == degree_set_merged_2.end() || 
-            degree_set_merged_2.find(2) == degree_set_merged_2.end()) {
-        
-        std::cerr << "Degree Set 2 has the wrong ASes in it after the merge!" << std::endl;
-        return false; 
+    for(auto &b : cd.blacklist) {
+        if(std::find(blacklist.begin(), blacklist.end(), b) == blacklist.end()) {
+            std::cerr << "Blackists are not correct!" << std::endl;
+        }
     }
 
     return true;
 }
 
-/** Test if components can be added to the CD graph
+/** Test BGPsec invalid announcement rejection of non-contiguous path. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
  *    1
  *    |
- *    2--3
- *   /|   
- *  4 5--6 
- * 
- *  5 is claiming that 3 is its origin
- *  1 is claiming that 4 is its origin
- * 
- *  2, 4, and 3 are adoptors
+ *    2
+ *    |\
+ *    3 13796 
  */
-bool ezbgpsec_test_mvc() {
+bool ezbgpsec_test_bgpsec_noncontiguous() {
     EZExtrapolator e = EZExtrapolator();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
-    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
-    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
-    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
-    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
-    e.graph->add_relationship(2, 3, AS_REL_PEER);
-    e.graph->add_relationship(3, 2, AS_REL_PEER);
-    e.graph->add_relationship(5, 6, AS_REL_PEER);
-    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 13796, AS_REL_CUSTOMER);
     e.graph->decide_ranks();
 
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(2);
-    e.graph->adopters->push_back(4);
-    e.graph->adopters->push_back(3);
-    // e.graph->adopters->push_back(1);
-
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
     }
 
-    // e.graph->adopters->push_back(6);
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    //4 being the victim doesn't really matter, just need the prefix to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
-
-    //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
-    EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
-
-    //The supposed path thus far
-    attack_announcement.as_path.push_back(3);
-
-    e.graph->ases->find(5)->second->process_announcement(attack_announcement);
-
-    Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
-
-    //Prefixes need not compete for 2's favor, thus they both need to be checked
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
-
-    EZAnnouncement attack_announcement2(4, p2.addr, p2.netmask, 299, 4, 2, false, true);
-    attack_announcement2.as_path.push_back(4);//Make the origin on the path
-
-    e.graph->ases->find(1)->second->process_announcement(attack_announcement2);
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
 
     e.propagate_up();
     e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
 
-    e.gather_community_detection_reports();
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
 
-    auto compnent_search = e.communityDetection->identifier_to_component.find(2);
-    if(compnent_search == e.communityDetection->identifier_to_component.end()) {
-        std::cerr << "Unique identifier is not correct! In MVC" << std::endl;
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Announcement should be accepted
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
     }
-
-    CommunityDetection::Component *component = compnent_search->second;
-
-    //*************************************************************************
-    uint32_t mvc = component->minimum_vertex_cover(2);
-    if(mvc != 2) {
-        std::cerr << "Global Minimum vertex cover on AS 2 is " << mvc << ", rather than 2" << std::endl; 
-        return false;
-    }
-
-    mvc = component->local_minimum_vertex_cover(2);
-    if(mvc != 2) {
-        std::cerr << "Local Minimum vertex cover on AS 2 is " << mvc << ", rather than 2" << std::endl; 
-        return false;
-    }
-
-    //*************************************************************************
-    mvc = component->minimum_vertex_cover(5);
-    if(mvc != 1) {
-        std::cerr << "Minimum vertex cover on AS 5 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
-    mvc = component->local_minimum_vertex_cover(5);
-    if(mvc != 1) {
-        std::cerr << "Local Minimum vertex cover on AS 5 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
-    //*************************************************************************
-    mvc = component->minimum_vertex_cover(1);
-    if(mvc != 1) {
-        std::cerr << "Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
-    mvc = component->local_minimum_vertex_cover(1);
-    if(mvc != 1) {
-        std::cerr << "Local Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
-    //*************************************************************************
-    mvc = component->minimum_vertex_cover(3);
-    if(mvc != 1) {
-        std::cerr << "Minimum vertex cover on AS 3 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
-    mvc = component->local_minimum_vertex_cover(3);
-    if(mvc != 1) {
-        std::cerr << "Local Minimum vertex cover on AS 3 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
-    //*************************************************************************
-    mvc = component->minimum_vertex_cover(4);
-    if(mvc != 1) {
-        std::cerr << "Minimum vertex cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
-    mvc = component->local_minimum_vertex_cover(4);
-    if(mvc != 1) {
-        std::cerr << "Local Minimum vertex cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
-        return false;
-    }
-
     return true;
 }
 
-/** Test if the local mvc differs from the global mvc
+/** Test BGPsec invalid announcement rejection of contiguous path. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
- *     1      5
- *    / \
- *   2   3
- *    \ /
- *     4
- * 
- * Yes, 5 has no neighbors. This just makes the test easier. 1 will see the invalid MAC between 4 and 5.
- * 
- * Here, 4 is the attacker claiming to have 5 as the origin for the prefix
- * 2 and 3 are non adopting
- * 5 and 1 are adopting
- * 
- * The local mvc for 1 will be 2
- * The global mvc for 1 will be 1
+ *    1
+ *    |
+ *    2
+ *    |\
+ *    3 13796 
  */
-bool ezbgpsec_test_local_mvc() {
+bool ezbgpsec_test_bgpsec_contiguous() {
     EZExtrapolator e = EZExtrapolator();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
-
-    e.graph->add_relationship(3, 1, AS_REL_PROVIDER);
-    e.graph->add_relationship(1, 3, AS_REL_CUSTOMER);
-
-    e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
-    e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
-
-    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
-    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
-
-    e.graph->ases->insert(std::pair<uint32_t, EZAS*>(5, new EZAS(5)));
-
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 13796, AS_REL_CUSTOMER);
     e.graph->decide_ranks();
 
-    //2 is the first so it will be the first to report
-    e.graph->adopters->push_back(5);
-    e.graph->adopters->push_back(1);
-    // e.graph->adopters->push_back(1);
-
-    //Set them to locally know that they are an adopter
-    for(uint32_t asn : *e.graph->adopters) {
-        e.graph->ases->find(asn)->second->adopter = true;
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
     }
 
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Prefix<> p2 = Prefix<>("155.94.0.0", "255.255.0.0");
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
 
-    //4 and 5 being the victims doesn't really matter, just need the prefixes to be in here
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
-    e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(5, p2));
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
 
-    //Make an announcement that states 4 and 5 are neighbors. This will create an invalid MAC
-    EZAnnouncement attack_announcement(5, p.addr, p.netmask, 298, 4, 2, false, true);
-    EZAnnouncement attack_announcement2(5, p2.addr, p2.netmask, 298, 4, 2, false, true);
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
 
-    //The supposed path thus far
-    attack_announcement.as_path.push_back(5);
-    attack_announcement.as_path.insert(attack_announcement.as_path.begin(), 4);
-
-    attack_announcement2.as_path.push_back(5);
-    attack_announcement2.as_path.insert(attack_announcement2.as_path.begin(), 4);
-
-    e.graph->ases->find(2)->second->process_announcement(attack_announcement);
-    e.graph->ases->find(3)->second->process_announcement(attack_announcement2);
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
 
     e.propagate_up();
     e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
 
-    e.gather_community_detection_reports();
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
 
-    if(e.communityDetection->identifier_to_component.size() != 1) {
-        std::cerr << "Local MVC test has " << e.communityDetection->identifier_to_component.size() << " component(s) rather than 1 component" << std::endl;
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Origin announcement should be preferred
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
     }
+    return true;
+}
 
-    CommunityDetection::Component *component = (e.communityDetection->identifier_to_component.begin()++)->second;
+/** Test BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1--13796
+ *    |
+ *    2
+ *    |
+ *    3
+ */
+bool ezbgpsec_test_bgpsec_contiguous2() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 1, AS_REL_PEER);
+    e.graph->add_relationship(1, 13796, AS_REL_PEER);
+    e.graph->decide_ranks();
 
-    if(component->hyper_edges.size() != 2) {
-        std::cerr << "Local MVC test has a component with " << component->hyper_edges.size() << " hyper edge(s) rather than 2" << std::endl;
-        return false;
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
     }
 
-    //*************************************************************************
-    uint32_t mvc = component->minimum_vertex_cover(1);
-    if(mvc != 1) {
-        std::cerr << "In the local mvc test, Global Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Hijack announcement should be preferred (testing security 2nd)
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
         return false;
     }
+    return true;
+}
 
-    mvc = component->local_minimum_vertex_cover(1);
-    if(mvc != 2) {
-        std::cerr << "In the local mvc test, Local Minimum vertex cover on AS 1 is " << mvc << ", rather than 2" << std::endl; 
+/** Test Transitive BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2
+ *    |\
+ *    3 13796
+ */
+bool ezbgpsec_test_transitive_bgpsec_contiguous() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 13796, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //auto path = e.graph->ases->find(1)->second->all_anns->find(p).as_path;
+    //for (auto p : path) {
+    //    std::cout << p << " ";
+    //}
+    //std::cout << std::endl;
+
+    // Origin AS preferred, attacker's signature is missing
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test Transitive BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1--13796
+ *    |
+ *    2
+ *    |
+ *    3
+ */
+bool ezbgpsec_test_transitive_bgpsec_contiguous2() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 1, AS_REL_PEER);
+    e.graph->add_relationship(1, 13796, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Attacker's signature is missing, but is preferred because of relationship
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 3 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test Transitive BGPsec invalid announcement rejection of contiguous path. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2
+ *    |\
+ *    | 4
+ *    |  \
+ *    3  13796
+ */
+bool ezbgpsec_test_transitive_bgpsec_contiguous3() {
+    EZExtrapolator e = EZExtrapolator();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(13796, 4, AS_REL_PROVIDER);
+    e.graph->add_relationship(4, 13796, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(13796)->second->policy = EZAS_TYPE_BGPSEC_TRANSITIVE;
+
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement attack_announcement(13796, p, pr, 13796, 1, true, true);
+    attack_announcement.as_path = std::vector<uint32_t>({13796});
+
+    EZAnnouncement origin_announcement(13796, p, pr, 13796, 0, true, false);
+    origin_announcement.as_path = std::vector<uint32_t>({});
+
+    e.graph->ases->find(3)->second->process_announcement(attack_announcement);
+    e.graph->ases->find(13796)->second->process_announcement(origin_announcement);
+
+    e.propagate_up();
+    e.propagate_down();
+    
+    // debug
+    //e.graph->ases->find(3)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(2)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(1)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    //e.graph->ases->find(13796)->second->stream_announcements(std::cout);
+    //std::cout << std::endl;
+
+    // Origin AS preferred over path length, attacker's signature is missing
+    if(e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(0) != 1 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(1) != 2 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(2) != 4 ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->as_path.at(3) != 13796) {
+        
+        std::cerr << "BGPsec test_path_propagation. AS #1 full path incorrect!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test fake path generation
+ */
+bool ezbgpsec_test_gen_fake_as_path() {
+    EZExtrapolator e = EZExtrapolator();
+    e.communityDetection->local_threshold = 2;
+
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
+
+    // test k=2
+    std::vector<uint32_t> p1 = {3, 2, 1};
+    std::vector<std::vector<uint32_t>> fake_paths;
+    for (size_t i = 0; i <= (p1.size()-1)*e.communityDetection->local_threshold; i++) {
+        fake_paths.push_back(e.gen_fake_as_path(p1));
+        e.round++;
+    }
+
+    // debug
+    //for (auto f : fake_paths) {
+    //    for (auto a : f) {
+    //        std::cout << a << ' ';
+    //    }
+    //    std::cout << '\n';
+    //}
+
+    // first should be equal to last
+    if (fake_paths[0] != *fake_paths.rbegin()) {
+        std::cout << "Cycle of fake paths does not repeat\n";
+        return false;
+    }
+    if (fake_paths[0] == fake_paths[1]) {
+        std::cout << "Consecutive fake paths are identical\n";
         return false;
     }
 
     return true;
 }
 
-bool ezbgpsec_test_threshold_filtering() {
-    // EZExtrapolator e = EZExtrapolator();
-    // e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
-    // e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
-    // e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
-    // e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
-    // e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
-    // e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
-    // e.graph->add_relationship(2, 3, AS_REL_PEER);
-    // e.graph->add_relationship(3, 2, AS_REL_PEER);
-    // e.graph->add_relationship(5, 6, AS_REL_PEER);
-    // e.graph->add_relationship(6, 5, AS_REL_PEER);
-    // e.graph->decide_ranks();
+/** Test previously seen real path generation
+ */
+bool ezbgpsec_test_previously_seen_as_path() {
+    EZExtrapolator e = EZExtrapolator();
 
-    // e.communityDetection->threshold = 2;
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->decide_ranks();
+    for (auto &as : *e.graph->ases) {
+        as.second->community_detection = e.communityDetection;
+    }
 
-    // //2 is the first so it will be the first to report
-    // e.graph->adopters->push_back(2);
-    // e.graph->adopters->push_back(4);
-    // e.graph->adopters->push_back(3);
-    // // e.graph->adopters->push_back(1);
+    std::vector<uint32_t> p1 = {};
+    std::vector<uint32_t> found_path;
+    
+    e.graph->ases->find(1)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(2)->second->policy = EZAS_TYPE_BGP;
+    e.graph->ases->find(3)->second->policy = EZAS_TYPE_BGP;
 
-    // //Set them to locally know that they are an adopter
-    // for(uint32_t asn : *e.graph->adopters) {
-    //     e.graph->ases->find(asn)->second->adopter = true;
-    // }
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Priority pr;
+    pr.relationship = 3;
+    EZAnnouncement origin_announcement(3, p, pr, 64514, 0, true, false);
+    origin_announcement.as_path = p1;
+    e.graph->ases->find(3)->second->process_announcement(origin_announcement);
 
-    // // e.graph->adopters->push_back(6);
+    found_path = e.get_nonadopting_path_previously_seen(p1.size(), e.graph->ases->find(3)->second, e.graph->ases->find(1)->second, p);
+    // test no path seen
+    if (found_path != std::vector<uint32_t>({1})) {
+        return false;
+    }
+    e.propagate_up();
+    e.propagate_down();
+    e.graph->clear_announcements();
 
-    // Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-
-    // //4 being the victim doesn't really matter, just need the prefix to be in here
-    // e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(4, p));
-
-    // //Make an announcement that states 5 and 3 are neighbors. This will create an invalid MAC
-    // EZAnnouncement attack_announcement(3, p.addr, p.netmask, 299, 3, 2, false, true);
-
-    // //The supposed path thus far
-    // attack_announcement.as_path.push_back(3);
-
-    // e.graph->ases->find(5)->second->process_announcement(attack_announcement);
-
-    // Prefix<> p2 = Prefix<>("1.1.0.0", "255.255.0.0");
-
-    // //Prefixes need not compete for 2's favor, thus they both need to be checked
-    // e.graph->victim_to_prefixes->insert(std::pair<uint32_t, Prefix<>>(6, p2));
-
-    // EZAnnouncement attack_announcement2(4, p2.addr, p2.netmask, 299, 4, 2, false, true);
-    // attack_announcement2.as_path.push_back(4);//Make the origin on the path
-
-    // e.graph->ases->find(1)->second->process_announcement(attack_announcement2);
-
-    // e.propagate_up();
-    // e.propagate_down();
-
-    // e.gather_community_detection_reports();
-
-    // auto compnent_search = e.communityDetection->identifier_to_component.find(2);
-    // if(compnent_search == e.communityDetection->identifier_to_component.end()) {
-    //     std::cerr << "Unique identifier is not correct! In threshold filtering" << std::endl;
-    //     return false;
-    // }
-
-    // CommunityDetection::Component *component = compnent_search->second;
-    // //Nothing should change here since there is no mvc that is greater than the threshold
-    // e.communityDetection->threshold_filtering(e.graph);
-
-    // //TODO: replace all of this with degree checks rather than mvc
-    // uint32_t mvc = component->minimum_vertex_cover(2);
-    // if(mvc != 2) {
-    //     std::cerr << "Minimum vertex cover on AS 2 is " << mvc << ", rather than 2" << std::endl; 
-    //     return false;
-    // }
-
-    // mvc = component->minimum_vertex_cover(5);
-    // if(mvc != 1) {
-    //     std::cerr << "Minimum vertex cover on AS 5 is " << mvc << ", rather than 1" << std::endl; 
-    //     return false;
-    // }
-
-    // mvc = component->minimum_vertex_cover(1);
-    // if(mvc != 1) {
-    //     std::cerr << "Minimum vertex cover on AS 1 is " << mvc << ", rather than 1" << std::endl; 
-    //     return false;
-    // }
-
-    // mvc = component->minimum_vertex_cover(3);
-    // if(mvc != 1) {
-    //     std::cerr << "Minimum vertex cover on AS 3 is " << mvc << ", rather than 1" << std::endl; 
-    //     return false;
-    // }
-
-    // mvc = component->minimum_vertex_cover(4);
-    // if(mvc != 1) {
-    //     std::cerr << "Minimum vertex cover on AS 4 is " << mvc << ", rather than 1" << std::endl; 
-    //     return false;
-    // }
+    found_path = e.get_nonadopting_path_previously_seen(p1.size(), e.graph->ases->find(3)->second, e.graph->ases->find(1)->second, p);
+    // test path seen
+    if (found_path != std::vector<uint32_t>({1, 2, 3})) {
+        return false;
+    }
+    // debug
+    //for (auto a : found_path) {
+    //    std::cout << a << ' ';
+    //}
+    //std::cout << '\n';
 
     return true;
 }

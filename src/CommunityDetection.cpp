@@ -1,228 +1,11 @@
 #include "CommunityDetection.h"
 
-//**************** Component ****************//
-CommunityDetection::Component::Component(std::vector<uint32_t> &hyper_edge) {
-    //TODO: This will break if an AS is removed and then added to another component
-    unique_identifier = hyper_edge.at(0);
-    add_hyper_edge(hyper_edge);
-}
-
-CommunityDetection::Component::~Component() {
-
-}
-
-bool CommunityDetection::Component::contains_hyper_edge(std::vector<uint32_t> &hyper_edge) {
-    for(auto &temp_edge : hyper_edges)
-        if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin()))
-            return true;
-    return false;
-}
-
-void CommunityDetection::Component::change_degree(uint32_t asn, bool increment) {
-    auto initial_degree_count_search = as_to_degree_count.find(asn);
-
-    uint32_t degree_count = 0;
-    if(initial_degree_count_search != as_to_degree_count.end()) {
-        degree_count = initial_degree_count_search->second;
-        as_to_degree_count.erase(initial_degree_count_search);
-    }
-
-    auto initial_degree_set_search  = degree_sets.find(degree_count);
-    if(initial_degree_set_search != degree_sets.end()) {
-        std::set<uint32_t> &degree_set = initial_degree_set_search->second;
-        degree_set.erase(asn);
-
-        if(degree_set.size() == 0)
-            degree_sets.erase(initial_degree_set_search);
-    }
-
-    if(increment)
-        degree_count++;
-    else
-        degree_count--;
-
-    if(degree_count > 0) {
-        as_to_degree_count.insert(std::make_pair(asn, degree_count));
-
-        auto degree_set_search = degree_sets.find(degree_count);
-        if(degree_set_search == degree_sets.end()) {
-            auto it = degree_sets.insert(std::make_pair(degree_count, std::set<uint32_t>()));
-            std::set<uint32_t> &final_degree_set = (*it.first).second;
-
-            final_degree_set.insert(asn);
-        } else {
-            std::set<uint32_t> &final_degree_set = degree_set_search->second;
-            final_degree_set.insert(asn);
-        }
-    }
-}
-
-void CommunityDetection::Component::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
-    Logger::getInstance().log("Debug") << "Hyper edge: " << hyper_edge << " is being added to the hyper graph";
-
-    hyper_edges.push_back(hyper_edge);
-    for(size_t i = 0; i < hyper_edge.size(); i++)
-        change_degree(hyper_edge.at(i), true);
-}
-
-void CommunityDetection::Component::merge(Component *other) {
-    std::vector<std::vector<uint32_t>> &other_hyper_edges = other->hyper_edges;
-
-    for(std::vector<uint32_t> &hyper_edge : other_hyper_edges)
-        add_hyper_edge(hyper_edge);
-}
-
-uint32_t CommunityDetection::Component::minimum_vertex_cover_helper(uint32_t root_asn, std::vector<std::vector<uint32_t>> hyper_edges_to_find, bool local) {
-    if(hyper_edges_to_find.size() == 0)
-        return 0;
-
-    std::unordered_set<uint32_t> asns_to_attempt;
-    for(auto &edge : hyper_edges_to_find) {
-        for(size_t i = 0; i < edge.size(); i++) {
-            if(local) {//Trial remove only neighbors and not the root
-                if(edge.at(i) != root_asn)
-                    continue;
-
-                if(i != 0)
-                    asns_to_attempt.insert(edge.at(i - 1));
-                else if(i != edge.size() - 1)
-                    asns_to_attempt.insert(edge.at(i + 1));
-            } else {//Trial remove all but the root AS
-                if(edge.at(i) == root_asn)
-                    continue;
-
-                asns_to_attempt.insert(edge.at(i));
-            }
-        }
-    }
-
-    bool assigned = false;
-    uint32_t mvc = 0;
-    for(uint32_t asn : asns_to_attempt) {
-        std::vector<std::vector<uint32_t>> next_hyper_edges_to_find;
-
-        for(auto edge : hyper_edges_to_find) {
-            //Eliminate any edge containing this ASN
-            if(std::find(edge.begin(), edge.end(), asn) == edge.end())
-                next_hyper_edges_to_find.push_back(edge);
-        }
-
-        uint32_t result = minimum_vertex_cover_helper(root_asn, next_hyper_edges_to_find, local);
-
-        if(!assigned) {
-            mvc = result;
-            assigned = true;
-        } else if(result < mvc) {
-            mvc = result;
-        }
-    }
-
-    return 1 + mvc;
-}
-
-uint32_t CommunityDetection::Component::minimum_vertex_cover(uint32_t asn) {
-    std::vector<std::vector<uint32_t>> hyper_edges_to_find;
-
-    //TODO we need a data structure to supply the hyper edges that an AS is in
-    for(auto &edge : this->hyper_edges)
-        if(std::find(edge.begin(), edge.end(), asn) != edge.end())
-            hyper_edges_to_find.push_back(edge);
-
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, false);
-}
-
-uint32_t CommunityDetection::Component::local_minimum_vertex_cover(uint32_t asn) {
-    std::vector<std::vector<uint32_t>> hyper_edges_to_find;
-
-    for(auto &edge : this->hyper_edges)
-        if(std::find(edge.begin(), edge.end(), asn) != edge.end())
-            hyper_edges_to_find.push_back(edge);
-
-    return minimum_vertex_cover_helper(asn, hyper_edges_to_find, true);
-}
-
-void CommunityDetection::Component::remove_hyper_edge(std::vector<uint32_t> &hyper_edge) {
-    auto it = std::find(hyper_edges.begin(), hyper_edges.end(), hyper_edge);
-
-    if(it == hyper_edges.end())
-        return;
-
-    for(uint32_t asn : hyper_edge)
-        change_degree(asn, false);
-    
-    hyper_edges.erase(it);
-}
-
-void CommunityDetection::Component::remove_AS(uint32_t asn_to_remove) {
-    //Erase hyper edges containing this AS
-    for(auto it = hyper_edges.begin(); it != hyper_edges.end(); ++it)
-        if(std::find(it->begin(), it->end(), asn_to_remove) != it->end())
-            remove_hyper_edge(*it);
-}
-
-void CommunityDetection::Component::threshold_filtering(CommunityDetection *community_detection, EZASGraph *graph) {
-    if(community_detection->threshold == 0)
-        return;
-
-    bool changed = true;
-    while(changed && community_detection->threshold > 0) {
-        //find the highest degree in the graph
-        uint32_t highest_mvc = 0;
-        uint32_t highest_mvc_asn = 0;
-        for(auto &pair : as_to_degree_count) {
-            uint32_t mvc = minimum_vertex_cover(pair.first);
-
-            if(mvc > highest_mvc) {
-                highest_mvc = mvc;
-                highest_mvc_asn = pair.first;
-            }
-        }
-
-        //if there is an AS with an mvc higher than the threshold, remove the AS and decrement threshold
-        //Check that it is also greater than or equal to 2 (don't remove something with an mvc of 1)
-        if(highest_mvc > community_detection->threshold)
-            remove_AS(highest_mvc_asn);
-        else
-            changed = false;
-    }
-}
-
-/**
- * I do not believe this is write? We need test cases for virtual pair removal to see how this should work 
- */
-void CommunityDetection::Component::virtual_pair_removal(CommunityDetection *community_detection, EZASGraph *graph) {
-    threshold_filtering(community_detection, graph);
-
-    //For all removal sequences...
-    for(size_t i = 0; i < hyper_edges.size(); i++) {
-        CommunityDetection temp_community_detection(community_detection->threshold - 1);
-
-        for(size_t j = 0; j < hyper_edges.size(); j++) {
-            if(i == j) continue;
-            temp_community_detection.add_hyper_edge(hyper_edges.at(j));
-        }
-
-        //Do community detection on that 
-        temp_community_detection.virtual_pair_removal(graph);
-    }
-}
-
 //**************** Community Detection ****************//
-
-CommunityDetection::CommunityDetection(uint32_t threshold) : threshold(threshold) { }
-CommunityDetection::~CommunityDetection() {
-    clear();
-}
-
-void CommunityDetection::clear() {
-    for(auto &pair : identifier_to_component)
-        delete pair.second;
-    identifier_to_component.clear();
-}
+CommunityDetection::CommunityDetection(EZExtrapolator *extrapolator, uint32_t local_threshold) : extrapolator(extrapolator), local_threshold(local_threshold) { }
 
 bool CommunityDetection::contains_hyper_edge(std::vector<uint32_t> &hyper_edge) {
-    for(auto &pair : identifier_to_component)
-        if(pair.second->contains_hyper_edge(hyper_edge))
+    for(auto &temp_edge : hyper_edges)
+        if(temp_edge.size() == hyper_edge.size() && std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin()))
             return true;
     return false;
 }
@@ -231,48 +14,268 @@ void CommunityDetection::add_hyper_edge(std::vector<uint32_t> &hyper_edge) {
     if(contains_hyper_edge(hyper_edge))
         return;
 
-    //Go through the reporting path and see what components these ASes belong to in the graph
-    //We will record the unique identifier to the components that these ASes already belong to
-    std::unordered_set<uint32_t> components_to_merge;
+    hyper_edges.push_back(hyper_edge);
+
     for(uint32_t asn : hyper_edge) {
-        for(auto &pair : identifier_to_component) {
-            Component *component = pair.second;
+        auto ind_asn_search = ind_map.find(asn);
+        if(ind_asn_search == ind_map.end()) {
+            std::unordered_set<uint32_t> to_insert;
 
-            auto as_search = component->as_to_degree_count.find(asn);
+            for(uint32_t asn_t : hyper_edge) {
+                auto ind_asn_serach2 = ind_map.find(asn_t);
+                if(ind_asn_serach2 == ind_map.end()) {
+                    to_insert.insert(asn_t);
+                } else if(ind_asn_serach2->second.find(asn) != ind_asn_serach2->second.end()) {
+                    to_insert.insert(asn_t);
+                }
+            }
 
-            if(as_search != component->as_to_degree_count.end())
-                components_to_merge.insert(component->unique_identifier);
+            ind_map.insert(std::make_pair(asn, to_insert));
+        } else {
+            auto &set = ind_asn_search->second;
+            for(auto it = set.begin(); it != set.end();) {
+                if(std::find(hyper_edge.begin(), hyper_edge.end(), *it) == hyper_edge.end()) {
+                    ind_map.find(*it)->second.erase(asn);
+                    it = set.erase(it);
+                } else {
+                    it++;
+                }
+            }
+        }
+
+        auto asn_search = asn_to_degree.find(asn);
+        if(asn_search == asn_to_degree.end()) {
+            std::shared_ptr<uint32_t> degree = std::make_shared<uint32_t>(1);
+            asn_to_degree.insert(std::make_pair(asn, degree));
+            sorted_asn_degree.push_back(std::make_pair(asn, degree));
+
+            new_unique_asns.insert(asn);
+        } else {
+            (*(asn_search->second))++;
+        }
+    }
+}
+
+bool CommunityDetection::is_cover(std::vector<uint32_t> &cover_candidate) {
+    // We are not testing if s prime makes a cover, we are testing for what the MVC is by testing if any subset of S/S' with length threshold make a cover
+
+    // // does s prime form a set cover over s
+    // std::set<uint32_t> covered;
+    // for (auto prime_candidate : sprime) {
+    //     for (const auto &edge : this->hyper_edges) {
+    //         // if this prime candidate is in the edge, add these ASNs to covered set
+    //         if (std::find(edge.begin(), edge.end(), prime_candidate) != edge.end()) {
+    //             for (auto edge_asn : edge) {
+    //                 covered.insert(edge_asn);
+    //             }
+    //             continue;
+    //         }
+    //     }
+    // }
+    // // QUESTION: if s is supposed to be the set of all ASNs in this component, this works
+    // // if s is the set of all ASNs excluding those of s prime, this does not work
+    // return std::includes(covered.begin(), covered.end(), s.begin(), s.end());
+
+    //Check if each edge in the component contains an element of the candidate. If not, then the candidate does not make a cover
+    for(auto &edge : hyper_edges) {
+        bool contains_any = false;
+        for(uint32_t node : cover_candidate) {
+            //This could be better if this was a set rather than a vector 
+            if(std::find(edge.begin(), edge.end(), node) != edge.end()) {
+                contains_any = true;
+                break;
+            }
+        }
+
+        //This edge does not contain any of the elements in the suspect list, thus this edge is not covered. 
+        if(!contains_any)
+            return false;
+    }
+    return true;
+}
+
+void CommunityDetection::generate_covers_helper(std::unordered_map<uint32_t, std::shared_ptr<uint32_t>>::iterator asn_to_degree_it,
+                                                std::vector<uint32_t> &building_subset, uint32_t starting_asn) {
+
+    //The subset we are building has reached the neccessary length
+    if(building_subset.size() == local_threshold) {
+        //if the sum of all of the degrees is not at least the amount of edges (1 attack so they are all in one connected component) then it cannot possibly be a cover
+        uint32_t degree_sum = 0;
+        for(auto asn : building_subset)
+            degree_sum += *asn_to_degree.at(asn);
+
+        if(degree_sum < hyper_edges.size())
+            return;
+
+        //Expensive on the amount of edges stored
+        if(is_cover(building_subset))
+            covers.push_back(building_subset);
+        return;
+    }
+
+    //Reached the end of the nodes to choose from
+    if(asn_to_degree_it == asn_to_degree.end())
+        return;
+
+    uint32_t asn = asn_to_degree_it->first;
+    asn_to_degree_it++;
+
+    if(asn == starting_asn || new_unique_asns.find(asn) != new_unique_asns.end()) {
+        //this asn is already used, move onto the next
+        generate_covers_helper(asn_to_degree_it, building_subset, starting_asn);
+    } else {
+        //Make a choice: include or exclude this asn
+        building_subset.push_back(asn);
+        generate_covers_helper(asn_to_degree_it, building_subset, starting_asn);
+
+        building_subset.pop_back();
+        generate_covers_helper(asn_to_degree_it, building_subset, starting_asn);
+    }
+}
+
+void CommunityDetection::generate_covers() {
+    //Filter out previously known covers
+    for(auto it = covers.begin(); it != covers.end();) {
+        if(is_cover(*it))
+            it++;
+        else
+            it = covers.erase(it);
+    }
+
+    for(auto it = new_unique_asns.begin(); it != new_unique_asns.end();) {
+        std::vector<uint32_t> building_subset = { *it };
+
+        generate_covers_helper(asn_to_degree.begin(), building_subset, *it);
+
+        it = new_unique_asns.erase(it);
+    }
+}
+
+
+//Generate all of the subsets of nodes with length of local_threshold
+//To be used to test MVC
+bool CommunityDetection::is_suspect(std::vector<uint32_t> &candidate) {
+    for(auto &cover : covers) {
+        bool contains_candidate_node = false;
+
+        for(auto asn : candidate) {
+            if(std::find(cover.begin(), cover.end(), asn) != cover.end()) {
+                contains_candidate_node = true;
+                break;
+            }
+        }
+
+        if(!contains_candidate_node)
+            return false;
+    }
+
+    return true;
+}
+
+bool CommunityDetection::is_subset(std::vector<uint32_t> &super_set, std::vector<uint32_t> &candidate_subset) {
+    for(auto asn : candidate_subset)
+        if(std::find(super_set.begin(), super_set.end(), asn) == super_set.end())
+            return false;
+    return true;
+}
+
+void CommunityDetection::gen_suspect_candidates_helper_subset(std::vector<uint32_t> &current_subset, std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, std::vector<std::vector<uint32_t>> &results, int startIndex, int endIndex) {
+    bool subset = false;
+    for(auto &edge : hyper_edges) {
+        if(is_subset(edge, current_subset)) {
+            subset = true;
+            break;
+        }
+    }
+    
+    if(subset && is_suspect(current_subset)) {
+        blacklist.insert(current_subset);
+        return;
+    }
+    
+    if(startIndex == endIndex)
+        return;
+
+    //Choose to include or exclude the current set
+    for(auto asn : ind_map.at(distinguishable_subsets.at(startIndex).first))
+        current_subset.push_back(asn);
+    
+    //Add this new subset to the total accumalation of subsets
+    results.push_back(current_subset);
+    gen_suspect_candidates_helper_subset(current_subset, distinguishable_subsets, results, startIndex + 1, endIndex);
+
+    //Do not add building sum after this since this is what building sum originally was, which was already added in the previous recursive call
+    for(size_t i = 0; i < ind_map.at(distinguishable_subsets.at(startIndex).first).size(); i++)
+        current_subset.pop_back();
+    gen_suspect_candidates_helper_subset(current_subset, distinguishable_subsets, results, startIndex + 1, endIndex);
+}
+
+void CommunityDetection::iterate_suspect_candidates_and_blacklist_helper(std::vector<uint32_t> &current,
+                                                                            std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> &distinguishable_subsets, uint32_t distinguishable_index) {
+
+    if(distinguishable_index >= distinguishable_subsets.size() - 1)
+        return;
+
+    uint32_t degree = *distinguishable_subsets.at(distinguishable_index).second;
+    if(degree <= local_threshold)
+        return;
+
+    uint32_t end_same_degree_index = distinguishable_index + 1;
+    for(; end_same_degree_index < distinguishable_subsets.size(); end_same_degree_index++)
+        if(*distinguishable_subsets.at(end_same_degree_index).second != degree)
+            break;
+    
+    std::vector<std::vector<uint32_t>> subsets_to_continue;
+
+    gen_suspect_candidates_helper_subset(current, distinguishable_subsets, subsets_to_continue, distinguishable_index, end_same_degree_index);
+
+    // for(auto &subset : subsets_to_append) {
+    //     std::vector<uint32_t> current_copy = current;
+
+    //     for(auto asn : subset)
+    //         current_copy.push_back(asn);
+        
+    //     //If this is a suspect that should be blacklisted, don't bother finding its supersets
+    //     if(is_suspect(current_copy))
+    //         blacklist.insert(current_copy);
+    //     else
+        for(auto &subset_to_continue : subsets_to_continue)
+            iterate_suspect_candidates_and_blacklist_helper(subset_to_continue, distinguishable_subsets, end_same_degree_index);
+    // } 
+}
+
+// generate all possible cover candidates of size sz with given indistinguishability map
+void CommunityDetection::iterate_suspect_candidates_and_blacklist() {
+    // auto distinguishable_subsets = sorted_asn_degree;
+    // Indistinguishable nodes must be grouped together, so remove 'duplicates'
+    // for (auto it = distinguishable_subsets.begin(); it != distinguishable_subsets.end(); ++it) {
+        // for (auto it2 = it+1; it2 != distinguishable_subsets.end();) {
+        //     if (std::find(ind_map[it->first].begin(), ind_map[it->first].end(), it2->first) != ind_map[it->first].end()) {
+        //         it2 = distinguishable_subsets.erase(it2);
+        //     } else {
+        //         ++it2;
+        //     }
+        // }
+    // }
+
+    std::vector<std::pair<uint32_t, std::shared_ptr<uint32_t>>> distinguishable_subsets;
+    std::unordered_set<uint32_t> used;
+
+    for(auto &p : sorted_asn_degree) {
+        if(used.find(p.first) == used.end() && *asn_to_degree.at(p.first) > local_threshold) {
+            distinguishable_subsets.push_back(p);
+
+            auto &ind_set = ind_map.at(p.first);
+            used.insert(ind_set.begin(), ind_set.end());
         }
     }
 
-    if(components_to_merge.size() == 0) {//Need to add a component for these ASes to be added to
-        identifier_to_component.insert(std::make_pair(hyper_edge.at(0), new Component(hyper_edge)));
-    } else if(components_to_merge.size() == 1) {//Add the ASes to the only component any of them are in
-        identifier_to_component.find((*(components_to_merge.begin()++)))->second->add_hyper_edge(hyper_edge);
-    } else {//An AS cannot be in more than one component. So if this report connects two or more components, then they need to merge
-        //What is going to happen here is that the first component will absorb all of the information from the rest of the components
-        auto iterator = components_to_merge.begin();
-        Component *first = identifier_to_component.find(*iterator)->second;
+    generate_covers();
 
-        //For all components, other than the first of course hece the ;, add all information to the first component
-        //Then delete the component since its information has been recorded
-        iterator++;
-        while(iterator != components_to_merge.end()) {
-            auto component_search_result = identifier_to_component.find(*iterator);
+    std::cout << "Amt covers: " << covers.size() << std::endl;
 
-            Component *to_merge = component_search_result->second;
-
-            first->merge(to_merge);
-            
-            delete to_merge;
-            identifier_to_component.erase(component_search_result);
-
-            iterator++;
-        }
-
-        //Add in the hyper edge that caused all of this nonsense
-        first->add_hyper_edge(hyper_edge);
-    }
+    std::vector<uint32_t> running_sum;
+    iterate_suspect_candidates_and_blacklist_helper(running_sum, distinguishable_subsets, 0);
 }
 
 void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *graph) {
@@ -287,7 +290,7 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
 
     //The reporting AS must be an adopter in order to make a report...
     EZAS *reporting_as = reporting_as_search->second;
-    if(!reporting_as->adopter)
+    if(reporting_as->policy == EZAS_TYPE_BGP)
         return;
 
     //******   Trim Report to Hyper Edges   ******//
@@ -295,74 +298,52 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
     //The condition of an invalid MAC is this: 
     //    When an adopter at index i is not a true neighbor of the AS at i - 1.
     //Consider an adopting origin, which is at the very end of the path
-    //There will be an invalid MAC if the neighbor on the path at the index length - 1 is not a real neighbor
-
-    //This will work by starting at the 0 index of the list and keeping track of the last adopter
-    //We need to see if the invalid MAC is between two adopters
-    //However, if we move over a non-adopter or find an invalid MAC
-    //We must remeber the last trusted adopter
-
-    // A - adopter. N - Non adopter. O - Origin, who is an adopter
-    //Suppose the invalid MAC is between the origin and the non adopter
-    
-    //A A N N O
-    //^
-
-    //A A N N O
-    //  ^
-
-    //A A N N O
-    //  * ^
-
-    //A A N N O
-    //  *   ^ 
-
-    //A A N N O
-    //  *     ^  <-- Invalid MAC found
-
-    //This will return the path {A N N O}, for whatever asns they may be, and how it trimmed out that first adopter
-    //It is safe to trim out this adopter since it had a valid MAC for a key it did not have, and thus could not fake this report.
-    //This is because the algorithm remembered what adopter that was last validated (represented as *)
-    //Notice that the * did not move over the non adopters
-    //This must also generalize to having multiple hyper edges on the path
 
     //Indecies of the hyper edge range
     std::vector<std::pair<int, int>> hyper_edge_ranges;
 
-    //This is true because the reporting AS must be an adopter and the reporting AS is at index 0.
-    int last_adopter_index = 0;
+    //Store the index of the adopter next to the invalid MAC so the range can be stored if/when an adopter is found on the other side
+    int as_index_invalid_relationship = 0;
 
-    //Turn true when there is an invalid MAC or non-adopter
-    //This is essentially the control of where to place * from the example above.
-    //We will keep track of the adopters until we hit a non adopter or invalid MAC
-    bool stop_tracking_adopter = false;
+    unsigned int cur_pol;
+    unsigned int prev_pol;
 
-    for(size_t i = 1; i < as_path.size(); i++) {// Starts at 1 because we need to check if the "previous" AS is a real neighbor
-        uint32_t asn = as_path.at(i);
-        auto as_search = graph->ases->find(asn);
-        if(as_search == graph->ases->end()) {
-            std::cerr << "Non-existent AS on the path!" << std::endl;
-            return;
+    //There is an invalid MAC, keep an eye out for an adopter on the other side of the invalid MAC
+    bool search_for_adopter = false;
+
+    for(int i = as_path.size() - 2; i >= 0; i--) {
+        bool nbrs = true;
+        auto current_search = graph->ases->find(as_path.at(i));
+        EZAS *current_as;
+        if(current_search == graph->ases->end()) {
+            cur_pol = EZAS_TYPE_BGP;
+            nbrs = false;
+        } else {
+            current_as = current_search->second;
+            cur_pol = current_as->policy;
         }
 
-        EZAS *as = as_search->second;
-
-        //Can't track over a non-adopter
-        if(!as->adopter) {
-            stop_tracking_adopter = true;
+        auto previous_search = graph->ases->find(as_path.at(i + 1));
+        if(previous_search == graph->ases->end()) {
+            prev_pol = EZAS_TYPE_BGP;
+            nbrs = false;
+        } else {
+            EZAS *previous_as = previous_search->second;
+            prev_pol = previous_as->policy;
+            if (nbrs)
+                nbrs = previous_as->has_neighbor(current_search->second->asn);
         }
 
-        //Found invalid MAC
-        if(as->adopter && !as->has_neighbor(as_path.at(i - 1))) {
-            //Add to ranges that will construct the hyper edges from this report
-            hyper_edge_ranges.push_back(std::pair<int, int>(last_adopter_index, i));
+        //Previous AS is an adopter and does not have an actual relationship to this AS (invalid MAC)
+        if(prev_pol != EZAS_TYPE_BGP && !nbrs) {
+            as_index_invalid_relationship = i + 1;
+            search_for_adopter = true;
+            continue;
+        }
 
-            stop_tracking_adopter = false;
-
-            //TODO, do we trust this adopter?
-            last_adopter_index = i;
-        } else if(!stop_tracking_adopter) {
-            last_adopter_index++;
+        if(cur_pol != EZAS_TYPE_BGP && search_for_adopter) {
+            //search_for_adopter = false;
+            hyper_edge_ranges.push_back(std::make_pair(i, as_index_invalid_relationship));
         }
     }
 
@@ -372,26 +353,182 @@ void CommunityDetection::add_report(EZAnnouncement &announcement, EZASGraph *gra
         return; 
 
     for(std::pair<int, int> &range : hyper_edge_ranges) {
-        std::vector<uint32_t> hyper_edge;
-        for(int i = range.first; i <= range.second; i++)
-            hyper_edge.push_back(as_path.at(i));
+        // std::vector<uint32_t> hyper_edge(as_path.begin() + range.first, as_path.begin() + range.second + 1);
 
-        //Add the hyper edge to the component it belongs to (ASes on the path belong to no existing component and thos that do all belong to the same component)
-        //Or merge components if the path contains more than one AS that belong to different components already (an AS can be in 1 component only)
-        //Or create a whole new component if none of the ASes belong to an existing component
-        add_hyper_edge(hyper_edge);
+        //check if we have this edge already in the directory
+        //When we go to add the edge later, we will check if we already have it in the total blacklisting list
+        //no need to check twice
+
+        // bool contains = false;
+        // for(auto &temp_edge : edges_to_process) {
+        //     if(std::equal(hyper_edge.begin(), hyper_edge.end(), temp_edge.begin())) {
+        //         contains = true;
+        //         break;
+        //     }
+        // }
+
+        // if(contains)
+        //     continue;
+
+        edges_to_process.push_back(std::vector<uint32_t>(as_path.begin() + range.first, as_path.begin() + range.second + 1));
     }
 }
 
-void CommunityDetection::threshold_filtering(EZASGraph *graph) {
-    for(auto &p : identifier_to_component)
-        p.second->threshold_filtering(this, graph);
+void CommunityDetection::CD_algorithm() {
+    std::sort(sorted_asn_degree.begin(), sorted_asn_degree.end(), [](auto &a, auto &b) {
+        // Sort from greatest degree to least
+        return (*(a.second)) > (*(b.second));
+    });
+
+    iterate_suspect_candidates_and_blacklist();
+
+    //if there is any subset of S/S' with length t that makes a cover over the hyper edges, then S' is a suspect -> blacklist
+    // for(auto &suspect : suspect_candidates) {
+    //     auto unique_copy = unique_asns;
+
+    //     for(auto asn : suspect)
+    //         unique_copy.erase(asn);
+
+    //     bool is_suspect = true;
+
+    //     std::vector<std::unordered_set<uint32_t>> cover_candidates = generate_cover_candidates(unique_copy);
+    //     for(auto &cover_candidate : cover_candidates) {
+    //         if(is_cover(cover_candidate)) {
+    //             is_suspect = false;
+    //             break;
+    //         }
+    //     }
+
+    //     if(is_suspect)
+    //         blacklist.insert(suspect);
+    // }
 }
 
-void CommunityDetection::virtual_pair_removal(EZASGraph *graph) {
-    if(threshold == 0)
-        return;
+void CommunityDetection::local_threshold_approx_filtering_deprecated() {
 
-    for(auto &p : identifier_to_component)
-        p.second->virtual_pair_removal(this, graph);
+    // 1. Sort hyperedges from longest to shortest
+    // 2. Collapse edges from longest to shortest
+    // 3. Add results to blacklists
+
+    // The AS graph is shallow, we can use bucket sort for linear time sorting.
+    // Path length is capped at 64. 
+    // Justification: a path length exceeding the default TTL of many machines is of little practical use
+    const int num_buckets = 64;
+    std::vector<std::set<std::vector<uint32_t>>> buckets(num_buckets); 
+
+    for(const auto &edge : this->hyper_edges) {
+        if (edge.size() <= 64) {
+            buckets[edge.size()].insert(edge);
+        }
+    }
+
+    /* Collapse Hyperedges (locally)
+       NOTE: DOES NOT WORK FOR MULTIPLE ATTACKERS (yet)
+       
+       Ex: AS 666 forwards an attack to three of its neighbors (x, y, z) where thresh=2
+      
+           x 
+            \
+           y-666-...
+            /  
+           z
+      
+       This will be detected here, and the edge will be collapsed to one size smaller
+       (e. g., 666 and the rest of the path). 
+    */
+    for (auto it = buckets.rbegin(); it != buckets.rend(); ++it) {
+        std::map<uint32_t, std::set<uint32_t>> counts;
+        for (const auto &edge : *it) {
+            if (edge.size() >= 2) {
+                counts[edge[1]].insert(edge[0]);
+            }
+        }
+        for (const auto &suspect : counts) {
+            if (suspect.second.size() > local_threshold) {
+                // Add all the edges (to make sure none are missed)
+                // This is one area that needs to be re-done for muiltiple attackers
+                 for (const auto &edge : *it) {
+                    if (edge.size() >= 2) {
+                        if (edge[1] == suspect.first) {
+                            std::vector<uint32_t> tmp(next(edge.begin()), edge.end());
+                            (it+1)->insert(tmp);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /* Now check the other direction (except for the origin)
+       
+       Ex: AS 666 fakes attacks from three customers (a, b, c) where thresh=2
+      
+                 a 
+                /
+         ...-666-b
+                \
+                 c
+      
+       This will be detected here, and the edge will be collapsed to as small as possible
+       (e. g., the rest of the path followed by 666). 
+    */
+
+    for (int i = 2; i < num_buckets; i++) {
+        std::map<uint32_t, std::set<uint32_t>> counts;
+        for (const auto &edge : buckets[i]) {
+            for (int j = 0; j < i-2; j++) {
+                counts[edge[j]].insert(edge[j+1]);
+                if (edge[j] == 666) {
+                    //std::cout << "got one i = " << i << " and j = " << j << "and the edge was " << edge[j+1] << "\n";
+                }
+            }
+        }
+        for (const auto &suspect : counts) {
+            if (suspect.second.size() > local_threshold) {
+                // Add all the edges (to make sure none are missed)
+                // This is one area that needs to be re-done for muiltiple attackers
+                 for (const auto &edge : buckets[i]) {
+                    for (int j = 0; j < i-2; j++) {
+                        if (edge[j] == suspect.first) {
+                            std::vector<uint32_t> tmp(edge.begin(), edge.begin()+j+1);
+                            // In this case, when going backwards, we must always add the origin
+                            // This is a hacky heuristic optimization that works only for one origin being attacked
+                            tmp.push_back(*edge.rbegin());
+                            buckets[tmp.size()].insert(tmp);
+                            if (tmp.size() > 0) {
+                            //    std::cout << "adding " << tmp[0] << " to bucket " << tmp.size() << "\n";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Blacklist all the paths that were partially collapsed
+    for (auto it = buckets.begin()+2; it != buckets.end(); ++it) {
+        for (const auto &edge : *it) {
+            blacklist.insert(edge);
+        }
+    }
+}
+
+void CommunityDetection::process_reports(EZASGraph *graph) {
+    for(auto &edge : edges_to_process) {
+        unsigned int reporter_policy = graph->ases->find(edge.at(0))->second->policy;
+
+        if(reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL || reporter_policy == EZAS_TYPE_COMMUNITY_DETECTION_GLOBAL_LOCAL) {
+            add_hyper_edge(edge);
+        }
+
+        // Must be sorted for std::includes
+        // (this is still correctly testing for a subset of the path)
+        std::sort(edge.begin(), edge.end());
+        blacklist.insert(std::move(edge));
+    }
+
+    edges_to_process.clear();
+
+    if(hyper_edges.size() > 0) {
+        CD_algorithm();
+    }
 }

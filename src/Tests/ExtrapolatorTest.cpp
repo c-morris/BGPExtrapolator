@@ -21,6 +21,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
+#define TEST_RESULTS_TABLE "test_extrapolate_blocks_results"
+#define TEST_ANNOUNCEMENTS_TABLE "mrt_announcements_test"
+
 #include <iostream>
 #include <cstdint>
 #include <vector>
@@ -34,7 +37,7 @@
 /** It is worth having this test since the constructor is changed so often.
  */
 bool test_Extrapolator_constructor() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     if (e.graph == NULL) { return false; }
     return true;
 }
@@ -42,7 +45,7 @@ bool test_Extrapolator_constructor() {
 /** Test the loop detection in input MRT AS paths.
  */
 bool test_find_loop() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(1);
     as_path->push_back(2);
@@ -70,6 +73,28 @@ bool test_find_loop() {
     return true;
 }
 
+// Test parse_path function
+bool test_parse_path() {
+    Extrapolator<> e = Extrapolator<>();
+    std::vector<uint32_t> *as_path = e.parse_path("{63027,32899,12083,1299,14522}");
+    std::vector<uint32_t> true_as_path {63027,32899,12083,1299,14522};
+
+    if (as_path->size() != true_as_path.size()) {
+        std::cerr << "Parse path failed." << std::endl;
+        return false;
+    }
+
+    // Check that every AS in as_path is correct
+    for (unsigned int i = 0; i < as_path->size(); i++) {
+        if (as_path->at(i) != true_as_path.at(i)) {
+            std::cerr << "Parse path failed." << std::endl;
+            return false;
+        }
+    }
+    
+    return true;
+}
+
 /** Test seeding the graph with announcements from monitors. 
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
@@ -82,7 +107,7 @@ bool test_find_loop() {
  *  The test path vect is [3, 2, 5]. 
  */
 bool test_give_ann_to_as_path() {
-    Extrapolator e = Extrapolator();
+    Extrapolator<> e = Extrapolator<>();
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -99,21 +124,40 @@ bool test_give_ann_to_as_path() {
     as_path->push_back(3);
     as_path->push_back(2);
     as_path->push_back(5);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p, 2);
 
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_3_search = e.graph->ases->find(3)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_3_search == e.graph->ases->find(3)->second->all_anns->end()) {
+        std::cerr << "AS 3 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
     // Test that monitor annoucements were received
-    if(!(e.graph->ases->find(2)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(3)->second->all_anns->find(p)->second.from_monitor &&
-         e.graph->ases->find(5)->second->all_anns->find(p)->second.from_monitor)) {
+    if(!((*as_2_search).from_monitor &&
+         (*as_3_search).from_monitor &&
+         (*as_5_search).from_monitor)) {
         std::cerr << "Monitor flag failed." << std::endl;
         return false;
     }
-    
+
     // Test announcement priority calculation
-    if (e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 198 &&
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 400) {
+    if ((*as_3_search).priority != ((uint64_t) 1 << 40) + ((uint64_t) 253 << 16) && // see Priority.h for more info on this
+        (*as_2_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) 254 << 16) &&
+        (*as_5_search).priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16)) {
         std::cerr << "Priority calculation failed." << std::endl;
         return false;
     }
@@ -137,13 +181,20 @@ bool test_give_ann_to_as_path() {
     as_path_b->push_back(4);
     e.give_ann_to_as_path(as_path_b, p, 1);
 
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.tstamp != 1) {
+    auto as_2_search_2 = e.graph->ases->find(2)->second->all_anns->find(p);
+    if(as_2_search_2 == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "as_2_search_2 announcement does not exist for tiebraking!" << std::endl;
+        return false;
+    }
+
+    if ((*as_2_search_2).tstamp != 1) {
+        std::cerr << "as_2_search_2 announcement has the wrong timestamp for tiebraking! Timestamp was " << (*as_2_search_2).tstamp << std::endl;
         return false;
     }
     
     // Test prepending calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 298) {
-        std::cout << e.graph->ases->find(2)->second->all_anns->find(p)->second.priority << std::endl;
+    if ((*as_2_search_2).priority != ((uint64_t) 2 << 40) + ((uint64_t) 253 << 16)) {
+        std::cout << (*as_2_search_2).priority << std::endl;
         return false;
     }
 
@@ -152,7 +203,69 @@ bool test_give_ann_to_as_path() {
     return true;
 }
 
-/** Test propagating up in the following test graph.
+/** Test seeding the graph with announcements from monitors with origin only option enabled. 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  The test path vect is [3, 2, 5]. 
+ *  When AS 5 is the origin, an announcement should only be seeded at 5
+ */
+bool test_give_ann_to_as_path_origin_only() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, true, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+
+    // Test that monitor annoucements were received
+    if(!e.graph->ases->find(5)->second->all_anns->find(p)->from_monitor) {
+        std::cerr << "Monitor flag failed." << std::endl;
+        return false;
+    }
+
+    // Test announcement priority calculation
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16)) {
+        std::cerr << "Priority calculation failed." << std::endl;
+        return false;
+    }
+
+    // Test that only path received the announcement
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+        std::cerr << "MRT overseeding check failed." << std::endl;
+        return false;
+    }
+    
+    delete as_path;
+    return true;
+}
+
+/** Test propagating up without multihomed support in the following test graph.
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
  *    1
@@ -160,11 +273,13 @@ bool test_give_ann_to_as_path() {
  *    2---3
  *   /|    \
  *  4 5--6  7
- *
+ * 
  *  Starting propagation at 5, only 4 and 7 should not see the announcement.
  */
-bool test_propagate_up() {
-    Extrapolator e = Extrapolator();
+bool test_propagate_up_no_multihomed() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -179,14 +294,15 @@ bool test_propagate_up() {
     e.graph->add_relationship(6, 5, AS_REL_PEER);
 
     e.graph->decide_ranks();
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
     ann.from_monitor = true;
-    ann.priority = 290;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
     e.graph->ases->find(5)->second->process_announcement(ann, true);
     e.propagate_up();
-    
+
     // Check all announcements are propagted
     if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
           e.graph->ases->find(2)->second->all_anns->size() == 1 &&
@@ -195,23 +311,265 @@ bool test_propagate_up() {
           e.graph->ases->find(5)->second->all_anns->size() == 1 &&
           e.graph->ases->find(6)->second->all_anns->size() == 1 &&
           e.graph->ases->find(7)->second->all_anns->size() == 0)) {
-        std::cerr << "Loop detection failed." << std::endl;
+        std::cerr << "Propagate up failed." << std::endl;
         return false;
     }
-    
+
     // Check propagation priority calculation
-    if (e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 290 &&
-        e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(6)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 288 &&
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 188) {
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 11) << 16) ||
+        e.graph->ases->find(6)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 11) << 16) ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 12) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 12) << 16)) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
     return true;
 }
 
-/** Test propagating down in the following test graph.
+/** Test propagating up with automatic multihomed mode (default behaviour) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2---3
+ *   /|    \
+ *  4 5--6  7
+ *
+ *  Starting propagation at 5, everyone but 4 and 7 should see the announcement.
+ */
+bool test_propagate_up() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(7, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 7, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(5)->second->process_announcement(ann, true);
+    e.propagate_up();
+
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "test_propagate_up_multihomed_automatic failed... Not all ASes have refrence when they should.." << std::endl;
+        return false;
+    }
+    
+    auto as_1_search = e.graph->ases->find(1)->second->all_anns->find(p);
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_3_search = e.graph->ases->find(3)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+    auto as_6_search = e.graph->ases->find(6)->second->all_anns->find(p);
+
+    if(as_1_search == e.graph->ases->find(1)->second->all_anns->end()) {
+        std::cerr << "AS 1 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_3_search == e.graph->ases->find(3)->second->all_anns->end()) {
+        std::cerr << "AS 3 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_6_search == e.graph->ases->find(6)->second->all_anns->end()) {
+        std::cerr << "AS 6 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    // Check propagation priority calculation
+    if ((*as_5_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) &&
+        (*as_2_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 11) << 16) &&
+        (*as_6_search).priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 11) << 16) &&
+        (*as_1_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 12) << 16) &&
+        (*as_3_search).priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 12) << 16)) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test propagating up (no propagation from multihomed - mode 1) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *     1
+ *    /|
+ *   4 2
+ *    \|   
+ *     3--5
+ *
+ *  Starting propagation at 3, only 3 should see the announcement.
+ */
+bool test_propagate_up_multihomed_standard() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 4, AS_REL_PROVIDER);
+    e.graph->add_relationship(4, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 5, AS_REL_PEER);
+    e.graph->add_relationship(5, 3, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(3)->second->process_announcement(ann, true);
+    e.propagate_up();
+    
+    auto as_1_search = e.graph->ases->find(1)->second->all_anns->find(p);
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_3_search = e.graph->ases->find(3)->second->all_anns->find(p);
+    auto as_4_search = e.graph->ases->find(4)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    // Check that all announcements are propagted
+    if(as_1_search != e.graph->ases->find(1)->second->all_anns->end()) {
+        std::cerr << "AS 1 announcement exists! (it shouldn't)" << std::endl;
+        return false;
+    }
+
+    if(as_2_search != e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement exists! (it shouldn't)" << std::endl;
+        return false;
+    }
+
+    if(as_3_search == e.graph->ases->find(3)->second->all_anns->end()) {
+        std::cerr << "AS 3 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_4_search != e.graph->ases->find(4)->second->all_anns->end()) {
+        std::cerr << "AS 4 announcement exists! (it shouldn't)" << std::endl;
+        return false;
+    }
+
+    if(as_5_search != e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement exists! (it shouldn't)" << std::endl;
+        return false;
+    }
+    
+    if ((*as_3_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16)) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test propagating up (only propagation to peers from multihomed - mode 2) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *     1
+ *    /|
+ *   4 2
+ *    \|   
+ *     3--5
+ *
+ *  Starting propagation at 3, 3 and 5 should see the announcement.
+ */
+bool test_propagate_up_multihomed_peer_mode() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE,
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 4, AS_REL_PROVIDER);
+    e.graph->add_relationship(4, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 5, AS_REL_PEER);
+    e.graph->add_relationship(5, 3, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(3)->second->process_announcement(ann, true);
+    e.propagate_up();
+    
+    auto as_1_search = e.graph->ases->find(1)->second->all_anns->find(p);
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_3_search = e.graph->ases->find(3)->second->all_anns->find(p);
+    auto as_4_search = e.graph->ases->find(4)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    // Check that all announcements are propagted
+    if(as_1_search != e.graph->ases->find(1)->second->all_anns->end()) {
+        std::cerr << "AS 1 announcement exists! (it shouldn't)" << std::endl;
+        return false;
+    }
+
+    if(as_2_search != e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement exists! (it shouldn't)" << std::endl;
+        return false;
+    }
+
+    if(as_3_search == e.graph->ases->find(3)->second->all_anns->end()) {
+        std::cerr << "AS 3 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_4_search != e.graph->ases->find(4)->second->all_anns->end()) {
+        std::cerr << "AS 4 announcement exists! (it shouldn't)" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+    
+    if ((*as_3_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) ||
+        (*as_5_search).priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 11) << 16)) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test propagating down without multihomed support in the following test graph.
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
  *    1
@@ -222,8 +580,10 @@ bool test_propagate_up() {
  *
  *  Starting propagation at 2, 4 and 5 should see the announcement.
  */
-bool test_propagate_down() {
-    Extrapolator e = Extrapolator();
+bool test_propagate_down_no_multihomed() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -237,10 +597,11 @@ bool test_propagate_down() {
 
     e.graph->decide_ranks();
     
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
     ann.from_monitor = true;
-    ann.priority = 290;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
     e.graph->ases->find(2)->second->process_announcement(ann, true);
     e.propagate_down();
     
@@ -251,19 +612,39 @@ bool test_propagate_down() {
         e.graph->ases->find(4)->second->all_anns->size() == 1 &&
         e.graph->ases->find(5)->second->all_anns->size() == 1 &&
         e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+        std::cerr << "test_propagate_down_no_multihomed failed... Not all ASes have refrence when they should.." << std::endl;
         return false;
     }
     
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
-        e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_4_search = e.graph->ases->find(4)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_4_search == e.graph->ases->find(4)->second->all_anns->end()) {
+        std::cerr << "AS 4 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if ((*as_2_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) &&
+        (*as_4_search).priority != ((uint64_t) (255 - 11) << 16) &&
+        (*as_5_search).priority != ((uint64_t) (255 - 11) << 16)) {
         std::cerr << "Propagted priority calculation failed." << std::endl;
         return false;
     }
     return true;
 }
 
-/** Test propagating down in the following test graph.
+/** Test propagating down without multihomed support in the following test graph.
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
  *    1
@@ -272,10 +653,12 @@ bool test_propagate_down() {
  *   /|   
  *  4 5--6 
  *
- *  Starting propagation at 1, everyone should see the announcement.
+ *  Starting propagation at 1, everyone but 3 and 6 should see the announcement.
  */
-bool test_propagate_down2() {
-    Extrapolator e = Extrapolator();
+bool test_propagate_down_no_multihomed2() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -289,10 +672,11 @@ bool test_propagate_down2() {
 
     e.graph->decide_ranks();
     
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
-    Announcement ann = Announcement(13796, p.addr, p.netmask, 22742);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
     ann.from_monitor = true;
-    ann.priority = 290;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
     e.graph->ases->find(1)->second->process_announcement(ann, true);
     e.propagate_down();
     
@@ -305,20 +689,443 @@ bool test_propagate_down2() {
         e.graph->ases->find(6)->second->all_anns->size() == 0)) {
         
         std::cerr << "test_propagate_down2 failed... Not all ASes have refrence when they should.." << std::endl;
+        std::cerr << e.graph->ases->find(1)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(2)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(3)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(4)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(5)->second->all_anns->size() << std::endl;
+        std::cerr << e.graph->ases->find(6)->second->all_anns->size() << std::endl;
+
         return false;
     }
     
-    // if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 290 &&
-    //     e.graph->ases->find(4)->second->all_anns->find(p)->second.priority != 89 &&
-    //     e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
-    //     std::cerr << "Propagted priority calculation failed." << std::endl;
+    // if (e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) ||
+    //     e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 11) << 16) ||
+    //     e.graph->ases->find(4)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 12) << 16) ||
+    //     e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 12) << 16)) {
+    //     std::cerr << "Propagated priority calculation failed." << std::endl;
     //     return false;
     // }
 
     return true;
 }
 
-/** Test send_all_announcements in the following test graph.
+/** Test propagating down with automatic multihomed mode (default behaviour) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Starting propagation at 2, 4 and 5 should see the announcement.
+ */
+bool test_propagate_down() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(2)->second->process_announcement(ann, true);
+    e.propagate_down();
+    
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+        std::cerr << "test_propagate_down failed... Not all ASes have refrence when they should.." << std::endl;
+        return false;
+    }
+    
+    auto as_2_search = e.graph->ases->find(2)->second->all_anns->find(p);
+    auto as_4_search = e.graph->ases->find(4)->second->all_anns->find(p);
+    auto as_5_search = e.graph->ases->find(5)->second->all_anns->find(p);
+
+    if(as_2_search == e.graph->ases->find(2)->second->all_anns->end()) {
+        std::cerr << "AS 2 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_4_search == e.graph->ases->find(4)->second->all_anns->end()) {
+        std::cerr << "AS 4 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if(as_5_search == e.graph->ases->find(5)->second->all_anns->end()) {
+        std::cerr << "AS 5 announcement does not exist!" << std::endl;
+        return false;
+    }
+
+    if ((*as_2_search).priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) &&
+        (*as_4_search).priority != ((uint64_t) (255 - 11) << 16) &&
+        (*as_5_search).priority != ((uint64_t) (255 - 11) << 16)) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test propagating down with automatic multihomed mode (default behaviour) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Starting propagation at 1, everyone but 3 and 6 should see the announcement.
+ */
+bool test_propagate_down2() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(1)->second->process_announcement(ann, true);
+    e.propagate_down();
+    
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(6)->second->all_anns->size() == 0)) {
+        std::cerr << "test_propagate_down2 failed... Not all ASes have refrence when they should.." << std::endl;
+        return false;
+    }
+    
+    if (e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 11) << 16) ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 12) << 16) ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 12) << 16)) {
+        std::cerr << "Propagated priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test multihomed propagating down in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *     1
+ *    /|
+ *   4 2
+ *    \|   
+ *     3--5
+ *
+ *  Starting propagation at 1, everyone but 5 should see the announcement.
+ */
+bool test_propagate_down_multihomed_standard() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 4, AS_REL_PROVIDER);
+    e.graph->add_relationship(4, 3, AS_REL_CUSTOMER);
+    e.graph->add_relationship(3, 5, AS_REL_PEER);
+    e.graph->add_relationship(5, 3, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(1)->second->process_announcement(ann, true);
+    e.propagate_down();
+    
+    // Check all announcements are propagted
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(3)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+        e.graph->ases->find(5)->second->all_anns->size() == 0)){
+        
+        std::cerr << "test_propagate_down_multihomed_standard failed... Not all ASes have refrence when they should.." << std::endl;
+        return false;
+    }
+    
+    if (e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 10) << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 11) << 16) ||
+        e.graph->ases->find(4)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 11) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 12) << 16)) {
+        std::cerr << "Propagted priority calculation failed." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test send_all_announcements with automatic multihomed mode (default behaviour) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *  1
+ *  |
+ *  2 3
+ *   \|
+ *    4
+ *
+ *  Sending announcements from 4, everyone but 1 should see the announcement.
+ */
+bool test_send_all_announcements() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
+
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(4);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p);
+    delete as_path;
+
+    // Check to providers
+    e.send_all_announcements(4, true, false, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to providers" << std::endl;
+        return false;
+    }
+    
+    // Check to peers
+    e.send_all_announcements(4, false, true, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to peers" << std::endl;
+        return false;
+    }
+
+    // Check to customers
+    e.send_all_announcements(4, false, false, true);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(4)->second->process_announcements(true);
+
+    // Check priority calculation
+    if (e.graph->ases->find(4)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16)) {
+        std::cerr << "Send all announcement priority calculation failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** Test send_all_announcements with automatic multihomed mode (default behaviour) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *  1
+ *  |
+ *  2 3
+ *   \|
+ *    4
+ *
+ *  Sending announcements from 4 with existing announcements at 2 and 3 (same prefix as 4 and origin asn = 4), no one should see the announcement.
+ */
+bool test_send_all_announcements2() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
+
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(2);
+    as_path->push_back(4);
+    std::vector<uint32_t> *as_path2 = new std::vector<uint32_t>();
+    as_path2->push_back(3);
+    as_path2->push_back(4);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p);
+    e.give_ann_to_as_path(as_path2, p);
+    delete as_path;
+    delete as_path2;
+
+    // Check to providers
+    e.send_all_announcements(4, true, false, false);
+
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to providers" << std::endl;
+        return false;
+    }
+    
+    // Check to peers
+    e.send_all_announcements(4, false, true, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to peers" << std::endl;
+        return false;
+    }
+
+    // Check to customers
+    e.send_all_announcements(4, false, false, true);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(4)->second->process_announcements(true);
+
+    // Check priority calculation
+    if (e.graph->ases->find(4)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16)) {
+        std::cerr << "Send all announcement priority calculation failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** Test send_all_announcements with automatic multihomed mode (default behaviour) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *  1
+ *  |
+ *  2 3
+ *   \|
+ *    4
+ *
+ *  Sending announcements from 4 with existing announcements at 2 (same prefix as 4 and origin asn = 4), no one should see the announcement.
+ */
+bool test_send_all_announcements3() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 4, AS_REL_CUSTOMER);
+
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(2);
+    as_path->push_back(4);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p);
+    delete as_path;
+
+    // Check to providers
+    e.send_all_announcements(4, true, false, false);
+
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to providers" << std::endl;
+        return false;
+    }
+    
+    // Check to peers
+    e.send_all_announcements(4, false, true, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to peers" << std::endl;
+        return false;
+    }
+
+    // Check to customers
+    e.send_all_announcements(4, false, false, true);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(2)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1)) {
+        std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(4)->second->process_announcements(true);
+
+    // Check priority calculation
+    if (e.graph->ases->find(4)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16)) {
+        std::cerr << "Send all announcement priority calculation failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** Test send_all_announcements without multihomed support in the following test graph.
  *  Horizontal lines are peer relationships, vertical lines are customer-provider
  * 
  *    1
@@ -327,10 +1134,12 @@ bool test_propagate_down2() {
  *   /|    \
  *  4 5--6  7
  *
- *  Starting propagation at 5, only 4 and 7 should not see the announcement.
+ *  Starting propagation at 2, only 6 and 7 should not see the announcement.
  */
-bool test_send_all_announcements() {
-    Extrapolator e = Extrapolator();
+bool test_send_all_announcements_no_multihomed() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
     e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
     e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
     e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
@@ -349,7 +1158,281 @@ bool test_send_all_announcements() {
     std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
     as_path->push_back(2);
     as_path->push_back(4);
-    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0");
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p);
+    delete as_path;
+
+    // Check to providers
+    e.send_all_announcements(2, true, false, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to providers" << std::endl;
+        return false;
+    }
+    
+    // Check to peers
+    e.send_all_announcements(2, false, true, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->incoming_announcements->size() == 0 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to peers" << std::endl;
+        return false;
+    }
+
+    // Check to customers
+    e.send_all_announcements(2, false, false, true);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(1)->second->process_announcements(true);
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(5)->second->process_announcements(true);
+
+    // Check priority calculation
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "Send all announcement priority calculation failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** Test send_all_announcements with multihomed detection enabled in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2---3
+ *   /|    \
+ *  4 5--6  7
+ * 
+ *  Starting propagation at 2, only 6 and 7 should not see the announcement.
+ */
+bool test_send_all_announcements_multihomed_standard1() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(7, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 7, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(2);
+    as_path->push_back(4);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p);
+    delete as_path;
+
+    // Check to providers
+    e.send_all_announcements(2, true, false, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to providers" << std::endl;
+        return false;
+    }
+    
+    // Check to peers
+    e.send_all_announcements(2, false, true, false);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to peers" << std::endl;
+        return false;
+    }
+
+    // Check to customers
+    e.send_all_announcements(2, false, false, true);
+    if (!(e.graph->ases->find(1)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(3)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(5)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+    
+
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(1)->second->process_announcements(true);
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(5)->second->process_announcements(true);
+
+    // Check priority calculation
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "send_all_announcements_multihomed_standard1 priority calculation failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** Test send_all_announcements with multihomed detection enabled in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2---3
+ *   /|    \
+ *  4 5--6  7
+ * 
+ *  Starting propagation at 5, only 5 should see the announcement.
+ */
+bool test_send_all_announcements_multihomed_standard2() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 2, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(7, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 7, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(5);
+    //as_path->push_back(4);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p);
+    delete as_path;
+
+    // Check to providers
+    e.send_all_announcements(5, true, false, false);
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to providers" << std::endl;
+        return false;
+    }
+    
+    // Check to peers
+    e.send_all_announcements(5, false, true, false);
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to peers" << std::endl;
+        return false;
+    }
+
+    // Check to customers
+    e.send_all_announcements(5, false, false, true);
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+
+    // Check priority calculation
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16)) {
+        std::cerr << "send_all_announcements_multihomed_standard2 priority calculation failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** Test send_all_announcements with multihomed detection enabled (propagate to peers) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2---3
+ *   /|    \
+ *  4 5--6  7
+ * 
+ *  Starting propagation at 5, only 6 and 7 should not see the announcement.
+ */
+bool test_send_all_announcements_multihomed_peer_mode1() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(7, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 7, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(2);
+    as_path->push_back(4);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
     e.give_ann_to_as_path(as_path, p);
     delete as_path;
 
@@ -392,13 +1475,808 @@ bool test_send_all_announcements() {
         return false;
     }
     
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(1)->second->process_announcements(true);
+    e.graph->ases->find(2)->second->process_announcements(true);
+    e.graph->ases->find(3)->second->process_announcements(true);
+    e.graph->ases->find(5)->second->process_announcements(true);
+
     // Check priority calculation
-    if (e.graph->ases->find(2)->second->all_anns->find(p)->second.priority != 299 &&
-        e.graph->ases->find(1)->second->all_anns->find(p)->second.priority != 289 &&
-        e.graph->ases->find(3)->second->all_anns->find(p)->second.priority != 189 &&
-        e.graph->ases->find(5)->second->all_anns->find(p)->second.priority != 89) {
-        std::cerr << "Send all announcement priority calculation failed." << std::endl;
+    if (e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(1)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "send_all_announcements_multihomed_peer_mode1 priority calculation failed." << std::endl;
         return false;
+    }
+
+    return true;
+}
+
+/** Test send_all_announcements with multihomed detection enabled (propagate to peers) in the following test graph.
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2---3
+ *   /|    \
+ *  4 5--6  7
+ * 
+ *  Starting propagation at 5, only 5 and 6 should see the announcement.
+ */
+bool test_send_all_announcements_multihomed_peer_mode2() {
+    Extrapolator<> e = Extrapolator<>(DEFAULT_RANDOM_TIEBRAKING, DEFAULT_STORE_RESULTS, DEFAULT_STORE_INVERT_RESULTS, DEFAULT_STORE_DEPREF_RESULTS, 
+                                            ANNOUNCEMENTS_TABLE, RESULTS_TABLE, INVERSE_RESULTS_TABLE, DEPREF_RESULTS_TABLE, FULL_PATH_RESULTS_TABLE, 
+                                            DEFAULT_QUERIER_CONFIG_SECTION, DEFAULT_ITERATION_SIZE, -1, 3, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(7, 3, AS_REL_PROVIDER);
+    e.graph->add_relationship(3, 7, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(5);
+    //as_path->push_back(4);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p);
+    delete as_path;
+
+    // Check to providers
+    e.send_all_announcements(5, true, false, false);
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to providers" << std::endl;
+        return false;
+    }
+    
+    // Check to peers
+    e.send_all_announcements(5, false, true, false);
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->incoming_announcements->size() == 1 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to peers" << std::endl;
+        return false;
+    }
+
+    // Check to customers
+    e.send_all_announcements(5, false, false, true);
+    if (!(e.graph->ases->find(1)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(2)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(3)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(4)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(5)->second->all_anns->size() == 1 &&
+          e.graph->ases->find(6)->second->all_anns->size() == 0 &&
+          e.graph->ases->find(7)->second->all_anns->size() == 0)) {
+        std::cerr << "Err sending to customers" << std::endl;
+        return false;
+    }
+    
+    // Process announcements to get the correct announcement priority
+    e.graph->ases->find(5)->second->process_announcements(true);
+    e.graph->ases->find(6)->second->process_announcements(true);
+
+    // Check priority calculation
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(6)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 1) << 16)) {
+        std::cerr << "send_all_announcements_multihomed_peer_mode2 priority calculation failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** Test saving results in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Starting propagation at 1, everyone but 3 and 6 should see the announcement.
+ */
+bool test_save_results_parallel() {
+    std::string results_table = "test_extrapolation_results";
+
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, "ignored", results_table, "unused", "unused", "unused", "bgp", 
+    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(1)->second->process_announcement(ann, true);
+    e.propagate_down();
+    // No need to propagate up, the announcement started at the top
+
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    e.save_results(0);
+
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time prefix_id )
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 13796 22742 0 0 ",
+        "2 137.99.0.0/16 13796 1 0 0 ",
+        "4 137.99.0.0/16 13796 2 0 0 ",
+        "5 137.99.0.0/16 13796 2 0 0 "
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // Remove results from db
+    e.querier->clear_results_from_db();
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Save results failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Save results failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** Test saving results for a single AS in the following test graph (same as
+ *  the propagate_down test graph).  Horizontal lines are peer relationships,
+ *  vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Starting propagation at 1, everyone should see the announcement.
+ *
+ *  This test is currently requires manual verification that the results in the database are correct.
+ */
+bool test_save_results_at_asn() {
+    std::string full_path_results_table = "test_extrapolation_single_results";
+
+    Extrapolator<> e = Extrapolator<>(false, false, false, true, "ignored", "unused", "unused", "unused", full_path_results_table, "bgp", 
+    10000, -1, 0, DEFAULT_ORIGIN_ONLY, NULL, DEFAULT_MAX_THREADS, DEFAULT_SELECT_BLOCK_ID);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    Announcement<> ann = Announcement<>(13796, p, 22742);
+    ann.from_monitor = true;
+    ann.priority.relationship = 2;
+    ann.priority.path_length = 10;
+    e.graph->ases->find(1)->second->process_announcement(ann, true);
+    e.propagate_down();
+    // No need to propagate up, the announcement started at the top
+
+    e.querier->clear_full_path_from_db();
+    e.querier->create_full_path_results_tbl();
+    e.save_results_at_asn(5, e.querier);
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(full_path_results_table);
+
+    // Remove full path results from db
+    e.querier->clear_full_path_from_db();
+
+    // If the number of rows is more than 1, we already know that something is not right
+    if (r.size() != 1) {
+        std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert result to a string separated by spaces
+    std::string result = "";
+    for (auto const &field: r[0]) { 
+        result = result + field.c_str() + " ";
+    }
+    if (result != "5 137.99.0.0/16 13796 2 0 0 {5,2,1,22742} ") {
+        std::cerr << "Save results at asn failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 3, 2, 5]. This shouldn't change the priority since prepending is in the back of the path. 
+ */
+bool test_prepending_priority_back() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "prepending_priority_back failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 2, 5]. This should reduce the priority at 3. 
+ */
+bool test_prepending_priority_middle() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 3) << 16)) {
+        std::cerr << "prepending_priority_middle failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 5, 5]. This should reduce the priority at 3 and 5. 
+ */
+bool test_prepending_priority_beginning() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 3) << 16)) {
+        std::cerr << "prepending_priority_end failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 3, 2, 5] with an existing announcement at those ASes. This shouldn't change the priority since prepending is in the back of the path.  
+ */
+bool test_prepending_priority_back_existing_ann() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "prepending_priority_back_existing_ann failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 2, 5] with an existing announcement at those ASes. This shouldn't change the priority since the existing announcement has higher priority.  
+ */
+bool test_prepending_priority_middle_existing_ann() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "prepending_priority_middle_existing_ann failed." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 5, 5] with an existing announcement at those ASes. This shouldn't change the priority since the existing announcement has higher priority.  
+ */
+bool test_prepending_priority_beginning_existing_ann() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+    
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "prepending_priority_beginning_existing_ann failed." << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+
+/** 
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Test prepending on path vector [3, 2, 5, 5] with an existing announcement at those ASes. This should change the priority since the existing announcement has lower priority.  
+ */
+bool test_prepending_priority_beginning_existing_ann2() {
+    Extrapolator<> e = Extrapolator<>();
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+    e.graph->decide_ranks();
+
+    std::vector<uint32_t> *as_path = new std::vector<uint32_t>();
+    as_path->push_back(3);
+    as_path->push_back(2);
+    as_path->push_back(5);
+    as_path->push_back(5);
+    Prefix<> p = Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    e.give_ann_to_as_path(as_path, p, 2);
+    
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 2) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 3) << 16)) {
+        std::cerr << "prepending_priority_beginning_existing_ann2 failed." << std::endl;
+        return false;
+    }
+
+    std::vector<uint32_t> *as_path_b = new std::vector<uint32_t>();
+    as_path_b->push_back(3);
+    as_path_b->push_back(2);
+    as_path_b->push_back(5);
+    e.give_ann_to_as_path(as_path_b, p, 2);
+
+    if (e.graph->ases->find(5)->second->all_anns->find(p)->priority != ((uint64_t) 3 << 40) + ((uint64_t) 255 << 16) ||
+        e.graph->ases->find(2)->second->all_anns->find(p)->priority != ((uint64_t) 2 << 40) + ((uint64_t) (255 - 1) << 16) ||
+        e.graph->ases->find(3)->second->all_anns->find(p)->priority != ((uint64_t) 1 << 40) + ((uint64_t) (255 - 2) << 16)) {
+        std::cerr << "prepending_priority_beginning_existing_ann2 failed." << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+
+// Create an announcements table and insert two announcements with different prefixes and different block_id values
+bool test_extrapolation_buildup() {
+    try {
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+
+        SQLQuerier<> *querier = new SQLQuerier<>("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("CREATE UNLOGGED TABLE IF NOT EXISTS " + announcements_table + " (\
+        prefix cidr, as_path bigint[], origin bigint, time bigint, monitor_asn bigint, prefix_id bigint, origin_id bigint,\
+        prefix_origin_id bigint, block_id integer, roa_validity smallint, block_prefix_id integer, origin_hijack_asn bigint);\
+        GRANT ALL ON TABLE " + announcements_table + " TO bgp_user;");
+        querier->execute(sql, false);
+
+        sql = std::string("TRUNCATE " + announcements_table + ";");
+        querier->execute(sql, true);
+
+        sql = std::string("INSERT INTO " + announcements_table + " VALUES ('137.99.0.0/16', '{1}', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),\
+        ('137.98.0.0/16', '{5}', 5, 0, 0, 1, 0, 0, 1, 0, 0, 0);");
+        querier->execute(sql, true);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks buildup failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+// Drop an announcements table created in the buildup function
+bool test_extrapolation_teardown() {
+    try {
+        std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+        std::string results_table = TEST_RESULTS_TABLE;
+
+        SQLQuerier<> *querier = new SQLQuerier<>("ignored", "ignored", "ignored", "ignored", "ignored", -1, "bgp");
+
+        std::string sql = std::string("DROP TABLE IF EXISTS " + announcements_table + ", " + results_table + ";");
+        querier->execute(sql, false);
+
+        delete querier;
+    } catch (const std::exception &e) {
+        std::cerr << "Extrapolate blocks teardown failed" << std::endl;
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+/** Test extrapolate blocks in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Extrapolate two announcements with different prefixes (from AS 1 and AS 5).
+ */
+bool test_extrapolate_blocks() {
+    std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+    std::string results_table = TEST_RESULTS_TABLE;
+
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0, false);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    std::vector<Prefix<>*> *subnet_blocks = new std::vector<Prefix<>*>;
+    
+    Prefix<>* p1 = new Prefix<>("137.99.0.0", "255.255.0.0", 0, 0);
+    subnet_blocks->push_back(p1);
+
+    Prefix<>* p2 = new Prefix<>("137.98.0.0", "255.255.0.0", 0, 0);
+    subnet_blocks->push_back(p2);
+
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    
+    uint32_t announcement_count = 0; 
+    int iteration = 0;
+
+    e.extrapolate_blocks(announcement_count, iteration, true, subnet_blocks);
+
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time prefix_id )
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 1 1 0 0 ",
+        "2 137.99.0.0/16 1 1 0 0 ",
+        "4 137.99.0.0/16 1 2 0 0 ",
+        "5 137.99.0.0/16 1 2 0 0 ",
+        "1 137.98.0.0/16 5 2 0 1 ",
+        "2 137.98.0.0/16 5 5 0 1 ",
+        "3 137.98.0.0/16 5 2 0 1 ",
+        "4 137.98.0.0/16 5 2 0 1 ",
+        "5 137.98.0.0/16 5 5 0 1 ",
+        "6 137.98.0.0/16 5 5 0 1 " 
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Extrapolate blocks failed. Results are incorrect" << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/** Test extrapolate blocks by id in the following test graph (same as the propagate_down test graph).
+ *  Horizontal lines are peer relationships, vertical lines are customer-provider
+ * 
+ *    1
+ *    |
+ *    2--3
+ *   /|   
+ *  4 5--6 
+ *
+ *  Extrapolate two announcements with different prefixes (from AS 1 and AS 5).
+ */
+bool test_extrapolate_by_block_id() {
+    std::string announcements_table = TEST_ANNOUNCEMENTS_TABLE;
+    std::string results_table = TEST_RESULTS_TABLE;
+
+    Extrapolator<> e = Extrapolator<>(false, true, false, false, announcements_table, results_table, "unused", "unused", "unused", "bgp", 10000, -1, 1, false, NULL, 0, true);
+    e.graph->add_relationship(2, 1, AS_REL_PROVIDER);
+    e.graph->add_relationship(1, 2, AS_REL_CUSTOMER);
+    e.graph->add_relationship(5, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 5, AS_REL_CUSTOMER);
+    e.graph->add_relationship(4, 2, AS_REL_PROVIDER);
+    e.graph->add_relationship(2, 4, AS_REL_CUSTOMER);
+    e.graph->add_relationship(2, 3, AS_REL_PEER);
+    e.graph->add_relationship(3, 2, AS_REL_PEER);
+    e.graph->add_relationship(5, 6, AS_REL_PEER);
+    e.graph->add_relationship(6, 5, AS_REL_PEER);
+
+    e.graph->decide_ranks();
+    
+    e.querier->clear_results_from_db();
+    e.querier->create_results_tbl();
+    
+    // The test announcements table contains 2 anns, one with block_id = 0, and one with block_id = 1
+    e.extrapolate_by_block_id(1); 
+
+    // Vector that contains correct extrapolation results
+    // Format: (asn prefix origin received_from_asn time prefix_id)
+    std::vector<std::string> true_results {
+        "1 137.99.0.0/16 1 1 0 0 ",
+        "2 137.99.0.0/16 1 1 0 0 ",
+        "4 137.99.0.0/16 1 2 0 0 ",
+        "5 137.99.0.0/16 1 2 0 0 ",
+        "1 137.98.0.0/16 5 2 0 1 ",
+        "2 137.98.0.0/16 5 5 0 1 ",
+        "3 137.98.0.0/16 5 2 0 1 ",
+        "4 137.98.0.0/16 5 2 0 1 ",
+        "5 137.98.0.0/16 5 5 0 1 ",
+        "6 137.98.0.0/16 5 5 0 1 " 
+    };
+
+    // Get extrapolation results
+    pqxx::result r = e.querier->select_from_table(results_table);
+
+    // If the number of rows is different from true_results, we already know that something is not right
+    if (r.size() != true_results.size()) {
+        std::cerr << "Extrapolate by block id failed. Results are incorrect" << std::endl;
+        return false;
+    }
+
+    // Convert every row in results to a string separated by spaces (same format as true_results)
+    // Make sure the results match those in true_results
+    for (auto const &row: r) {
+        std::string rowStr = "";
+        for (auto const &field: row) { 
+            rowStr = rowStr + field.c_str() + " ";
+        }
+        std::vector<std::string>::iterator it = std::find(true_results.begin(), true_results.end(), rowStr);
+        if (it != true_results.end()) {
+            true_results.erase(it);
+        } else {
+            std::cerr << "Extrapolate by block id failed. Results are incorrect" << std::endl;
+            return false;
+        }
     }
 
     return true;

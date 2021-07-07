@@ -34,10 +34,10 @@ ROVppASGraph::~ROVppASGraph() {
 }
 
 ROVppAS* ROVppASGraph::createNew(uint32_t asn) {
-    return new ROVppAS(asn, attackers);
+    return new ROVppAS(asn, this->max_block_prefix_id, attackers);
 }
 
-void ROVppASGraph::process(SQLQuerier *querier) {
+void ROVppASGraph::process(SQLQuerier<> *querier) {
     // Main difference is remove_stubs isn't being called
     tarjan();
     combine_components();
@@ -135,11 +135,11 @@ void ROVppASGraph::to_graphviz(std::ostream &os, std::vector<uint32_t> asns) {
         }
         // announcements
         for (auto ann : *as.loc_rib) {
-            os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
-            (as.pass_rov(ann.second) ? "color='blue'" : "color='red'")
-            << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;
-            if (ann.second.received_from_asn != asn && ann.second.received_from_asn != 64514 && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512) {
-                to_graphviz_traceback(os, ann.second.received_from_asn, 0);
+            os << "dot.edge('" << ann.received_from_asn << "', '" << as.asn << "', " << 
+            (as.pass_rov(ann) ? "color='blue'" : "color='red'")
+            << ", label='" << ann.prefix.to_cidr() << "')" << std::endl;
+            if (ann.received_from_asn != asn && ann.received_from_asn != 64514 && ann.received_from_asn != 64513 && ann.received_from_asn != 64512) {
+                to_graphviz_traceback(os, ann.received_from_asn, 0);
             }
         }
     }
@@ -163,20 +163,20 @@ void ROVppASGraph::to_graphviz_traceback(std::ostream &os, uint32_t asn, int dep
     os << ")" << std::endl;
     
     for (auto ann : *as.loc_rib) {
-        os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "', " << 
-        (ann.second.origin == 64512 ? "color='grey'" :  (as.pass_rov(ann.second) ? "color='blue'" : "color='red'"))
-        << ", label='" << ann.second.prefix.to_cidr() << "')" << std::endl;
-        if (ann.second.received_from_asn != asn && ann.second.received_from_asn != 64514 && ann.second.received_from_asn != 64513 && ann.second.received_from_asn != 64512 && depth < 3) {
-            if (as.customers->find(ann.second.received_from_asn) != as.customers->end()) {
-                os << "dot.edge('" << as.asn << "', '" << ann.second.received_from_asn << "')" << std::endl;
+        os << "dot.edge('" << ann.received_from_asn << "', '" << as.asn << "', " << 
+        (ann.origin == 64512 ? "color='grey'" :  (as.pass_rov(ann) ? "color='blue'" : "color='red'"))
+        << ", label='" << ann.prefix.to_cidr() << "')" << std::endl;
+        if (ann.received_from_asn != asn && ann.received_from_asn != 64514 && ann.received_from_asn != 64513 && ann.received_from_asn != 64512 && depth < 3) {
+            if (as.customers->find(ann.received_from_asn) != as.customers->end()) {
+                os << "dot.edge('" << as.asn << "', '" << ann.received_from_asn << "')" << std::endl;
             }
-            if (as.peers->find(ann.second.received_from_asn) != as.peers->end()) {
-                os << "dot.edge('" << as.asn << "', '" << ann.second.received_from_asn << "', dir='none')" << std::endl;
+            if (as.peers->find(ann.received_from_asn) != as.peers->end()) {
+                os << "dot.edge('" << as.asn << "', '" << ann.received_from_asn << "', dir='none')" << std::endl;
             }
-            if (as.providers->find(ann.second.received_from_asn) != as.providers->end()) {
-                os << "dot.edge('" << ann.second.received_from_asn << "', '" << as.asn << "')" << std::endl;
+            if (as.providers->find(ann.received_from_asn) != as.providers->end()) {
+                os << "dot.edge('" << ann.received_from_asn << "', '" << as.asn << "')" << std::endl;
             }
-            to_graphviz_traceback(os, ann.second.received_from_asn, depth+1);
+            to_graphviz_traceback(os, ann.received_from_asn, depth+1);
         }
     }
 }

@@ -23,14 +23,20 @@
 
 #include "Graphs/ASGraph.h"
 
-ASGraph::ASGraph(bool store_inverse_results, bool store_depref_results) : BaseGraph(store_inverse_results, store_depref_results) {
+template <typename PrefixType>
+ASGraph<PrefixType>::ASGraph(bool store_inverse_results, bool store_depref_results) : BaseGraph<AS<PrefixType>, PrefixType>(store_inverse_results, store_depref_results) {
 
 }
 
-ASGraph::~ASGraph() {
+template <typename PrefixType>
+ASGraph<PrefixType>::~ASGraph() {
 
 }
 
-AS* ASGraph::createNew(uint32_t asn) {
-    return new AS(asn, store_depref_results, inverse_results);
+template <typename PrefixType>
+AS<PrefixType>* ASGraph<PrefixType>::createNew(uint32_t asn) {
+    return new AS<PrefixType>(asn, this->max_block_prefix_id, this->store_depref_results, this->inverse_results);
 }
+
+template class ASGraph<>;
+template class ASGraph<uint128_t>;

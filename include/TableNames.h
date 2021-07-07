@@ -26,6 +26,7 @@
 
 //Vanilla Tables
 #define RESULTS_TABLE "extrapolation_results"
+#define FULL_PATH_RESULTS_TABLE "full_path_extrapolation_results"
 #define DEPREF_RESULTS_TABLE "extrapolation_deprefer_results"
 #define INVERSE_RESULTS_TABLE "extrapolation_inverse_results"
 #define PEERS_TABLE "peers"
@@ -34,6 +35,10 @@
 #define NON_STUBS_TABLE "non_stubs"
 #define SUPERNODES_TABLE "supernodes"
 #define ANNOUNCEMENTS_TABLE "mrt_w_roas"
+
+// Simulation Tables
+#define SIMULATION_RESULTS_TABLE "simulation_extrapolation_results_raw_round_1"
+#define ROV_ANNOUNCEMENTS_TABLE "mrt_w_metadata"
 
 // ROV++ Tables
 #define ROVPP_POLICY_TABLE "rovpp_ases"
@@ -53,5 +58,6 @@
 //EzBGPsec Tables
 #define EZBGPSEC_AS_CATAGORIES_TABLE "good_customer_pairs"
 #define EZBGPSEC_ANNOUNCEMENTS_TABLE "good_customer_pairs_ann"
+#define EZBGPSEC_ROUND_TABLE_BASE_NAME "simulation_extrapolation_results_raw_round_"
 
 #endif

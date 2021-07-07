@@ -21,33 +21,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  ************************************************************************/
 
-#ifndef ROV_ANNOUNCEMENT_H
-#define ROV_ANNOUNCEMENT_H
+#ifndef ROVPP_ANNOUNCEMENT_H
+#define ROVPP_ANNOUNCEMENT_H
 
 #include "Announcements/Announcement.h"
 
-class ROVppAnnouncement : public Announcement {
+class ROVppAnnouncement : public Announcement<> {
 public:
     uint32_t alt;               // flag meaning a "hole" along the path
     uint32_t tiebreak_override; // ensure tiebreaks propagate where they should
     uint32_t sent_to_asn;       // ASN this ann is being sent to
+    uint32_t priority;          // Announcement uses the Priority struct now, but the ROVpp version still uses uint32 instead
 
     bool withdraw;              // if this is a withdrawn route
     std::vector<uint32_t> as_path; // stores full as path
 
+    /** "Uninitialized" constructor
+     */
+    ROVppAnnouncement();
+
     /** Default constructor
      */
     ROVppAnnouncement(uint32_t aorigin, 
-                        uint32_t aprefix, 
-                        uint32_t anetmask,
+                        Prefix<> prefix,
                         uint32_t from_asn, 
                         int64_t timestamp = 0);
     
     /** Priority constructor
      */
     ROVppAnnouncement(uint32_t aorigin, 
-                        uint32_t aprefix, 
-                        uint32_t anetmask,
+                        Prefix<> prefix,
                         uint32_t pr, 
                         uint32_t from_asn, 
                         int64_t timestamp, 
@@ -55,8 +58,7 @@ public:
                         bool a_from_monitor = false);
 
     ROVppAnnouncement(uint32_t aorigin, 
-                        uint32_t aprefix, 
-                        uint32_t anetmask,
+                        Prefix<> prefix,
                         uint32_t pr, 
                         uint32_t from_asn, 
                         int64_t timestamp,
@@ -91,7 +93,7 @@ public:
      * @param &os Specifies the output stream.
      * @return The output stream parameter for reuse/recursion.
      */ 
-    virtual std::ostream& to_csv(std::ostream &os);
+    virtual std::ostream& to_csv(std::ostream &os) const;
 
     /** Passes the announcement struct data to an output stream to csv generation.
      * For creating the rovpp_blackholes table only.
