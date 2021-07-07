@@ -117,7 +117,8 @@ public:
     */
     std::vector<uint32_t> gen_fake_as_path(std::vector<uint32_t> as_path);
 
-    std::vector<uint32_t> get_nonadopting_path(int k, EZAS *origin, EZAS *attacker, std::vector<uint32_t> as_path);
+    //This will take the path generated for an arbitrary 2 hop attack and substitue in a real neighbor AS of the origin into the path for the intermediate AS between the attacker and the origin 
+    std::vector<uint32_t> substitueNeighborPathEndAttack(EZAS *origin, EZAS *attacker, std::vector<uint32_t> as_path);
     std::vector<uint32_t> get_nonadopting_path_previously_seen(int k, EZAS *origin, EZAS *attacker, Prefix<> prefix);
 
     /**

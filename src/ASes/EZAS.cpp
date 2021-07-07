@@ -137,19 +137,22 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         //    }
         //}
 
-    } else if (community_detection != NULL) {
+    } else if(policy == EZAS_TYPE_PATH_END) {
+        //If the origin is not actually neighbors with what is on this path, don't consider the announcement
+        if(ann.as_path.size() > 2 && !community_detection->extrapolator->graph->ases->at(ann.as_path[ann.as_path.size() - 1])->has_neighbor(ann.as_path.size() - 2))
+            return;
+    } else if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL) {
         auto path_copy = ann.as_path;
         std::sort(path_copy.begin(), path_copy.end());
-        if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || policy == EZAS_TYPE_DIRECTORY_ONLY) {
-            // Check for blacklisted paths seen by this AS
-            //TODO This could use some improvement
-            for(auto &blacklisted_path : community_detection->blacklist) {
-                if(std::includes(path_copy.begin(), path_copy.end(), blacklisted_path.begin(), blacklisted_path.end())) {
-                    //std::cout << "LOC REJECT PATH at " << asn << std::endl;
-                    return;
-                }
+        
+        // Check for blacklisted paths seen by this AS
+        //TODO This could use some improvement
+        for(auto &blacklisted_path : community_detection->blacklist) {
+            if(std::includes(path_copy.begin(), path_copy.end(), blacklisted_path.begin(), blacklisted_path.end())) {
+                //std::cout << "LOC REJECT PATH at " << asn << std::endl;
+                return;
             }
-        } 
+        }
 
         /*
          *  This path does not contain anything that is blacklisted
