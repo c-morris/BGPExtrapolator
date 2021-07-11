@@ -45,7 +45,7 @@ class SQLQuerier;
 
 class ASGraph {
 public:
-    std::unordered_map<uint32_t, AS*> *ases;            // Map of ASN to AS object
+    std::map<uint32_t, AS*> *ases;            // Map of ASN to AS object
     std::vector<std::set<uint32_t>*> *ases_by_rank;     // Vector of ranks
     std::vector<std::vector<uint32_t>*> *components;    // Strongly connected components
     std::map<uint32_t, uint32_t> *component_translation;// Translate AS to supernode AS
