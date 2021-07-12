@@ -25,7 +25,6 @@
 #define BASE_GRAPH_H
 
 #include <map>
-#include <unordered_map>
 #include <vector>
 #include <stack>
 #include <sys/stat.h>
@@ -47,7 +46,7 @@ class BaseGraph {
 // static_assert(std::is_convertible<ASType*, BaseAS*>::value, "ASType must inherit BaseAS as public");
 
 public:
-    std::unordered_map<uint32_t, ASType*> *ases;            // Map of ASN to AS object 
+    std::map<uint32_t, ASType*> *ases;            // Map of ASN to AS object 
     std::vector<std::set<uint32_t>*> *ases_by_rank;     // Vector of ranks
     std::vector<std::vector<uint32_t>*> *components;    // Strongly connected components
     std::map<uint32_t, uint32_t> *component_translation;// Translate AS to supernode AS
@@ -60,7 +59,7 @@ public:
     uint32_t max_block_prefix_id;
 
     BaseGraph(bool store_inverse_results, bool store_depref_results) {
-        ases = new std::unordered_map<uint32_t, ASType*>;               // Map of all ASes
+        ases = new std::map<uint32_t, ASType*>;               // Map of all ASes
         ases_by_rank = new std::vector<std::set<uint32_t>*>;        // Vector of ASes by rank
         components = new std::vector<std::vector<uint32_t>*>;       // All Strongly connected components
         component_translation = new std::map<uint32_t, uint32_t>;   // Translate node to supernode

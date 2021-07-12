@@ -1,6 +1,8 @@
 #ifndef EZ_AS_GRAPH_H
 #define EZ_AS_GRAPH_H
 
+#include <unordered_map>
+
 #include "ASes/EZAS.h"
 #include "Graphs/BaseGraph.h"
 #include "SQLQueriers/EZSQLQuerier.h"
