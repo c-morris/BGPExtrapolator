@@ -141,7 +141,7 @@ void EZAS::process_announcement(EZAnnouncement &ann, bool ran) {
         //If the origin is not actually neighbors with what is on this path, don't consider the announcement
         if(ann.as_path.size() > 2 && !community_detection->extrapolator->graph->ases->at(ann.as_path[ann.as_path.size() - 1])->has_neighbor(ann.as_path.size() - 2))
             return;
-    } else if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL) {
+    } else if (policy == EZAS_TYPE_COMMUNITY_DETECTION_LOCAL || policy == EZAS_TYPE_DIRECTORY_ONLY) {
         auto path_copy = ann.as_path;
         std::sort(path_copy.begin(), path_copy.end());
         
