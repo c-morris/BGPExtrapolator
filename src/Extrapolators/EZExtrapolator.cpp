@@ -259,16 +259,16 @@ std::vector<uint32_t> EZExtrapolator::substitueNeighborPathEndAttack(EZAS *origi
         neighbors.insert(attacker->peers->begin(), attacker->peers->end());
         neighbors.insert(attacker->customers->begin(), attacker->customers->end());
         for (uint32_t nbr_asn : neighbors) {
-            auto nbr_search = graph->ases->find(nbr_asn);
-            if(nbr_search == graph->ases->end())
-                continue;
-            EZAS* nbr = nbr_search->second;
-            if (nbr->policy != EZAS_TYPE_BGP and nbr->policy != EZAS_TYPE_BGPSEC_TRANSITIVE) {
-                if (as_path.size() > 2) {
-                    as_path.rbegin()[1] = nbr_asn;
+            // auto nbr_search = graph->ases->find(nbr_asn);
+            // if(nbr_search == graph->ases->end())
+            //     continue;
+            // EZAS* nbr = nbr_search->second;
+            // if (nbr->policy != EZAS_TYPE_BGP and nbr->policy != EZAS_TYPE_BGPSEC_TRANSITIVE) {
+            //     if (as_path.size() > 2) {
+                    as_path.rbegin()[0] = nbr_asn;
                     break;
-                }
-            }
+            //     }
+            // }
         }
     }
     return as_path;
