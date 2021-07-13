@@ -162,4 +162,6 @@ This constant has two purposes, specify the number of ezBGPsec rounds and enable
 
 This is for intermediate attacks in EZBGPsec. This specifies how many ASes an attacker will make up between it and the origin (the intent is to shift the blame and avoid Community Detection). This only modifies the priority of the announcement.
 
-
+## Testing
+Run:
+```make clean && make test && ./bgp-extrapolator```
