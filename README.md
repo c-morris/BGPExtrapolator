@@ -38,8 +38,11 @@ sudo make install
 
 This produces an executable `bgp-extrapolator`. 
 
-To build for running unit tests, run `make test` in the source diretcory and
-then execute the resulting bgp-extrapolator executable.
+To build for running unit tests, run:
+
+```
+make clean && make test && ./bgp-extrapolator
+```
 
 ## Usage
 
@@ -161,5 +164,3 @@ This constant has two purposes, specify the number of ezBGPsec rounds and enable
 **-n**
 
 This is for intermediate attacks in EZBGPsec. This specifies how many ASes an attacker will make up between it and the origin (the intent is to shift the blame and avoid Community Detection). This only modifies the priority of the announcement.
-
-
