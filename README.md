@@ -40,7 +40,9 @@ This produces an executable `bgp-extrapolator`.
 
 To build for running unit tests, run:
 
-```make clean && make test && ./bgp-extrapolator```
+```
+make clean && make test && ./bgp-extrapolator
+```
 
 ## Usage
 
